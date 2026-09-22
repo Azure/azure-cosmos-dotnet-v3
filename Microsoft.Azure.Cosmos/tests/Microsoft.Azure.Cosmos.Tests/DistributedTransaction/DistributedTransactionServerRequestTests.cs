@@ -58,22 +58,27 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             Assert.IsNull(request.DispatchTracker, "No tracker is needed before the first token is generated.");
 
-            System.Guid firstToken = request.RotateIdempotencyToken();
+            System.Guid suppliedFirstToken = System.Guid.NewGuid();
+            request.RotateIdempotencyToken(suppliedFirstToken);
 
             DistributedTransactionDispatchTracker firstTokenTracker = request.DispatchTracker;
             Assert.IsNotNull(firstTokenTracker);
+            Assert.AreEqual(suppliedFirstToken, request.IdempotencyToken);
+            Assert.AreEqual(suppliedFirstToken, firstTokenTracker.IdempotencyToken);
             firstTokenTracker.RecordDispatch("East US");
             (bool IsRetry, bool IsCrossRegionRedirect) firstTokenSignals = firstTokenTracker.RecordDispatch("West US");
             Assert.IsTrue(firstTokenSignals.IsRetry, "Test precondition: the retry signal must be set before rotation.");
             Assert.IsTrue(firstTokenSignals.IsCrossRegionRedirect, "Test precondition: the redirect signal must be set before rotation.");
 
-            request.RotateIdempotencyToken();
+            System.Guid secondToken = System.Guid.NewGuid();
+            request.RotateIdempotencyToken(secondToken);
 
-            Assert.AreNotEqual(firstToken, request.IdempotencyToken);
+            Assert.AreEqual(secondToken, request.IdempotencyToken);
             Assert.AreNotSame(
                 firstTokenTracker,
                 request.DispatchTracker,
                 "A rotated token must not reuse the tracker that describes its predecessor.");
+            Assert.AreEqual(secondToken, request.DispatchTracker.IdempotencyToken);
             (bool IsRetry, bool IsCrossRegionRedirect) rotatedTokenSignals = request.DispatchTracker.RecordDispatch("West US");
             Assert.IsFalse(
                 rotatedTokenSignals.IsRetry,
@@ -97,10 +102,56 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             Assert.IsNull(request.DispatchTracker);
 
-            request.RotateIdempotencyToken();
+            System.Guid suppliedToken = System.Guid.NewGuid();
+            request.RotateIdempotencyToken(suppliedToken);
 
-            Assert.AreNotEqual(System.Guid.Empty, request.IdempotencyToken);
+            Assert.AreEqual(suppliedToken, request.IdempotencyToken);
             Assert.IsNull(request.DispatchTracker, "Rotating a read token must not allocate a tracker.");
+        }
+
+        [TestMethod]
+        [Description("Concurrent read-token rotation publishes complete immutable attempt snapshots without allocating trackers.")]
+        public async Task RotateIdempotencyToken_ConcurrentReadRotation_PublishesCompleteTokens()
+        {
+            DistributedTransactionServerRequest request = await DistributedTransactionServerRequest.CreateAsync(
+                CreateTestOperations(),
+                MockCosmosUtil.Serializer,
+                CancellationToken.None,
+                tracksDispatch: false);
+
+            System.Guid firstToken = new System.Guid("11111111-1111-1111-1111-111111111111");
+            System.Guid secondToken = new System.Guid("22222222-2222-2222-2222-222222222222");
+
+            Parallel.For(
+                fromInclusive: 0,
+                toExclusive: 10000,
+                body: index =>
+                {
+                    request.RotateIdempotencyToken(index % 2 == 0 ? firstToken : secondToken);
+
+                    System.Guid observedToken = request.IdempotencyToken;
+                    Assert.IsTrue(
+                        observedToken == firstToken || observedToken == secondToken,
+                        $"Observed a partially published token: {observedToken}.");
+                    Assert.IsNull(request.DispatchTracker, "Read transactions must not allocate dispatch trackers.");
+                });
+        }
+
+        [TestMethod]
+        public async Task RotateIdempotencyToken_EmptyToken_Throws()
+        {
+            DistributedTransactionServerRequest request = await DistributedTransactionServerRequest.CreateAsync(
+                CreateTestOperations(),
+                MockCosmosUtil.Serializer,
+                CancellationToken.None,
+                tracksDispatch: true);
+
+            System.ArgumentException exception = Assert.ThrowsException<System.ArgumentException>(
+                () => request.RotateIdempotencyToken(System.Guid.Empty));
+
+            Assert.AreEqual("idempotencyToken", exception.ParamName);
+            Assert.AreEqual(System.Guid.Empty, request.IdempotencyToken);
+            Assert.IsNull(request.DispatchTracker);
         }
 
         private static IReadOnlyList<DistributedTransactionOperation> CreateTestOperations()

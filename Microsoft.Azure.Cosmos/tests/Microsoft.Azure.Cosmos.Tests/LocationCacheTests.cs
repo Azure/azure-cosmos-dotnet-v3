@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 useMultipleWriteLocations: false,
                 enableEndpointDiscovery: true,
                 isPreferredLocationsListEmpty: false);
-            DistributedTransactionDispatchTracker tracker = new();
+            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker(Guid.NewGuid());
             Assert.AreEqual(
                 (false, false),
                 tracker.RecordDispatch(this.cache.GetExactLocation(LocationCacheTests.Location1Endpoint)));

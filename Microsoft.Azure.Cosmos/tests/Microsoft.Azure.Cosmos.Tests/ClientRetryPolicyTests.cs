@@ -3034,7 +3034,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isPreferredLocationsListEmpty: false);
 
-            DistributedTransactionDispatchTracker dispatchTracker = new();
+            DistributedTransactionDispatchTracker dispatchTracker = new DistributedTransactionDispatchTracker(Guid.NewGuid());
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
@@ -3065,7 +3065,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isPreferredLocationsListEmpty: false);
 
-            DistributedTransactionDispatchTracker dispatchTracker = new();
+            DistributedTransactionDispatchTracker dispatchTracker = new DistributedTransactionDispatchTracker(Guid.NewGuid());
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
@@ -3149,7 +3149,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isPreferredLocationsListEmpty: false,
                 enforceSingleMasterSingleWriteLocation: true);
 
-            DistributedTransactionDispatchTracker dispatchTracker = new();
+            DistributedTransactionDispatchTracker dispatchTracker = new DistributedTransactionDispatchTracker(Guid.NewGuid());
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
@@ -3198,7 +3198,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isPreferredLocationsListEmpty: false,
                 configuredEndpointOverride: ClientRetryPolicyTests.NonTopologyEndpoint);
 
-            DistributedTransactionDispatchTracker dispatchTracker = new();
+            DistributedTransactionDispatchTracker dispatchTracker = new DistributedTransactionDispatchTracker(Guid.NewGuid());
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
@@ -3241,7 +3241,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isPreferredLocationsListEmpty: false,
                 configuredEndpointOverride: ClientRetryPolicyTests.NonTopologyEndpoint);
 
-            DistributedTransactionDispatchTracker dispatchTracker = new();
+            DistributedTransactionDispatchTracker dispatchTracker = new DistributedTransactionDispatchTracker(Guid.NewGuid());
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
@@ -3284,7 +3284,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isPreferredLocationsListEmpty: false);
 
-            DistributedTransactionDispatchTracker dispatchTracker = new();
+            DistributedTransactionDispatchTracker dispatchTracker = new DistributedTransactionDispatchTracker(Guid.NewGuid());
             using DocumentServiceRequest request = ClientRetryPolicyTests.CreateDtxRequest();
 
             ClientRetryPolicy firstAttemptPolicy = new(
@@ -3343,7 +3343,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isPreferredLocationsListEmpty: false);
 
-            DistributedTransactionDispatchTracker dispatchTracker = new();
+            DistributedTransactionDispatchTracker dispatchTracker = new DistributedTransactionDispatchTracker(Guid.NewGuid());
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
@@ -3387,7 +3387,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isPreferredLocationsListEmpty: false,
                 preferedRegionListOverride: new List<string>() { "location2", "location1" }.AsReadOnly());
 
-            DistributedTransactionDispatchTracker dispatchTracker = new();
+            DistributedTransactionDispatchTracker dispatchTracker = new DistributedTransactionDispatchTracker(Guid.NewGuid());
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
@@ -3437,7 +3437,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isPreferredLocationsListEmpty: true);
 
-            DistributedTransactionDispatchTracker dispatchTracker = new();
+            DistributedTransactionDispatchTracker dispatchTracker = new DistributedTransactionDispatchTracker(Guid.NewGuid());
             ClientRetryPolicy retryPolicy = new(
                 endpointManager,
                 this.partitionKeyRangeLocationCache,

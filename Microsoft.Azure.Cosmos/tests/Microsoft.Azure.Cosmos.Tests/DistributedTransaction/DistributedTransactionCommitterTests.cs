@@ -10,11 +10,13 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -1379,6 +1381,149 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             Assert.AreEqual((true, true), attempts[0].Tracker.RecordDispatch("East US"));
         }
 
+        [TestMethod]
+        [Description("Exercises the committer and retry handler together, recording endpoint, token, DTX headers, and payload across inner failover, same-token outer replay, and post-abort rotation.")]
+        public async Task ExecuteTransactionAsync_ThroughRetryHandler_RecordsCompleteDispatchSequence()
+        {
+            Uri eastEndpoint = new Uri("https://account-eastus.documents.azure.com/");
+            Uri westEndpoint = new Uri("https://account-westus.documents.azure.com/");
+            Uri requestUri = new Uri("https://account.documents.azure.com/operations/dtc");
+
+            using MockDocumentClient documentClient = new MockDocumentClient();
+            Uri[] dispatchEndpoints = { eastEndpoint, westEndpoint, eastEndpoint, eastEndpoint };
+            int endpointResolutionCount = 0;
+            documentClient.MockGlobalEndpointManager
+                .Setup(manager => manager.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>()))
+                .Returns((DocumentServiceRequest request) =>
+                {
+                    int dispatchIndex = Math.Min(endpointResolutionCount++ / 2, dispatchEndpoints.Length - 1);
+                    Uri endpoint = dispatchEndpoints[dispatchIndex];
+                    request.RequestContext.RouteToLocation(endpoint);
+                    return endpoint;
+                });
+            documentClient.MockGlobalEndpointManager
+                .Setup(manager => manager.GetExactLocation(It.IsAny<Uri>()))
+                .Returns((Uri endpoint) => endpoint == westEndpoint ? "West US" : "East US");
+            documentClient.MockGlobalEndpointManager
+                .Setup(manager => manager.RefreshLocationAsync(It.IsAny<bool>()))
+                .Returns(Task.CompletedTask);
+
+            using CosmosClient client = new CosmosClient(
+                requestUri.GetLeftPart(UriPartial.Authority),
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                new CosmosClientOptions(),
+                documentClient);
+
+            List<(Uri Endpoint, Guid Token, string IsRetry, string IsCrossRegionRedirect, byte[] Payload)> dispatches = new();
+            int transportSendCount = 0;
+            RetryHandler retryHandler = new RetryHandler(client)
+            {
+                InnerHandler = new TestHandler((request, cancellationToken) =>
+                {
+                    int sendIndex = transportSendCount++;
+                    DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
+                    Guid token = Guid.Parse(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
+                    DistributedTransactionDispatchTracker tracker = request.DistributedTransactionDispatchTracker;
+
+                    Assert.IsNotNull(tracker);
+                    Assert.AreEqual(token, tracker.IdempotencyToken);
+
+                    dispatches.Add((
+                        serviceRequest.RequestContext.LocationEndpointToRoute,
+                        token,
+                        serviceRequest.Headers[DistributedTransactionConstants.IsDtxRetry],
+                        serviceRequest.Headers[DistributedTransactionConstants.IsDtxCrossRegionRedirect],
+                        ((MemoryStream)request.Content).ToArray()));
+
+                    switch (sendIndex)
+                    {
+                        case 0:
+                            return TestHandler.ReturnStatusCode(
+                                HttpStatusCode.Forbidden,
+                                SubStatusCodes.WriteForbidden);
+                        case 1:
+                            ResponseMessage retryWith = new ResponseMessage((HttpStatusCode)StatusCodes.RetryWith)
+                            {
+                                Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true}"))
+                            };
+                            retryWith.Headers.SubStatusCodeLiteral =
+                                ((int)SubStatusCodes.DtcCoordinatorRaceConflict).ToString(CultureInfo.InvariantCulture);
+                            return Task.FromResult(retryWith);
+                        case 2:
+                            return Task.FromResult(CreateRetriableErrorResponseMessage());
+                        default:
+                            return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                    }
+                })
+            };
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            mockContext
+                .Setup(context => context.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    async (_, resourceType, operationType, _, _, _, _, stream, enricher, trace, cancellationToken) =>
+                    {
+                        using RequestMessage request = new RequestMessage(HttpMethod.Post, requestUri)
+                        {
+                            ResourceType = resourceType,
+                            OperationType = operationType,
+                            Content = stream,
+                            Trace = trace
+                        };
+                        enricher(request);
+                        return await retryHandler.SendAsync(request, cancellationToken);
+                    });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(
+                NoOpTrace.Singleton,
+                CancellationToken.None))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            Assert.AreEqual(4, dispatches.Count);
+            CollectionAssert.AreEqual(
+                new[] { eastEndpoint, westEndpoint, eastEndpoint, eastEndpoint },
+                dispatches.Select(dispatch => dispatch.Endpoint).ToArray());
+
+            Assert.AreEqual(dispatches[0].Token, dispatches[1].Token, "Inner failover must retain the token.");
+            Assert.AreEqual(dispatches[1].Token, dispatches[2].Token, "A non-aborted outer retry must replay the token.");
+            Assert.AreNotEqual(dispatches[2].Token, dispatches[3].Token, "An aborted attempt must rotate the token.");
+
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    (bool.FalseString, bool.FalseString),
+                    (bool.TrueString, bool.TrueString),
+                    (bool.TrueString, bool.TrueString),
+                    (bool.FalseString, bool.FalseString),
+                },
+                dispatches.Select(dispatch => (dispatch.IsRetry, dispatch.IsCrossRegionRedirect)).ToArray());
+
+            Assert.IsTrue(dispatches[0].Payload.Length > 0);
+            foreach ((Uri Endpoint, Guid Token, string IsRetry, string IsCrossRegionRedirect, byte[] Payload) dispatch in dispatches.Skip(1))
+            {
+                CollectionAssert.AreEqual(dispatches[0].Payload, dispatch.Payload);
+            }
+        }
+
         /// <summary>
         /// Stands in for <see cref="ClientRetryPolicy"/> driving one attempt across a write-region
         /// boundary, recording the signals the attempt started with.
@@ -1419,8 +1564,17 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     request.IsPropertiesInitialized,
                     "Publishing the DTX tracker must not initialize or mutate the public Properties dictionary.");
 
+                Guid idempotencyToken = Guid.Parse(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
+                if (request.DistributedTransactionDispatchTracker != null)
+                {
+                    Assert.AreEqual(
+                        idempotencyToken,
+                        request.DistributedTransactionDispatchTracker.IdempotencyToken,
+                        "The idempotency header and dispatch tracker must describe the same logical attempt.");
+                }
+
                 capture?.Invoke(
-                    Guid.Parse(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]),
+                    idempotencyToken,
                     request.DistributedTransactionDispatchTracker);
                 return request.DistributedTransactionDispatchTracker;
             }

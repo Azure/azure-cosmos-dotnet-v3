@@ -30,9 +30,27 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         private const string WestUs = "West US";
 
         [TestMethod]
+        public void Constructor_SuppliedToken_IsOwnedByTracker()
+        {
+            Guid token = Guid.NewGuid();
+            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker(token);
+
+            Assert.AreEqual(token, tracker.IdempotencyToken);
+        }
+
+        [TestMethod]
+        public void Constructor_EmptyToken_Throws()
+        {
+            ArgumentException exception = Assert.ThrowsException<ArgumentException>(
+                () => new DistributedTransactionDispatchTracker(Guid.Empty));
+
+            Assert.AreEqual("idempotencyToken", exception.ParamName);
+        }
+
+        [TestMethod]
         public void RecordDispatch_FirstDispatchOfToken_ReportsNeitherSignal()
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
 
             (bool IsRetry, bool IsCrossRegionRedirect) signals = tracker.RecordDispatch(EastUs);
 
@@ -43,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         public void RecordDispatch_RegionUnchanged_IsRetryWithoutCrossingBoundary()
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
 
             tracker.RecordDispatch(EastUs);
             tracker.RecordDispatch(EastUs);
@@ -56,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         public void RecordDispatch_RegionDiffersFromOriginalDispatch_CrossesBoundary()
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
 
             tracker.RecordDispatch(EastUs);
             (bool IsRetry, bool IsCrossRegionRedirect) signals = tracker.RecordDispatch(WestUs);
@@ -68,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         public void RecordDispatch_AfterCrossingBoundary_StaysTrueWithinNewRegion()
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
 
             tracker.RecordDispatch(EastUs);
             tracker.RecordDispatch(WestUs);
@@ -80,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         public void RecordDispatch_AfterCrossingBoundary_StaysTrueWhenRoutedBackToOriginRegion()
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
 
             tracker.RecordDispatch(EastUs);
             tracker.RecordDispatch(WestUs);
@@ -92,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         public void RecordDispatch_RegionsComparedCaseInsensitively_DoesNotCrossBoundary()
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
 
             tracker.RecordDispatch(EastUs);
             (bool IsRetry, bool IsCrossRegionRedirect) signals = tracker.RecordDispatch("east us");
@@ -105,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [DataRow("")]
         public void RecordDispatch_UnresolvableFirstRegion_ReportsRedirectOnceNextRegionResolves(string region)
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
 
             (bool IsRetry, bool IsCrossRegionRedirect) first = tracker.RecordDispatch(region);
             Assert.IsFalse(first.IsCrossRegionRedirect);
@@ -117,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         public void RecordDispatch_UnresolvableRegionAfterKnownRegion_ReportsRedirect()
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
 
             tracker.RecordDispatch(EastUs);
 
@@ -133,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         public void RecordDispatch_UnresolvableRegionAfterCrossingBoundary_StaysTrue()
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
 
             tracker.RecordDispatch(EastUs);
             tracker.RecordDispatch(WestUs);
@@ -145,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         public void RecordDispatch_UnresolvableRegion_StillCountsTowardsRetry()
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
 
             // Retry-ness is a property of the token, not of where the dispatch landed.
             (bool IsRetry, bool IsCrossRegionRedirect) first = tracker.RecordDispatch(null);
@@ -161,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         public void RecordDispatch_ReturnedSnapshot_DoesNotChangeAfterLaterDispatches()
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
             (bool IsRetry, bool IsCrossRegionRedirect) first = tracker.RecordDispatch(EastUs);
             (bool IsRetry, bool IsCrossRegionRedirect) sameRegion = tracker.RecordDispatch(EastUs);
             (bool IsRetry, bool IsCrossRegionRedirect) crossRegion = tracker.RecordDispatch(WestUs);
@@ -174,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         public void StampDispatchHeaders_TrackerPresent_ReportsRetryBeforeCrossingBoundary()
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
 
             using (DocumentServiceRequest request = DistributedTransactionDispatchTrackerTests.CreateRequest())
             {
@@ -192,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         public void RequestMessageClone_PreservesTypedTracker()
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
             using (RequestMessage request = new RequestMessage
             {
                 ResourceType = ResourceType.DistributedTransactionBatch,
@@ -208,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         public void StampDispatchHeaders_NullRequest_ThrowsWithoutRecordingDispatch()
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
             ArgumentNullException exception = Assert.ThrowsException<ArgumentNullException>(
                 () => tracker.StampDispatchHeaders(null, EastUs));
 
@@ -219,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         public void StampDispatchHeaders_UnresolvableRegionAfterCrossing_KeepsBothHeadersTrue()
         {
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
 
             using (DocumentServiceRequest request = DistributedTransactionDispatchTrackerTests.CreateRequest())
             {
@@ -236,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         public void StampDispatchHeaders_ConcurrentRequests_UseConsistentSignalSnapshots()
         {
             const int DispatchCount = 1000;
-            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
             int firstDispatchCount = 0;
             int inconsistentSnapshotCount = 0;
 
@@ -283,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [DataRow(true)]
         public void StampDispatchHeaders_HeaderWriteFails_PropagatesAndRetainsDispatch(bool failSecondHeader)
         {
-            DistributedTransactionDispatchTracker tracker = new();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
             InvalidOperationException failure = new("Injected header assignment failure.");
             string failedHeader = failSecondHeader
                 ? DistributedTransactionConstants.IsDtxCrossRegionRedirect
@@ -317,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         public async Task StampDispatchHeaders_DistinctRequestsCompleteOutOfOrder_PreserveRecordingOrder()
         {
-            DistributedTransactionDispatchTracker tracker = new();
+            DistributedTransactionDispatchTracker tracker = CreateTracker();
             TaskCompletionSource<bool> firstHeaderEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
             using ManualResetEventSlim releaseFirstHeader = new(false);
             using DocumentServiceRequest secondRequest = CreateRequest();
@@ -377,6 +395,11 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 stream: new MemoryStream(),
                 authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey,
                 headers: headers);
+        }
+
+        private static DistributedTransactionDispatchTracker CreateTracker()
+        {
+            return new DistributedTransactionDispatchTracker(Guid.NewGuid());
         }
     }
 }

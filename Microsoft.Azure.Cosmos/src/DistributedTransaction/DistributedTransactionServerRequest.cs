@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CosmosSerializerCore serializerCore;
         private readonly bool tracksDispatch;
+        private AttemptState attemptState;
         private byte[] serializedBody;
 
         private DistributedTransactionServerRequest(
@@ -34,31 +35,35 @@ namespace Microsoft.Azure.Cosmos
         /// a post-Abort resubmission) and is replayed for a non-aborted retriable retry; the serialized
         /// body is decoupled and reused byte-for-byte either way.
         /// </summary>
-        public Guid IdempotencyToken { get; private set; }
+        public Guid IdempotencyToken => Volatile.Read(ref this.attemptState)?.IdempotencyToken ?? Guid.Empty;
 
         /// <summary>
         /// Tracks how the current <see cref="IdempotencyToken"/> has been dispatched, or null before
         /// the first token is generated and for read transactions.
         /// </summary>
-        public DistributedTransactionDispatchTracker DispatchTracker { get; private set; }
+        public DistributedTransactionDispatchTracker DispatchTracker =>
+            Volatile.Read(ref this.attemptState)?.DispatchTracker;
 
         /// <summary>
-        /// Assigns a fresh <see cref="Guid"/> to <see cref="IdempotencyToken"/> and returns it. Called for
+        /// Assigns the supplied <see cref="Guid"/> to <see cref="IdempotencyToken"/>. Called for
         /// each new logical attempt (first attempt or a post-Abort resubmission); a non-aborted retriable
         /// retry reuses the current token instead.
         /// </summary>
-        /// <returns>The newly generated idempotency token.</returns>
-        public Guid RotateIdempotencyToken()
+        /// <param name="idempotencyToken">The idempotency token for the new logical attempt.</param>
+        public void RotateIdempotencyToken(Guid idempotencyToken)
         {
-            this.IdempotencyToken = Guid.NewGuid();
-
-            // A tracker describes exactly one token, so the new token starts on its own instance.
-            if (this.tracksDispatch)
+            if (idempotencyToken == Guid.Empty)
             {
-                this.DispatchTracker = new DistributedTransactionDispatchTracker();
+                throw new ArgumentException("The idempotency token cannot be empty.", nameof(idempotencyToken));
             }
 
-            return this.IdempotencyToken;
+            DistributedTransactionDispatchTracker tracker = this.tracksDispatch
+                ? new DistributedTransactionDispatchTracker(idempotencyToken)
+                : null;
+
+            Interlocked.Exchange(
+                ref this.attemptState,
+                new AttemptState(idempotencyToken, tracker));
         }
 
         public static async Task<DistributedTransactionServerRequest> CreateAsync(
@@ -99,6 +104,21 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.serializedBody = stream.ToArray();
             }
+        }
+
+        private sealed class AttemptState
+        {
+            internal AttemptState(
+                Guid idempotencyToken,
+                DistributedTransactionDispatchTracker dispatchTracker)
+            {
+                this.IdempotencyToken = idempotencyToken;
+                this.DispatchTracker = dispatchTracker;
+            }
+
+            internal Guid IdempotencyToken { get; }
+
+            internal DistributedTransactionDispatchTracker DispatchTracker { get; }
         }
     }
 }

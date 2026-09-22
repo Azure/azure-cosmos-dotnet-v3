@@ -356,7 +356,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task GetRetryPolicyAsync_RequestWithDispatchTracker_UsesDtxFactoryOverload()
         {
-            DistributedTransactionDispatchTracker dispatchTracker = new();
+            DistributedTransactionDispatchTracker dispatchTracker = new DistributedTransactionDispatchTracker(Guid.NewGuid());
             Mock<IDocumentClientRetryPolicy> retryPolicy = new();
             Mock<IRetryPolicyFactory> retryPolicyFactory = new();
             retryPolicyFactory
@@ -410,14 +410,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 })
             };
 
-            DistributedTransactionDispatchTracker tracker = new();
+            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker(Guid.NewGuid());
             using (RequestMessage request = RetryHandlerTests.CreateDtxRequestMessage(tracker))
             {
                 await retryHandler.SendAsync(request, CancellationToken.None);
                 await retryHandler.SendAsync(request, CancellationToken.None);
             }
 
-            using (RequestMessage request = RetryHandlerTests.CreateDtxRequestMessage(new DistributedTransactionDispatchTracker()))
+            using (RequestMessage request = RetryHandlerTests.CreateDtxRequestMessage(
+                new DistributedTransactionDispatchTracker(Guid.NewGuid())))
             {
                 await retryHandler.SendAsync(request, CancellationToken.None);
             }
@@ -487,7 +488,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 })
             };
 
-            using RequestMessage request = CreateDtxRequestMessage(new DistributedTransactionDispatchTracker());
+            using RequestMessage request = CreateDtxRequestMessage(
+                new DistributedTransactionDispatchTracker(Guid.NewGuid()));
             Task<ResponseMessage> send = retryHandler.SendAsync(request, cancellation.Token);
             try
             {

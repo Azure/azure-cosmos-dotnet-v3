@@ -624,7 +624,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [TestMethod]
         [Owner("aavasthy")]
-        public async Task GatewayStoreModel_GatewayV1_SetsNoRetry449Header()
+        public async Task GatewayStoreModel_GatewayV1_SetsNoRetry449HeaderForDistributedTransaction()
         {
             bool noRetry449HeaderSent = false;
             Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
@@ -661,9 +661,9 @@ namespace Microsoft.Azure.Cosmos
 
             using (new ActivityScope(Guid.NewGuid()))
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
-                Documents.OperationType.Query,
-                Documents.ResourceType.Document,
-                new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
+                Documents.OperationType.CommitDistributedTransaction,
+                Documents.ResourceType.DistributedTransactionBatch,
+                new Uri("https://foo.com/operations/dtc", UriKind.Absolute),
                 new MemoryStream(Encoding.UTF8.GetBytes("content1")),
                 AuthorizationTokenType.PrimaryMasterKey,
                 null))
@@ -674,6 +674,57 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(
                 noRetry449HeaderSent,
                 "Gateway V1 must send x-ms-noretry-449=true so the gateway does not also retry the 449 server-side.");
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task GatewayStoreModel_GatewayV1_DistributedTransactionReturns449WithoutGenericRetry()
+        {
+            int transportSendCount = 0;
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
+            {
+                transportSendCount++;
+                return Task.FromResult(new HttpResponseMessage((HttpStatusCode)StatusCodes.RetryWith)
+                {
+                    Content = new StringContent("{\"isRetriable\":true}"),
+                    RequestMessage = request
+                });
+            };
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            ISessionContainer sessionContainer = new SessionContainer(string.Empty);
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Eventual,
+                DocumentClientEventSource.Instance,
+                null,
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance);
+
+            TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
+
+            using (new ActivityScope(Guid.NewGuid()))
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                Documents.OperationType.CommitDistributedTransaction,
+                Documents.ResourceType.DistributedTransactionBatch,
+                new Uri("https://foo.com/operations/dtc", UriKind.Absolute),
+                new MemoryStream(Encoding.UTF8.GetBytes("content1")),
+                AuthorizationTokenType.PrimaryMasterKey,
+                null))
+            using (DocumentServiceResponse response = await storeModel.ProcessMessageAsync(request))
+            {
+                Assert.AreEqual((HttpStatusCode)StatusCodes.RetryWith, response.StatusCode);
+            }
+
+            Assert.AreEqual(
+                1,
+                transportSendCount,
+                "GatewayStoreModel must surface a DTX 449 after one transport send so the DTX retry layer owns the retry.");
         }
 
         /// <summary>
@@ -741,13 +792,13 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Distributed-transaction requests own their 449 (RetryWith) retry orchestration
         /// (<see cref="ClientRetryPolicy"/> + the DistributedTransactionCommitter outer loop), so the
-        /// generic gateway 449 mechanism — which gates both the <c>x-ms-noretry-449</c> opt-out header and
-        /// the gateway store-model 449 retry loop on this decision — must exclude them. Every other
-        /// request type participates so its 449 is retried client-side.
+        /// generic gateway 449 retry loop must exclude them. Every other request type participates so its
+        /// 449 is retried client-side. Gateway V1's server-side opt-out is tested separately because it
+        /// applies to both request categories.
         /// </summary>
         [TestMethod]
         [Owner("aavasthy")]
-        public void GatewayStoreModel_IsGatewayRetryWith449Applicable_ExcludesDistributedTransactionRequests()
+        public void GatewayStoreModel_IsClientRetryWith449Applicable_ExcludesDistributedTransactionRequests()
         {
             using (DocumentServiceRequest distributedTransactionRequest = DocumentServiceRequest.Create(
                 Documents.OperationType.CommitDistributedTransaction,
@@ -755,7 +806,7 @@ namespace Microsoft.Azure.Cosmos
                 AuthorizationTokenType.PrimaryMasterKey))
             {
                 Assert.IsFalse(
-                    GatewayStoreModel.IsGatewayRetryWith449Applicable(distributedTransactionRequest),
+                    GatewayStoreModel.IsClientRetryWith449Applicable(distributedTransactionRequest),
                     "Distributed-transaction requests must be excluded from the generic gateway 449 mechanism; their 449 retry is owned by the distributed-transaction pipeline.");
             }
 
@@ -765,7 +816,7 @@ namespace Microsoft.Azure.Cosmos
                 AuthorizationTokenType.PrimaryMasterKey))
             {
                 Assert.IsTrue(
-                    GatewayStoreModel.IsGatewayRetryWith449Applicable(documentRequest),
+                    GatewayStoreModel.IsClientRetryWith449Applicable(documentRequest),
                     "Non-distributed-transaction requests must participate in the generic client-side gateway 449 retry mechanism.");
             }
         }

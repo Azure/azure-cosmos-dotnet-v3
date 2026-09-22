@@ -28,6 +28,18 @@ namespace Microsoft.Azure.Cosmos
         private bool hasUnresolvedDispatch;
         private bool isCrossRegionRedirect;
 
+        internal DistributedTransactionDispatchTracker(Guid idempotencyToken)
+        {
+            if (idempotencyToken == Guid.Empty)
+            {
+                throw new ArgumentException("The idempotency token cannot be empty.", nameof(idempotencyToken));
+            }
+
+            this.IdempotencyToken = idempotencyToken;
+        }
+
+        internal Guid IdempotencyToken { get; }
+
         /// <summary>
         /// Records the region an imminent dispatch is pinned to.
         /// </summary>
@@ -92,12 +104,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(request));
             }
 
-            (bool IsRetry, bool IsCrossRegionRedirect) dispatchSignals = this.RecordDispatch(regionName);
+            (bool isRetry, bool isCrossRegionRedirect) = this.RecordDispatch(regionName);
 
             request.Headers[DistributedTransactionConstants.IsDtxRetry] =
-                dispatchSignals.IsRetry ? bool.TrueString : bool.FalseString;
+                isRetry ? bool.TrueString : bool.FalseString;
             request.Headers[DistributedTransactionConstants.IsDtxCrossRegionRedirect] =
-                dispatchSignals.IsCrossRegionRedirect ? bool.TrueString : bool.FalseString;
+                isCrossRegionRedirect ? bool.TrueString : bool.FalseString;
         }
     }
 }
