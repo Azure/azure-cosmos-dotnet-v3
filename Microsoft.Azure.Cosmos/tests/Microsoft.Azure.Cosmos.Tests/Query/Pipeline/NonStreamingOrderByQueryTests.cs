@@ -646,18 +646,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public async Task CompetitionRanksDetermineWeightedRrfOrder()
         {
-            int[] actual = await RunCompetitionRankScenarioAsync(new[] { 10.0, 9.0, 9.0, 9.0, 4.0 });
-
-            // Verify that standard competition ranks produce the expected fused order with a 2:1 component weight ratio.
-            CollectionAssert.AreEqual(new[] { 3, 0, 2, 1, 4 }, actual);
-        }
-
-        [TestMethod]
-        public async Task CompetitionRanksHandleBoundaryTieGroups()
-        {
             CollectionAssert.AreEqual(
                 new[] { 1, 0, 2, 3, 4 },
                 await RunCompetitionRankScenarioAsync(new[] { 10.0, 10.0, 8.0, 7.0, 6.0 }));
+            // Verify the regression case where a middle tie group causes the next rank to skip from 2 to 5.
+            CollectionAssert.AreEqual(
+                new[] { 3, 0, 2, 1, 4 },
+                await RunCompetitionRankScenarioAsync(new[] { 10.0, 9.0, 9.0, 9.0, 4.0 }));
             CollectionAssert.AreEqual(
                 new[] { 0, 1, 4, 2, 3 },
                 await RunCompetitionRankScenarioAsync(new[] { 10.0, 9.0, 8.0, 7.0, 7.0 }));
