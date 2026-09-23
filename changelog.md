@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [6125](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6125) Linq: Fixes queries with an `Any()` collection filter combined with `OrderByRank` failing with an `ORDER BY RANK` service error — the filter is now translated to an `EXISTS` clause instead of a `JOIN`.
+
 #### Other Changes
 
 ### <a name="3.64.0-preview.1"/> [3.64.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.1) - 2026-9-17
