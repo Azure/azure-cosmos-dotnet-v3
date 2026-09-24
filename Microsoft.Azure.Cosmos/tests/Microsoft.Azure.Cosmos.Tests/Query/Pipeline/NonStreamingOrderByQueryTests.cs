@@ -2148,8 +2148,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         {
             CosmosElement indexElement = CosmosNumber64.Create(index);
             CosmosElement indexStringElement = CosmosString.Create(index.ToString("D4"));
-            double[] scores = calculateScores(componentCount, index).ToArray();
-            Assert.AreEqual(componentCount, scores.Length);
+            IReadOnlyList<double> scores = calculateScores(componentCount, index);
+            Assert.AreEqual(componentCount, scores.Count);
 
             List<CosmosElement> orderByItems = new List<CosmosElement>
             {
