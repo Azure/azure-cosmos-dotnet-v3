@@ -25,6 +25,7 @@
 
 - Renaming namespaces. `Microsoft.Azure.Documents.*` stays as-is. Folder layout and namespace layout are decoupled on purpose (see §4, principle P2).
 - Refactoring Direct code behaviour. This is a **move-only** change.
+- Source-integrating `Microsoft.HybridRow`. Its two DLLs keep arriving as a restored package and being re-packed into `lib/netstandard2.0`, so “compile from source” is a claim about the Direct tree, not about the whole SDK — see O-8 for why the D-0 mechanism cannot be applied to it.
 
 ---
 
@@ -820,7 +821,7 @@ The baseline captured in phase 1 becomes enforced here.
 - [ ] Remove the `UseDirectSource` switch and the `false` path.
 - [ ] Retire the `msdata/direct` branch, `docs/sync_up_msdata_direct.md`, the sync agent and helper script.
 - [ ] Remove `<DirectVersion>` from [Directory.Build.props](Directory.Build.props#L6) — it has no remaining consumer once D-0 lands; `$(QueryPlanInteropVersion)` replaces it as the only native pin.
-- [ ] **Answer O-8** — state explicitly whether `Microsoft.HybridRow` stays a binary dependency permanently or is queued for the same treatment. Phase 5 should not declare “compile from source” achieved while the last binary dependency is unaddressed.
+- [ ] Keep `$(HybridRowVersion)` — O-8 makes it the permanent last binary dependency. Word the release notes so “compile from source” is not read as covering it.
 - [ ] `changelog.md` entry for the first customer-observable phase.
 - [ ] Ship **one preview release** before GA (see Release staging below).
 
@@ -1043,7 +1044,6 @@ Live risks and open questions first; resolved items are compressed to one line e
 | R-2 | `git mv` of 373 files in one commit — verify rename detection survives (`git log --follow`, `git blame`). Use `git config diff.renameLimit` high enough. |
 | R-3 | 55 filename collisions with `src/**` remain after the move (different folders now, so tolerable, but "go to file" is still noisy). Consider whether any Direct file should keep a disambiguating name. |
 | R-4 | `TreatWarningsAsErrors=true` + un-suppressing 26 rules (phase 1b, D-6) may cascade. Budget for it. |
-| R-5 | **`Microsoft.HybridRow` is the last remaining binary dependency** — not covered by this plan. Once Direct is source-compiled (D-0) and the native comes from `QueryPlanInterop` (D-3), HybridRow is the only package whose DLLs (`Microsoft.Azure.Cosmos.Core.dll`, `Microsoft.Azure.Cosmos.Serialization.HybridRow.dll`) are still restored and re-packed into the SDK nupkg. Tracked as **O-8**. |
 | R-6 | **Silent drift.** The moment `main` compiles these sources, any PR can diverge a shared file with nothing to stop it. §9.D is the mitigation and should land alongside phase 1, not at the end. |
 | R-7 | Every `#if !COSMOSCLIENT` block (137 files carry `COSMOSCLIENT` directives) is currently **never compiled by v3 CI**. It can rot undetected until the next sync. Mitigation: §9.A-6 canary. |
 | R-8 | **Strong-name identity — evidence favourable, still formally unverified.** The O-7 reference assembly is `Microsoft.Azure.Cosmos.Direct, Version=3.44.1.0, PublicKeyToken=31bf3856ad364e35` — the standard Microsoft shared-library token, which is what [35MSSharedLib1024.snk](35MSSharedLib1024.snk) produces. So D-0 option C is very likely viable. Confirm by actually delay-signing and comparing the token before phase 1; §9.C-1's facade has the same requirement, so the check is unavoidable either way. |
@@ -1055,7 +1055,6 @@ Live risks and open questions first; resolved items are compressed to one line e
 | R-18 | **`AssemblyVersion` stamping.** The O-7 reference assembly is `3.44.1.0` (verified); this repo stamps from `ClientOfficialVersion` (3.63.0). Assembly version is part of assembly identity, so inheriting the SDK version changes the identity that option C exists to preserve, and .NET Framework consumers would need binding redirects. Pin `<AssemblyVersion>3.44.1.0</AssemblyVersion>` and let `FileVersion` move. Trivial to fix, easy to miss, expensive post-release. |
 | O-5 | **Which ServiceInterop build does `QueryPlanInterop` 1.0.2 correspond to?** The package ships on a **~2-month cadence**, so the native is not frozen and F-2 will see roughly six version bumps a year — that needs a routine absorption process, not a one-off. The mapping itself is unknown: 3.44.1's `ServiceInterop.dll` is 9.14 MB against QueryPlanInterop's 7.40 MB, and the two artifacts have independent cadences and version schemes. F-2's pin is only meaningful once it is known. **Blocks phase 5**; also D-3 condition 6. |
 | O-6 | **What does `ProjectRef=True` (msdata's build) do with the in-repo `Microsoft.Azure.Cosmos.Direct.csproj`?** msdata supplies its own Direct from its own tree, so the `ProjectReference` must be conditional or msdata compiles two copies of `Microsoft.Azure.Documents.*` — P-11 relocated. This makes the `ProjectRef` switch more load-bearing, contradicting D-2's instruction to collapse it. With v3 upstream, msdata should eventually consume v3's Direct sources rather than maintain its own, so the long-term answer is probably “retire `ProjectRef` after the export path lands” — but the phase-3 behaviour needs deciding with the msdata owners. **Blocks phase 3.** |
-| O-8 | **Is `Microsoft.HybridRow` (R-5) the permanent end state, or queued for the same treatment?** It is the **only** binary dependency left — its two DLLs are restored and re-packed into the SDK nupkg exactly as Direct's were. Answering “permanent” is legitimate; leaving it unstated means the “compile from source” goal reads as achieved when it is half-achieved. Blocks no phase, but decide before phase 5 declares the migration complete. |
 
 ### Resolved
 
@@ -1064,6 +1063,7 @@ One line each — these IDs are referenced throughout the document.
 | ID | Resolution |
 | --- | --- |
 | R-1 | Phase 1a is a **re-import, not a merge** — procedure in §8 phase 1a. Only execution risk left is step 0, msdata source access. |
+| R-5 | Accepted: `Microsoft.HybridRow` stays a restored binary dependency, and the SDK keeps re-packing its two DLLs into `lib/netstandard2.0`. See O-8. |
 | R-10 | Surface churn is confined to `Direct.dll` under option C, so C-2 holds by construction. Reopens only if R-8 fails. |
 | R-14 | No binaries committed ⇒ no Git LFS rule needed. Reopens only if D-3 falls back to committing (LFS must precede the first binary commit). |
 | R-15 | Query-plan ABI still grows, but absorbing a new engine is now a `$(QueryPlanInteropVersion)` bump rather than a freeze. Residual concern moved to O-5. |
@@ -1073,6 +1073,7 @@ One line each — these IDs are referenced throughout the document.
 | O-3 | No type-forwarding facade needed under D-0 option C. |
 | O-4 | Direct types keep their assembly identity via an in-repo `Microsoft.Azure.Cosmos.Direct.csproj` (D-0 option C). |
 | O-7 | **Reference Direct version is `3.44.1`** — verified `Version=3.44.1.0`, `PublicKeyToken=31bf3856ad364e35`, 48 IVT grants. R-1 must land the import at 3.44.1 equivalence. |
+| O-8 | **`Microsoft.HybridRow` is the permanent last binary dependency**, and source-integrating it is out of scope (§1). The D-0 mechanism cannot be applied: msdata carries no HybridRow sources and consumes the package with compile assets *included* (unlike Direct, which it excludes), so there is nothing to import. Neither D-3's acquisition problem nor O-5's cadence problem applies — the package is public, listed and non-deprecated, and `$(HybridRowVersion)` has moved twice since 2020 (last on 2021-03-30). Adopting `1.1.0-preview4` is a separate decision outside this plan; it moves `Microsoft.Azure.Cosmos.Core` from `2.11.0.0` to `2.14.0.0`, an assembly-identity change on a DLL packed into `lib/`. |
 
 ---
 
