@@ -7,7 +7,7 @@
 
 **Goal:** Land the Direct source tree on `main` and **remove the `PackageReference` to the `Microsoft.Azure.Cosmos.Direct` package entirely** — the SDK compiles those sources instead of restoring the published assembly, and the native query-plan engine comes from the public **`Microsoft.Azure.Cosmos.QueryPlanInterop.Windows`** package on nuget.org (D-3).
 
-> **`Microsoft.Azure.Cosmos.Direct.dll` keeps shipping.** The assembly retains its existing identity in the nupkg, built from a new in-repo `Microsoft.Azure.Cosmos.Direct.csproj` rather than restored from nuget.org. What is removed is the **package dependency**, not the assembly — see D-0. Folding these types into `Client.dll` and dropping `Direct.dll` is rejected: it breaks the 48 friend assemblies (C-5) and pulls 147 public types into the SDK surface (C-2).
+> **`Microsoft.Azure.Cosmos.Direct.dll` keeps shipping**, at its existing identity, built from a new in-repo `Microsoft.Azure.Cosmos.Direct.csproj` rather than restored from nuget.org. What is removed is the **package dependency**, not the assembly — see D-0.
 
 ---
 
@@ -45,7 +45,7 @@
 
 Non-`.cs` files: `direct/msdata_sync.ps1`, `direct/rntbd2/HeadersTransportSerialization.tt`.
 
-> **Two more msdata-sourced files live *outside* this tree.** `msdata_sync.ps1` copies `RMResources.Designer.cs` and `RMResources.resx` to `$currentLocation\..` — i.e. `Microsoft.Azure.Cosmos/src/`, one level **above** `src/direct/`. Both exist on `msdata/direct` and **neither exists on `main`**, so phase 1a must bring them across. They are deliberately excluded from the §6 mapping (which covers only the 372 files that move into `Direct/`), but D-7's sync rewrite must still handle them — they are part of the msdata surface and drift the same way everything else does.
+> **Two more msdata-sourced files live *outside* this tree.** `msdata_sync.ps1` copies `RMResources.Designer.cs` and `RMResources.resx` to `Microsoft.Azure.Cosmos/src/`, one level **above** `src/direct/`. Both exist on `msdata/direct` and **neither exists on `main`**, so phase 1a must bring them across. They are excluded from the §6 mapping (which covers only the 372 files moving into `Direct/`), but D-7's sync rewrite must still handle them.
 
 ### 2.2 Namespace distribution
 
@@ -98,7 +98,7 @@ The namespace tree is *not* a usable folder taxonomy on its own — 74 % of file
 
 **Critical coupling:** the Direct nupkg is also the *only* source of the native assets that [Microsoft.Azure.Cosmos.targets](Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.targets) copies and that the SDK nupkg republishes under `runtimes/win-x64/native`: `Microsoft.Azure.Cosmos.ServiceInterop.dll`, `Cosmos.CRTCompat.dll`, `msvcp140.dll`, `vcruntime140.dll`, `vcruntime140_1.dll`. Deleting the `PackageReference` outright breaks the query-plan ServiceInterop path.
 
-> **The package is being discontinued.** There will be no Direct releases after the current one, so "keep a restore-only reference" is not a durable answer — it would pin this repo to a deprecated package indefinitely and trip Component Governance on every build. D-3 resolves this by replacing all five native assets with the single self-contained DLL from the separately published **`Microsoft.Azure.Cosmos.QueryPlanInterop.Windows`** package on public nuget.org.
+> **The package is being discontinued.** There will be no Direct releases after the current one, so a restore-only reference is not durable — it pins this repo to a deprecated package and trips Component Governance on every build. D-3 replaces all five natives with the single self-contained DLL from the public **`Microsoft.Azure.Cosmos.QueryPlanInterop.Windows`** package.
 
 ---
 
@@ -334,9 +334,7 @@ Every path below is relative to `Microsoft.Azure.Cosmos/src/`. Source is `direct
 
 > **Decision: option C.** The `Microsoft.Azure.Documents.*` types keep shipping from `Microsoft.Azure.Cosmos.Direct.dll`, built from this repo instead of restored from nuget.org. The produced nupkg's contents are unchanged. Two prerequisites apply and are recorded at the end of this section — **neither is optional, and neither is covered by §6's file mapping.**
 
-> **The nupkg already ships `Direct.dll`.** [csproj L167](Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj#L167) packs it into `lib/netstandard2.0`, so `Microsoft.Azure.Cosmos` contains two assemblies today and every customer already receives `Microsoft.Azure.Documents.*`. Option C does not start shipping anything new; it keeps emitting the same DLL from a new source home. **Option A is the change** — it removes `Direct.dll` from the nupkg.
-
-The highest-leverage decision in this document — D-1, D-4, §9.C and phases 3–5 all hang off it.
+> **The nupkg already ships `Direct.dll`.** [csproj L167](Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj#L167) packs it into `lib/netstandard2.0`, so the package contains two assemblies today and every customer already receives `Microsoft.Azure.Documents.*`. Option C keeps emitting the same DLL from a new source home; **option A is the change**, because it removes `Direct.dll` from the nupkg.
 
 **The constraint is assembly type identity, not file location.** Today `Microsoft.Azure.Documents.StoreResponse` has exactly one identity: `[Microsoft.Azure.Cosmos.Direct, Version=3.44.1, PublicKeyToken=…]`. If those types are recompiled into `Microsoft.Azure.Cosmos.Client.dll` while any consumer still references the old `Direct.dll`, the runtime sees **two unrelated types with the same name**: `CS0433` at compile time, `TypeLoadException` at load, or — worst — a silent `InvalidCastException` deep in a retry path. Affected consumers are every project in §2.4 plus every assembly in the `AssemblyKeys.cs` `InternalsVisibleTo` graph.
 
@@ -346,7 +344,7 @@ The highest-leverage decision in this document — D-1, D-4, §9.C and phases 3�
 | **B** — type-forwarding facade | Ship a `Direct.dll` containing only `[assembly: TypeForwardedTo]` entries | ⚠️ Public types only; fragile with `InternalsVisibleTo` + strong names | A *mitigation* for option A, not an architecture in its own right. This is §9.C-1. |
 | **C (adopted)** — same assembly, new source home | Add `Microsoft.Azure.Cosmos.Direct.csproj` **in this repo** producing the same `AssemblyName`, strong name and surface; `Client.csproj` takes a `ProjectReference` instead of a `PackageReference` | ✅ Zero change for any consumer | D-4, §9.C-1 and §9.C-4 become unnecessary. D-5 degrades to a `PackageReference` → `ProjectReference` swap. C-2 is satisfied by construction. |
 
-**Decision: C.** The stated goal is "Direct code editable in the same PR as SDK code." Option C delivers exactly that while every consumer keeps binding to the identical assembly identity — nobody outside this repo changes anything. Option A buys no additional capability and costs a customer-visible break plus a facade to carry for two minor versions.
+Option C delivers the stated goal — Direct code editable in the same PR as SDK code — while every consumer keeps binding to the identical assembly identity. Option A buys no additional capability and costs a customer-visible break plus a facade to carry for two minor versions.
 
 **Gating check — R-8.** Option C requires that delay-signing with [35MSSharedLib1024.snk](35MSSharedLib1024.snk) yields the same public key token as the shipped `Direct.dll`. The reference assembly is **3.44.1** (O-7):
 
@@ -358,13 +356,9 @@ Microsoft.Azure.Cosmos.Direct, Version=3.44.1.0, Culture=neutral, PublicKeyToken
 
 #### Prerequisite 1 — replicate the `InternalsVisibleTo` graph (R-17)
 
-**The friend-grant list is not in the source being imported.** Verified:
+**The friend-grant list is not in the source being imported.** `AssemblyKeys` is declared `internal` in the Direct tree and is **not defined anywhere on `main`** — it arrives from the package. [AssemblyInfo.cs](Microsoft.Azure.Cosmos/src/AssemblyInfo.cs) uses `AssemblyKeys.ProductPublicKey`, so `Client.dll` compiles against a type internal to `Direct.dll`, which only works because the shipped `Direct.dll` grants it `InternalsVisibleTo`. Yet across all **371** `.cs` files on `origin/msdata/direct` there are **zero** `InternalsVisibleTo` occurrences.
 
-- `AssemblyKeys` is declared `internal static class` in the Direct tree, and is **not defined anywhere on `main`** — it arrives from the package.
-- [AssemblyInfo.cs](Microsoft.Azure.Cosmos/src/AssemblyInfo.cs) uses `AssemblyKeys.ProductPublicKey`, so `Client.dll` compiles against a type that is *internal to* `Direct.dll`. That only works because the shipped `Direct.dll` grants `InternalsVisibleTo` to the client assembly.
-- Yet across all **371** `.cs` files on `origin/msdata/direct` there are **zero** `InternalsVisibleTo` occurrences.
-
-The attributes therefore live in msdata's build, outside the imported file set — the same blind spot as `RMResources.*` (R-13). Extracting them from the reference **3.44.1** assembly yields **48 friend assemblies** (the same count as 3.44.0), and most are *not* v3 SDK projects:
+The attributes live in msdata's build, outside the imported file set — the same blind spot as `RMResources.*` (R-13). Extracting them from the reference **3.44.1** assembly yields **48 friend assemblies**, most of which are *not* v3 SDK projects:
 
 | Group | Examples |
 | --- | --- |
@@ -377,9 +371,7 @@ The attributes therefore live in msdata's build, outside the imported file set �
 
 #### Prerequisite 2 — pin `AssemblyVersion` (R-18)
 
-The reference assembly is `Version=3.44.1.0` (O-7, verified). This repo stamps from `ClientOfficialVersion` ([Directory.Build.props L3](Directory.Build.props#L3)), currently `3.63.0`. **Assembly version is part of assembly identity**, so a source-built `Direct.dll` carrying `3.63.0.0` changes the identity anyway and .NET Framework consumers then need binding redirects — defeating much of why C was chosen.
-
-Set `<AssemblyVersion>3.44.1.0</AssemblyVersion>` explicitly on the new project and let `FileVersion` track the SDK. Trivial to do, easy to miss, and expensive to discover after release.
+The reference assembly is `Version=3.44.1.0` (O-7). This repo stamps from `ClientOfficialVersion` ([Directory.Build.props L3](Directory.Build.props#L3)), currently `3.63.0`. **Assembly version is part of assembly identity**, so a source-built `Direct.dll` carrying `3.63.0.0` changes the identity option C exists to preserve, and .NET Framework consumers then need binding redirects. Set `<AssemblyVersion>3.44.1.0</AssemblyVersion>` explicitly on the new project and let `FileVersion` track the SDK.
 
 #### Also verify
 
@@ -438,7 +430,7 @@ They belong on `Microsoft.Azure.Cosmos.Direct.csproj`, not on the SDK project �
 
 The import table is the decisive evidence: QueryPlanInterop is **statically linked against the CRT**, so `msvcp140` / `vcruntime140` / `vcruntime140_1` / `Cosmos.CRTCompat` are no longer needed at all. That closes the standing open item about sourcing the VC++ redistributables — they are not required, not merely relocatable.
 
-Both binaries carry the identical C++ implementation types (`ServiceInteropServiceProvider`, `DocDbObject<…>`, `TraceProviderManager`), and QueryPlanInterop exports all six externs declared in `ServiceInteropWrapper.cs`: `CreateServiceProvider`, `UpdateServiceProvider`, `GetPartitionKeyRangesFromQuery`, `…2`, `…3`, `…4`. Nothing in the v3 tree or the Direct tree references `Crc32ComputeInterop` / `Crc64ComputeInterop`, so the dropped exports cost nothing.
+Both binaries carry the identical C++ implementation types (`ServiceInteropServiceProvider`, `DocDbObject<…>`, `TraceProviderManager`), and QueryPlanInterop exports all six externs declared in `ServiceInteropWrapper.cs`. Nothing in either tree references the dropped `Crc32ComputeInterop` / `Crc64ComputeInterop` exports.
 
 #### The one mismatch — filename
 
@@ -492,21 +484,16 @@ No `NuGet.config`, no feed authentication, no pipeline acquisition step, no comm
 
 #### Future optimisation — cross-platform query plans (explicitly not phase 2)
 
-**Today ServiceInterop is Windows-x64 only; every other platform pays a gateway round trip for its query plan.** That is not a packaging accident — it is a hard runtime gate in a *shared msdata source file*, `CustomTypeExtensions.ByPassQueryParsing()`, whose own comment states it:
+**Today ServiceInterop is Windows-x64 only; every other platform pays a gateway round trip for its query plan.** That is a hard runtime gate in a *shared msdata source file*, `CustomTypeExtensions.ByPassQueryParsing()`:
 
 ```csharp
-// Bypass query parsing on 32 bit process on Windows and always on non-Windows(Linux/OSX) platforms or if interop assemblies don't exist.
-public static bool ByPassQueryParsing()
+if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || !ServiceInteropWrapper.Is64BitProcess || !ServiceInteropWrapper.AssembliesExist.Value)
 {
-    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || !ServiceInteropWrapper.Is64BitProcess || !ServiceInteropWrapper.AssembliesExist.Value)
-    {
-        return true;   // -> gateway query plan
-    }
-    return false;
+    return true;   // -> gateway query plan
 }
 ```
 
-The native now exists for the other platforms. All three packages are published on public nuget.org by `azure-sdk`, **at the same version 1.0.2**, with `projectUrl` pointing at this repo — so one `$(QueryPlanInteropVersion)` can pin all of them:
+The native now exists for the other platforms. All three packages are published on public nuget.org by `azure-sdk` **at the same version 1.0.2**, with `projectUrl` pointing at this repo, so one `$(QueryPlanInteropVersion)` can pin all of them:
 
 | Package | RIDs | Natives |
 | --- | --- | --- |
@@ -516,36 +503,20 @@ The native now exists for the other platforms. All three packages are published 
 
 Linux and macOS already ship **arm64**, which Windows does not — so this would also be the SDK's first arm64 client-side query-plan coverage.
 
-**Why it is not phase 2.** Phase 2 is a like-for-like swap that must stay behaviour-neutral: same platform, same code paths, one native replacing five. Enabling other platforms is a **behaviour change for every Linux and macOS customer** — query plans stop going to the gateway — and it is not merely a packaging change:
+**Why it is not phase 2.** Phase 2 must stay behaviour-neutral. Enabling other platforms is a **behaviour change for every Linux and macOS customer** — query plans stop going to the gateway — and the work is not just packaging: `ByPassQueryParsing()` and the `DllImport` name selection are **shared msdata files**, so relaxing the gate needs msdata sign-off under the §9.A-4 T0 policy; the three platforms ship four different native filenames against one hard-coded `DllImport` string; the targets file, pack block and pack assertion are all RID-guarded to `win` and would need per-RID branches; all five natives add ~**31 MB** versus 7.4 MB, arguing for RID-specific packages or an opt-in; and the §9.F F-3 smoke test is Windows-only, so cross-platform means a real test matrix — which is where the cost actually sits.
 
-- `ByPassQueryParsing()` and the `#if COSMOSCLIENT` `DllImport` name selection both live in **shared msdata files**. Relaxing the Windows gate is an Axis A divergence needing msdata sign-off under the §9.A-4 T0 policy, not a v3-local edit.
-- The `DllImport` library name is a single hard-coded string, but the three platforms ship four *different* native filenames. Either the wrapper learns per-platform names, or each RID-specific copy renames to one canonical name — the same `TargetPath` trick used for Windows, applied per RID.
-- [Microsoft.Azure.Cosmos.targets](Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.targets#L28) and the pack block are both RID-guarded to `win` today. Both need per-RID branches, and the pack assertion (D-3 condition 3) must then assert per-RID rather than once.
-- Shipping all five natives adds roughly **31 MB** to the nupkg versus 7.4 MB for Windows alone. That argues for RID-specific SDK packages or an opt-in rather than an unconditional add.
-- The §9.F F-3 interop smoke test runs on Windows only. Cross-platform means a real test matrix — which is where the actual cost sits, not in the MSBuild.
+**Sequencing.** Land phase 2 Windows-only, then treat cross-platform as its own change with its own changelog entry, test matrix and msdata agreement. Revisit once O-5 settles provenance: a ~2-month cadence across five natives is a materially larger standing commitment than across one.
 
-**Sequencing.** Land phase 2 Windows-only and behaviour-neutral. Treat cross-platform as its own change with its own changelog entry, test matrix and msdata agreement on the shared-file edit. Revisit once O-5 settles provenance: absorbing a ~2-month cadence across five natives is a materially larger standing commitment than across one.
-
-**Verified origin.** The natives ship inside the `Microsoft.Azure.Cosmos.Direct` nupkg. Contents of the restored 3.44.0 package:
-
-```
-build\netstandard2.0\Microsoft.Azure.Cosmos.Direct.targets
-lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll
-runtimes\win-x64\native\Microsoft.Azure.Cosmos.ServiceInterop.dll
-runtimes\win-x64\native\Cosmos.CRTCompat.dll
-runtimes\win-x64\native\msvcp140.dll
-runtimes\win-x64\native\vcruntime140.dll
-runtimes\win-x64\native\vcruntime140_1.dll
-```
-
-They reach the SDK nupkg in four hops, none of which v3 owns **today**:
+**Verified origin.** The five natives ship inside the `Microsoft.Azure.Cosmos.Direct` nupkg alongside `lib/netstandard2.0/Microsoft.Azure.Cosmos.Direct.dll` and a `build/netstandard2.0/Microsoft.Azure.Cosmos.Direct.targets`. They reach the SDK nupkg in four hops, none of which v3 owns **today**:
 
 1. msdata builds them and publishes them in the Direct nupkg.
-2. That package's **own** `build/netstandard2.0/Microsoft.Azure.Cosmos.Direct.targets` declares `ContentWithTargetPath` items with `CopyToOutputDirectory=PreserveNewest`, landing the 5 DLLs in `$(OutputPath)`.
+2. That package's **own** targets file declares `ContentWithTargetPath` items with `CopyToOutputDirectory=PreserveNewest`, landing the 5 DLLs in `$(OutputPath)`.
 3. [Microsoft.Azure.Cosmos.csproj](Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj#L155-L159) re-packs them *from* `$(OutputPath)` into `runtimes/win-x64/native`.
 4. [Microsoft.Azure.Cosmos.targets](Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.targets#L29-L54) repeats the copy in the customer's build, adding a RID guard the Direct-side targets lacks.
 
-**Hops 1 and 2 are what this decision replaces.** Hop 2 happens only because the Direct package's `build` assets are imported — which is why `compile` and `all` were never interchangeable, and why `msdata/direct` uses `compile`:
+**Hops 1 and 2 are what this decision replaces**, with a local `ContentWithTargetPath` block. **Hops 3 and 4 are unchanged** — both already read from `runtimes/win-x64/native` and need no edit beyond dropping the four dead entries.
+
+Hop 2 happens only because the Direct package's `build` assets are imported — which is why `compile` and `all` were never interchangeable, and why `msdata/direct` uses `compile`:
 
 | Setting | `lib/` compile ref | `build/` targets | Natives reach `$(OutputPath)`? |
 | --- | --- | --- | --- |
@@ -554,40 +525,21 @@ They reach the SDK nupkg in four hops, none of which v3 owns **today**:
 
 `PrivateAssets="All"` only blocks *transitive* flow to downstream consumers; it does not suppress the targets import for this project.
 
-The package reference replaces **hops 1 and 2** with a local `ContentWithTargetPath` block in `Microsoft.Azure.Cosmos.csproj`. **Hops 3 and 4 are unchanged** — the pack block and the customer-side targets already read from `runtimes/win-x64/native` and need no edit beyond dropping the four dead entries.
-
 #### Why only one build consumes this
 
-`ProjectRef=True` drops *both* the Direct `PackageReference` ([csproj L120](Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj#L120)) **and** the entire native pack/copy `ItemGroup` ([csproj L154](Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj#L154)). msdata reads the shared files from their original location and supplies its own natives, so it needs nothing from this decision — **the public v3 build is the sole consumer.** The shipped nupkg stays self-contained: [csproj L155-159](Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj#L155-L159) re-packs from `$(OutputPath)` into `runtimes/win-x64/native`.
+`ProjectRef=True` drops *both* the Direct `PackageReference` ([csproj L120](Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj#L120)) **and** the entire native pack/copy `ItemGroup` ([csproj L154](Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj#L154)). msdata reads the shared files from their original location and supplies its own natives, so it needs nothing from this decision — **the public v3 build is the sole consumer.**
 
 #### Why the native needs an external version pin
 
-The native churned on every Direct release and carries no usable version of its own:
-
-| Direct | Bytes | PE build stamp | SHA-256 (first 12) |
-| --- | ---: | --- | --- |
-| 3.39.1 | 10,007,608 | 2025-05-30 | `6AC914A72A29` |
-| 3.41.2 | 10,969,120 | 2025-11-03 | `B6201DA81DBA` |
-| 3.41.3 | 10,968,648 | 2025-11-12 | `C468C2BE9B10` |
-| 3.42.0 | 8,767,560 | 2026-02-06 | `338DD8D7C244` |
-| 3.42.2 | 8,767,560 | 2026-02-28 | `909F6328C991` |
-| 3.42.4 | 8,767,520 | 2026-04-08 | `EA373CA16E59` |
-| 3.43.0 | 8,925,496 | 2026-05-02 | `93C45111B349` |
-| 3.43.1 | 8,925,504 | 2026-05-09 | `6A8F38A57CF7` |
-| 3.43.2 | 9,011,000 | 2026-05-21 | `44F7A8F9D154` |
-| 3.44.0 | 8,882,024 | 2026-06-22 | `7B7260C4B53A` |
-
-Ten releases, ten distinct binaries, sizes spanning 2.2 MB — and `FileVersion` frozen at `2.14.0.0` across every one of them. The native therefore carries **no usable version coordinate of its own**, which is why `$(DirectVersion)` was the only pin available, and why `$(QueryPlanInteropVersion)` must now inherit that role (§9.F F-2).
+Ten consecutive Direct releases (3.39.1 → 3.44.0) shipped **ten distinct binaries**, spanning 8.77–10.97 MB, each with a different SHA-256 — while `FileVersion` stayed frozen at `2.14.0.0` across every one. The native therefore carries **no usable version coordinate of its own**, which is why `$(DirectVersion)` was the only pin available and why `$(QueryPlanInteropVersion)` must inherit that role (§9.F F-2).
 
 All five binaries are individually Authenticode-signed by Microsoft, and NuGet package signing carries that provenance end to end — which is what makes C-7 satisfiable without a checked-in hash manifest.
-
-**Failure mode if this is got wrong is silent:** the nupkg simply ships without natives, `ServiceInteropWrapper.AssembliesExist` goes false, and query planning falls back to the gateway path at runtime with no build error. That is why condition 3 is an assertion rather than a test.
 
 `<DirectVersion>` is removed from [Directory.Build.props](Directory.Build.props#L6) in phase 5, once D-0 has also landed; `<QueryPlanInteropVersion>` takes its place as the native pin.
 
 #### What O-5 decides
 
-Discontinuing **Direct-the-managed-assembly** is not the same as discontinuing **ServiceInterop-the-native-query-engine**, and the separately published `QueryPlanInterop` package is evidence the native is still a live artifact. The query-plan ABI is demonstrably still growing: `GetPartitionKeyRangesFromQuery4` takes a `vectorEmbeddingPolicy`, and `PartitionKeyRangesApiOptions` carries `bHybridSearchSkipOrderByRewrite`, `eGeospatialType` and `bUseSystemPrefix`, all added for vector, hybrid and geospatial search. The struct's reserved padding exists so it can keep growing.
+Discontinuing **Direct-the-managed-assembly** is not the same as discontinuing **ServiceInterop-the-native-query-engine**; the separately published `QueryPlanInterop` package is evidence the native is still live. The ABI is still growing — `GetPartitionKeyRangesFromQuery4` takes a `vectorEmbeddingPolicy`, and `PartitionKeyRangesApiOptions` carries `bHybridSearchSkipOrderByRewrite`, `eGeospatialType` and `bUseSystemPrefix` — and the struct's reserved padding exists so it can keep growing.
 
 The open question is **which ServiceInterop build `QueryPlanInterop` 1.0.2 corresponds to**. Cadence is settled at ~2 months, but the two artifacts have independent version schemes, so F-2's pin is only meaningful once that mapping is known. Does not block phases 1–4.
 
@@ -626,15 +578,9 @@ Keep `NU5125` in the csproj (it is a packaging warning, not source).
 
 > **Direction: export, not import.** With v3 `main` as upstream, the steady state is an **export** from `src/Direct/` to msdata. The rewrite below still has to be built — phases 1–4 need inbound sync to absorb msdata's current state — but it is transitional, and phase 5 replaces it with the export path. Design the manifest and provenance report to work in both directions so the flip is a configuration change rather than a second tool.
 
-`tools/msdata-direct/msdata_sync.ps1` must learn the new destination layout. Add a `$fileToFolderMap` table generated from §6 so a copied file lands in the right folder instead of the flat root. Files new on the msdata side that are not in the map should land in a `Direct/_Unsorted/` staging folder and fail the build loudly, forcing an explicit classification.
+`tools/msdata-direct/msdata_sync.ps1` must learn the new destination layout. Add a `$fileToFolderMap` table generated from §6 so a copied file lands in the right folder instead of the flat root. Files new on the msdata side that are not in the map land in `Direct/_Unsorted/` and fail the build loudly, forcing explicit classification.
 
-The rewrite must also fix P-8/P-9/P-10, which requires inverting the script's current logic:
-
-1. **Walk the 13 msdata source directories recursively** and discover every file, rather than iterating what v3 already has (fixes P-8).
-2. Look each file up in `$fileToFolderMap` **by file name only**, never by msdata source path, so the v3 taxonomy stays decoupled from msdata's (P2).
-3. Copy into the mapped folder including nested destinations, so `Compat/AzureCore/`, `Telemetry/` and `FaultInjection/` are covered like everything else (fixes P-9).
-4. Emit a provenance report — msdata source dir → target folder, per file (fixes P-10). This is also the input to the §9.D drift manifest.
-5. Map `SharedFiles/Rntbd2/TransportClient.cs` onto `RntbdTransportClient.cs`, replacing today's hard-coded special case.
+The rewrite must also fix P-8/P-9/P-10, which requires inverting the script's current logic: **walk the 13 msdata source directories recursively** rather than iterating what v3 already has (P-8); look each file up **by file name only**, never by msdata source path, so the v3 taxonomy stays decoupled (P2); copy into the mapped folder including nested destinations, so `Compat/AzureCore/`, `Telemetry/` and `FaultInjection/` are covered (P-9); emit a provenance report of msdata source dir → target folder per file (P-10), which is also the input to the §9.D drift manifest; and map `SharedFiles/Rntbd2/TransportClient.cs` onto `RntbdTransportClient.cs`, replacing today's hard-coded special case.
 
 A machine-readable projection of §6 is generated by [scratch/Generate-DirectLayout.ps1](scratch/Generate-DirectLayout.ps1) into [scratch/direct-layout.json](scratch/direct-layout.json) (31 folders, 372 files, reconciled against `origin/msdata/direct`). Both move under `tools/msdata-direct/` when this lands. **§6 stays the source of truth** — the JSON is regenerated from it, never hand-edited, so the two cannot drift.
 
@@ -742,8 +688,8 @@ Delivered as **two separate PRs**. Mixing a 373-file re-baseline with a 373-file
 **Do not:**
 
 - `git merge origin/msdata/direct` — see the topology table.
-- Import from `msdata/direct`, `msdata/direct_local` (350 files) or `msdata/direct_410_1022` (363 files). All are stale; the release branch is the only source. This clone carries four msdata-ish refs and picking the wrong one is silent.
-- Read C-3 (`git mv` only) as applying here. It governs the **1b restructure**, where `git log --follow` matters. The 1a files have no v3 history to preserve — theirs lives in msdata, and on `msdata/direct` until phase 5 retires it.
+- Import from `msdata/direct`, `msdata/direct_local` (350 files) or `msdata/direct_410_1022` (363 files). All are stale; the release branch is the only source, and this clone carries four msdata-ish refs, so picking the wrong one is silent.
+- Read C-3 (`git mv` only) as applying here. It governs the **1b restructure**, where `git log --follow` matters. The 1a files have no v3 history to preserve.
 
 **1b — Restructure.** Pure `git mv` into the §5/§6 tree. Zero content edits except the single `RntbdTransportClient.cs` rename. Add `Direct/README.md`, `Direct/.editorconfig` carrying the scoped analyzer suppressions (**D-6**), and the `CODEOWNERS` entry.
 
@@ -763,7 +709,7 @@ Also in this phase, because both must precede any edit to the Direct sources:
 
 ### Phase 2 — ServiceInterop and the native assets
 
-Deliberately **before** phase 3: prove the natives still flow from their new home while the managed reference is neutralised but not yet removed. Doing it the other way round means debugging two changes at once, and the failure mode is silent (R-11).
+Deliberately **before** phase 3: prove the natives still flow from their new home while the managed reference is neutralised but not yet removed. The other order means debugging two changes at once, and the failure mode is silent (R-11).
 
 - [ ] **Confirm provenance and cadence** of `Microsoft.Azure.Cosmos.QueryPlanInterop.Windows` with the query-engine owner: which ServiceInterop build does 1.0.2 correspond to? Cadence is settled at ~2 months (O-5); the mapping is not. (D-3 condition 6.)
 - [ ] **Add `<QueryPlanInteropVersion>`** to [Directory.Build.props](Directory.Build.props) as the pinned native coordinate, replacing `$(DirectVersion)`.
@@ -773,8 +719,6 @@ Deliberately **before** phase 3: prove the natives still flow from their new hom
 - [ ] **Pack-time assertion** that `runtimes/win-x64/native/Microsoft.Azure.Cosmos.ServiceInterop.dll` is present — an assertion, not a test (R-11) — **scoped to Windows RIDs**. A mis-set `TargetPath` fails silently; this is the only thing that catches it.
 - [ ] **Functional equivalence gate** — full query suite (unit + emulator, including ODE, hybrid-search and vector paths) green against the new native with `AssembliesExist == true`. 7.40 MB vs 8.47 MB is a different build (D-3 condition 5).
 - [ ] **§9.F axis-D guards:** tier `ServiceInteropWrapper.cs` as T0, pin it to `$(QueryPlanInteropVersion)` (F-2), assert `COSMOSCLIENT` is defined (F-4), and extend the interop smoke test to exercise each of the six P/Invoke entry points.
-
-> The package is public, so every build and every contributor gets the native identically — a plain `PackageReference` and nothing else.
 
 > The existing `AssembliesExist` check protects against the native DLL being **absent**, not against it being **present but incompatible**. Phase 3 makes the managed half editable here while the native half moves on its own release cadence, so incompatibility becomes reachable for the first time. That is what F-1/F-2/F-3 exist to catch.
 
@@ -807,7 +751,7 @@ The baseline captured in phase 1 becomes enforced here.
 - [ ] **§9.B wire golden-file tests** — RNTBD token IDs, HTTP header constants, `StatusCodes`/`SubStatusCodes` numerics, `OperationType`/`ResourceType` numerics, `JSonSerializable` property names.
 - [ ] **§9.A full tiering** — extend the phase-1 minimal manifest to all 372 files, plus the non-`COSMOSCLIENT` compile canary (A-6). The canary matters **more** under O-1: v3 developers now own the `#else` arms they never compile.
 - [ ] **§9.E Gate 2** — v3 source built inside msdata. **The authoritative gate** under v3-primary; start nightly, graduate to blocking once stable.
-- [ ] **§9.E Gate 3** — msdata source built inside v3. Nightly and **informational**; it measures msdata's lag rather than gating v3.
+- [ ] **§9.E Gate 3** — v3 built against msdata `master` in the clone repo. Authoritative for the compile target; start nightly, graduate to blocking once stable.
 - [x] **§9.C-2 ApiCompat** — not needed: D-0 option C satisfies binary compatibility by construction.
 
 **Exit:** §9.D's minimum viable set is green and wired into CI.
@@ -855,7 +799,7 @@ Phase 5 is the first customer-observable change under D-0 option A (and, under o
 
 ## 9. Backward Compatibility & Divergence Strategy
 
-Once `main` compiles the Direct sources directly, a v3 developer can edit a file in a way that is **incompatible with the msdata copy** — and nothing will stop them. That divergence has three independent failure modes, each needing its own mechanism.
+Once `main` compiles the Direct sources directly, a v3 developer can edit a file in a way that is **incompatible with the msdata copy** — and nothing will stop them. That divergence has four independent failure modes, each needing its own mechanism.
 
 | Axis | Question | Blast radius |
 | --- | --- | --- |
@@ -887,7 +831,7 @@ An "incompatible" change becomes a *guarded* change. The file stays **byte-ident
 
 Use this whenever the change is additive-for-v3 or behavioural. Prefer it over every other option.
 
-**Limits, stated honestly:** a guard cannot help when both sides need the *same* member with *different* shape and the server actually calls it — you end up maintaining an `#else` branch that v3 CI never compiles (see A-6). Guards also rot. Cap their use with the tier policy in A-4.
+**Limits:** a guard cannot help when both sides need the *same* member with *different* shape and the server actually calls it — you end up maintaining an `#else` branch that v3 CI never compiles (see A-6). Guards also rot. Cap their use with the tier policy in A-4.
 
 #### A-2. Partial-class sidecars
 
@@ -902,9 +846,7 @@ Zero drift in the mirrored file, and the addition is reviewable in isolation. Be
 
 #### A-3. Seam interfaces — the established in-repo precedent
 
-`IStoreModelExtension`, `IAddressResolverExtension`, `IServiceConfigurationReaderExtension` and `IChaosInterceptor` all exist precisely so v3 (and FaultInjection) can extend Direct behaviour without editing Direct types. When a change is "v3 needs different behaviour here", the first question should be *"can this be a seam?"* — add a narrow interface upstream, implement it in `src/` (not `src/Direct/`). Cost is one small upstream PR; benefit is permanent zero drift.
-
-Related no-drift options: extension methods in a `src/`-side static class, or an `internal` decorator wrapping the Direct type.
+`IStoreModelExtension`, `IAddressResolverExtension`, `IServiceConfigurationReaderExtension` and `IChaosInterceptor` all exist precisely so v3 (and FaultInjection) can extend Direct behaviour without editing Direct types. When a change is “v3 needs different behaviour here”, the first question should be *“can this be a seam?”* — add a narrow interface upstream, implement it in `src/` (not `src/Direct/`). Cost is one small upstream PR; benefit is permanent zero drift. Related no-drift options: extension methods in a `src/`-side static class, or an `internal` decorator wrapping the Direct type.
 
 #### A-4. Tier the files — not all 372 are equal
 
@@ -916,7 +858,7 @@ Divergence policy should depend on who consumes the file. Record the tier in the
 | **T1 — Shared implementation** | Transport, Store, Routing, Retry, Session, Diagnostics | Divergence allowed **only** via A-1/A-2/A-3, and only with a manifest drift entry naming an owner + backport issue. |
 | **T2 — Client-only** | `ServiceModel/Client/`, `Telemetry/`, `Compat/`, `FaultInjection/`, most of `Resources/Settings` | v3 owns them. Drop from the sync map entirely — they stop being "shared files". |
 
-Tiering is what turns "the whole folder is untouchable" into "1 in 4 files is untouchable", which is the difference between a policy people follow and one they route around.
+Tiering turns “the whole folder is untouchable” into “1 in 4 files is untouchable”, which is the difference between a policy that is followed and one that is routed around.
 
 #### A-5. Drift manifest + CI gate
 
@@ -932,19 +874,17 @@ Tiering is what turns "the whole folder is untouchable" into "1 in 4 files is un
 }
 ```
 
-A `verify-direct-drift` CI job rehashes every file and fails when a T0/T1 file changed without a matching `drift` record. This is the mechanism that makes divergence *loud* — everything else is convention.
+A `verify-direct-drift` CI job rehashes every file and fails when a T0/T1 file changed without a matching `drift` record. This is what makes divergence *loud* — everything else is convention.
 
 #### A-6. Compile canary for the non-`COSMOSCLIENT` branch
 
-**Today, every `#if !COSMOSCLIENT` block in the repo is dead code that is never compiled by v3 CI.** It can rot for months and only explode at the next sync. Fix: add a *build-only* project
+**Every `#if !COSMOSCLIENT` block in the repo is dead code that v3 CI never compiles**, so it can rot for months and only explode at the next sync. Fix: add a *build-only* project
 
 ```
 Microsoft.Azure.Cosmos/tests/Direct.ServerShape.Canary/Direct.ServerShape.Canary.csproj
 ```
 
-that globs the same `src/Direct/**/*.cs` with `COSMOSCLIENT` **not** defined, and is only required to compile (never run, never packed). Server-only types it can't resolve get thin stubs under `Canary/Stubs/`. Even a partial canary catches the common case — a v3 developer editing a shared method and breaking the `#else` arm.
-
-Start it as `ContinueOnError` and ratchet.
+that globs the same `src/Direct/**/*.cs` with `COSMOSCLIENT` **not** defined, and is only required to compile (never run, never packed). Server-only types it can't resolve get thin stubs under `Canary/Stubs/`. Even a partial canary catches the common case — a v3 developer editing a shared method and breaking the `#else` arm. Start it as `ContinueOnError` and ratchet.
 
 #### A-7. Sync becomes a 3-way merge, not a copy
 
@@ -952,12 +892,12 @@ Start it as `ContinueOnError` and ratchet.
 
 `msdata_sync.ps1` today is `Copy-Item -Force` — it silently destroys local changes. Two ways out:
 
-- **Vendor baseline branch (recommended for sustained drift).** Keep a `direct-upstream` branch that only ever receives verbatim msdata copies. Sync = commit to `direct-upstream`, then `git merge` it into the feature branch. Git does a real 3-way merge and surfaces conflicts on exactly the diverged hunks. Same shape as `git subtree`.
-- **Patch queue (recommended if drift should stay small).** Store local deltas as `.patch` files under `src/Direct/.sync/patches/`. Sync = copy verbatim, then re-apply the queue. A patch that no longer applies is a loud, actionable signal, and the queue's size is a visible drift budget.
+- **Vendor baseline branch** (for sustained drift). Keep a `direct-upstream` branch that only ever receives verbatim msdata copies; sync = commit there, then `git merge` into the feature branch. Git does a real 3-way merge and surfaces conflicts on exactly the diverged hunks. Same shape as `git subtree`.
+- **Patch queue** (if drift should stay small). Store local deltas as `.patch` files under `src/Direct/.sync/patches/`; sync = copy verbatim, then re-apply. A patch that no longer applies is a loud signal, and the queue's size is a visible drift budget.
 
 #### A-8. Explicit fork — the escape hatch
 
-When a file genuinely must diverge permanently, **move it out of `src/Direct/`** into `src/` proper and delete it from the sync map. An explicit fork with a one-line "forked from msdata `<path>` at `<sha>` because `<reason>`" header beats indefinite silent drift. Requires the manifest entry to be retired, so it shows up in review.
+When a file must diverge permanently, **move it out of `src/Direct/`** into `src/` proper and delete it from the sync map. An explicit fork with a one-line “forked from msdata `<path>` at `<sha>` because `<reason>`” header beats indefinite silent drift, and retiring the manifest entry makes it show up in review.
 
 ### 9.B — Protecting wire & serialization compatibility
 
@@ -969,15 +909,15 @@ Axis B is the one that causes outages, and no mechanism above catches it on its 
 - `OperationType` / `ResourceType` numeric values (they are serialized).
 - JSON property names for every `JSonSerializable`-derived type in `Resources/` and `Resources/Settings/` (reflect over `[JsonProperty]` / constant name fields, compare to a checked-in baseline).
 
-Each is a cheap reflection test over a `.baseline.txt` file. Updating a baseline is then a deliberate, reviewable act — which is exactly the property that's missing today.
+Each is a cheap reflection test over a `.baseline.txt` file, which makes updating a baseline a deliberate, reviewable act.
 
 ### 9.C — Binary compatibility for `Direct.dll` consumers
 
 **Contingency only.** D-0 option C keeps `Microsoft.Azure.Cosmos.Direct.dll` in the nupkg at its existing identity, so none of this is needed on the planned path. It applies only if that assembly ever stops being packed — recorded here so the cost of reversing D-0 is visible.
 
-- **C-1 — Type-forwarding facade.** Ship a `Microsoft.Azure.Cosmos.Direct.dll` containing only `[assembly: TypeForwardedTo(typeof(...))]` for every previously-public `Microsoft.Azure.Documents.*` type, forwarding into `Microsoft.Azure.Cosmos.Client`. Must be built from *this* repo (otherwise the dependency is circular) and must keep the **same strong-name identity** — the public keys are already in `Direct/AssemblyKeys.cs`. Keep it for at least two minor versions, then remove with a `Breaking Changes` changelog entry.
-- **C-2 — ApiCompat baseline.** Not required. D-0 option C keeps the `Microsoft.Azure.Documents.*` surface in its own assembly at its own identity, so binary compatibility holds by construction rather than by comparison.
-- **C-3 — `InternalsVisibleTo` audit.** Enumerate every assembly granted access via `AssemblyKeys.cs` before removing the Direct assembly; each one is a consumer that must be migrated or facaded.
+- **C-1 — Type-forwarding facade.** Ship a `Direct.dll` containing only `[assembly: TypeForwardedTo(…)]` for every previously-public `Microsoft.Azure.Documents.*` type, forwarding into `Microsoft.Azure.Cosmos.Client`. Must be built from *this* repo (otherwise the dependency is circular) and must keep the **same strong-name identity**. Keep it for at least two minor versions, then remove with a `Breaking Changes` changelog entry.
+- **C-2 — ApiCompat baseline.** Not required: option C keeps the surface in its own assembly at its own identity, so binary compatibility holds by construction.
+- **C-3 — `InternalsVisibleTo` audit.** Enumerate every assembly granted access via `AssemblyKeys.cs` before removing the Direct assembly; each is a consumer that must be migrated or facaded.
 - **C-4 — Binding redirects.** .NET Framework consumers with an existing `assemblyBinding` entry for `Microsoft.Azure.Cosmos.Direct` need guidance in the release notes.
 
 ### 9.D — Recommended minimum viable set
@@ -1052,7 +992,7 @@ Without it the clone repo must carry a patch against the csproj, and a patch tha
 
 ### 9.F — Managed/native ABI compatibility (Axis D)
 
-**This migration creates a failure mode that does not exist today.** `ServiceInteropWrapper.cs` is the *managed half* of the query-plan interop layer — 346 lines carrying **12 `[DllImport]` declarations** over **6 extern entry points**, with `CallingConvention.Cdecl` and explicit marshalling attributes. Each entry point is declared twice behind `#if COSMOSCLIENT`, selecting `Microsoft.Azure.Cosmos.ServiceInterop.dll` (v3) or the V2-SDK name `Microsoft.Azure.Documents.ServiceInterop.dll`. Only the v3 name is ever shipped — see F-4.
+**This migration creates a failure mode that does not exist today.** `ServiceInteropWrapper.cs` is the *managed half* of the query-plan interop layer — 346 lines carrying **12 `[DllImport]` declarations** over **6 extern entry points**, with `CallingConvention.Cdecl` and explicit marshalling attributes. Each entry point is declared twice behind `#if COSMOSCLIENT`, selecting the v3 or V2-SDK DLL name; only the v3 name is ever shipped (F-4).
 
 After this migration the two halves have **different lifecycles**:
 
@@ -1145,7 +1085,6 @@ One line each — these IDs are referenced throughout the document.
 - [ ] Produced `.nuspec` dependency list is unchanged versus the previous release — Direct's three `PackageReference`s did not leak into the SDK's transitive graph (D-0 “also verify”).
 - [ ] Produced nupkg does **not** contain `Direct.dll` and the same types compiled into `Client.dll` (P-11).
 - [ ] `-p:UseDirectSource=false` still produces byte-identical artifacts to the previous release, until phase 3 removes the switch.
-- [ ] Gate 1 (§9.E) green: source-built Direct surface matches `contracts/DirectSDKAPI.json`.
 - [ ] One preview release shipped on the source-built path before GA.
 - [ ] `RMResources.Designer.cs` and `RMResources.resx` present in `Microsoft.Azure.Cosmos/src/` (R-13).
 - [ ] ServiceInterop smoke test passes with `AssembliesExist == true`, exercising each P/Invoke entry point (§9.F F-3) — it must not silently pass via the gateway fallback.
