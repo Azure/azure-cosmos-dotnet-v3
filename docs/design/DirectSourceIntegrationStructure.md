@@ -789,6 +789,7 @@ Deliberately **before** phase 3: prove the natives still flow from their new hom
 - [ ] **D-2** — collapse the `ProjectRef` dual-mode switch.
 - [ ] Add the three package references the Direct sources need (see D-1).
 - [ ] **Re-express `UseDirectSource` for the split-project shape.** The phase-1 form (`<Compile Remove="Direct/**/*.cs" />`) stops meaning anything once the sources move into `Direct.csproj`. Replace it with a `PackageReference` ↔ `ProjectReference` toggle, or the escape hatch silently stops working.
+- [ ] **Carry `$(DirectSourceRoot)` onto `Direct.csproj`** so the §9.E clone repo can still substitute msdata `master` sources after the split. Same hazard as `UseDirectSource` — implicit globbing moves with the sources, and the override has to move with it.
 - [ ] Flip `UseDirectSource` to default `true`; keep `false` as an escape hatch.
 - [ ] **D-5** — unhook downstream projects (FaultInjection, CTL, Benchmark, 4 test projects). Under option C this is a reference swap, not a migration.
 - [ ] **D-4** — *only under D-0 option A*: stop packing the restored `Direct.dll` and ship the §9.C-1 facade.
@@ -864,6 +865,8 @@ Once `main` compiles the Direct sources directly, a v3 developer can edit a file
 | **D — Managed/native ABI compat** | Do the `[DllImport]` signatures in `ServiceInteropWrapper.cs` still match the native `ServiceInterop.dll` they bind to? | `EntryPointNotFoundException`, or silent memory corruption. **New failure mode created by this migration** — see §9.F. |
 
 ### 9.A — Staying source-compatible with msdata
+
+> **The mirroring obligation.** A change to a shared file in this repo is not finished until the identical change is landed in the msdata CosmosDB repo. v3 being upstream (O-1) sets the *direction* of the flow, not an exemption from it — both copies must stay reconcilable, and a v3-only edit that never reaches msdata is drift however correct it is. Concretely: a PR touching a T0 or T1 file under `src/Direct/` must carry either **(a)** a link to the corresponding msdata PR, or **(b)** a `drift` record in the A-5 manifest naming an owner and a backport issue. “I'll sync it later” is (b) without the paperwork, and it is the exact failure this section exists to prevent.
 
 The rule of thumb: **express divergence, don't fork it.** Ranked by preference.
 
@@ -945,7 +948,7 @@ Start it as `ContinueOnError` and ratchet.
 
 #### A-7. Sync becomes a 3-way merge, not a copy
 
-> **Applies to the catch-up window only.** v3 is upstream, so the steady state is an **export** from `main` to msdata (D-7), not an import. But phases 1–4 still have to absorb msdata's current state — the branch is two releases stale (P-12) and the merge-base is from Oct 2022 (R-1) — so inbound sync remains real work until the export direction is live. Retire these mechanisms in phase 5.
+> **Applies to the catch-up window only.** v3 is upstream, so the steady state is an **export** from `main` to msdata (D-7), not an import. But phases 1–4 still have to absorb msdata's current state — the branch is two releases stale (P-12) and the merge-base is from Oct 2022 (R-1) — so inbound sync remains real work until the export direction is live. Retire the *merge machinery* below in phase 5. The inbound **signal** does not retire: §9.E Gate 3 keeps compiling v3 against msdata `master` permanently, because that is what makes `master` the reference copy rather than ours.
 
 `msdata_sync.ps1` today is `Copy-Item -Force` — it silently destroys local changes. Two ways out:
 
@@ -987,7 +990,7 @@ If only some of this gets built, build these five — they cover the failure mod
 4. **A-7 merge-based sync** — makes the *catch-up* syncs during phases 1–4 a merge instead of a data-loss event. Retired in phase 5 once the export direction (D-7) is live.
 5. **F-1 — tier `ServiceInteropWrapper.cs` as T0** (§9.F). A P/Invoke signature drift compiles cleanly and fails at runtime; this is the cheapest possible guard against it.
 
-A-1/A-2/A-3 need no tooling at all; they just need to be written down as the house rules in `src/Direct/README.md`.
+A-1/A-2/A-3 need no tooling at all; they just need to be written down as the house rules in `src/Direct/README.md` — together with the §9.A mirroring obligation, which is the one rule in this section that a contributor has to know *before* opening the PR rather than after CI fails.
 
 ### 9.E — Cross-repo compile gates
 
@@ -996,14 +999,56 @@ A-1/A-2/A-3 need no tooling at all; they just need to be written down as the hou
 | Gate | What it does | Cost | Catches |
 | --- | --- | --- | --- |
 | **1 — Surface baseline** *(in-repo, every PR)* | Snapshot the Direct **3.44.1** API surface into `contracts/DirectSDKAPI.json` using the existing [ContractEnforcement](Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts/ContractEnforcement.cs) machinery, then diff the source-built assembly against it | Low — no cross-repo access | Accidental surface changes to Direct types made from v3. Subsumes §9.C-2 |
-| **2 — v3 source built inside msdata** *(nightly)* | Drop `src/Direct/**` into the msdata CosmosDB build, compile, run msdata's Direct tests | Needs msdata agents + a cross-org service connection | v3-side edits that break the backend build or behaviour — the Axis A failure §9.A only *discourages* |
-| **3 — msdata source built inside v3** *(nightly)* | Pull msdata's current Direct source, build v3 against it, run v3's suite, report drift as a file-level diff | Same | msdata-side changes v3 has not absorbed; keeps the sync backlog continuously visible |
+| **2 — v3 source built inside msdata** *(nightly)* | Drop `src/Direct/**` into the msdata CosmosDB build at **`master`**, compile, run msdata's Direct tests | Needs msdata agents + a cross-org service connection | v3-side edits that break the backend build or behaviour — the Axis A failure §9.A only *discourages* |
+| **3 — v3 built against msdata `master`** *(nightly)* | Pull the Direct shared files from **`master` of the msdata CosmosDB repo** and build v3 against *those* rather than against the in-repo copy; run v3's suite, report drift as a file-level diff | Same | v3 code that compiles only against its own copy; msdata-side changes v3 has not absorbed. Keeps the sync backlog continuously visible |
 
 **Build Gate 1 first.** It is entirely in-repo, reuses tooling that already exists, and is independently valuable even if the migration stalls — a committed Direct surface baseline gives drift detection today. It mirrors the proven NuGet-surface parity pattern in [templates/build-preview.yml](templates/build-preview.yml#L87-L124), where a parity build turns a runtime `TypeLoadException` into a build-time `CS0534`.
 
 **Keep Gates 2 and 3 nightly and non-blocking until proven stable.** A flaky cross-org gate that blocks every v3 PR is worse than no gate.
 
-**Gate 2 is the authoritative gate.** With v3 upstream, the question that matters is “does a v3-side edit still build on the msdata side?” Gate 3 is **informational**: it measures how far behind msdata has fallen rather than gating v3. Gate 2 should graduate from nightly to blocking once proven stable; Gate 3 stays nightly permanently.
+**Gate 2 is the authoritative gate for outbound change; Gate 3 is the authoritative gate for the compile target.** They answer different questions and neither substitutes for the other:
+
+- **Gate 2** asks *“does a v3-side edit still build on the msdata side?”* — it protects msdata from us, and is the enforcement arm of the §9.A mirroring obligation.
+- **Gate 3** asks *“does v3 still build against msdata `master`?”* — it protects us from assuming our own copy is the contract. **The in-repo copy under `src/Direct/` is a cache; `master` of the msdata CosmosDB repo is the reference.** A shared file that compiles only against the in-repo copy has already diverged, whether or not anyone noticed.
+
+Both should graduate from nightly to blocking once proven stable. Leaving Gate 3 permanently informational would concede that v3's copy defines the shared surface — which is precisely the drift this section exists to prevent.
+
+> **The import baseline and the compile target are different refs, deliberately.** Phase 1a imports from the release branch `sdkReleases/direct/EN20260409-3.44.1` (R-1, O-7), because the shipped 3.44.1 assembly is what R-17, R-18 and the §9.C claims are measured against. Gate 3 then tracks `master`, which moves ahead of that tag. **Expect Gate 3 to report drift immediately after the import** — that is correct, not a fault, and the size of that diff is the opening balance of the sync backlog.
+
+#### The OSS clone repo — how Gate 3 is built
+
+Gate 3 is best built as a **third repo that owns no source of its own**, composing two inputs:
+
+| Input | How it arrives | What it supplies |
+| --- | --- | --- |
+| **v3** | Git submodule pinned to a `main` commit | Everything *except* the Direct sources |
+| **msdata Direct** | Checkout of `master`, laid out through the A-5 manifest | The Direct files, verbatim from their original source |
+
+The result compiles v3's own code against **msdata's canonical Direct sources**, never against the copy vendored into `src/Direct/` — which is precisely the assertion Gate 3 exists to make. Keeping the composition in a third repo also keeps a conditional build shape out of both real repos.
+
+**The submodule direction is forced.** A public repo cannot submodule an internal one, so the clone repo lives on the **msdata/ADO side** and submodules the public v3 GitHub repo. Hosting the composition inside v3 itself fails for the same reason.
+
+**Pin `master`; advance deliberately.** Tracking the msdata branch head live lets an msdata commit redden v3's gate with no v3 PR involved. Pin a SHA in the clone repo and have a scheduled job propose each bump as a PR, so the gate fails against a *reviewable* change rather than against whatever landed overnight.
+
+**What this requires from v3.** The project compiling the Direct sources is `Microsoft.NET.Sdk`-style, so they are picked up by **implicit globbing** — msdata's copy carries no `<Compile Include>` for them at all. Implicit globbing makes the source root non-substitutable, so an explicit opt-out is needed on whichever project owns those sources: `Microsoft.Azure.Cosmos.csproj` through phases 1–2, then `Microsoft.Azure.Cosmos.Direct.csproj` once D-0 option C splits them out.
+
+```xml
+<PropertyGroup>
+  <DirectSourceRoot Condition="'$(DirectSourceRoot)' == ''">$(MSBuildThisFileDirectory)Direct\</DirectSourceRoot>
+</PropertyGroup>
+
+<ItemGroup Condition="'$(DirectSourceRoot)' != '$(MSBuildThisFileDirectory)Direct\'">
+  <Compile Remove="Direct\**\*.cs" />
+  <Compile Include="$(DirectSourceRoot)**\*.cs" />
+</ItemGroup>
+```
+
+Without it the clone repo must carry a patch against the csproj, and a patch that rots turns the gate into a fork. Two consequences follow:
+
+- **The A-5 manifest becomes a build input, not just a CI check.** Its `upstream` field already maps each v3 path to its msdata path; the clone repo replays that mapping to lay msdata's files into the tree §6 defines. This is what makes the §6 reorganisation survivable — reshaping 372 flat files into folders would otherwise strand this gate permanently.
+- **Unguarded v3-only edits to Direct types break the composition build.** That is the gate working, not a defect: it is the compile-time enforcement behind A-1/A-2/A-3 and the §9.A mirroring obligation.
+
+**What it does not cover.** It proves v3 builds and passes its suite against msdata `master`. It says nothing about whether msdata can absorb v3's changes — that stays Gate 2, and still needs msdata's own build. The two are complements, not alternatives.
 
 ### 9.F — Managed/native ABI compatibility (Axis D)
 
