@@ -167,6 +167,69 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         }
 
         [TestMethod]
+        public void GetPartitionKeyRangesAsync_DoesNotRequireDerivedContainersToOverride()
+        {
+            Container container = new Mock<Container>() { CallBase = true }.Object;
+
+            Assert.IsFalse(typeof(Container).GetMethod(nameof(Container.GetPartitionKeyRangesAsync)).IsAbstract);
+            Assert.ThrowsException<NotSupportedException>(
+                () => container.GetPartitionKeyRangesAsync(Cosmos.FeedRange.FromPartitionKey(new PartitionKey("test"))));
+        }
+
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task GetPartitionKeyRangesAsync_ThroughPublicContainer(bool usePartitionKey)
+        {
+            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
+            Uri endpoint = MockSetupsHelper.SetupSingleRegionAccount(
+                "mockAccountInfo",
+                ConsistencyLevel.Session,
+                mockHttpHandler,
+                out string primaryRegionEndpoint);
+
+            string databaseName = "mockDbName";
+            string containerName = "mockContainerName";
+            string containerRid = "ccZ1ANCszwk=";
+            MockSetupsHelper.SetupContainerProperties(
+                mockHttpHandler,
+                primaryRegionEndpoint,
+                databaseName,
+                containerName,
+                containerRid);
+            MockSetupsHelper.SetupPartitionKeyRanges(
+                mockHttpHandler,
+                primaryRegionEndpoint,
+                Documents.ResourceId.Parse(containerRid),
+                out IReadOnlyList<string> expectedRangeIds);
+
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+            };
+            using CosmosClient client = new CosmosClient(
+                endpoint.ToString(),
+                Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                options);
+            Container container = client.GetContainer(databaseName, containerName);
+            Cosmos.FeedRange feedRange = usePartitionKey
+                ? Cosmos.FeedRange.FromPartitionKey(new PartitionKey("test"))
+                : new FeedRangeEpk(new Documents.Routing.Range<string>("", "FF", true, false));
+
+            List<string> rangeIds = (await container.GetPartitionKeyRangesAsync(feedRange)).ToList();
+
+            if (usePartitionKey)
+            {
+                Assert.AreEqual(1, rangeIds.Count);
+                Assert.IsTrue(expectedRangeIds.Contains(rangeIds[0]));
+            }
+            else
+            {
+                CollectionAssert.AreEquivalent(expectedRangeIds.ToList(), rangeIds);
+            }
+        }
+
+        [TestMethod]
         public void FeedRangeEPK_ToJsonFromJson()
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);

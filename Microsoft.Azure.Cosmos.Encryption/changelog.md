@@ -3,6 +3,12 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="unreleased"/> Unreleased
+
+#### Features Added
+
+- [6128](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6128) Supports `Container.GetPartitionKeyRangesAsync` when building against the GA Cosmos SDK project, while retaining compatibility with the existing SDK package dependency.
+
 ### <a name="2.0.5"/> [2.0.5](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/2.0.5) - 2025-05-23
 
 #### Added
