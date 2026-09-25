@@ -447,6 +447,16 @@ namespace Microsoft.Azure.Cosmos.Tracing
                             stringBuilder.AppendLine($"{space}{space}ResourceType: {stat.ResourceType}");
                             stringBuilder.AppendLine($"{space}{space}HttpMethod: {stat.HttpMethod}");
 
+                            if (!string.IsNullOrEmpty(stat.IsDtxRetry))
+                            {
+                                stringBuilder.AppendLine($"{space}{space}IsDtxRetry: {stat.IsDtxRetry}");
+                            }
+
+                            if (!string.IsNullOrEmpty(stat.IsDtxCrossRegionRedirect))
+                            {
+                                stringBuilder.AppendLine($"{space}{space}IsDtxCrossRegionRedirect: {stat.IsDtxCrossRegionRedirect}");
+                            }
+
                             if (stat.Exception != null)
                             {
                                 stringBuilder.AppendLine($"{space}{space}ExceptionType: {stat.Exception.GetType()}");
