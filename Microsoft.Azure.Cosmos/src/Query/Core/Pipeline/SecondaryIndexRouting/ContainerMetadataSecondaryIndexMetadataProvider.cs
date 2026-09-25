@@ -10,12 +10,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
-    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
-    using DocumentClientException = Microsoft.Azure.Documents.DocumentClientException;
     using HttpConstants = Microsoft.Azure.Documents.HttpConstants;
     using TraceLevel = Microsoft.Azure.Cosmos.Tracing.TraceLevel;
 
@@ -40,67 +38,43 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             ITrace trace,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(sourceCollectionRid))
+            if (sourceCollectionRid == null)
             {
                 throw new ArgumentNullException(nameof(sourceCollectionRid));
             }
 
-            using ITrace discoveryTrace = trace.StartChild(
-                "ContainerMetadataSecondaryIndexDiscovery",
-                TraceComponent.Query,
-                TraceLevel.Info);
+            using ITrace discoveryTrace = trace.StartChild("ContainerMetadataSecondaryIndexDiscovery", TraceComponent.Query, TraceLevel.Info);
 
             ClientCollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(discoveryTrace);
-            ContainerProperties source = await ResolveByRidAsync(collectionCache, sourceCollectionRid, discoveryTrace, cancellationToken);
+            ContainerProperties source = await collectionCache.ResolveByRidAsync(
+                HttpConstants.Versions.CurrentVersion,
+                sourceCollectionRid,
+                discoveryTrace,
+                clientSideRequestStatistics: null,
+                cancellationToken);
             IReadOnlyList<MaterializedViewProperties> mvReferences = source.MaterializedViews;
-            if (mvReferences == null || mvReferences.Count == 0)
-            {
-                return Array.Empty<ISecondaryIndexMetadata>();
-            }
 
             List<ISecondaryIndexMetadata> secondaryIndexesMetadata = new ();
-            IEnumerable<string> secondaryIndexRids = mvReferences.Select(mvReference => mvReference.ResourceId);
-
-            foreach (string secondaryIndexRid in secondaryIndexRids)
+            foreach (MaterializedViewProperties mvReference in mvReferences)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-
-                ContainerProperties candidate = await ResolveByRidAsync(collectionCache, secondaryIndexRid, discoveryTrace, cancellationToken);
-                SecondaryIndexMetadata secondaryIndexMetadata = TryCreateMetadata(candidate, source);
-                if (secondaryIndexMetadata == null)
+                ContainerProperties candidate = await collectionCache.ResolveByRidAsync(
+                    HttpConstants.Versions.CurrentVersion,
+                    mvReference.ResourceId,
+                    discoveryTrace,
+                    clientSideRequestStatistics: null,
+                    cancellationToken);
+                if (TryCreateMetadata(candidate, source, out SecondaryIndexMetadata secondaryIndexMetadata))
                 {
-                    continue;
+                    secondaryIndexesMetadata.Add(secondaryIndexMetadata);
                 }
-
-                secondaryIndexesMetadata.Add(secondaryIndexMetadata);
             }
 
             discoveryTrace.AddDatum("SecondaryIndexDiscovery.CandidateCount", secondaryIndexesMetadata.Count);
             return secondaryIndexesMetadata.AsReadOnly();
         }
 
-        private static async Task<ContainerProperties> ResolveByRidAsync(
-            ClientCollectionCache collectionCache,
-            string collectionRid,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            try
-            {
-                return await collectionCache.ResolveByRidAsync(
-                    HttpConstants.Versions.CurrentVersion,
-                    collectionRid,
-                    trace,
-                    clientSideRequestStatistics: null,
-                    cancellationToken);
-            }
-            catch (DocumentClientException exception)
-            {
-                throw CosmosExceptionFactory.Create(exception, trace);
-            }
-        }
-
-        internal static bool IsMaterializedViewForSource(
+        private static bool IsMaterializedViewForSource(
             ContainerProperties candidate,
             ContainerProperties source)
         {
@@ -112,17 +86,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         }
        
         // Query parsing logic is not exhaustive. This is intended to cover MVP scenarios, which intentionally limits possible defintion queries.
-        internal static bool TryGetIncludedProperties(
-            MaterializedViewDefinition definition,
+        private static bool TryGetIncludedProperties(
+            SqlQuery query,
             ContainerProperties source,
             out IReadOnlyDictionary<string, string> includedProperties)
         {
             includedProperties = null;
-            if (string.IsNullOrWhiteSpace(definition?.Definition)
-                || source == null
-                || !SqlQueryParser.TryParse(definition.Definition, out SqlQuery query))
+            if (query == null)
             {
-                return false;
+                throw new ArgumentNullException(nameof(query));
+            }
+
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
             }
 
             if (!TryGetRootCollectionIdentifier(query.FromClause, out string rootCollectionIdentifier))
@@ -130,42 +107,43 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 return false;
             }
 
-            Dictionary<string, string> projections = new Dictionary<string, string>(StringComparer.Ordinal);
-            if (query.SelectClause.SelectSpec is SqlSelectStarSpec)
+            Dictionary<string, string> projections = new ();
+            switch (query.SelectClause.SelectSpec)
             {
-                projections[WildcardProjectionPath] = WildcardProjectionPath;
-                foreach (string partitionKeyPath in source.PartitionKeyPaths ?? Array.Empty<string>())
-                {
-                    projections[partitionKeyPath] = partitionKeyPath;
-                }
+                case SqlSelectStarSpec:
+                    projections[WildcardProjectionPath] = WildcardProjectionPath;
+                    foreach (string partitionKeyPath in source.PartitionKeyPaths)
+                    {
+                        projections[partitionKeyPath] = partitionKeyPath;
+                    }
 
-                includedProperties = projections;
-                return true;
-            }
+                    break;
 
-            if (query.SelectClause.SelectSpec is not SqlSelectListSpec selectList)
-            {
-                return false;
-            }
+                case SqlSelectListSpec selectList:
+                    foreach (SqlSelectItem item in selectList.Items)
+                    {
+                        if (!TryGetSourcePathSegments(
+                            item.Expression,
+                            rootCollectionIdentifier,
+                            out IReadOnlyList<string> sourcePathSegments))
+                        {
+                            return false;
+                        }
 
-            foreach (SqlSelectItem item in selectList.Items)
-            {
-                if (!TryGetSourcePathSegments(
-                    item.Expression,
-                    rootCollectionIdentifier,
-                    out IReadOnlyList<string> sourcePathSegments))
-                {
+                        string sourcePath = ToCanonicalPath(sourcePathSegments);
+                        string projectedProperty = item.Alias?.Value ?? sourcePathSegments[sourcePathSegments.Count - 1];
+                        if (projectedProperty == null)
+                        {
+                            return false;
+                        }
+
+                        projections[sourcePath] = ToCanonicalPath(new[] { projectedProperty });
+                    }
+
+                    break;
+
+                default:
                     return false;
-                }
-
-                string sourcePath = ToCanonicalPath(sourcePathSegments);
-                string projectedProperty = item.Alias?.Value ?? sourcePathSegments[sourcePathSegments.Count - 1];
-                if (string.IsNullOrEmpty(projectedProperty))
-                {
-                    return false;
-                }
-
-                projections[sourcePath] = ToCanonicalPath(new[] { projectedProperty });
             }
 
             if (projections.Count == 0)
@@ -177,23 +155,32 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             return true;
         }
 
-        private static SecondaryIndexMetadata TryCreateMetadata(
+        private static bool TryCreateMetadata(
             ContainerProperties candidate,
-            ContainerProperties source)
+            ContainerProperties source,
+            out SecondaryIndexMetadata metadata)
         {
+            metadata = null;
             if (!IsMaterializedViewForSource(candidate, source)
-                || string.IsNullOrWhiteSpace(candidate.Id)
-                || string.IsNullOrWhiteSpace(candidate.ResourceId)
+                || candidate.Id == null
+                || candidate.ResourceId == null
                 || candidate.PartitionKey == null
-                || candidate.IndexingPolicy == null
-                || IsFilteredMaterializedView(candidate.MaterializedViewDefinition)
-                || !TryGetIncludedProperties(candidate.MaterializedViewDefinition, source, out IReadOnlyDictionary<string, string> includedProperties))
+                || candidate.IndexingPolicy == null)
             {
-                return null;
+                return false;
+            }
+
+            MaterializedViewDefinition definition = candidate.MaterializedViewDefinition;
+            if (definition.Definition == null
+                || !SqlQueryParser.TryParse(definition.Definition, out SqlQuery query)
+                || query.WhereClause != null
+                || !TryGetIncludedProperties(query, source, out IReadOnlyDictionary<string, string> includedProperties))
+            {
+                return false;
             }
 
             // MV secondaryIndexesMetadata does not expose synchronization consistency; current MV-backed indexes are Eventual.
-            return new SecondaryIndexMetadata(
+            metadata = new SecondaryIndexMetadata(
                 candidate.Id,
                 candidate.ResourceId,
                 source.ResourceId,
@@ -201,13 +188,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 candidate.IndexingPolicy,
                 includedProperties,
                 ConsistencyLevel.Eventual);
-        }
-
-        internal static bool IsFilteredMaterializedView(MaterializedViewDefinition definition)
-        {
-            return !string.IsNullOrWhiteSpace(definition?.Definition)
-                && SqlQueryParser.TryParse(definition.Definition, out SqlQuery query)
-                && query.WhereClause != null;
+            return true;
         }
 
         private static bool TryGetRootCollectionIdentifier(

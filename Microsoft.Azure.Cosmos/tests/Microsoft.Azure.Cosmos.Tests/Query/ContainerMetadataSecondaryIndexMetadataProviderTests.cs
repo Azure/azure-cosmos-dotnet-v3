@@ -192,78 +192,58 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [DataRow("SELECT c.address['zip'] FROM c", "/address/zip", "/zip")]
         [DataRow("SELECT item.id FROM ROOT item", "/id", "/id")]
         [DataRow("SELECT item.id FROM c AS item", "/id", "/id")]
-        public void TryGetIncludedPropertiesMapsPropertyPaths(
+        public async Task TryGetIncludedPropertiesMapsPropertyPaths(
             string query,
             string sourcePath,
             string projectedPath)
         {
-            bool succeeded = ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
-                CreateMaterializedViewDefinition(query),
-                CreateSource(),
-                out IReadOnlyDictionary<string, string> includedProperties);
+            ISecondaryIndexMetadata metadata = (await GetMetadataAsync(query)).Single();
 
-            Assert.IsTrue(succeeded);
-            Assert.AreEqual(1, includedProperties.Count);
-            Assert.AreEqual(projectedPath, includedProperties[sourcePath]);
+            Assert.AreEqual(1, metadata.IncludedProperties.Count);
+            Assert.AreEqual(projectedPath, metadata.IncludedProperties[sourcePath]);
         }
 
         [TestMethod]
-        public void TryGetIncludedPropertiesMapsMultiplePropertyPaths()
+        public async Task TryGetIncludedPropertiesMapsMultiplePropertyPaths()
         {
-            bool succeeded = ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
-                CreateMaterializedViewDefinition(
-                    "SELECT c.id AS _id, c.region, c.address.zip AS postalCode FROM c"),
-                CreateSource(),
-                out IReadOnlyDictionary<string, string> includedProperties);
+            ISecondaryIndexMetadata metadata = (await GetMetadataAsync(
+                "SELECT c.id AS _id, c.region, c.address.zip AS postalCode FROM c")).Single();
 
-            Assert.IsTrue(succeeded);
-            Assert.AreEqual(3, includedProperties.Count);
-            Assert.AreEqual("/_id", includedProperties["/id"]);
-            Assert.AreEqual("/region", includedProperties["/region"]);
-            Assert.AreEqual("/postalCode", includedProperties["/address/zip"]);
+            Assert.AreEqual(3, metadata.IncludedProperties.Count);
+            Assert.AreEqual("/_id", metadata.IncludedProperties["/id"]);
+            Assert.AreEqual("/region", metadata.IncludedProperties["/region"]);
+            Assert.AreEqual("/postalCode", metadata.IncludedProperties["/address/zip"]);
         }
 
         [TestMethod]
-        public void TryGetIncludedPropertiesMapsSpecialCharacterProperties()
+        public async Task TryGetIncludedPropertiesMapsSpecialCharacterProperties()
         {
-            bool succeeded = ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
-                CreateMaterializedViewDefinition(
-                    "SELECT c[\"a/b\"], c[\"a~1b\"] FROM c"),
-                CreateSource(),
-                out IReadOnlyDictionary<string, string> includedProperties);
+            ISecondaryIndexMetadata metadata = (await GetMetadataAsync(
+                "SELECT c[\"a/b\"], c[\"a~1b\"] FROM c")).Single();
 
-            Assert.IsTrue(succeeded);
-            Assert.AreEqual(2, includedProperties.Count);
-            Assert.AreEqual("/\"a/b\"", includedProperties["/\"a/b\""]);
-            Assert.AreEqual("/\"a~1b\"", includedProperties["/\"a~1b\""]);
+            Assert.AreEqual(2, metadata.IncludedProperties.Count);
+            Assert.AreEqual("/\"a/b\"", metadata.IncludedProperties["/\"a/b\""]);
+            Assert.AreEqual("/\"a~1b\"", metadata.IncludedProperties["/\"a~1b\""]);
         }
 
         [TestMethod]
-        public void TryGetIncludedPropertiesDistinguishesPropertyFromNestedPath()
+        public async Task TryGetIncludedPropertiesDistinguishesPropertyFromNestedPath()
         {
-            bool succeeded = ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
-                CreateMaterializedViewDefinition(
-                    "SELECT c[\"a/b\"], c.a.b FROM c"),
-                CreateSource(),
-                out IReadOnlyDictionary<string, string> includedProperties);
+            ISecondaryIndexMetadata metadata = (await GetMetadataAsync(
+                "SELECT c[\"a/b\"], c.a.b FROM c")).Single();
 
-            Assert.IsTrue(succeeded);
-            Assert.AreEqual(2, includedProperties.Count);
-            Assert.AreEqual("/\"a/b\"", includedProperties["/\"a/b\""]);
-            Assert.AreEqual("/b", includedProperties["/a/b"]);
+            Assert.AreEqual(2, metadata.IncludedProperties.Count);
+            Assert.AreEqual("/\"a/b\"", metadata.IncludedProperties["/\"a/b\""]);
+            Assert.AreEqual("/b", metadata.IncludedProperties["/a/b"]);
         }
 
         [TestMethod]
-        public void TryGetIncludedPropertiesMapsWildcardAndPartitionKey()
+        public async Task TryGetIncludedPropertiesMapsWildcardAndPartitionKey()
         {
-            bool succeeded = ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
-                CreateMaterializedViewDefinition("SELECT * FROM c"),
-                CreateSource(),
-                out IReadOnlyDictionary<string, string> includedProperties);
+            ISecondaryIndexMetadata metadata = (await GetMetadataAsync("SELECT * FROM c")).Single();
 
-            Assert.IsTrue(succeeded);
-            Assert.AreEqual("/*", includedProperties["/*"]);
-            Assert.AreEqual("/tenantId", includedProperties["/tenantId"]);
+            Assert.AreEqual("/*", metadata.IncludedProperties["/*"]);
+            Assert.AreEqual("/tenantId", metadata.IncludedProperties["/tenantId"]);
         }
 
         [DataTestMethod]
@@ -282,31 +262,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [DataRow("SELECT item.id FROM item IN c.items")]
         [DataRow("SELECT item.id FROM (SELECT * FROM c) item")]
         [DataRow("SELECT other.id FROM c")]
-        public void TryGetIncludedPropertiesRejectsUnsupportedDefinitions(string query)
+        public async Task TryGetIncludedPropertiesRejectsUnsupportedDefinitions(string query)
         {
-            bool succeeded = ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
-                CreateMaterializedViewDefinition(query),
-                CreateSource(),
-                out IReadOnlyDictionary<string, string> includedProperties);
-
-            Assert.IsFalse(succeeded);
-            Assert.IsNull(includedProperties);
-        }
-
-        [TestMethod]
-        public void TryGetIncludedPropertiesRejectsMissingInputs()
-        {
-            Assert.IsFalse(ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
-                definition: null,
-                CreateSource(),
-                out IReadOnlyDictionary<string, string> missingDefinitionProperties));
-            Assert.IsNull(missingDefinitionProperties);
-
-            Assert.IsFalse(ContainerMetadataSecondaryIndexMetadataProvider.TryGetIncludedProperties(
-                CreateMaterializedViewDefinition("SELECT * FROM c"),
-                source: null,
-                out IReadOnlyDictionary<string, string> missingSourceProperties));
-            Assert.IsNull(missingSourceProperties);
+            Assert.AreEqual(0, (await GetMetadataAsync(query)).Count());
         }
 
         #endregion TryGetIncludedProperties Tests
@@ -314,14 +272,31 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [DataTestMethod]
         [DataRow("SELECT * FROM c", false)]
         [DataRow("SELECT * FROM c WHERE c.enabled = true", true)]
-        [DataRow(null, false)]
-        [DataRow("not a query", false)]
-        public void IsFilteredMaterializedViewIdentifiesWhereClause(string query, bool expected)
+        public async Task IsFilteredMaterializedViewIdentifiesWhereClause(string query, bool expected)
         {
-            Assert.AreEqual(
-                expected,
-                ContainerMetadataSecondaryIndexMetadataProvider.IsFilteredMaterializedView(
-                    CreateMaterializedViewDefinition(query)));
+            Assert.AreEqual(expected ? 0 : 1, (await GetMetadataAsync(query)).Count());
+        }
+
+        private static async Task<IEnumerable<ISecondaryIndexMetadata>> GetMetadataAsync(string query)
+        {
+            ContainerProperties source = CreateSource();
+            source.MaterializedViews = new List<MaterializedViewProperties>
+            {
+                new MaterializedViewProperties
+                {
+                    ResourceId = EligibleRid,
+                    ContainerType = ContainerMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
+                },
+            };
+
+            Dictionary<string, ContainerProperties> collections = new Dictionary<string, ContainerProperties>
+            {
+                [SourceRid] = source,
+                [EligibleRid] = CreateMaterializedView(EligibleRid, query, "/tenantId"),
+            };
+
+            using ProviderTestContext context = new ProviderTestContext(collections);
+            return await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton);
         }
 
         private static ContainerProperties CreateSource()
@@ -350,14 +325,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             candidate.IndexingPolicy.IncludedPaths.Add(new IncludedPath { Path = "/*" });
             return candidate;
-        }
-
-        private static MaterializedViewDefinition CreateMaterializedViewDefinition(string query)
-        {
-            return new MaterializedViewDefinition
-            {
-                Definition = query,
-            };
         }
 
         private sealed class ProviderTestContext : IDisposable
