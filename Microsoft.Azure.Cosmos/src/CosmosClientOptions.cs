@@ -630,9 +630,7 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnableAsyncCacheExceptionNoSharing { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets a value indicating whether Global Secondary Index lookup
-        /// routing is enabled. When enabled, eligible queries can use a secondary
-        /// index to reduce source-container fan-out. The default value is false.
+        /// When enabled, eligible queries can use a secondary index to reduce source-container fan-out.
         /// </summary>
         internal bool EnableSecondaryIndexLookupRouting { get; set; } = false;
 

@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Assert.AreEqual(SourceRid, gsiA.SourceCollectionRid);
             Assert.AreEqual("/_id", gsiA.IncludedProperties["/id"]);
             Assert.AreEqual("/region", gsiA.IncludedProperties["/region"]);
-            Assert.AreEqual(ConsistencyLevel.Eventual, gsiA.Consistency);
+            Assert.AreEqual(ConsistencyLevel.Eventual, gsiA.ConsistencyLevel);
             Assert.AreEqual("/category", gsiB.IncludedProperties["/category"]);
 
             collections[GsiARid].PartitionKey.Paths[0] = "/changed";

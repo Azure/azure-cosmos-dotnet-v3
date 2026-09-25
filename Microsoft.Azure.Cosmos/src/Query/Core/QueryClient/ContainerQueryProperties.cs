@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public Cosmos.VectorEmbeddingPolicy VectorEmbeddingPolicy { get; }
 
         public Cosmos.GeospatialType GeospatialType { get; }
+
         public bool UseLengthAwareRangeComparer { get; }
 
         public IEnumerable<ISecondaryIndexMetadata> GlobalSecondaryIndexes { get; }

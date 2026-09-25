@@ -58,11 +58,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 return Array.Empty<ISecondaryIndexMetadata>();
             }
 
-            List<ISecondaryIndexMetadata> secondaryIndexesMetadata = new List<ISecondaryIndexMetadata>();
-            IEnumerable<string> secondaryIndexRids = mvReferences
-                .Select(mvReference => mvReference.ResourceId)
-                .Where(resourceId => !string.IsNullOrEmpty(resourceId))
-                .Distinct(StringComparer.Ordinal);
+            List<ISecondaryIndexMetadata> secondaryIndexesMetadata = new ();
+            IEnumerable<string> secondaryIndexRids = mvReferences.Select(mvReference => mvReference.ResourceId);
 
             foreach (string secondaryIndexRid in secondaryIndexRids)
             {

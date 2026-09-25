@@ -81,8 +81,8 @@ namespace Microsoft.Azure.Cosmos
                 };
             }
 
-            IEnumerable<ISecondaryIndexMetadata> globalSecondaryIndexes = null;
-            if (this.clientContext.ClientOptions?.EnableSecondaryIndexLookupRouting == true)
+            IEnumerable<ISecondaryIndexMetadata> globalSecondaryIndexes = Array.Empty<ISecondaryIndexMetadata>();
+            if (this.clientContext.ClientOptions.EnableSecondaryIndexLookupRouting)
             {
                 try
                 {

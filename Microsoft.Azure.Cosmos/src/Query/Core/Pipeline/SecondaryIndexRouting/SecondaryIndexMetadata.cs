@@ -17,15 +17,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             PartitionKeyDefinition partitionKey,
             IndexingPolicy indexingPolicy,
             IReadOnlyDictionary<string, string> includedProperties,
-            ConsistencyLevel consistency)
+            ConsistencyLevel consistencyLevel)
         {
-            this.Id = string.IsNullOrWhiteSpace(id) ? throw new ArgumentNullException(nameof(id)) : id;
-            this.Rid = string.IsNullOrWhiteSpace(rid) ? throw new ArgumentNullException(nameof(rid)) : rid;
-            this.SourceCollectionRid = string.IsNullOrWhiteSpace(sourceCollectionRid) ? throw new ArgumentNullException(nameof(sourceCollectionRid)) : sourceCollectionRid;
+            this.Id = id ?? throw new ArgumentNullException(nameof(id));
+            this.Rid = rid ?? throw new ArgumentNullException(nameof(rid));
+            this.SourceCollectionRid = sourceCollectionRid ?? throw new ArgumentNullException(nameof(sourceCollectionRid));
             this.PartitionKey = partitionKey ?? throw new ArgumentNullException(nameof(partitionKey));
             this.IndexingPolicy = indexingPolicy ?? throw new ArgumentNullException(nameof(indexingPolicy));
             this.IncludedProperties = includedProperties ?? throw new ArgumentNullException(nameof(includedProperties));
-            this.Consistency = consistency;
+            this.ConsistencyLevel = consistencyLevel;
         }
 
         public string Id { get; }
@@ -40,6 +40,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 
         public IReadOnlyDictionary<string, string> IncludedProperties { get; }
 
-        public ConsistencyLevel Consistency { get; }
+        public ConsistencyLevel ConsistencyLevel { get; }
     }
 }

@@ -31,6 +31,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         IReadOnlyDictionary<string, string> IncludedProperties { get; }
 
         /// <summary>Gets the consistency level of the secondary index.</summary>
-        ConsistencyLevel Consistency { get; }
+        ConsistencyLevel ConsistencyLevel { get; }
     }
 }

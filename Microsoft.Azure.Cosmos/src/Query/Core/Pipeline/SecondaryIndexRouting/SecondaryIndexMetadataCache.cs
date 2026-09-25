@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             bool forceRefresh = false,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(sourceCollectionRid))
+            if (sourceCollectionRid == null)
             {
                 throw new ArgumentNullException(nameof(sourceCollectionRid));
             }

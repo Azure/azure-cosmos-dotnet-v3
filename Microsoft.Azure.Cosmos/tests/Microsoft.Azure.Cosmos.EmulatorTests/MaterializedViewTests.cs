@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual("/pk", metadata.ElementAt(0).PartitionKey.Paths[0]);
             Assert.AreEqual("/*", metadata.ElementAt(0).IncludedProperties["/*"]);
             Assert.AreEqual("/pk", metadata.ElementAt(0).IncludedProperties["/pk"]);
-            Assert.AreEqual(ConsistencyLevel.Eventual, metadata.ElementAt(0).Consistency);
+            Assert.AreEqual(ConsistencyLevel.Eventual, metadata.ElementAt(0).ConsistencyLevel);
         }
     }
 }
