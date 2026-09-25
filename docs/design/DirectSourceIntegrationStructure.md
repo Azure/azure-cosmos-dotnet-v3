@@ -15,7 +15,7 @@
 
 ### In scope
 
-1. Reorganise the flat `Microsoft.Azure.Cosmos/src/direct/` dump (373 files) into a coherent, navigable folder tree.
+1. Reorganise the flat `Microsoft.Azure.Cosmos/src/direct/` dump (373 files) into a coherent, navigable folder tree belonging to a separate `Microsoft.Azure.Cosmos.Direct.csproj`, not just a folder compiled by the Client project.
 2. Define the project/build changes required so the SDK compiles the Direct sources **from source**, with **no `PackageReference` to `Microsoft.Azure.Cosmos.Direct` at all** — neither compile-time nor restore-only. The native assets that package carried come from the public `QueryPlanInterop` package instead (D-3).
 3. Keep the `Microsoft.Azure.Documents.*` types shipping from `Microsoft.Azure.Cosmos.Direct.dll`, now built in this repo (D-0). This is what keeps the effort non-breaking.
 4. Define the migration sequencing so history, CI and the shipped package surface stay intact.
@@ -118,7 +118,7 @@ The namespace tree is *not* a usable folder taxonomy on its own — 74 % of file
 
 ## 4. Design Principles
 
-- **P1 — One top-level home.** All Direct-origin code lives under `Microsoft.Azure.Cosmos/src/Direct/`. A single folder boundary makes "what came from msdata" answerable by path, which the sync tooling and CODEOWNERS both need.
+- **P1 — One top-level home.** All Direct-origin code lives under `Microsoft.Azure.Cosmos/src/Direct/`, containing its own `Microsoft.Azure.Cosmos.Direct.csproj`. This is a separate project, not just a Client source folder. A single folder boundary makes "what came from msdata" answerable by path, which the sync tooling and CODEOWNERS both need.
 - **P2 — Folders group by *function*, not by namespace.** C# does not require folder/namespace agreement, and 277 files share one namespace. Functional grouping is the only layout that scales here. Namespace is recorded per file in §6 so the mapping stays auditable.
 - **P3 — Mirror `src/` conventions.** PascalCase folders, max depth 3 below `Direct/`, `I*.cs` interfaces sit next to their implementations.
 - **P4 — Keep msdata-origin grouping recoverable.** Folder names deliberately echo the msdata source directories used by `msdata_sync.ps1` (`SharedFiles/Routing`, `SharedFiles/Rntbd2`, `SharedFiles/Collections`, `Core/Core.Trace`, …) so the sync script's path table maps 1:1 onto the new tree.
@@ -131,6 +131,7 @@ The namespace tree is *not* a usable folder taxonomy on its own — 74 % of file
 
 ```
 Microsoft.Azure.Cosmos/src/Direct/
+├── Microsoft.Azure.Cosmos.Direct.csproj # separate project producing Microsoft.Azure.Cosmos.Direct.dll
 ├── .editorconfig                      # Direct-scoped analyzer suppressions (replaces csproj NoWarn)
 ├── README.md                          # provenance, house rules, msdata coordination policy
 ├── AssemblyKeys.cs
@@ -588,7 +589,7 @@ Also update [docs/sync_up_msdata_direct.md](docs/sync_up_msdata_direct.md), [.gi
 
 ### D-8 — Solution & ownership
 
-- Add `Direct` as a solution folder so Solution Explorer shows the new tree.
+- Add `Microsoft.Azure.Cosmos.Direct.csproj` as a project in the solution.
 - Add a `CODEOWNERS` entry for `Microsoft.Azure.Cosmos/src/Direct/**`.
 - Add `Microsoft.Azure.Cosmos/src/Direct/README.md` carrying the §9.A house rules: v3 `main` is upstream (O-1), so these files **are** editable here — but T0 files need msdata sign-off, divergence goes through A-1/A-2/A-3 rather than ad-hoc edits, and the `#if !COSMOSCLIENT` arms are real code that v3 CI does not compile (A-6, R-7).
 
