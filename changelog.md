@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- [6127](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6127) Direct: Updated the dependency to version 3.44.1, adding native query-planning support for `FullTextScore` expressions in the `SELECT` and `WHERE` clauses of hybrid search queries. Hybrid search query plans now also include the searched document paths and terms.
+
 ### <a name="3.64.0-preview.1"/> [3.64.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.1) - 2026-9-17
 
 ### <a name="3.63.1"/> [3.63.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.1) - 2026-9-17
@@ -74,6 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- Query: Fixes reciprocal rank fusion using dense ranking for component scores. Component results now use standard competition ranking, so tied scores share a rank and the next distinct score's rank reflects its sorted position.
 - [6102](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/6102) Read Consistency Strategy: Fixes reads using `ReadConsistencyStrategy.LastCommittedSingleWriteRegion` hanging forever on single write region accounts when the client's application region is a read replica instead of the hub. After each `403/WriteForbidden` the SDK recorded a route to the hub region but never used it, so every retry went back to the same replica and the loop never finished. The retry now follows the recorded hub route and the read completes.
 - [6085](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6085) ThinClient: Fixes dynamic thin-client routing so a client switches between thin-client and gateway on account refresh without a restart, disposes both store models, labels diagnostics with the serving store model, accepts HTTP 401 on the connectivity probe, and reflects thin-client availability in the `F4` user-agent flag (see PR description for details).
 - [6069](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6069) Diagnostics: Fixes an unobserved `TaskScheduler.UnobservedTaskException` that could surface from a background address cache refresh failure.
