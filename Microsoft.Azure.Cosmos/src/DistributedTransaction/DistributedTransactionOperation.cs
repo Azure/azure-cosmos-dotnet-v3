@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos
             this.Container = container;
             this.Id = id;
             this.RequestOptions = requestOptions;
-            this.SessionToken = string.IsNullOrWhiteSpace(requestOptions?.SessionToken) ? null : requestOptions.SessionToken;
         }
 
         public PartitionKey PartitionKey { get; internal set; }
@@ -56,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal string PartitionKeyJson { get; set; }
 
-        internal string SessionToken { get; set; }
+        internal string SessionToken => string.IsNullOrWhiteSpace(this.RequestOptions?.SessionToken) ? null : this.RequestOptions.SessionToken;
 
         internal string IfMatch => this.RequestOptions?.IfMatchEtag;
 
@@ -101,6 +100,12 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.body.IsEmpty && this.Resource != null)
             {
+                if (this.Resource is PatchSpec patchSpec &&
+                    this.RequestOptions is DistributedTransactionPatchItemRequestOptions patchOptions)
+                {
+                    patchSpec.RequestOptions.FromLeft(null).FilterPredicate = patchOptions.FilterPredicate;
+                }
+
                 this.ResourceStream = serializerCore.ToStream(this.Resource);
                 return base.MaterializeResourceAsync(serializerCore, cancellationToken);
             }

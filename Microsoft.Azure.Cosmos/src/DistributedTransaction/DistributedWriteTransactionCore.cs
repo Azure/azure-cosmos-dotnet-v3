@@ -190,12 +190,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(patchOperations));
             }
 
-            // Forward the customer-supplied conditional predicate (if any) into the PatchSpec so the
-            // serializer emits the server-evaluated 'condition' field. Other request-level options
-            // (SessionToken, IfMatchEtag, IfNoneMatchEtag) flow through the operation's requestOptions.
+            // The patch predicate is read from requestOptions when the resource is materialized.
             PatchSpec patchSpec = new PatchSpec(
                 patchOperations,
-                new PatchItemRequestOptions { FilterPredicate = requestOptions?.FilterPredicate });
+                new PatchItemRequestOptions());
 
             this.operations.Add(
                 new DistributedTransactionOperation<PatchSpec>(
@@ -301,7 +299,7 @@ namespace Microsoft.Azure.Cosmos
         /// (e.g., cancellation or network failure), verify the resulting state before retrying
         /// to avoid duplicate writes.
         /// </remarks>
-        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.ExecuteTransactionAsync"/> has already been called on this instance.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the transaction has no operations or execution has already started on this instance.</exception>
         /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is cancelled before or during the commit.</exception>
         public override Task<DistributedTransactionResponse> ExecuteTransactionAsync(CancellationToken cancellationToken = default)
         {
@@ -315,6 +313,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException(CommitAlreadyCalledMessage);
             }
 
+            // Snapshot here because the operation helper may defer execution.
+            DistributedTransactionOperation[] operations = this.operations.ToArray();
+
             return this.clientContext.OperationHelperAsync(
                 operationName: $"{nameof(DistributedWriteTransaction)}.{nameof(ExecuteTransactionAsync)}",
                 containerName: null,
@@ -324,7 +325,7 @@ namespace Microsoft.Azure.Cosmos
                 task: (trace) =>
                 {
                     DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                        operations: this.operations,
+                        operations: operations,
                         clientContext: this.clientContext,
                         operationType: OperationType.CommitDistributedTransaction,
                         onDispatch: this.PublishIdempotencyToken);

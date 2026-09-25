@@ -21,7 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- Distributed Transactions (preview): An operation's `SessionToken` and patch `FilterPredicate` are now read from its request options when the transaction is sent, as ETags already were. Use a separate options instance for each operation that needs different values.
+
 #### Bugs Fixed
+
+- Distributed Transactions (preview): Isolates submitted operations from later additions to a read or write transaction, avoiding incorrect failures when interpreting a successful response. Each transaction instance still supports only one nonempty execution attempt.
 
 #### Other Changes
 
