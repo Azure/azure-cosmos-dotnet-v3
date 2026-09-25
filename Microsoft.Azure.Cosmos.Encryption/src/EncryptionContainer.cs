@@ -761,23 +761,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 requestOptions,
                 cancellationToken);
         }
+#endif
 
+#if ENCRYPTIONPREVIEW || SDKPROJECTREF
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default)
         {
             return this.Container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
-#endif
 
-#if ENCRYPTIONPREVIEW || SDKPROJECTREF
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(string processorName, ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate)
         {
             return this.Container.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(
                 processorName,
                 onChangesDelegate);
         }
+#endif
 
+#if ENCRYPTIONPREVIEW
         public override Task<bool> IsFeedRangePartOfAsync(
             Cosmos.FeedRange x,
             Cosmos.FeedRange y,

@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- Partitioning: Makes `Container.GetPartitionKeyRangesAsync` generally available to retrieve the physical partition key range identifiers covered by a `FeedRange`. Existing `Container` subclasses remain compatible without implementing the new API.
+
 #### Breaking Changes
 
 #### Bugs Fixed
