@@ -288,6 +288,7 @@ namespace Microsoft.Azure.Cosmos
             //
             // DTC spans multiple collections so the server embeds per-operation session tokens in the JSON body.
             // DistributedTransactionOperationResult.FromJson assembles each token into canonical SDK session-token
+            // format, and capture is gated per sub-operation on the same statuses point operations capture on.
             if (response == null || response.Count == 0 || serverRequest == null || sessionContainer == null)
             {
                 return;
@@ -305,6 +306,17 @@ namespace Microsoft.Azure.Cosmos
                     operation = serverRequest.Operations[result.Index];
 
                     if (string.IsNullOrEmpty(result.SessionToken) || string.IsNullOrEmpty(operation.CollectionResourceId))
+                    {
+                        continue;
+                    }
+
+                    // Gated per sub-operation rather than on the envelope: status promotion only happens
+                    // for MultiStatus, so a partially failed transaction carries meaningful individual
+                    // statuses. Every status below 400 is captured, which is what the gateway does: it
+                    // reaches its capture call for any such response, 304 included. A rolled back
+                    // FailedDependency sub-operation left no durable write to read back.
+                    if ((int)result.StatusCode >= (int)StatusCodes.StartingErrorCode
+                        && !GatewayStoreModel.IsSessionTokenCapturableErrorStatus(result.StatusCode, result.SubStatusCode))
                     {
                         continue;
                     }

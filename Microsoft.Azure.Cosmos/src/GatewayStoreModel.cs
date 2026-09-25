@@ -135,8 +135,7 @@ namespace Microsoft.Azure.Cosmos
             catch (DocumentClientException exception)
             {
                 if ((!ReplicatedResourceClient.IsMasterResource(request.ResourceType)) &&
-                    (exception.StatusCode == HttpStatusCode.PreconditionFailed || exception.StatusCode == HttpStatusCode.Conflict
-                     || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
+                    GatewayStoreModel.IsSessionTokenCapturableErrorStatus(exception.StatusCode, exception.GetSubStatus()))
                 {
                     await this.CaptureSessionTokenAndHandleSplitAsync(exception.StatusCode, exception.GetSubStatus(), request, exception.Headers);
                 }
@@ -297,6 +296,26 @@ namespace Microsoft.Azure.Cosmos
             this.Dispose(true);
         }
 
+        /// <summary>
+        /// Determines whether a non-success response status permits capturing its session token.
+        /// </summary>
+        /// <remarks>
+        /// A failed request still observes real replica progress, so its token remains a valid
+        /// causal marker for these statuses. Every other error status, including throttles, gone,
+        /// service unavailable, and <see cref="SubStatusCodes.ReadSessionNotAvailable"/>,
+        /// carries no trustworthy progress and must not update the session container.
+        /// Only error statuses are covered. Callers supply their own success term, because they reach
+        /// this check from different response shapes.
+        /// </remarks>
+        internal static bool IsSessionTokenCapturableErrorStatus(
+            HttpStatusCode? statusCode,
+            SubStatusCodes subStatusCode)
+        {
+            return statusCode == HttpStatusCode.PreconditionFailed
+                || statusCode == HttpStatusCode.Conflict
+                || (statusCode == HttpStatusCode.NotFound && subStatusCode != SubStatusCodes.ReadSessionNotAvailable);
+        }
+
         internal async Task CaptureSessionTokenAndHandleSplitAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes subStatusCode,
@@ -313,9 +332,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // Only capturing on 409, 412, 404 && !1002
-                if (statusCode != HttpStatusCode.PreconditionFailed
-                    && statusCode != HttpStatusCode.Conflict
-                        && (statusCode != HttpStatusCode.NotFound || subStatusCode == SubStatusCodes.ReadSessionNotAvailable))
+                if (!GatewayStoreModel.IsSessionTokenCapturableErrorStatus(statusCode, subStatusCode))
                 {
                     return;
                 }
@@ -382,7 +399,7 @@ namespace Microsoft.Azure.Cosmos
             string requestConsistencyLevel = request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel];
             bool isReadOrBatchRequest = request.IsReadOnlyRequest || request.OperationType == OperationType.Batch;
             bool requestHasConsistencySet = !string.IsNullOrEmpty(requestConsistencyLevel) && isReadOrBatchRequest; // Only read requests can have their consistency modified
-            
+
             bool sessionConsistencyApplies =
                 (!requestHasConsistencySet && defaultConsistencyLevel == ConsistencyLevel.Session) ||
                 (requestHasConsistencySet
