@@ -86,7 +86,8 @@ namespace Microsoft.Azure.Cosmos
                 IfNoneMatchEtag = this.IfNoneMatchEtag,
                 Properties = this.Properties,
                 AddRequestHeaders = this.AddRequestHeaders,
-                ExcludeRegions = this.ExcludeRegions
+                ExcludeRegions = this.ExcludeRegions,
+                ThroughputBucket = this.ThroughputBucket
             };
         }
 
@@ -106,7 +107,8 @@ namespace Microsoft.Azure.Cosmos
                 SessionToken = this.SessionToken,
                 Properties = this.Properties,
                 AddRequestHeaders = this.AddRequestHeaders,
-                ExcludeRegions = this.ExcludeRegions
+                ExcludeRegions = this.ExcludeRegions,
+                ThroughputBucket = this.ThroughputBucket
             };
         }
     }

@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
+    using System.Globalization;
 
     /// <summary>
     /// Fault Injection Custom Server Error Result with custom status and substatus codes.
@@ -39,6 +40,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             bool suppressServiceRequests,
             double injectionRate = 1)
         {
+            // Negated so that double.NaN, which compares false against every bound, is rejected.
+            if (!(injectionRate > 0 && injectionRate <= 1))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(injectionRate),
+                    $"Argument '{nameof(injectionRate)}' must be within the range (0, 1].");
+            }
+
             this.statusCode = statusCode;
             this.subStatusCode = subStatusCode;
             this.times = times;
@@ -108,7 +117,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public override string ToString()
         {
             return String.Format(
-                "FaultInjectionCustomServerErrorResult{{ statusCode: {0}, subStatusCode: {1}, times: {2}, delay: {3}, injectionRate: {4}}}",
+                CultureInfo.InvariantCulture,
+                "FaultInjectionCustomServerErrorResult{{ statusCode: {0}, subStatusCode: {1}, times: {2}, delay: {3}, configuredInjectionRate: {4}}}",
                 this.statusCode,
                 this.subStatusCode,
                 this.times,
