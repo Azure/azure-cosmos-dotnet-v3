@@ -2448,7 +2448,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             return await DistributedTransactionServerRequest.CreateAsync(
                 operations,
                 MockCosmosUtil.Serializer,
-                CancellationToken.None);
+                CancellationToken.None,
+                tracksDispatch: false);
         }
 
         /// <summary>

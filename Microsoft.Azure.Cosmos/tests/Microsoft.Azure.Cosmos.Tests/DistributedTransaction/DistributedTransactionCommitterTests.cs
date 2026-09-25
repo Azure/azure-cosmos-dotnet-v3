@@ -10,11 +10,13 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -1169,6 +1171,442 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 "Every attempt must carry a real (non-empty) idempotency token.");
         }
 
+        // ─── Dispatch signals ──────────────────────────────────────────────────
+        // The committer only attaches a tracker whose lifetime matches the idempotency token;
+        // RetryHandler injects it into ClientRetryPolicy, which stamps the headers per dispatch.
+
+        [TestMethod]
+        [Description("A write transaction carries the dispatch tracker on the request, which is how ClientRetryPolicy stamps the signals on a dispatch it re-routes to another write region without returning to the committer.")]
+        public async Task ExecuteTransactionAsync_WriteTransaction_CarriesDispatchTracker()
+        {
+            List<DistributedTransactionDispatchTracker> capturedTrackers = new List<DistributedTransactionDispatchTracker>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) => capturedTrackers.Add(
+                    CaptureDispatchTracker(enricher, OperationType.CommitDistributedTransaction)),
+                () => Task.FromResult(CreateSuccessResponseMessage(operationCount: 1)));
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            Assert.AreEqual(1, capturedTrackers.Count);
+            Assert.IsNotNull(capturedTrackers[0],
+                "Without a tracker on the request the coordinator can never be told that a dispatch is a retry or crossed write regions.");
+        }
+
+        [TestMethod]
+        [Description("A read transaction holds no commit state, so replaying it cannot execute a write twice; both signals are omitted entirely rather than sent as False.")]
+        public async Task ExecuteTransactionAsync_ReadTransaction_OmitsDispatchTracker()
+        {
+            List<DistributedTransactionDispatchTracker> capturedTrackers = new List<DistributedTransactionDispatchTracker>();
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) => capturedTrackers.Add(
+                    CaptureDispatchTracker(enricher, OperationType.Read)),
+                () => Task.FromResult(CreateSuccessResponseMessage(operationCount: 1)));
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(), mockContext.Object, OperationType.Read, TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            Assert.AreEqual(1, capturedTrackers.Count);
+            Assert.IsNull(capturedTrackers[0],
+                "A read transaction must not carry the signals at all.");
+        }
+
+        [TestMethod]
+        [Description("A durably aborted (452) retry resubmits under a new idempotency token, which has no dispatch history, so the next attempt starts from False on both signals.")]
+        public async Task ExecuteTransactionAsync_RetryAfterAbort_ReplacesDispatchTracker()
+        {
+            int callCount = 0;
+            List<DistributedTransactionDispatchTracker> capturedTrackers = new List<DistributedTransactionDispatchTracker>();
+            List<(bool IsRetry, bool IsCrossRegionRedirect)> signalsAtAttemptStart = new List<(bool, bool)>();
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) => DriveCrossRegionCrossingForAttempt(
+                    enricher, capturedTrackers, signalsAtAttemptStart),
+                () =>
+                {
+                    callCount++;
+                    return callCount == 1
+                        ? Task.FromResult(new ResponseMessage((HttpStatusCode)StatusCodes.TransactionAborted)
+                        {
+                            Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true}"))
+                        })
+                        : Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.AreEqual(2, callCount, "A durably aborted retriable outcome must be retried.");
+            }
+
+            Assert.AreNotSame(capturedTrackers[0], capturedTrackers[1],
+                "Rotation starts the new token on its own tracker, so the attempts must not share one.");
+            CollectionAssert.AreEqual(
+                new[] { (IsRetry: false, IsCrossRegionRedirect: false), (IsRetry: false, IsCrossRegionRedirect: false) },
+                signalsAtAttemptStart,
+                "The rotated token has no dispatch history, so its first dispatch must report neither signal even though its predecessor crossed a boundary.");
+        }
+
+        [TestMethod]
+        [Description("A retriable non-aborted retry replays the SAME idempotency token, so both signals already earned under that token must still be reported on every later dispatch.")]
+        public async Task ExecuteTransactionAsync_RetryWithoutAbort_KeepsDispatchTracker()
+        {
+            int callCount = 0;
+            List<DistributedTransactionDispatchTracker> capturedTrackers = new List<DistributedTransactionDispatchTracker>();
+            List<(bool IsRetry, bool IsCrossRegionRedirect)> signalsAtAttemptStart = new List<(bool, bool)>();
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) => DriveCrossRegionCrossingForAttempt(
+                    enricher, capturedTrackers, signalsAtAttemptStart),
+                () =>
+                {
+                    callCount++;
+                    return callCount == 1
+                        ? Task.FromResult(CreateRetriableNonAbortedResponseMessage())
+                        : Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.AreEqual(2, callCount, "A retriable non-aborted outcome must be retried.");
+            }
+
+            Assert.AreSame(capturedTrackers[0], capturedTrackers[1],
+                "The token is replayed rather than rotated, so both attempts must share the tracker that describes it.");
+            CollectionAssert.AreEqual(
+                new[] { (IsRetry: false, IsCrossRegionRedirect: false), (IsRetry: true, IsCrossRegionRedirect: true) },
+                signalsAtAttemptStart,
+                "The same token is replayed through a fresh retry policy, so both signals must survive that policy's reset.");
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ExecuteTransactionAsync_PendingAttempt_PreservesTokenTrackerOwnership(bool abortFirstAttempt)
+        {
+            TaskCompletionSource<bool> firstAttemptStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<ResponseMessage> firstAttemptResponse = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            List<(Guid Token, DistributedTransactionDispatchTracker Tracker)> attempts = new();
+            List<(bool IsRetry, bool IsCrossRegionRedirect)> startingSignals = new();
+            int callCount = 0;
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                mockContext,
+                (stream, enricher) => CaptureDispatchTracker(
+                    enricher,
+                    OperationType.CommitDistributedTransaction,
+                    (token, tracker) =>
+                    {
+                        attempts.Add((token, tracker));
+                        startingSignals.Add(tracker.RecordDispatch("East US"));
+                        tracker.RecordDispatch("West US");
+                    }),
+                () =>
+                {
+                    if (Interlocked.Increment(ref callCount) == 1)
+                    {
+                        firstAttemptStarted.TrySetResult(true);
+                        return firstAttemptResponse.Task;
+                    }
+
+                    return Task.FromResult(CreateSuccessResponseMessage(operationCount: 1));
+                });
+
+            using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(10));
+            using ResponseMessage retryResponse = abortFirstAttempt
+                ? new ResponseMessage((HttpStatusCode)StatusCodes.TransactionAborted)
+                {
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true}"))
+                }
+                : CreateRetriableNonAbortedResponseMessage();
+            DistributedTransactionCommitter committer = new(
+                CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+            Task<DistributedTransactionResponse> execution = committer.ExecuteTransactionAsync(
+                NoOpTrace.Singleton, cancellation.Token);
+            try
+            {
+                await firstAttemptStarted.Task.WaitAsync(cancellation.Token);
+                Assert.AreEqual(1, Volatile.Read(ref callCount));
+                Assert.AreEqual(1, attempts.Count);
+                Assert.AreNotEqual(Guid.Empty, attempts[0].Token);
+                Assert.IsFalse(execution.IsCompleted);
+            }
+            finally
+            {
+                firstAttemptResponse.TrySetResult(retryResponse);
+                using DistributedTransactionResponse response = await execution.WaitAsync(cancellation.Token);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            Assert.AreEqual(2, attempts.Count);
+            Assert.AreEqual((false, false), startingSignals[0]);
+            if (abortFirstAttempt)
+            {
+                Assert.AreNotEqual(attempts[0].Token, attempts[1].Token);
+                Assert.AreNotSame(attempts[0].Tracker, attempts[1].Tracker);
+                Assert.AreEqual((false, false), startingSignals[1]);
+            }
+            else
+            {
+                Assert.AreEqual(attempts[0].Token, attempts[1].Token);
+                Assert.AreSame(attempts[0].Tracker, attempts[1].Tracker);
+                Assert.AreEqual((true, true), startingSignals[1]);
+            }
+
+            Assert.AreEqual((true, true), attempts[0].Tracker.RecordDispatch("East US"));
+        }
+
+        [TestMethod]
+        [Description("Exercises the production retry-policy wrapper and gateway HTTP transport, recording URI, token, DTX headers, 449 suppression, and payload across inner failover, same-token outer replay, and post-abort rotation.")]
+        public async Task ExecuteTransactionAsync_ThroughProductionGatewayPipeline_RecordsCompleteDispatchSequence()
+        {
+            Uri accountEndpoint = new Uri("https://account.documents.azure.com/");
+            Uri eastEndpoint = new Uri("https://account-eastus.documents.azure.com/");
+            Uri westEndpoint = new Uri("https://account-westus.documents.azure.com/");
+            AccountProperties accountProperties = new AccountProperties
+            {
+                EnableMultipleWriteLocations = true,
+                Consistency = new AccountConsistency
+                {
+                    DefaultConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                },
+                ReadLocationsInternal = new System.Collections.ObjectModel.Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "East US", Endpoint = eastEndpoint.ToString() },
+                    new AccountRegion { Name = "West US", Endpoint = westEndpoint.ToString() },
+                },
+                WriteLocationsInternal = new System.Collections.ObjectModel.Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "East US", Endpoint = eastEndpoint.ToString() },
+                    new AccountRegion { Name = "West US", Endpoint = westEndpoint.ToString() },
+                },
+            };
+            List<(Uri Uri, Guid Token, string IsRetry, string IsCrossRegionRedirect, string NoRetryOn449, byte[] Payload)> dispatches = new();
+            RecordingHttpMessageHandler recordingHandler = new RecordingHttpMessageHandler(async request =>
+            {
+                if (request.Method == HttpMethod.Get && request.RequestUri.AbsolutePath == "/")
+                {
+                    return new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent(
+                            Newtonsoft.Json.JsonConvert.SerializeObject(accountProperties),
+                            Encoding.UTF8,
+                            "application/json"),
+                    };
+                }
+
+                int sendIndex = dispatches.Count;
+                dispatches.Add((
+                    request.RequestUri,
+                    Guid.Parse(GetRequiredHeader(request, HttpConstants.HttpHeaders.IdempotencyToken)),
+                    GetRequiredHeader(request, DistributedTransactionConstants.IsDtxRetry),
+                    GetRequiredHeader(request, DistributedTransactionConstants.IsDtxCrossRegionRedirect),
+                    GetRequiredHeader(request, HttpConstants.HttpHeaders.NoRetryOn449StatusCode),
+                    await request.Content.ReadAsByteArrayAsync()));
+
+                switch (sendIndex)
+                {
+                    case 0:
+                        return CreateHttpResponse(
+                            HttpStatusCode.Forbidden,
+                            SubStatusCodes.WriteForbidden);
+                    case 1:
+                        return CreateHttpResponse(
+                            (HttpStatusCode)StatusCodes.RetryWith,
+                            SubStatusCodes.DtcCoordinatorRaceConflict,
+                            "{\"isRetriable\":true}");
+                    case 2:
+                        return CreateHttpResponse(
+                            (HttpStatusCode)StatusCodes.TransactionAborted,
+                            SubStatusCodes.Unknown,
+                            "{\"isRetriable\":true}");
+                    default:
+                        return CreateHttpResponse(
+                            HttpStatusCode.OK,
+                            SubStatusCodes.Unknown,
+                            BuildDtcResponseJson(new[] { (200, (string)null) }));
+                }
+            });
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+            };
+            connectionPolicy.PreferredLocations.Add("East US");
+
+            using DocumentClient documentClient = new DocumentClient(
+                accountEndpoint,
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                recordingHandler,
+                connectionPolicy);
+            await documentClient.EnsureValidClientAsync(NoOpTrace.Singleton);
+
+            using CosmosClient client = new CosmosClient(
+                accountEndpoint.ToString(),
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    ApplicationPreferredRegions = new List<string> { "East US" },
+                },
+                documentClient);
+
+            Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
+            mockContext
+                .Setup(context => context.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (resourceUri, resourceType, operationType, requestOptions, container, partitionKey, itemId, stream, enricher, trace, cancellationToken) =>
+                        client.ClientContext.ProcessResourceOperationStreamAsync(
+                            resourceUri,
+                            resourceType,
+                            operationType,
+                            requestOptions,
+                            container,
+                            partitionKey,
+                            itemId,
+                            stream,
+                            enricher,
+                            trace,
+                            cancellationToken));
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(),
+                mockContext.Object,
+                OperationType.CommitDistributedTransaction,
+                TimeSpan.Zero);
+
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(
+                NoOpTrace.Singleton,
+                CancellationToken.None))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            Assert.AreEqual(4, dispatches.Count);
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    new Uri(eastEndpoint, "operations/dtc"),
+                    new Uri(westEndpoint, "operations/dtc"),
+                    new Uri(eastEndpoint, "operations/dtc"),
+                    new Uri(eastEndpoint, "operations/dtc"),
+                },
+                dispatches.Select(dispatch => dispatch.Uri).ToArray());
+
+            Assert.AreEqual(dispatches[0].Token, dispatches[1].Token, "Inner failover must retain the token.");
+            Assert.AreEqual(dispatches[1].Token, dispatches[2].Token, "A non-aborted outer retry must replay the token.");
+            Assert.AreNotEqual(dispatches[2].Token, dispatches[3].Token, "An aborted attempt must rotate the token.");
+
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    (bool.FalseString, bool.FalseString),
+                    (bool.TrueString, bool.TrueString),
+                    (bool.TrueString, bool.TrueString),
+                    (bool.FalseString, bool.FalseString),
+                },
+                dispatches.Select(dispatch => (dispatch.IsRetry, dispatch.IsCrossRegionRedirect)).ToArray());
+
+            Assert.IsTrue(dispatches.All(dispatch => dispatch.NoRetryOn449 == bool.TrueString));
+            Assert.IsTrue(dispatches[0].Payload.Length > 0);
+            foreach ((Uri Uri, Guid Token, string IsRetry, string IsCrossRegionRedirect, string NoRetryOn449, byte[] Payload) dispatch in dispatches.Skip(1))
+            {
+                CollectionAssert.AreEqual(dispatches[0].Payload, dispatch.Payload);
+            }
+        }
+
+        /// <summary>
+        /// Stands in for <see cref="ClientRetryPolicy"/> driving one attempt across a write-region
+        /// boundary, recording the signals the attempt started with.
+        /// </summary>
+        /// <remarks>
+        /// The crossing is simulated because the committer's contract is only that one tracker spans the
+        /// attempts of a single token and is replaced when the token rotates; deriving the signals from
+        /// pinned endpoints is <see cref="ClientRetryPolicyTests"/>' concern.
+        /// </remarks>
+        private static void DriveCrossRegionCrossingForAttempt(
+            Action<RequestMessage> enricher,
+            List<DistributedTransactionDispatchTracker> capturedTrackers,
+            List<(bool IsRetry, bool IsCrossRegionRedirect)> signalsAtAttemptStart)
+        {
+            DistributedTransactionDispatchTracker tracker = CaptureDispatchTracker(
+                enricher, OperationType.CommitDistributedTransaction);
+
+            capturedTrackers.Add(tracker);
+
+            signalsAtAttemptStart.Add(tracker.RecordDispatch("East US"));
+            tracker.RecordDispatch("West US");
+        }
+
+        private static DistributedTransactionDispatchTracker CaptureDispatchTracker(
+            Action<RequestMessage> enricher,
+            OperationType operationType,
+            Action<Guid, DistributedTransactionDispatchTracker> capture = null)
+        {
+            using (RequestMessage request = new RequestMessage
+            {
+                ResourceType = ResourceType.DistributedTransactionBatch,
+                OperationType = operationType,
+            })
+            {
+                enricher(request);
+
+                Assert.IsFalse(
+                    request.IsPropertiesInitialized,
+                    "Publishing the DTX tracker must not initialize or mutate the public Properties dictionary.");
+
+                Guid idempotencyToken = Guid.Parse(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
+                if (request.DistributedTransactionDispatchTracker != null)
+                {
+                    Assert.AreEqual(
+                        idempotencyToken,
+                        request.DistributedTransactionDispatchTracker.IdempotencyToken,
+                        "The idempotency header and dispatch tracker must describe the same logical attempt.");
+                }
+
+                capture?.Invoke(
+                    idempotencyToken,
+                    request.DistributedTransactionDispatchTracker);
+                return request.DistributedTransactionDispatchTracker;
+            }
+        }
+
         [TestMethod]
         [Description("FastResponse retry model: a durably Aborted (HTTP 452) response marked isRetriable:true is retried until success.")]
         public async Task CommitTransaction_RetriesWhenRetriableAndAborted_ThenSucceeds()
@@ -2092,6 +2530,49 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         // ─── Helpers ───────────────────────────────────────────────────────────
+
+        private static string GetRequiredHeader(HttpRequestMessage request, string headerName)
+        {
+            Assert.IsTrue(
+                request.Headers.TryGetValues(headerName, out IEnumerable<string> values),
+                $"Expected HTTP header '{headerName}'.");
+            return values.Single();
+        }
+
+        private static HttpResponseMessage CreateHttpResponse(
+            HttpStatusCode statusCode,
+            SubStatusCodes subStatusCode,
+            string content = null)
+        {
+            HttpResponseMessage response = new HttpResponseMessage(statusCode);
+            response.Headers.Add(
+                WFConstants.BackendHeaders.SubStatus,
+                ((int)subStatusCode).ToString(CultureInfo.InvariantCulture));
+            if (content != null)
+            {
+                response.Content = new StringContent(content, Encoding.UTF8, "application/json");
+            }
+
+            return response;
+        }
+
+        private sealed class RecordingHttpMessageHandler : HttpMessageHandler
+        {
+            private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> sendAsync;
+
+            internal RecordingHttpMessageHandler(
+                Func<HttpRequestMessage, Task<HttpResponseMessage>> sendAsync)
+            {
+                this.sendAsync = sendAsync;
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken)
+            {
+                return this.sendAsync(request);
+            }
+        }
 
         private static string BuildDtcResponseJson(
             (int statusCode, string sessionToken)[] operations)
