@@ -72,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- Query: Fixes reciprocal rank fusion using dense ranking for component scores. Component results now use standard competition ranking, so tied scores share a rank and the next distinct score's rank reflects its sorted position.
 - [6102](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/6102) Read Consistency Strategy: Fixes reads using `ReadConsistencyStrategy.LastCommittedSingleWriteRegion` hanging forever on single write region accounts when the client's application region is a read replica instead of the hub. After each `403/WriteForbidden` the SDK recorded a route to the hub region but never used it, so every retry went back to the same replica and the loop never finished. The retry now follows the recorded hub route and the read completes.
 - [6085](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6085) ThinClient: Fixes dynamic thin-client routing so a client switches between thin-client and gateway on account refresh without a restart, disposes both store models, labels diagnostics with the serving store model, accepts HTTP 401 on the connectivity probe, and reflects thin-client availability in the `F4` user-agent flag (see PR description for details).
 - [6069](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6069) Diagnostics: Fixes an unobserved `TaskScheduler.UnobservedTaskException` that could surface from a background address cache refresh failure.
