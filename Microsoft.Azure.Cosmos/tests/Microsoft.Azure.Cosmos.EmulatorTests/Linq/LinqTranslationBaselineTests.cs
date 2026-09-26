@@ -1442,7 +1442,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         10.123456789d,
                         new object[] {
                             "world",
-                            new object[] { "nested array", new { A = int.MaxValue, B = int.MinValue } } })).Select(doc => doc.ArrayField),
+                            new object[] { "Nested array", new { A = int.MaxValue, B = int.MinValue } } })).Select(doc => doc.ArrayField),
                     skipVerification: true,
                     serializeOutput: true),
                 new LinqTestInput("same field",
@@ -1458,7 +1458,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         10.123456789d,
                         new object[] {
                             "world",
-                            new object[] { "nested array", new { A = int.MaxValue, B = int.MinValue } } }
+                            new object[] { "Nested array", new { A = int.MaxValue, B = int.MinValue } } }
                         }.ArrayContainsAll(doc.ArrayField)).Select(doc => doc.ArrayField),
                     skipVerification: true,
                     serializeOutput: true),
@@ -1588,7 +1588,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         10.123456789d,
                         new object[] {
                             "world",
-                            new object[] { "nested array", new { A = int.MaxValue, B = int.MinValue } } })).Select(doc => doc.ArrayField),
+                            new object[] { "Nested array", new { A = int.MaxValue, B = int.MinValue } } })).Select(doc => doc.ArrayField),
                     skipVerification: true,
                     serializeOutput: true),
                 new LinqTestInput("same field",
@@ -1604,7 +1604,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         10.123456789d,
                         new object[] {
                             "world",
-                            new object[] { "nested array", new { A = int.MaxValue, B = int.MinValue } } }
+                            new object[] { "Nested array", new { A = int.MaxValue, B = int.MinValue } } }
                         }.ArrayContainsAny(doc.ArrayField)).Select(doc => doc.ArrayField),
                     skipVerification: true,
                     serializeOutput: true),

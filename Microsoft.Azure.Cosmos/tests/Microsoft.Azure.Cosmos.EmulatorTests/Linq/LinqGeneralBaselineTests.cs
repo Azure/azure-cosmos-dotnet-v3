@@ -674,7 +674,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             // Customer requested scenario
             inputs.Add(new LinqTestInput(
-                "Where(simple expr && Any)", b => getQuery(b)
+                "Where(Simple expr && Any)", b => getQuery(b)
                 .Where(f => f.FamilyId.Contains("a") && f.Children.Any(c => c.Pets.Count() > 0))));
 
             inputs.Add(new LinqTestInput(
