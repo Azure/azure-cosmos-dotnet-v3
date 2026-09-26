@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [6129](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6129) Query: Support hybrid search queries that project or filter on `FullTextScore`.
+
 #### Breaking Changes
 
 #### Bugs Fixed
