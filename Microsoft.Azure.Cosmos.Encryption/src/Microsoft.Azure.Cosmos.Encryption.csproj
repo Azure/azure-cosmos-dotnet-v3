@@ -26,6 +26,7 @@
   </PropertyGroup>
   <ItemGroup>
     <AdditionalFiles Include="..\..\Microsoft.Azure.Cosmos\src\stylecop.json" Link="stylecop.json" />
+    <EmbeddedResource Update="MdeSrc\Resources\Strings.resx" LogicalName="Microsoft.Data.Encryption.Cryptography.Strings.resources" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' != 'True' ">
