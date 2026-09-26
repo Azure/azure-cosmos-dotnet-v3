@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
                     ORDER BY RANK FullTextScore(c.title, 'John')",
                     new List<List<int>>{ new List<int>{ 2 } },
-                    new PartitionKey(2)),
+                    partitionKey: new PartitionKey(2)),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
@@ -160,33 +160,38 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } }),
+                    new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } },
+                    ValidationMode.TextOrTitle),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (c.index = 2) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<List<int>>{ new List<int>{ 2 } }),
+                    new List<List<int>>{ new List<int>{ 2 } },
+                    ValidationMode.TextOrTitle),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
                     new List<List<int>>{ new List<int>{ 2 } },
+                    ValidationMode.TextOrTitle,
                     new PartitionKey(2)),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } }),
+                    new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } },
+                    ValidationMode.TextOrTitle),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')
                     OFFSET 1 LIMIT 5",
-                    new List<List<int>>{ new List<int>{ 57, 85 }, new List<int>{ 85, 57 } }),
+                    new List<List<int>>{ new List<int>{ 57, 85 }, new List<int>{ 85, 57 } },
+                    ValidationMode.TextOrTitle),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
@@ -195,13 +200,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     new List<List<int>>{
                         new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 57, 85 },
                         new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 85, 57 },
-                    }),
+                    },
+                    ValidationMode.TextOrTitleOrUnitedStates),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } }),
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } },
+                    ValidationMode.TextOrTitleOrUnitedStates),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
@@ -211,7 +218,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     new List<List<int>>{
                         new List<int>{ 24, 77, 76, 80, 2, 22, 57, 85 },
                         new List<int>{ 24, 77, 76, 80, 2, 22, 85, 57 },
-                    }),
+                    },
+                    ValidationMode.TextOrTitleOrUnitedStates),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
@@ -256,7 +264,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     new List<List<int>>{
                         new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 85, 57 },
                         new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 57, 85 },
-                    }),
+                    },
+                    ValidationMode.TextOrTitleOrUnitedStates),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
@@ -265,19 +274,22 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     new List<List<int>>{
                         new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 57, 85 },
                         new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 85, 57 },
-                    }),
+                    },
+                    ValidationMode.TextOrTitleOrUnitedStates),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [0.1, 0.1])",
-                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } }),
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } },
+                    ValidationMode.TextOrTitleOrUnitedStates),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [-1, -1])",
-                    new List<List<int>>{ new List<int>{ 57, 85, 22, 80, 76, 77, 24, 75, 54, 49, 51, 2, 61 } }),
+                    new List<List<int>>{ new List<int>{ 57, 85, 22, 80, 76, 77, 24, 75, 54, 49, 51, 2, 61 } },
+                    ValidationMode.TextOrTitleOrUnitedStates),
             };
 
             await this.RunTests(testCases, enableFullTextPreviewFeatures: true);
@@ -374,6 +386,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         queryRequestOptions: testRequestOptions,
                         queryDrainingMode: QueryDrainingMode.HoldState);
 
+                    if (testCase.ValidationMode != ValidationMode.None)
+                    {
+                        Assert.IsTrue(
+                            result.All(document =>
+                                (testCase.ValidationMode.HasFlag(ValidationMode.TitleScore) && document.TitleScore > 0) ||
+                                (testCase.ValidationMode.HasFlag(ValidationMode.TextScore) && document.TextScore > 0) ||
+                                (testCase.ValidationMode.HasFlag(ValidationMode.UnitedStatesScore) && document.UnitedStatesScore > 0)),
+                            $"Every document must have a positive score for at least one {testCase.ValidationMode} term.");
+                    }
+
                     IEnumerable<int> actual = result.Select(document => document.Index);
 
                     bool match = false;
@@ -426,12 +448,17 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             return policy;
         }
 
-        private static SanityTestCase MakeSanityTest(string query, IReadOnlyList<IReadOnlyList<int>> expectedIndices, PartitionKey? partitionKey = null)
+        private static SanityTestCase MakeSanityTest(
+            string query,
+            IReadOnlyList<IReadOnlyList<int>> expectedIndices,
+            ValidationMode validationMode = ValidationMode.None,
+            PartitionKey? partitionKey = null)
         {
             return new SanityTestCase
             {
                 Query = query,
                 ExpectedIndices = expectedIndices,
+                ValidationMode = validationMode,
                 PartitionKey = partitionKey,
             };
         }
@@ -443,6 +470,19 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             public IReadOnlyList<IReadOnlyList<int>> ExpectedIndices { get; init; }
 
             public PartitionKey? PartitionKey { get; init; }
+
+            public ValidationMode ValidationMode { get; init; }
+        }
+
+        [Flags]
+        private enum ValidationMode
+        {
+            None = 0,
+            TitleScore = 1 << 0,
+            TextScore = 1 << 1,
+            UnitedStatesScore = 1 << 2,
+            TextOrTitle = TextScore | TitleScore,
+            TextOrTitleOrUnitedStates = TitleScore | TextScore | UnitedStatesScore,
         }
 
         private sealed class TextDocument
@@ -452,6 +492,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             public string Title { get; set; }
 
             public string Text { get; set; }
+
+            public double TitleScore { get; set; }
+
+            public double TextScore { get; set; }
+
+            public double UnitedStatesScore { get; set; }
         }
 
         private static class FieldNames
