@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
     internal sealed class ExceptionWithStackTraceException : Exception
     {
         private static readonly string EndOfInnerExceptionString = "--- End of inner exception stack trace ---";
-        private readonly StackTrace stackTrace;
+        internal readonly StackTrace stackTrace;
 
         public ExceptionWithStackTraceException(StackTrace stackTrace)
             : this(message: null, innerException: null, stackTrace: stackTrace)
