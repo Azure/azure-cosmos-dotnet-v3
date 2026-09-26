@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [6125](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6125) Linq: Fixes queries with an `Any()` collection filter combined with `OrderByRank` failing with an `ORDER BY RANK` service error — the filter is now translated to an `EXISTS` clause instead of a `JOIN`.
+
 #### Other Changes
 
 - [6127](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6127) Direct: Updated the dependency to version 3.44.1, adding native query-planning support for `FullTextScore` expressions in the `SELECT` and `WHERE` clauses of hybrid search queries. Hybrid search query plans now also include the searched document paths and terms.
