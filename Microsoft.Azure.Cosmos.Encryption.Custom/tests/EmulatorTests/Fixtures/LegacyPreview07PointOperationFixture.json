@@ -1,0 +1,69 @@
+{
+  "dataEncryptionKey": {
+    "id": "released-aead-dek",
+    "encryptionAlgorithm": "AEAes256CbcHmacSha256Randomized",
+    "wrappedDataEncryptionKey": "isRiCHq1PxK4+7vJ0d0u8yUuYfVyHUN2UnmiNfMPjfE=",
+    "keyWrapMetadata": {
+      "type": "custom",
+      "name": "compat-matrix",
+      "value": "https://compat.matrix/released"
+    },
+    "createTime": 1788366673
+  },
+  "legacyItem": {
+    "id": "released-aead-newtonsoft",
+    "PK": "compat-matrix",
+    "NonSensitive": "plain",
+    "PlainEscaped": "p_q=\" p_b=\\ p_nl=\n p_u=é end",
+    "_ei": {
+      "_ef": 2,
+      "_en": "released-aead-dek",
+      "_ea": "AEAes256CbcHmacSha256Randomized",
+      "_ed": "AULccr3+gOveFSg3KoYrORv77mN/AjOCphO/+Nwixr7xLo5E/bO5cxr+37OrEiocndDiyXIqIwQiWWadxZqRIiGw80dfb+UDMP3aDluVT17fEgau7mIMEftMW/R74OSsq0YpDXTB1gdEJkD2LEliA1CDrLqkhO71LE50B8wfwUYgbpK6T8R35JHAt1ZPp9Tjex3B4n9s4agexWZqhBAwp9+Gyb752OAfi2eM1mLBYSp0np0pDdVH6Pf66QDjTynmO3G6HKY6OR7LDgbJiuqsobmpC/Rupn+Vgn8CtiLKI+BdGzozAmaZjoF2ouT9p0RMML+nWah+dAWOdlM9P6IwgKgP6VBr/M3S7CCpg0ZLY0HT2UL5zchPPNme6DPZViaGtq6xQUHBBc3I+c4ziGmhLiTBiAPwDRIHxPHu5JAzKjtdYhBAR/pYhQjSEW5kb7LdGj9tFAF9pkat4KRtJpLwsbQHV5RhS2qLRWAqQ7Q7C1Va",
+      "_ep": [
+        "/Sensitive",
+        "/EncEscaped",
+        "/EncAstral",
+        "/esc\"name\\x",
+        "/EncObj",
+        "/EncArr",
+        "/EncLong",
+        "/EncIntegralDouble",
+        "/EncNormalDouble"
+      ]
+    }
+  },
+  "plaintext": {
+    "id": "released-aead-newtonsoft",
+    "PK": "compat-matrix",
+    "NonSensitive": "plain",
+    "Sensitive": "secret::released-aead-newtonsoft",
+    "PlainEscaped": "p_q=\" p_b=\\ p_nl=\n p_u=é end",
+    "EncEscaped": "q=\" b=\\ nl=\n tab=\t u=é ctl=\u0001 end",
+    "EncAstral": "😀𐍈🜨 日本語 العربية 😀 Ź",
+    "esc\"name\\x": "named-secret",
+    "EncObj": {
+      "a": null,
+      "b": 1
+    },
+    "EncArr": [
+      1,
+      null,
+      2
+    ],
+    "EncLong": 9007199254740993,
+    "EncIntegralDouble": 5.0,
+    "EncNormalDouble": 1234.5
+  },
+  "encryptedPaths": [
+    "/Sensitive",
+    "/EncEscaped",
+    "/EncAstral",
+    "/esc\"name\\x",
+    "/EncObj",
+    "/EncArr",
+    "/EncLong",
+    "/EncIntegralDouble",
+    "/EncNormalDouble"
+  ]
+}
