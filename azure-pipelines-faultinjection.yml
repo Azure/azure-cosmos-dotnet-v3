@@ -28,6 +28,19 @@ stages:
         VmImage: '${{ variables.VmImage }}'
         IncludeIntegration: true
         MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
+        # FaultInjectionProxyTests need a thin client account supplied as the
+        # COSMOSDB_THIN_CLIENT environment variable (see FaultInjection/tests/
+        # Utils/TestCommon.cs -> GetThinClientConnectionString). No such variable
+        # is defined on this pipeline definition, so the suite has never actually
+        # run here -- it just fails in TestInitialize. Exclude it so the release
+        # gate reflects real signal.
+        #
+        # To enable it later: add COSMOSDB_THINCLIENT as a secret variable on the
+        # dotnet-fault-injection-release definition, map it into the integration
+        # job's env as COSMOSDB_THIN_CLIENT (note the underscore difference, and
+        # that ADO secret variables are not auto-exported to the environment), and
+        # then drop this parameter.
+        IntegrationTestFilter: ' --filter "FullyQualifiedName!~FaultInjectionProxyTests" '
 
 - stage:
   displayName: Publish 
