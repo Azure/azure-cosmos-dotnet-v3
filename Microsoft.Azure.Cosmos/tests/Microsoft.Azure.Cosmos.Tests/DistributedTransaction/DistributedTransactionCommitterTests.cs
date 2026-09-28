@@ -876,9 +876,9 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                      "instead of silently degrading the collection to eventual consistency.")]
         [DataRow("1#9#4=8#5=7", null, "1#9#4=8#5=7", "missing the partitionKeyRangeId prefix", DisplayName = "bare LSN with no partitionKeyRangeId to prefix it")]
         [DataRow("5", null, "5", "missing the partitionKeyRangeId prefix", DisplayName = "bare number with no partitionKeyRangeId to prefix it")]
-        [DataRow("garbage", "0", "garbage", "could not be parsed", DisplayName = "unparsable token alongside a valid partitionKeyRangeId")]
+        [DataRow("garbage", "0", "garbage", "missing the partitionKeyRangeId prefix", DisplayName = "unparsable token alongside a valid partitionKeyRangeId")]
         [DataRow("0:garbage", null, "0:garbage", "could not be parsed", DisplayName = "valid partitionKeyRangeId with an unparsable LSN segment")]
-        [DataRow("0:1#5,1:1#7", null, "0:1#5,1:1#7", "could not be parsed", DisplayName = "compound multi-partition token in a partition-local slot")]
+        [DataRow("0:1#5,1:1#7", null, "0:1#5,1:1#7", "must contain one partition-local pair", DisplayName = "compound multi-partition token in a partition-local slot")]
         public async Task ExecuteTransactionAsync_ThrowsOnMalformedToken_WhenCommitted(
             string sessionToken,
             string partitionKeyRangeId,
@@ -2538,13 +2538,15 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [DataRow("bogus:1#5", DisplayName = "nonnumeric partitionKeyRangeId")]
         [DataRow(",0:1#5", DisplayName = "leading compound separator")]
         [DataRow("2147483648:1#5", DisplayName = "partitionKeyRangeId overflow")]
-        [DataRow("0:#1", DisplayName = "empty vector version")]
-        [DataRow("0:1#-", DisplayName = "empty signed global LSN")]
+        [DataRow("-1:1#5", DisplayName = "negative partitionKeyRangeId")]
+        [DataRow("+1:1#5", DisplayName = "signed partitionKeyRangeId")]
+        [DataRow(" :1#5", DisplayName = "blank partitionKeyRangeId")]
+        [DataRow("0 :1#5", DisplayName = "trailing range-id whitespace")]
+        [DataRow("\t0:1#5", DisplayName = "leading range-id tab")]
+        [DataRow("0::1#5", DisplayName = "extra colon")]
+        [DataRow("0:1#5:2", DisplayName = "colon in token body")]
         [DataRow("0:+1#5", DisplayName = "unsupported positive sign")]
-        [DataRow("0:9223372036854775808#1", DisplayName = "vector version overflow")]
-        [DataRow("0:1#5#=7", DisplayName = "empty region id")]
         [DataRow("0:1#5#4294967296=7", DisplayName = "region id overflow")]
-        [DataRow("0:1#5#4=9223372036854775808", DisplayName = "local LSN overflow")]
         [DataRow("0:1#5#4=7=8", DisplayName = "multiple region separators")]
         public async Task ExecuteTransactionAsync_ThrowsOnMalformedUserSuppliedSessionToken(string malformedToken)
         {
@@ -2574,6 +2576,14 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             Assert.IsTrue(exception.Message.Contains(malformedToken),
                 $"Message must quote the offending token. Message: {exception.Message}");
+            Assert.AreEqual(nameof(DistributedTransactionRequestOptions.SessionToken), exception.ParamName);
+            mockContext.Verify(
+                context => context.GetCachedContainerPropertiesAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Never,
+                "Invalid tokens must be rejected before a metadata lookup can issue a request.");
             Assert.AreEqual(0, dispatchCount,
                 "A malformed caller-supplied token must fail pre-flight, before the transaction is dispatched.");
         }
@@ -2677,7 +2687,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
             List<string> capturedMessages = new List<string>();
-            System.Diagnostics.TraceListener listener = new DelegatingTraceListener(
+            using System.Diagnostics.TraceListener listener = new DelegatingTraceListener(
                 (_, message) => capturedMessages.Add(message));
 
             System.Diagnostics.SourceLevels previousLevel = DefaultTrace.TraceSource.Switch.Level;
@@ -2736,7 +2746,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 TimeSpan.Zero);
 
             List<string> capturedMessages = new List<string>();
-            System.Diagnostics.TraceListener listener = new DelegatingTraceListener(
+            using System.Diagnostics.TraceListener listener = new DelegatingTraceListener(
                 (_, message) => capturedMessages.Add(message));
 
             System.Diagnostics.SourceLevels previousLevel = DefaultTrace.TraceSource.Switch.Level;
@@ -2834,12 +2844,19 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [DataTestMethod]
-        [Description("Verifies valid boundary values and tolerated leading range-id whitespace are accepted.")]
+        [Description("Verifies token shapes accepted by the point-operation parser are accepted.")]
         [DataRow(" 0:1#5", DisplayName = "leading space, lands in range id")]
         [DataRow("2147483647:9223372036854775807", DisplayName = "maximum range id and simple LSN")]
         [DataRow("0:-9223372036854775808#9223372036854775807#4294967295=-9223372036854775808", DisplayName = "vector numeric boundaries")]
+        [DataRow("0:#1", DisplayName = "empty vector version")]
+        [DataRow("0:1#-", DisplayName = "empty signed global LSN")]
+        [DataRow("0:9223372036854775808#1", DisplayName = "vector version overflow")]
+        [DataRow("0:1#5#=7", DisplayName = "empty region id")]
+        [DataRow("0:1#5#4=9223372036854775808", DisplayName = "local LSN overflow")]
         public async Task ExecuteTransactionAsync_AcceptsSessionTokenShapesThePointOperationPathTolerates(string tolerantToken)
         {
+            Assert.IsTrue(SessionTokenHelper.TryParse(tolerantToken, out ISessionToken _),
+                "This compatibility case must also be accepted by the shared session-token parser.");
             int dispatchCount = 0;
             Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
             this.SetupProcessResourceOperation(
@@ -2861,7 +2878,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
                 operations, mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.Zero);
 
-            await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+            using DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.AreEqual(1, dispatchCount,
                 $"Validation must not be stricter than the point-operation path, which accepts '{tolerantToken}'.");

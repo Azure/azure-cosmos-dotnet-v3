@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -403,50 +402,51 @@ namespace Microsoft.Azure.Cosmos
 
                 throw new ArgumentException(
                     $"Distributed transaction operation index {operation.OperationIndex} was given the session token " +
-                    $"'{FormatSessionTokenForMessage(sessionToken)}', which must be a single valid " +
+                    $"'{FormatForLog(sessionToken)}', which must be a single valid " +
                     "'<partitionKeyRangeId>:<token>' pair. The transaction was not sent.",
                     nameof(DistributedTransactionRequestOptions.SessionToken));
             }
         }
 
-        private static string FormatSessionTokenForMessage(string sessionToken)
-        {
-            return FormatForLog(sessionToken);
-        }
-
         /// <summary>
         /// Determines whether a session token is usable: it must have one numeric partition key range id
-        /// and a simple or vector token whose numeric segments fit their wire types.
+        /// and a simple or vector token accepted by the shared session-token parser.
         /// </summary>
         /// <param name="sessionToken">The token reported for a single operation.</param>
         /// <param name="failureReason">The reason the token is unusable, or <c>null</c> when it is usable.</param>
         private static bool TryValidateSessionToken(string sessionToken, out string failureReason)
         {
             int colonIndex = sessionToken.IndexOf(':');
-            string partitionKeyRangeId = colonIndex < 0
-                ? null
-                : sessionToken.Substring(0, colonIndex);
-            string tokenSegment = colonIndex < 0
-                ? sessionToken
-                : sessionToken.Substring(colonIndex + 1);
-
-            if (sessionToken.IndexOf(',') >= 0
-                || (colonIndex >= 0 && sessionToken.IndexOf(':', colonIndex + 1) >= 0)
-                || !DistributedTransactionCommitter.IsValidSessionTokenSegment(tokenSegment))
-            {
-                failureReason = "the token could not be parsed.";
-                return false;
-            }
-
-            if (string.IsNullOrEmpty(partitionKeyRangeId))
+            if (colonIndex <= 0)
             {
                 failureReason = "the token is missing the partitionKeyRangeId prefix.";
                 return false;
             }
 
+            if (sessionToken.IndexOf(',') >= 0
+                || sessionToken.IndexOf(':', colonIndex + 1) >= 0)
+            {
+                failureReason = "the token must contain one partition-local pair.";
+                return false;
+            }
+
+            string partitionKeyRangeId = sessionToken.Substring(0, colonIndex);
             if (!DistributedTransactionCommitter.IsValidPartitionKeyRangeId(partitionKeyRangeId))
             {
                 failureReason = "the partitionKeyRangeId prefix is invalid.";
+                return false;
+            }
+
+            // The shared parser traces malformed values before returning false.
+            if (sessionToken.IndexOf('\r') >= 0 || sessionToken.IndexOf('\n') >= 0)
+            {
+                failureReason = "the token contains an invalid line break.";
+                return false;
+            }
+
+            if (!SessionTokenHelper.TryParse(sessionToken, out ISessionToken _))
+            {
+                failureReason = "the token could not be parsed.";
                 return false;
             }
 
@@ -482,88 +482,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return true;
-        }
-
-        private static bool IsValidSessionTokenSegment(string value)
-        {
-            string[] segments = value.Split('#');
-            if (segments.Length == 1)
-            {
-                return DistributedTransactionCommitter.IsValidInt64Segment(segments[0]);
-            }
-
-            if (segments.Length < 2
-                || !DistributedTransactionCommitter.IsValidInt64Segment(segments[0])
-                || !DistributedTransactionCommitter.IsValidInt64Segment(segments[1]))
-            {
-                return false;
-            }
-
-            for (int index = 2; index < segments.Length; index++)
-            {
-                string regionProgress = segments[index];
-                int separatorIndex = regionProgress.IndexOf('=');
-                if (separatorIndex <= 0
-                    || separatorIndex != regionProgress.LastIndexOf('=')
-                    || separatorIndex == regionProgress.Length - 1
-                    || !DistributedTransactionCommitter.IsValidUInt32Segment(regionProgress.Substring(0, separatorIndex))
-                    || !DistributedTransactionCommitter.IsValidInt64Segment(regionProgress.Substring(separatorIndex + 1)))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private static bool IsValidInt64Segment(string value)
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                return false;
-            }
-
-            int index = value[0] == '-' ? 1 : 0;
-            if (index == value.Length)
-            {
-                return false;
-            }
-
-            for (; index < value.Length; index++)
-            {
-                if (value[index] < '0' || value[index] > '9')
-                {
-                    return false;
-                }
-            }
-
-            return long.TryParse(
-                value,
-                NumberStyles.AllowLeadingSign,
-                CultureInfo.InvariantCulture,
-                out long _);
-        }
-
-        private static bool IsValidUInt32Segment(string value)
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                return false;
-            }
-
-            for (int index = 0; index < value.Length; index++)
-            {
-                if (value[index] < '0' || value[index] > '9')
-                {
-                    return false;
-                }
-            }
-
-            return uint.TryParse(
-                value,
-                NumberStyles.None,
-                CultureInfo.InvariantCulture,
-                out uint _);
         }
     }
 }
