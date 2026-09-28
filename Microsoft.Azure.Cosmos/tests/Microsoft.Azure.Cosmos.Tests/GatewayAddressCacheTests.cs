@@ -1797,6 +1797,245 @@ namespace Microsoft.Azure.Cosmos
                 expectedTotalSuccessAddressesToOpenCount: totalSuccessAddressesToOpenCount);
         }
 
+        /// <summary>
+        /// VERDICT: NOT A DEFECT IN .NET.
+        ///
+        /// Java equivalent: azure-sdk-for-java#50182 "bug 1" — PPCB recovery assumed a populated address
+        /// cache entry, hit a NullPointerException on a cache miss, and permanently prevented failback.
+        /// Reached when the initial address refresh fails (503/timeout) before PPCB fails the partition over.
+        ///
+        /// .NET resolves through <c>AsyncCacheNonBlocking.GetAsync(singleValueInitFunc: ...)</c>, so a cache
+        /// miss resolves from the gateway instead of returning null. This test pins that behaviour so the
+        /// Java defect cannot be introduced here.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        [Description("NOT A DEFECT: PPCB recovery resolves addresses on a cache miss and completes failback.")]
+        public async Task GlobalAddressResolver_PpcbRecovery_WithEmptyAddressCache_ResolvesFromGatewayAndFailsBack()
+        {
+            // Arrange - a freshly constructed resolver has no cached addresses for this partition.
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>());
+            GlobalAddressResolver globalAddressResolver = this.CreateGlobalAddressResolverForFailbackTest(
+                fakeOpenConnectionHandler,
+                out ContainerProperties containerProperties);
+
+            Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>> pkRangeToEndpointMappings =
+                GatewayAddressCacheTests.CreateUnhealthyPartitionMapping(containerProperties, out PartitionKeyRange pkRange);
+
+            // Act - must not throw on the cache miss.
+            await globalAddressResolver.TryOpenConnectionToUnhealthyEndpointsAsync(pkRangeToEndpointMappings);
+
+            // Assert - addresses were resolved from the gateway and every replica was probed.
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedTotalFailedAddressesToOpenCount: 0,
+                expectedTotalHandlerInvocationCount: 1,
+                expectedTotalReceivedAddressesCount: 3,
+                expectedTotalSuccessAddressesToOpenCount: 3);
+
+            // GlobalPartitionEndpointManagerCore removes the failover entry only when the status is
+            // Connected, so this is the assertion that proves recovery actually completes.
+            Assert.AreEqual(
+                TransportAddressHealthState.HealthStatus.Connected,
+                pkRangeToEndpointMappings[pkRange].Item3,
+                "An empty address cache must not block failback. If this fails, the java#50182 bug-1 class of "
+                + "defect has been introduced into .NET.");
+        }
+
+        /// <summary>
+        /// VERDICT: DEFECT — characterization test pinning the CURRENT (incorrect) behaviour.
+        ///
+        /// Java equivalent: azure-sdk-for-java#50182 "bug 2" — recovery probes stale cached replica addresses
+        /// and cannot reconnect after the backend addresses change. Java's fix force-refreshes the addresses
+        /// and retries the refreshed replicas once.
+        ///
+        /// .NET calls <c>TryGetAddressesAsync(..., forceRefresh: false, ...)</c> and never retries, so a stale
+        /// cache entry leaves the partition failed over indefinitely.
+        ///
+        /// This test PASSES today because it asserts the broken behaviour. It exists as a tripwire: porting
+        /// the fix breaks it, forcing a deliberate update. The desired behaviour is asserted by
+        /// <see cref="GlobalAddressResolver_PpcbRecovery_WithUnreachableCachedAddresses_ShouldForceRefreshAndRetry"/>.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        [Description("DEFECT: PPCB recovery never force-refreshes stale addresses, so the partition never fails back.")]
+        public async Task GlobalAddressResolver_PpcbRecovery_WithUnreachableCachedAddresses_DoesNotForceRefresh_KnownDefect()
+        {
+            // Arrange - every replica probe fails, simulating decommissioned/unreachable cached addresses.
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>() { 0, 1, 2 });
+            GlobalAddressResolver globalAddressResolver = this.CreateGlobalAddressResolverForFailbackTest(
+                fakeOpenConnectionHandler,
+                out ContainerProperties containerProperties);
+
+            Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>> pkRangeToEndpointMappings =
+                GatewayAddressCacheTests.CreateUnhealthyPartitionMapping(containerProperties, out PartitionKeyRange pkRange);
+
+            // Act.
+            await globalAddressResolver.TryOpenConnectionToUnhealthyEndpointsAsync(pkRangeToEndpointMappings);
+
+            // Assert - all three probes failed.
+            Assert.AreEqual(3, fakeOpenConnectionHandler.GetTotalExceptionCount());
+            Assert.AreEqual(0, fakeOpenConnectionHandler.GetTotalSuccessfulInvocationCount());
+
+            // DEFECT 1 of 2: the addresses are never force-refreshed, so the refreshed replicas are never
+            // retried. Porting the java#50182 fix makes this 2.
+            Assert.AreEqual(
+                1,
+                fakeOpenConnectionHandler.GetTotalMethodInvocationCount(),
+                "DEFECT: recovery probes the cached addresses once with forceRefresh:false and gives up. "
+                + "A value of 2 means the force-refresh retry has been ported - update this test and remove "
+                + "the [Ignore] on the ShouldForceRefreshAndRetry test.");
+
+            // DEFECT 2 of 2: because nothing reached Connected, GlobalPartitionEndpointManagerCore keeps the
+            // failover entry and the partition stays pinned to the secondary region indefinitely.
+            Assert.AreEqual(
+                TransportAddressHealthState.HealthStatus.Unhealthy,
+                pkRangeToEndpointMappings[pkRange].Item3,
+                "DEFECT: the partition is never marked Connected, so failback never occurs.");
+        }
+
+        /// <summary>
+        /// VERDICT: DESIRED BEHAVIOUR — currently fails, enable once the java#50182 fix is ported.
+        ///
+        /// Models the real-world case the Java fix targets: the cached replica addresses are dead, but a
+        /// force-refresh would return healthy ones. The fake handler fails every address on the first probe
+        /// and succeeds on the second, so a passing run requires the implementation to refresh and retry.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        [Ignore("Fails until the azure-sdk-for-java#50182 force-refresh-and-retry fix is ported to GlobalAddressResolver.TryOpenConnectionToUnhealthyEndpointsAsync.")]
+        [Description("DESIRED: PPCB recovery force-refreshes unreachable addresses, retries once, and fails back.")]
+        public async Task GlobalAddressResolver_PpcbRecovery_WithUnreachableCachedAddresses_ShouldForceRefreshAndRetry()
+        {
+            // Arrange - all three replicas fail on probe attempt 1 and succeed on attempt 2, i.e. the cached
+            // addresses are dead but the refreshed ones are healthy.
+            Dictionary<int, HashSet<int>> failFirstAttemptOnly = new()
+            {
+                { 0, new HashSet<int>() { 1 } },
+                { 1, new HashSet<int>() { 1 } },
+                { 2, new HashSet<int>() { 1 } },
+            };
+
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failIndexesByAttempts: failFirstAttemptOnly);
+            GlobalAddressResolver globalAddressResolver = this.CreateGlobalAddressResolverForFailbackTest(
+                fakeOpenConnectionHandler,
+                out ContainerProperties containerProperties);
+
+            Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>> pkRangeToEndpointMappings =
+                GatewayAddressCacheTests.CreateUnhealthyPartitionMapping(containerProperties, out PartitionKeyRange pkRange);
+
+            // Act.
+            await globalAddressResolver.TryOpenConnectionToUnhealthyEndpointsAsync(pkRangeToEndpointMappings);
+
+            // Assert - the first probe failed, addresses were force-refreshed, the retry succeeded.
+            Assert.AreEqual(
+                2,
+                fakeOpenConnectionHandler.GetTotalMethodInvocationCount(),
+                "Expected one probe of the cached addresses plus one retry of the force-refreshed addresses.");
+
+            Assert.AreEqual(
+                TransportAddressHealthState.HealthStatus.Connected,
+                pkRangeToEndpointMappings[pkRange].Item3,
+                "After a successful retry on refreshed addresses the partition must fail back.");
+        }
+
+        /// <summary>
+        /// Builds the pk-range to failed-endpoint mapping that <c>GlobalPartitionEndpointManagerCore</c> hands
+        /// to the recovery probe for a partition that PPCB has failed over.
+        /// </summary>
+        private static Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>> CreateUnhealthyPartitionMapping(
+            ContainerProperties containerProperties,
+            out PartitionKeyRange pkRange)
+        {
+            const string suffix = "-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF";
+            pkRange = new PartitionKeyRange() { Id = "YxM9ANCZIwABAAAAAAAAAA==", MinInclusive = "3F" + suffix, MaxExclusive = "5F" + suffix };
+
+            return new Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>()
+            {
+                {
+                    pkRange,
+                    new Tuple<string, Uri, TransportAddressHealthState.HealthStatus>(
+                        containerProperties.ResourceId,
+                        new Uri("https://location1.documents.azure.com"),
+                        TransportAddressHealthState.HealthStatus.Unhealthy)
+                }
+            };
+        }
+
+        /// <summary>
+        /// Shared setup for the PPCB failback tests: a three-region account, a gateway that serves addresses,
+        /// and a <see cref="GlobalAddressResolver"/> with an empty address cache.
+        /// </summary>
+        private GlobalAddressResolver CreateGlobalAddressResolverForFailbackTest(
+            FakeOpenConnectionHandler fakeOpenConnectionHandler,
+            out ContainerProperties containerProperties)
+        {
+            FakeMessageHandler messageHandler = new();
+            AccountProperties databaseAccount = new()
+            {
+                EnableMultipleWriteLocations = false,
+                ReadLocationsInternal = new Collection<AccountRegion>()
+                {
+                    { new AccountRegion() { Name = "location1", Endpoint = new Uri("https://location1.documents.azure.com").ToString() } },
+                    { new AccountRegion() { Name = "location2", Endpoint = new Uri("https://location2.documents.azure.com").ToString() } },
+                    { new AccountRegion() { Name = "location3", Endpoint = new Uri("https://location3.documents.azure.com").ToString() } },
+                },
+                WriteLocationsInternal = new Collection<AccountRegion>()
+                {
+                    { new AccountRegion() { Name = "location1", Endpoint = new Uri("https://location1.documents.azure.com").ToString() } },
+                    { new AccountRegion() { Name = "location2", Endpoint = new Uri("https://location2.documents.azure.com").ToString() } },
+                    { new AccountRegion() { Name = "location3", Endpoint = new Uri("https://location3.documents.azure.com").ToString() } },
+                }
+            };
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new();
+            mockDocumentClient
+                .Setup(owner => owner.ServiceEndpoint)
+                .Returns(new Uri("https://location1.documents.azure.com"));
+
+            mockDocumentClient
+                .Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount);
+
+            GlobalEndpointManager globalEndpointManager = new(
+                mockDocumentClient.Object,
+                new ConnectionPolicy());
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(globalEndpointManager);
+
+            containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
+            containerProperties.Id = "TestId";
+            containerProperties.PartitionKeyPath = "/pk";
+
+            ContainerProperties resolvedContainerProperties = containerProperties;
+            Mock<CollectionCache> mockCollectionCache = new(MockBehavior.Strict, false);
+            mockCollectionCache
+                .Setup(x => x.ResolveByNameAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    false,
+                    It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(resolvedContainerProperties));
+
+            GlobalAddressResolver globalAddressResolver = new(
+                endpointManager: globalEndpointManager,
+                partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
+                protocol: Protocol.Tcp,
+                tokenProvider: this.mockTokenProvider.Object,
+                collectionCache: mockCollectionCache.Object,
+                routingMapProvider: this.partitionKeyRangeCache.Object,
+                serviceConfigReader: this.mockServiceConfigReader.Object,
+                connectionPolicy: new ConnectionPolicy() { RequestTimeout = TimeSpan.FromSeconds(120) },
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
+                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+
+            globalAddressResolver.SetOpenConnectionsHandler(
+                openConnectionsHandler: fakeOpenConnectionHandler);
+
+            return globalAddressResolver;
+        }
+
         private void ConfigureReplicationPolicy(int replicaSetSize)
         {
             this.targetReplicaSetSize = replicaSetSize;
