@@ -19,8 +19,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal partial class StreamProcessor
     {
-        private const int MaxBufferSize = 64 * 1024 * 1024;
-
         private static readonly SqlBitSerializer SqlBoolSerializer = new ();
         private static readonly SqlFloatSerializer SqlDoubleSerializer = new ();
         private static readonly SqlBigIntSerializer SqlLongSerializer = new ();
@@ -102,7 +100,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         writeSegment);
 
                     leftOver = dataLength - result.BytesConsumed;
-                    buffer = JsonFeedStreamHelper.HandleLeftOver(buffer, dataLength, leftOver, result.BytesConsumed, MaxBufferSize);
+                    buffer = JsonFeedStreamHelper.HandleLeftOver(
+                        buffer,
+                        dataLength,
+                        leftOver,
+                        result.BytesConsumed,
+                        JsonFeedStreamHelper.MaximumBufferSize);
 
                     if (isFinalBlock && leftOver > 0)
                     {
@@ -172,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             (byte[] objectBytes, int length) = objectBuffer.WrittenBuffer;
 
-            EncryptionProperties encryptionProperties = TryExtractEncryptionProperties(objectBytes, length);
+            EncryptionProperties encryptionProperties = this.TryExtractEncryptionProperties(objectBytes, length);
             if (encryptionProperties == null)
             {
                 WriteBufferedObject(objectBytes, length, objectBuffer, outputStream);
@@ -239,15 +242,65 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
         }
 
-        private static EncryptionProperties TryExtractEncryptionProperties(byte[] buffer, int length)
+        private EncryptionProperties TryExtractEncryptionProperties(byte[] buffer, int length)
         {
             try
             {
-                EncryptionPropertiesWrapper wrapper = JsonSerializer.Deserialize<EncryptionPropertiesWrapper>(
-                    new ReadOnlySpan<byte>(buffer, 0, length),
-                    JsonSerializerOptions);
+                ReadOnlySpan<byte> document = new (buffer, 0, length);
+                Utf8JsonReader reader = new (document, JsonReaderOptions);
+                int metadataStart = -1;
+                int metadataLength = 0;
 
-                return wrapper?.EncryptionProperties;
+                while (reader.Read())
+                {
+                    if (reader.TokenType != JsonTokenType.PropertyName || reader.CurrentDepth != 1)
+                    {
+                        continue;
+                    }
+
+                    if (!reader.ValueTextEquals(this.encryptionPropertiesNameBytes))
+                    {
+                        if (!reader.TrySkip())
+                        {
+                            return null;
+                        }
+
+                        continue;
+                    }
+
+                    if (!reader.Read())
+                    {
+                        return null;
+                    }
+
+                    if (reader.TokenType == JsonTokenType.StartObject)
+                    {
+                        int objectStart = checked((int)reader.TokenStartIndex);
+                        if (!reader.TrySkip())
+                        {
+                            return null;
+                        }
+
+                        metadataStart = objectStart;
+                        metadataLength = checked((int)reader.BytesConsumed - objectStart);
+                    }
+                    else
+                    {
+                        if (!reader.TrySkip())
+                        {
+                            return null;
+                        }
+
+                        metadataStart = -1;
+                        metadataLength = 0;
+                    }
+                }
+
+                return metadataStart < 0
+                    ? null
+                    : JsonSerializer.Deserialize<EncryptionProperties>(
+                        document.Slice(metadataStart, metadataLength),
+                        JsonSerializerOptions);
             }
             catch (JsonException)
             {
@@ -327,27 +380,47 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 leftOver = dataSize - (int)bytesConsumed;
 
-                if (leftOver == dataSize)
-                {
-                    int newSize = checked(buffer.Length * 2);
-                    if (newSize > MaxBufferSize)
-                    {
-                        throw new InvalidOperationException($"JSON document or token does not fit within the maximum buffer size of {MaxBufferSize} bytes");
-                    }
-
-                    byte[] newBuffer = arrayPoolManager.Rent(newSize);
-                    buffer.AsSpan().CopyTo(newBuffer);
-                    buffer = newBuffer;
-                }
-                else if (leftOver != 0)
-                {
-                    buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
-                }
+                buffer = HandleReadBuffer(
+                    buffer,
+                    dataSize,
+                    leftOver,
+                    isFinalBlock,
+                    arrayPoolManager,
+                    JsonFeedStreamHelper.MaximumBufferSize);
             }
 
             writer.Flush();
 
             return EncryptionProcessor.CreateDecryptionContext(pathsDecrypted, properties.DataEncryptionKeyId);
+        }
+
+        internal static byte[] HandleReadBuffer(
+            byte[] buffer,
+            int dataSize,
+            int leftOver,
+            bool isFinalBlock,
+            ArrayPoolManager arrayPoolManager,
+            int maxBufferSize)
+        {
+            if (leftOver == buffer.Length && !isFinalBlock)
+            {
+                int newSize = checked(buffer.Length * 2);
+                if (newSize > maxBufferSize)
+                {
+                    throw new InvalidOperationException($"JSON document or token does not fit within the maximum buffer size of {maxBufferSize} bytes");
+                }
+
+                byte[] newBuffer = arrayPoolManager.Rent(newSize);
+                buffer.AsSpan(0, dataSize).CopyTo(newBuffer);
+                return newBuffer;
+            }
+
+            if (leftOver != 0)
+            {
+                buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
+            }
+
+            return buffer;
         }
 
         private long TransformDecryptBuffer(
@@ -368,13 +441,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 JsonTokenType tokenType = reader.TokenType;
 
-                if (isIgnoredBlock && reader.CurrentDepth == 1 && tokenType == JsonTokenType.EndObject)
+                if (isIgnoredBlock)
                 {
-                    isIgnoredBlock = false;
-                    continue;
-                }
-                else if (isIgnoredBlock)
-                {
+                    if (reader.CurrentDepth == 1 && IsIgnoredValueComplete(tokenType))
+                    {
+                        isIgnoredBlock = false;
+                    }
+
                     continue;
                 }
 
@@ -383,7 +456,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     case JsonTokenType.String:
                         if (decryptPropertyName == null)
                         {
-                            writer.WriteStringValue(reader.ValueSpan);
+                            WriteStringValueVerbatim(writer, ref reader, arrayPoolManager);
                         }
                         else
                         {
@@ -445,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             }
                         }
 
-                        writer.WritePropertyName(reader.ValueSpan);
+                        WritePropertyNameVerbatim(writer, ref reader, arrayPoolManager);
                         break;
                     case JsonTokenType.Comment: // Skipped via reader options
                         break;
@@ -467,6 +540,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             state = reader.CurrentState;
 
             return reader.BytesConsumed;
+        }
+
+        private static bool IsIgnoredValueComplete(JsonTokenType tokenType)
+        {
+            return tokenType == JsonTokenType.String ||
+                tokenType == JsonTokenType.Number ||
+                tokenType == JsonTokenType.EndObject ||
+                tokenType == JsonTokenType.EndArray ||
+                tokenType == JsonTokenType.True ||
+                tokenType == JsonTokenType.False ||
+                tokenType == JsonTokenType.Null;
         }
 
         private void TransformDecryptProperty(ref Utf8JsonReader reader, DataEncryptionKey encryptionKey, Utf8JsonWriter writer, ArrayPoolManager arrayPoolManager)
@@ -494,7 +578,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     writer.WriteNumberValue(SqlLongSerializer.Deserialize(bytesToWrite));
                     break;
                 case TypeMarker.Double:
-                    writer.WriteNumberValue(SqlDoubleSerializer.Deserialize(bytesToWrite));
+                    WriteDoubleValueNewtonsoftStyle(writer, SqlDoubleSerializer.Deserialize(bytesToWrite));
                     break;
                 case TypeMarker.Boolean:
                     writer.WriteBooleanValue(SqlBoolSerializer.Deserialize(bytesToWrite));
@@ -506,6 +590,84 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     writer.WriteRawValue(bytesToWrite, true);
                     break;
             }
+        }
+
+        /// <summary>
+        /// Writes a pass-through string while preserving its semantic JSON value.
+        /// <see cref="Utf8JsonReader.ValueSpan"/> holds the RAW (still-escaped) token text, which
+        /// <see cref="Utf8JsonWriter.WriteStringValue(System.ReadOnlySpan{byte})"/> would escape a
+        /// second time. When the value is neither escaped nor split across buffer segments it is
+        /// copied through directly; otherwise <see cref="Utf8JsonReader.CopyString(System.Span{byte})"/>
+        /// decodes the escapes so the writer re-escapes exactly once. The resulting escape spelling
+        /// can differ from the source or Newtonsoft output while decoding to the same value. The
+        /// sequence branch is defensive if this helper is later used with a sequence-backed reader.
+        /// </summary>
+        private static void WriteStringValueVerbatim(Utf8JsonWriter writer, ref Utf8JsonReader reader, ArrayPoolManager arrayPoolManager)
+        {
+            if (!reader.ValueIsEscaped && !reader.HasValueSequence)
+            {
+                writer.WriteStringValue(reader.ValueSpan);
+                return;
+            }
+
+            int maxLength = reader.HasValueSequence ? checked((int)reader.ValueSequence.Length) : reader.ValueSpan.Length;
+            byte[] buffer = arrayPoolManager.RentScratch(maxLength);
+            int length = reader.CopyString(buffer);
+            writer.WriteStringValue(buffer.AsSpan(0, length));
+        }
+
+        /// <summary>
+        /// Writes a pass-through property name while preserving its semantic JSON value.
+        /// See <see cref="WriteStringValueVerbatim"/> for the escaping/multi-segment rationale.
+        /// </summary>
+        private static void WritePropertyNameVerbatim(Utf8JsonWriter writer, ref Utf8JsonReader reader, ArrayPoolManager arrayPoolManager)
+        {
+            if (!reader.ValueIsEscaped && !reader.HasValueSequence)
+            {
+                writer.WritePropertyName(reader.ValueSpan);
+                return;
+            }
+
+            int maxLength = reader.HasValueSequence ? checked((int)reader.ValueSequence.Length) : reader.ValueSpan.Length;
+            byte[] buffer = arrayPoolManager.RentScratch(maxLength);
+            int length = reader.CopyString(buffer);
+            writer.WritePropertyName(buffer.AsSpan(0, length));
+        }
+
+        /// <summary>
+        /// Writes a decrypted <see cref="TypeMarker.Double"/> value matching the textual form the
+        /// Newtonsoft decrypt path produces, so both processors emit equivalent output and a
+        /// re-encrypt classifies the value identically. Non-finite doubles are emitted as quoted
+        /// string literals (Newtonsoft's default <c>FloatFormatHandling.String</c>) and integral
+        /// doubles keep an explicit ".0" suffix instead of collapsing to an integer.
+        /// </summary>
+        private static void WriteDoubleValueNewtonsoftStyle(Utf8JsonWriter writer, double value)
+        {
+            if (double.IsNaN(value))
+            {
+                writer.WriteStringValue("NaN");
+                return;
+            }
+
+            if (double.IsPositiveInfinity(value))
+            {
+                writer.WriteStringValue("Infinity");
+                return;
+            }
+
+            if (double.IsNegativeInfinity(value))
+            {
+                writer.WriteStringValue("-Infinity");
+                return;
+            }
+
+            string text = value.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+            if (text.IndexOf('.') < 0 && text.IndexOf('E') < 0 && text.IndexOf('e') < 0)
+            {
+                text += ".0";
+            }
+
+            writer.WriteRawValue(text, skipInputValidation: true);
         }
     }
 }

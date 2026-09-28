@@ -337,9 +337,14 @@ namespace Microsoft.Azure.Cosmos
             bool hubHeaderFlagSet = this.addHubRegionProcessingOnlyHeader
                 || this.crossRegionAvailabilityContext?.ShouldAddHubRegionProcessingOnlyHeader == true;
 
+            // The last term catches the header already set by ReadConsistencyStrategy.LastCommittedSingleWriteRegion,
+            // where neither flag above is set. It matches the signal TryMarkEndpointUnavailableForPartitionKeyRange
+            // uses, so dispatch reads the hub override the failure path records. Evaluated last to short-circuit.
             if (this.isHubRegionProcessingEnabled
                 && request.IsReadOnlyRequest
-                && (this.sessionTokenRetryCount > 0 || hubHeaderFlagSet))
+                && (this.sessionTokenRetryCount > 0
+                    || hubHeaderFlagSet
+                    || GlobalPartitionEndpointManagerCore.IsHubRegionRoutingActive(request)))
             {
                 bool pkRangeLocationCacheHit = this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(
                     request, checkHubRegionOverrideInCache: true);
@@ -466,10 +471,21 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
+                // Do not mark the endpoint unavailable when the 408 is synthesized by
+                // ConsistencyWriter for barrier throttling (substatus 21013).
+                //
+                // Flow: Replica returns 429 during write barrier → ConsistencyWriter
+                // (in the Direct transport layer) converts it to a 408 with substatus
+                // 21013 (Server_WriteBarrierThrottled) as an early-yield signal → SDK
+                // receives 408/21013 here. This is NOT a connectivity failure, and
+                // marking the endpoint unavailable would trigger unnecessary cross-region
+                // failover.
+                //
                 // For DTX commits, a 408 from the coordinator means "transaction in-progress" — NOT
                 // an endpoint reachability problem. Marking the endpoint unavailable here would poison
                 // routing for non-DTX traffic sharing the same partition-key-range cache.
-                if (!this.isDtxRequest)
+                if (subStatusCode != SubStatusCodes.Server_WriteBarrierThrottled
+                    && !this.isDtxRequest)
                 {
                     // Mark the partition key range as unavailable to retry future request on a new region.
                     this.TryMarkEndpointUnavailableForPkRange(shouldMarkEndpointUnavailableForPkRange: false);

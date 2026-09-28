@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
         internal const string ResourceBody = "resourceBody";
         internal const string RequestCharge = "requestCharge";
         internal const string IsRetriable = "isRetriable";
+        internal const string ResponseMode = "responseMode";
         internal const string OperationResponses = "operationResponses";
         internal const string SessionToken = "sessionToken";
         internal const string PartitionKeyRangeId = "partitionKeyRangeId";

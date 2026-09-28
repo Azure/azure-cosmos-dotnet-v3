@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System;
+    using System.Collections.Generic;
     using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -121,6 +122,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             string resourceLink,
             PartitionKey? partitionKey,
             bool isHybridSearchQueryPlanOptimizationDisabled,
+            IReadOnlyList<string> excludeRegions,
             ITrace trace,
             CancellationToken cancellationToken = default)
         {
@@ -157,6 +159,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     sqlQuerySpec,
                     partitionKey,
                     GetSupportedQueryFeaturesString(isHybridSearchQueryPlanOptimizationDisabled),
+                    excludeRegions,
                     trace,
                     cancellationToken);
             }

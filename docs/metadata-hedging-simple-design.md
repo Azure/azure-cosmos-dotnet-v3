@@ -7,6 +7,11 @@
 > cancellation) is deferred to [Phase 2](#12-phase-2--optional-hardening) and is
 > **not** required for a correct v1.
 
+> **See also:** For user-facing behavior (enablement, threshold, the status codes
+> that trigger a hedge, and diagnostics), see the **Metadata Hedging** section of
+> [`Cross Region Request Hedging.md`](./Cross%20Region%20Request%20Hedging.md#metadata-hedging).
+> This document is the internal design/implementation reference.
+
 ---
 
 ## 1. Goals & Non-Goals

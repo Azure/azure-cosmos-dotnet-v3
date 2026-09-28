@@ -57,16 +57,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// The thin-client path always needs the resolved <see cref="PartitionKeyRange"/> so that
-        /// the proxy request can be populated with ProxyStartEpk / ProxyEndEpk, and so the gateway
-        /// fall-back still has the PKR available for split detection in
-        /// <see cref="GatewayStoreModel.CaptureSessionTokenAndHandleSplitAsync"/>. It is therefore
-        /// resolved for every non-master, partitioned (or stored-procedure) request, regardless of
-        /// whether per partition automatic failover / circuit breaker is enabled.
+        /// Eagerly resolves the <see cref="PartitionKeyRange"/> whenever the account currently
+        /// advertises thin-client endpoints, so the proxy request can carry ProxyStartEpk /
+        /// ProxyEndEpk and split detection has the PKR available on the gateway fall-back. When no
+        /// thin-client endpoints are advertised, defers to the base PPAF/PPCB-gated decision so the
+        /// overhead matches plain <see cref="GatewayStoreModel"/>. Re-evaluated per request off the
+        /// live <see cref="LocationCache"/> flags.
         /// </summary>
         protected override bool ShouldResolvePartitionKeyRange()
         {
-            return true;
+            return base.ShouldResolvePartitionKeyRange()
+                || this.endpointManager.HasThinClientReadLocations
+                || this.endpointManager.HasThinClientWriteLocations;
         }
 
         /// <summary>
@@ -81,20 +83,7 @@ namespace Microsoft.Azure.Cosmos
             Uri physicalAddress,
             CancellationToken cancellationToken)
         {
-            bool canUseThinClient = this.thinClientStoreClient != null
-                && ThinClientStoreModel.IsThinClientRoutable(this.endpointManager, request);
-
-            if (!canUseThinClient)
-            {
-                return await base.DispatchAsync(request, physicalAddress, cancellationToken);
-            }
-
-            Uri thinClientEndpoint = this.endpointManager.ResolveThinClientEndpoint(request);
-
-            // Per-region probe gate: route to the proxy only when this request's resolved regional endpoint has
-            // been confirmed healthy. An un-probed or failed region resolves to its gateway endpoint, which fails
-            // this check and transparently falls back to Gateway V1.
-            if (!this.endpointManager.IsProxyEndpointHealthy(thinClientEndpoint))
+            if (!this.TryGetHealthyThinClientEndpoint(request, out Uri thinClientEndpoint))
             {
                 return await base.DispatchAsync(request, physicalAddress, cancellationToken);
             }
@@ -109,6 +98,51 @@ namespace Microsoft.Azure.Cosmos
                 account.Id,
                 this.clientCollectionCache,
                 cancellationToken);
+        }
+
+        /// <summary>
+        /// Single source of truth for the per-request thin-client-vs-gateway routing decision. Returns true, and
+        /// the resolved healthy thin-client endpoint, only when the request will actually be dispatched through the
+        /// thin-client proxy; otherwise the request transparently falls back to the inherited gateway HTTP path.
+        /// Both <see cref="DispatchAsync"/> and the transport diagnostics label consult this method so the reported
+        /// store model always matches the path actually taken. Side-effect-free: only reads live routing state.
+        /// </summary>
+        internal bool TryGetHealthyThinClientEndpoint(DocumentServiceRequest request, out Uri thinClientEndpoint)
+        {
+            thinClientEndpoint = null;
+
+            if (this.thinClientStoreClient == null
+                || !ThinClientStoreModel.IsThinClientRoutable(this.endpointManager, request))
+            {
+                return false;
+            }
+
+            // Compute the candidate endpoint without pinning it onto the request (RouteToLocation). Pinning is
+            // owned by ClientRetryPolicy.OnBeforeSendRequest, which validates probe health before it commits an
+            // endpoint. Keeping this method side-effect-free means a failed probe here can never leave a proxy
+            // endpoint pinned for a request that then falls back to Gateway V1, and the diagnostics-label call
+            // (WillRouteToThinClient) can safely evaluate routability without mutating the request.
+            Uri candidate = this.endpointManager.GetThinClientEndpointCandidate(request);
+
+            // Per-region probe gate: route to the proxy only when this request's candidate regional endpoint has
+            // been confirmed healthy. An un-probed or failed region falls back to Gateway V1.
+            if (!this.endpointManager.IsProxyEndpointHealthy(candidate))
+            {
+                return false;
+            }
+
+            thinClientEndpoint = candidate;
+            return true;
+        }
+
+        /// <summary>
+        /// True when the given request will be dispatched through the thin-client proxy on this instance, false when
+        /// it will transparently fall back to the inherited gateway HTTP path. Used by the transport layer to label
+        /// diagnostics with the store model that actually serves the request.
+        /// </summary>
+        internal bool WillRouteToThinClient(DocumentServiceRequest request)
+        {
+            return this.TryGetHealthyThinClientEndpoint(request, out _);
         }
 
         internal static bool IsOperationSupportedByThinClient(DocumentServiceRequest request)

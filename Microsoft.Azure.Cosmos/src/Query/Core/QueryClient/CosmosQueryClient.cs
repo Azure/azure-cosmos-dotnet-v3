@@ -80,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             SqlQuerySpec sqlQuerySpec,
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            IReadOnlyList<string> excludeRegions,
             Guid clientQueryCorrelationId,
             ITrace trace,
             CancellationToken cancellationToken);

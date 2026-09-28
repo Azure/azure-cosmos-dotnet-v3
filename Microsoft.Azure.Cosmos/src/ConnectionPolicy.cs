@@ -616,5 +616,14 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.RetryOptions?.GetRetryWithConfiguration();
         }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the barrier early yield on 429
+        /// optimization is enabled. When true, ConsistencyWriter and QuorumReader
+        /// return early when all replicas return 429 (Too Many Requests) during a
+        /// barrier request, allowing the ResourceThrottleRetryPolicy to handle
+        /// the retry instead of spinning until timeout.
+        /// </summary>
+        internal bool EnableBarrierEarlyYieldOn429 { get; set; }
     }
 }

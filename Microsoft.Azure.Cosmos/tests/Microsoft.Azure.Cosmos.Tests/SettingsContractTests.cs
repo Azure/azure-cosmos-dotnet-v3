@@ -131,6 +131,213 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void SourceContainerMaterializedViewMetadataSerializationTest()
+        {
+            const string sourceContainerJson = @"{
+                ""id"": ""source"",
+                ""materializedViews"": [
+                    {
+                        ""id"": ""view"",
+                        ""_rid"": ""viewRid"",
+                        ""containerType"": ""GlobalSecondaryIndex"",
+                        ""requiredPathsInPreviousImage"": [""/tenantId"", ""/value""],
+                        ""futureViewProperty"": ""preserved""
+                    },
+                    {
+                        ""id"": ""minimalView"",
+                        ""_rid"": ""minimalViewRid"",
+                        ""futureMinimalViewProperty"": 17
+                    }
+                ],
+                ""futureContainerProperty"": {
+                    ""futureNestedProperty"": true
+                }
+            }";
+
+            ContainerProperties containerProperties =
+                SettingsContractTests.CosmosDeserialize<ContainerProperties>(sourceContainerJson);
+
+            Assert.IsNull(containerProperties.MaterializedViewDefinition);
+            Assert.AreEqual(2, containerProperties.MaterializedViews.Count);
+
+            MaterializedViewProperties completeView = containerProperties.MaterializedViews[0];
+            Assert.AreEqual("view", completeView.Id);
+            Assert.AreEqual("viewRid", completeView.ResourceId);
+            Assert.AreEqual("GlobalSecondaryIndex", completeView.ContainerType);
+            CollectionAssert.AreEqual(
+                new[] { "/tenantId", "/value" },
+                completeView.RequiredPathsInPreviousImage.ToArray());
+            Assert.AreEqual("preserved", (string)completeView.AdditionalProperties["futureViewProperty"]);
+
+            MaterializedViewProperties minimalView = containerProperties.MaterializedViews[1];
+            Assert.AreEqual("minimalView", minimalView.Id);
+            Assert.AreEqual("minimalViewRid", minimalView.ResourceId);
+            Assert.IsNull(minimalView.ContainerType);
+            Assert.IsNull(minimalView.RequiredPathsInPreviousImage);
+            Assert.AreEqual(17, (int)minimalView.AdditionalProperties["futureMinimalViewProperty"]);
+
+            containerProperties.Id = "updatedSource";
+            JObject roundTrip = JObject.Parse(SettingsContractTests.CosmosSerialize(containerProperties));
+            Assert.AreEqual("updatedSource", (string)roundTrip["id"]);
+            Assert.AreEqual("preserved", (string)roundTrip["materializedViews"][0]["futureViewProperty"]);
+            Assert.AreEqual(17, (int)roundTrip["materializedViews"][1]["futureMinimalViewProperty"]);
+            Assert.AreEqual(true, (bool)roundTrip["futureContainerProperty"]["futureNestedProperty"]);
+        }
+
+        [TestMethod]
+        public void SourceContainerMaterializedViewMetadataNullAndEmptySerializationTest()
+        {
+            ContainerProperties nullViews =
+                SettingsContractTests.CosmosDeserialize<ContainerProperties>(
+                    @"{""id"":""source"",""materializedViews"":null}");
+            Assert.IsNull(nullViews.MaterializedViews);
+            Assert.IsNull(nullViews.MaterializedViewDefinition);
+            Assert.IsNull(
+                JObject.Parse(SettingsContractTests.CosmosSerialize(nullViews))["materializedViews"]);
+
+            ContainerProperties emptyViews =
+                SettingsContractTests.CosmosDeserialize<ContainerProperties>(
+                    @"{""id"":""source"",""materializedViews"":[]}");
+            Assert.IsNotNull(emptyViews.MaterializedViews);
+            Assert.AreEqual(0, emptyViews.MaterializedViews.Count);
+            Assert.IsNull(emptyViews.MaterializedViewDefinition);
+
+            JToken serializedEmptyViews =
+                JObject.Parse(SettingsContractTests.CosmosSerialize(emptyViews))["materializedViews"];
+            Assert.AreEqual(JTokenType.Array, serializedEmptyViews.Type);
+            Assert.AreEqual(0, serializedEmptyViews.Count());
+        }
+
+        [TestMethod]
+        public void MaterializedViewContainerDefinitionSerializationTest()
+        {
+            const string materializedViewContainerJson = @"{
+                ""id"": ""view"",
+                ""materializedViewDefinition"": {
+                    ""sourceCollectionRid"": ""sourceRid"",
+                    ""sourceCollectionId"": ""source"",
+                    ""definition"": ""SELECT * FROM c"",
+                    ""apiSpecificDefinition"": ""{ \""pipeline\"": \""projection\"" }"",
+                    ""containerType"": ""GlobalSecondaryIndex"",
+                    ""status"": ""Active"",
+                    ""futureDefinitionProperty"": 42
+                },
+                ""futureContainerProperty"": {
+                    ""futureNestedProperty"": ""preserved""
+                }
+            }";
+
+            ContainerProperties containerProperties =
+                SettingsContractTests.CosmosDeserialize<ContainerProperties>(materializedViewContainerJson);
+            Cosmos.MaterializedViewDefinition definition = containerProperties.MaterializedViewDefinition;
+
+            Assert.IsNull(containerProperties.MaterializedViews);
+            Assert.IsNotNull(definition);
+            Assert.AreEqual("sourceRid", definition.SourceContainerResourceId);
+            Assert.AreEqual("source", definition.SourceContainerId);
+            Assert.AreEqual("SELECT * FROM c", definition.Definition);
+            Assert.AreEqual(@"{ ""pipeline"": ""projection"" }", definition.ApiSpecificDefinition);
+            Assert.AreEqual("GlobalSecondaryIndex", definition.ContainerType);
+            Assert.AreEqual("Active", definition.Status);
+            Assert.AreEqual(42, (int)definition.AdditionalProperties["futureDefinitionProperty"]);
+
+            containerProperties.Id = "updatedView";
+            JObject roundTrip = JObject.Parse(SettingsContractTests.CosmosSerialize(containerProperties));
+            Assert.AreEqual("updatedView", (string)roundTrip["id"]);
+            Assert.AreEqual(42, (int)roundTrip["materializedViewDefinition"]["futureDefinitionProperty"]);
+            Assert.AreEqual(
+                "preserved",
+                (string)roundTrip["futureContainerProperty"]["futureNestedProperty"]);
+        }
+
+        [TestMethod]
+        public void MaterializedViewContainerDefinitionOptionalMetadataIsAbsentTest()
+        {
+            const string materializedViewContainerJson = @"{
+                ""id"": ""view"",
+                ""materializedViewDefinition"": {
+                    ""sourceCollectionRid"": ""sourceRid"",
+                    ""sourceCollectionId"": ""source"",
+                    ""definition"": ""SELECT VALUE c.id FROM c"",
+                    ""status"": ""Creating""
+                }
+            }";
+
+            ContainerProperties containerProperties =
+                SettingsContractTests.CosmosDeserialize<ContainerProperties>(materializedViewContainerJson);
+            Cosmos.MaterializedViewDefinition definition = containerProperties.MaterializedViewDefinition;
+
+            Assert.IsNull(containerProperties.MaterializedViews);
+            Assert.IsNotNull(definition);
+            Assert.AreEqual("sourceRid", definition.SourceContainerResourceId);
+            Assert.AreEqual("source", definition.SourceContainerId);
+            Assert.AreEqual("SELECT VALUE c.id FROM c", definition.Definition);
+            Assert.AreEqual("Creating", definition.Status);
+            Assert.IsNull(definition.ApiSpecificDefinition);
+            Assert.IsNull(definition.ContainerType);
+        }
+
+        [TestMethod]
+        public void MaterializedViewMetadataIsAbsentByDefaultTest()
+        {
+            ContainerProperties containerProperties = new ContainerProperties("container", "/partitionKey");
+
+            Assert.IsNull(containerProperties.MaterializedViews);
+            Assert.IsNull(containerProperties.MaterializedViewDefinition);
+
+            JObject serialized = JObject.Parse(SettingsContractTests.CosmosSerialize(containerProperties));
+            Assert.IsNull(serialized["materializedViews"]);
+            Assert.IsNull(serialized["materializedViewDefinition"]);
+
+            Assert.IsFalse(typeof(Cosmos.MaterializedViewProperties).IsPublic);
+            Assert.IsFalse(typeof(Cosmos.MaterializedViewProperties).IsNestedPublic);
+            Assert.IsFalse(typeof(Cosmos.MaterializedViewDefinition).IsPublic);
+            Assert.IsFalse(typeof(Cosmos.MaterializedViewDefinition).IsNestedPublic);
+            SettingsContractTests.TypeAccessorGuard(
+                typeof(Cosmos.MaterializedViewProperties),
+                "Id",
+                "ResourceId",
+                "ContainerType",
+                "RequiredPathsInPreviousImage");
+            SettingsContractTests.TypeAccessorGuard(
+                typeof(Cosmos.MaterializedViewDefinition),
+                "SourceContainerResourceId",
+                "SourceContainerId",
+                "Definition",
+                "ApiSpecificDefinition",
+                "ContainerType",
+                "Status");
+            Assert.AreEqual(1, typeof(Cosmos.MaterializedViewProperties).GetConstructors().Length);
+            Assert.AreEqual(1, typeof(Cosmos.MaterializedViewDefinition).GetConstructors().Length);
+
+            string[] materializedViewPropertyNames =
+            {
+                "MaterializedViews",
+                "MaterializedViewDefinition",
+            };
+
+            foreach (string propertyName in materializedViewPropertyNames)
+            {
+                Assert.IsNull(
+                    typeof(ContainerProperties).GetProperty(
+                        propertyName,
+                        BindingFlags.Instance | BindingFlags.Public),
+                    $"{propertyName} must not be publicly accessible.");
+                Assert.IsNotNull(
+                    typeof(ContainerProperties).GetProperty(
+                        propertyName,
+                        BindingFlags.Instance | BindingFlags.NonPublic),
+                    $"{propertyName} must remain internally accessible.");
+
+                PropertyInfo internalProperty = typeof(ContainerProperties).GetProperty(
+                    propertyName,
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.IsTrue(internalProperty.GetMethod.IsAssembly);
+                Assert.IsTrue(internalProperty.SetMethod.IsAssembly);
+            }
+        }
+
+        [TestMethod]
         public void StoredProcedureDeserialzieTest()
         {
             string colId = "946ad017-14d9-4cee-8619-0cbc62414157";

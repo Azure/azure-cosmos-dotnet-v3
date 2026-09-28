@@ -111,6 +111,33 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        [DataTestMethod]
+        [Owner("aavasthy")]
+        [DataRow(true, false, DisplayName = "Thin-client/Direct: separate StoreModel and GatewayStoreModel -> both disposed once")]
+        [DataRow(true, true, DisplayName = "Plain Gateway: shared instance -> disposed exactly once, never twice")]
+        [DataRow(false, false, DisplayName = "Partial init: StoreModel null, GatewayStoreModel set -> GatewayStoreModel disposed")]
+        public void Dispose_DisposesEachStoreModelInstanceExactlyOnce(bool assignStoreModel, bool gatewaySharesStoreModelInstance)
+        {
+            DocumentClient client = new DocumentClient(
+                new Uri("https://localhost:8081/"),
+                "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+                new ConnectionPolicy());
+
+            Mock<IStoreModelExtension> storeModel = assignStoreModel ? new Mock<IStoreModelExtension>() : null;
+            Mock<IStoreModelExtension> gatewayStoreModel = gatewaySharesStoreModelInstance ? storeModel : new Mock<IStoreModelExtension>();
+
+            client.StoreModel = storeModel?.Object;
+            client.GatewayStoreModel = gatewayStoreModel.Object;
+
+            client.Dispose();
+
+            storeModel?.Verify(m => m.Dispose(), Times.Once, "StoreModel must be disposed exactly once (never twice when shared with GatewayStoreModel).");
+            if (!gatewaySharesStoreModelInstance)
+            {
+                gatewayStoreModel.Verify(m => m.Dispose(), Times.Once, "A GatewayStoreModel that is a separate instance from StoreModel must also be disposed.");
+            }
+        }
+
         /// <summary>
         /// Tests that after web exception we retry and request's content is preserved.
         /// </summary>

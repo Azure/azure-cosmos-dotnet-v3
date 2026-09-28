@@ -158,21 +158,33 @@ namespace Microsoft.Azure.Cosmos
 
                     HedgingResponse hedgeResponse = null;
 
-                    // Inject a shared CrossRegionAvailabilityContext into Properties before the clone loop.
-                    // RequestMessage.Clone() shallow-copies Properties, so all hedged clones share the same
-                    // context instance — enabling hub region header propagation across hedged requests.
-                    request.Properties[CrossRegionAvailabilityContext.PropertyKey] = new CrossRegionAvailabilityContext();
-
-                    //Send out hedged requests
-                    for (int requestNumber = 0; requestNumber < hedgeRegions.Count; requestNumber++)
+                    try
                     {
-                        TimeSpan awaitTime = requestNumber == 0 ? this.Threshold : this.ThresholdStep;
+                        // Inject a shared CrossRegionAvailabilityContext into Properties before the clone loop.
+                        // RequestMessage.Clone() shallow-copies Properties, so all hedged clones share the same
+                        // context instance — enabling hub region header propagation across hedged requests.
+                        request.Properties[CrossRegionAvailabilityContext.PropertyKey] = new CrossRegionAvailabilityContext();
 
-                        using (CancellationTokenSource timerTokenSource = CancellationTokenSource.CreateLinkedTokenSource(applicationProvidedCancellationToken))
+                        //Send out hedged requests
+                        for (int requestNumber = 0; requestNumber < hedgeRegions.Count; requestNumber++)
                         {
-                            CancellationToken timerToken = timerTokenSource.Token;
-                            using (Task hedgeTimer = Task.Delay(awaitTime, timerToken))
+                            TimeSpan awaitTime = requestNumber == 0 ? this.Threshold : this.ThresholdStep;
+
+                            using (CancellationTokenSource timerTokenSource = CancellationTokenSource.CreateLinkedTokenSource(applicationProvidedCancellationToken))
                             {
+                                CancellationToken timerToken = timerTokenSource.Token;
+
+                                // The hedge timer is intentionally NOT wrapped in a `using`. Task.Dispose() throws
+                                // InvalidOperationException ("A task may only be disposed if it is in a completion
+                                // state") when the task has not completed yet, and the timerTokenSource.Cancel()
+                                // below does not guarantee the Task.Delay has already transitioned to Canceled: if
+                                // the linked applicationProvidedCancellationToken is being cancelled concurrently on
+                                // another thread, that thread wins the CancellationTokenSource state transition and
+                                // Cancel() returns here immediately, before the delay's cancellation callback has
+                                // run. Disposing a Task is unnecessary anyway - its wait handle is allocated lazily
+                                // and is never requested here - so the timer is simply left to the GC. See #6048.
+                                Task hedgeTimer = Task.Delay(awaitTime, timerToken);
+
                                 Task<HedgingResponse> requestTask = this.CloneAndSendAsync(
                                         sender: sender,
                                         request: request,
@@ -193,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
                                 }
                                 while (
                                     completedTask == hedgeTimer &&
-                                    // Ignore hedge timer signals if either the e2e timeout is hit 
+                                    // Ignore hedge timer signals if either the e2e timeout is hit
                                     // or the hedgeTimer task failed (or more commonly since this is a linked CTS was cancelled)
                                     // in both of these cases we do not want to spawn new hedge requests
                                     // but just consolidate the outcome of previous requests
@@ -215,6 +227,18 @@ namespace Microsoft.Azure.Cosmos
                                     if (applicationProvidedCancellationToken.IsCancellationRequested)
                                     {
                                         await (Task<HedgingResponse>)completedTask;
+                                    }
+                                    else
+                                    {
+                                        // The losing hedge completed faulted/canceled but the operation
+                                        // itself was not cancelled, so we loop to spawn the next hedge.
+                                        // completedTask has already been removed from requestTasks and is
+                                        // never awaited on this continue path, so the finally sweep can
+                                        // never see it. Observe it here so a non-cancellation fault on this
+                                        // abandoned loser cannot escape as an unobserved task exception.
+                                        // (A loser canceled by the winner completes Canceled and carries no
+                                        // exception, so it is a no-op here; the real leak is a non-OCE fault.)
+                                        CrossRegionHedgingAvailabilityStrategy.ObserveAbandonedHedgeTasks(new[] { completedTask });
                                     }
 
                                     continue;
@@ -241,68 +265,84 @@ namespace Microsoft.Azure.Cosmos
                                             hedgeResponse.TargetRegionName);
                                     }
 
+                                    // Any still in-flight losers are abandoned when this winner returns;
+                                    // the finally sweep observes their faults on the way out.
                                     return hedgeResponse.ResponseMessage;
                                 }
                             }
                         }
-                    }
 
-                    //Wait for a good response from the hedged requests/primary request
-                    Exception lastException = null;
-                    while (requestTasks.Any())
+                        //Wait for a good response from the hedged requests/primary request
+                        Exception lastException = null;
+                        while (requestTasks.Any())
+                        {
+                            Task completedTask = await Task.WhenAny(requestTasks);
+                            requestTasks.Remove(completedTask);
+                            if (completedTask.IsFaulted)
+                            {
+                                AggregateException innerExceptions = completedTask.Exception.Flatten();
+                                lastException = innerExceptions.InnerExceptions.FirstOrDefault();
+                                continue;
+                            }
+
+                            if (completedTask.IsCanceled)
+                            {
+                                lastException = new OperationCanceledException();
+                                continue;
+                            }
+
+                            hedgeResponse = await (Task<HedgingResponse>)completedTask;
+                            if (hedgeResponse.IsNonTransient || requestTasks.Count == 0)
+                            {
+                                hedgeRequestsCancellationTokenSource.Cancel();
+                                ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                            HedgeConfig,
+                                            this.HedgeConfigText);
+                                ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                    HedgeContext,
+                                    hedgeRegions);
+                                ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                    ResponseRegion,
+                                    hedgeResponse.TargetRegionName);
+
+                                // Any abandoned in-flight losers are observed by the finally sweep on the
+                                // way out, so a non-cancellation fault can never be left unobserved.
+                                return hedgeResponse.ResponseMessage;
+                            }
+                        }
+
+                        if (lastException != null)
+                        {
+                            // Use ExceptionDispatchInfo to preserve the original throwing-frame stack
+                            // trace. `throw lastException;` would reset the StackTrace property to the
+                            // current frame, which defeats the throw-vs-throw-ex preservation work in
+                            // CloneAndSendAsync / RequestSenderAndResultCheckAsync.
+                            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(lastException).Throw();
+                        }
+
+                        if (hedgeResponse == null)
+                        {
+                            if (applicationProvidedCancellationToken.IsCancellationRequested)
+                            {
+                                throw new CosmosOperationCanceledException(new OperationCanceledException(), trace);
+                            }
+
+                            throw new InvalidOperationException("Cross-region hedging completed without producing a response.");
+                        }
+
+                        return hedgeResponse.ResponseMessage;
+                    }
+                    finally
                     {
-                        Task completedTask = await Task.WhenAny(requestTasks);
-                        requestTasks.Remove(completedTask);
-                        if (completedTask.IsFaulted)
-                        {
-                            AggregateException innerExceptions = completedTask.Exception.Flatten();
-                            lastException = innerExceptions.InnerExceptions.FirstOrDefault();
-                            continue;
-                        }
-
-                        if (completedTask.IsCanceled)
-                        {
-                            lastException = new OperationCanceledException();
-                            continue;
-                        }
-
-                        hedgeResponse = await (Task<HedgingResponse>)completedTask;
-                        if (hedgeResponse.IsNonTransient || requestTasks.Count == 0)
-                        {
-                            hedgeRequestsCancellationTokenSource.Cancel();
-                            ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                        HedgeConfig,
-                                        this.HedgeConfigText);
-                            ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                HedgeContext,
-                                hedgeRegions);
-                            ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                ResponseRegion,
-                                hedgeResponse.TargetRegionName);
-                            return hedgeResponse.ResponseMessage;
-                        }
+                        // Whatever exit path is taken (the winning response is returned, an
+                        // exception is thrown, or the application cancels), any still in-flight
+                        // losing hedge tasks left in requestTasks are abandoned. Observe their
+                        // faults here so a non-cancellation fault on an abandoned loser can never
+                        // escape as an unobserved task exception. requestTasks never contains the
+                        // winning task or the hedge timers at any exit, so this sweep only ever
+                        // touches abandoned losers.
+                        CrossRegionHedgingAvailabilityStrategy.ObserveAbandonedHedgeTasks(requestTasks);
                     }
-
-                    if (lastException != null)
-                    {
-                        // Use ExceptionDispatchInfo to preserve the original throwing-frame stack
-                        // trace. `throw lastException;` would reset the StackTrace property to the
-                        // current frame, which defeats the throw-vs-throw-ex preservation work in
-                        // CloneAndSendAsync / RequestSenderAndResultCheckAsync.
-                        System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(lastException).Throw();
-                    }
-
-                    if (hedgeResponse == null)
-                    {
-                        if (applicationProvidedCancellationToken.IsCancellationRequested)
-                        {
-                            throw new CosmosOperationCanceledException(new OperationCanceledException(), trace);
-                        }
-
-                        throw new InvalidOperationException("Cross-region hedging completed without producing a response.");
-                    }
-
-                    return hedgeResponse.ResponseMessage;
                 }
             }
         }
@@ -406,6 +446,45 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Observes the exceptions of hedge requests that are abandoned when a winning response is
+        /// returned early (or when the hedging body otherwise exits). Losing hedges are cancelled via
+        /// the hedge cancellation token source; an arm cancelled that way throws an
+        /// <see cref="OperationCanceledException"/> (including <see cref="CosmosOperationCanceledException"/>),
+        /// which the async state machine maps to a Canceled task whose <see cref="Task.Exception"/> is
+        /// null — that case carries nothing to observe and never raises
+        /// <see cref="TaskScheduler.UnobservedTaskException"/>. The failure mode this closes is an
+        /// abandoned loser that completes Faulted with a <b>non-cancellation</b> exception (for example
+        /// the disposed-clone / pre-dispatch <see cref="ArgumentNullException"/> root-fixed by #5613 /
+        /// #6016). Without observing it, that fault can later surface as a
+        /// <see cref="TaskScheduler.UnobservedTaskException"/> — the failure mode originally reported for
+        /// this strategy (issue #5623).
+        /// </summary>
+        /// <param name="abandonedTasks">The hedge request tasks that will not be awaited.</param>
+        private static void ObserveAbandonedHedgeTasks(IEnumerable<Task> abandonedTasks)
+        {
+            foreach (Task task in abandonedTasks)
+            {
+                if (task == null)
+                {
+                    continue;
+                }
+
+                if (task.IsCompleted)
+                {
+                    // Touching Exception marks an already-faulted task as observed.
+                    _ = task.Exception;
+                    continue;
+                }
+
+                _ = task.ContinueWith(
+                    t => { _ = t.Exception; },
+                    CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default);
             }
         }
 

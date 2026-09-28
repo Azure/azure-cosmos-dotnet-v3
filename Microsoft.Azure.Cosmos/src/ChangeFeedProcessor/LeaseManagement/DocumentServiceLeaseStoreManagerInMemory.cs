@@ -38,14 +38,37 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         }
 
         internal DocumentServiceLeaseStoreManagerInMemory(ConcurrentDictionary<string, DocumentServiceLease> container)
-            : this(new DocumentServiceLeaseUpdaterInMemory(container), container, leaseStateStream: null)
+            : this(new DocumentServiceLeaseUpdaterInMemory(container), container, leaseStateStream: null, monitoredContainer: null)
         {
         }
 
         internal DocumentServiceLeaseStoreManagerInMemory(
             ConcurrentDictionary<string, DocumentServiceLease> container,
             MemoryStream leaseStateStream)
-            : this(new DocumentServiceLeaseUpdaterInMemory(container), container, leaseStateStream)
+            : this(new DocumentServiceLeaseUpdaterInMemory(container), container, leaseStateStream, monitoredContainer: null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance from a <see cref="MemoryStream"/> containing previously persisted lease
+        /// state, additionally given the monitored container so that any restored lease missing a FeedRange
+        /// can have it resolved and backfilled on acquire, before any split/merge makes that resolution impossible.
+        /// </summary>
+        internal DocumentServiceLeaseStoreManagerInMemory(
+            MemoryStream leaseStateStream,
+            ContainerInternal monitoredContainer)
+            : this(
+                  DocumentServiceLeaseStoreManagerInMemory.DeserializeLeaseState(leaseStateStream),
+                  leaseStateStream,
+                  monitoredContainer)
+        {
+        }
+
+        internal DocumentServiceLeaseStoreManagerInMemory(
+            ConcurrentDictionary<string, DocumentServiceLease> container,
+            MemoryStream leaseStateStream,
+            ContainerInternal monitoredContainer)
+            : this(new DocumentServiceLeaseUpdaterInMemory(container), container, leaseStateStream, monitoredContainer)
         {
         }
 
@@ -58,13 +81,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         internal DocumentServiceLeaseStoreManagerInMemory(
             DocumentServiceLeaseUpdater leaseUpdater,
             ConcurrentDictionary<string, DocumentServiceLease> container,
-            MemoryStream leaseStateStream = null)
+            MemoryStream leaseStateStream = null,
+            ContainerInternal monitoredContainer = null)
         {
             if (leaseUpdater == null) throw new ArgumentException(nameof(leaseUpdater));
 
             this.leaseStore = new DocumentServiceLeaseStoreInMemory();
 
-            this.leaseManager = new DocumentServiceLeaseManagerInMemory(leaseUpdater, container);
+            this.leaseManager = new DocumentServiceLeaseManagerInMemory(leaseUpdater, container, monitoredContainer);
 
             this.leaseCheckpointer = new DocumentServiceLeaseCheckpointerCore(
                 leaseUpdater,
