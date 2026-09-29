@@ -590,6 +590,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.GetLocation(endpoint);
         }
 
+        /// <summary>
+        /// Resolves only known regional endpoints without inferring a region for the global endpoint.
+        /// </summary>
+        internal virtual string GetExactLocation(Uri endpoint)
+        {
+            return this.locationCache.GetExactLocation(endpoint);
+        }
+
         public ReadOnlyCollection<Uri> GetApplicableEndpoints(DocumentServiceRequest request, bool isReadRequest)
         {
             return this.locationCache.GetApplicableEndpoints(request, isReadRequest);
