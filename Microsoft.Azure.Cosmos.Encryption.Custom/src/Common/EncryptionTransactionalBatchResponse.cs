@@ -7,13 +7,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System;
     using System.Collections.Generic;
     using System.Net;
+    using System.Runtime.ExceptionServices;
+    using System.Threading;
 
     internal sealed class EncryptionTransactionalBatchResponse : TransactionalBatchResponse
     {
         private readonly IReadOnlyList<TransactionalBatchOperationResult> results;
         private readonly TransactionalBatchResponse response;
         private readonly CosmosSerializer cosmosSerializer;
-        private bool isDisposed = false;
+        private int isDisposed;
 
         public EncryptionTransactionalBatchResponse(
             IReadOnlyList<TransactionalBatchOperationResult> results,
@@ -65,12 +67,40 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && !this.isDisposed)
+            if (!disposing || Interlocked.Exchange(ref this.isDisposed, 1) != 0)
             {
-                this.isDisposed = true;
+                return;
+            }
 
+            ExceptionDispatchInfo cleanupException = null;
+            if (this.results != null)
+            {
+                foreach (TransactionalBatchOperationResult result in this.results)
+                {
+                    if (result is EncryptionTransactionalBatchOperationResult decryptedResult)
+                    {
+                        try
+                        {
+                            decryptedResult.DisposeDecryptedResourceStream();
+                        }
+                        catch (Exception exception)
+                        {
+                            cleanupException ??= ExceptionDispatchInfo.Capture(exception);
+                        }
+                    }
+                }
+            }
+
+            try
+            {
                 this.response?.Dispose();
             }
+            catch (Exception exception)
+            {
+                cleanupException ??= ExceptionDispatchInfo.Capture(exception);
+            }
+
+            cleanupException?.Throw();
         }
     }
 }
