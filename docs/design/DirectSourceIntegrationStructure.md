@@ -1021,6 +1021,19 @@ None of these are caught by §9.B (wire format), §9.C (assembly identity) or §
 
 ---
 
+### 9.G — Nightly upstream Direct change monitoring
+
+Add a **separate monitoring pipeline in Azure DevOps, in the msdata/CosmosDB project**, with its YAML maintained in the original CosmosDB repository. Run it nightly against `master`, including nights with no new commits. This is a proposed pipeline, not an existing integration.
+
+1. **Detect merged changes.** Inspect commits that reached `master` since the last successfully inspected revision. Check changes affecting the original Direct package's source and all shared files it consumes, including relevant project/build files, resources and generator inputs. Re-evaluate selected inputs so added or removed shared files are not missed. Detection uses Git history and project inputs; it does not depend on a Direct NuGet reference in v3 or on a new package being published.
+2. **Report the update in GitHub.** If relevant changes are found, create an issue in `Azure/azure-cosmos-dotnet-v3`, or update the existing open tracking issue rather than creating duplicates. Include an approved summary of the changes, affected v3 files where appropriate, and the review/import action required. Keep private source, internal paths and unapproved commit details in an internal report; use an approved tracking identifier to correlate the public issue with that report.
+3. **Authenticate explicitly.** The notification job calls the GitHub Issues API using an approved GitHub identity with issue-write permission on the v3 repository. Credentials must be protected outside source control. Agent network access, GitHub authorization and permission to publish the notification details must be confirmed before enabling the job.
+4. **Track detection separately from import.** Persist inspected, reported and imported revisions separately. Failed inspections or failed GitHub requests must remain visible and be retried without losing pending notifications. Creating an issue does not mean the changes have been imported into v3.
+
+No v3 pipeline needs to wait for this notification. Maintainers review the issue, update the local Direct source through a normal PR, and let existing v3 CI plus the compatibility gates validate that update. The monitor does not modify source, publish packages, or gate msdata PRs/releases; it only detects and reports changes. An upstream notification is a review signal, not proof of incompatibility or authorization to copy changes automatically.
+
+---
+
 ## 10. Risks & Open Questions
 
 Live risks and open questions first; resolved items are compressed to one line each at the end of the section.
