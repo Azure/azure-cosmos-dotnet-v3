@@ -435,7 +435,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             // After sorting, each HybridSearchQueryResult has a fixed index in the list
             // This index can be used as the key for the ranking array
             // Now create an array (per dimension) of tuples (score, index) and sort it by score
-            // We can use these sorted arrays to compute standard competition ranks. Identical scores get the same rank.
+            // We can use these sorted arrays to compute ordinal ranks.
             // Create an array of tuples of (RRF scores, index) for each document using the ranks
             // Use the ranks array to compute the RRF scores
             // Sort the array by RRF scores
@@ -473,16 +473,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             for (int index = 0; index < componentScores.Count; ++index)
             {
-                componentScores[index].Sort((x, y) => componentWeights[index].Comparison(x.Score, y.Score));
+                componentScores[index].Sort((x, y) =>
+                {
+                    int scoreComparison = componentWeights[index].Comparison(x.Score, y.Score);
+                    return scoreComparison != 0 ? scoreComparison : x.Index.CompareTo(y.Index);
+                });
             }
 
-            int[,] ranks = ComputeRanks(componentScores);
+            int[,] ranks = ComputeRanks(
+                componentScores,
+                ConfigurationManager.IsHybridSearchCompetitionRankingEnabled());
 
             ComputeRrfScores(ranks, componentWeights, queryResults);
 
             HybridSearchDebugTraceHelpers.TraceQueryResultsWithRanks(queryResults, ranks);
 
-            queryResults.Sort((x, y) => (-1) * x.Score.CompareTo(y.Score)); // higher scores are better
+            queryResults.Sort((x, y) =>
+            {
+                int scoreComparison = y.Score.CompareTo(x.Score); // higher scores are better
+                return scoreComparison != 0
+                    ? scoreComparison
+                    : string.CompareOrdinal(x.Rid.Value, y.Rid.Value);
+            });
 
             HybridSearchDebugTraceHelpers.TraceQueryResults(queryResults, queryPipelineStages.Count);
 
@@ -601,7 +613,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             return TryCatch<IReadOnlyList<List<ScoreTuple>>>.FromResult(componentScores);
         }
 
-        private static int[,] ComputeRanks(IReadOnlyList<List<ScoreTuple>> componentScores)
+        private static int[,] ComputeRanks(
+            IReadOnlyList<List<ScoreTuple>> componentScores,
+            bool useCompetitionRanking)
         {
             int[,] ranks = new int[componentScores.Count, componentScores[0].Count];
             for (int componentIndex = 0; componentIndex < componentScores.Count; ++componentIndex)
@@ -609,8 +623,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 int rank = 1; // ranks are 1 based
                 for (int index = 0; index < componentScores[componentIndex].Count; ++index)
                 {
-                    // Identical scores should have the same rank
-                    if ((index > 0) && (componentScores[componentIndex][index].Score != componentScores[componentIndex][index - 1].Score))
+                    if (!useCompetitionRanking ||
+                        (index > 0 && componentScores[componentIndex][index].Score != componentScores[componentIndex][index - 1].Score))
                     {
                         rank = index + 1;
                     }

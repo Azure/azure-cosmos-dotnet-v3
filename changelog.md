@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- Hybrid search RRF now assigns a unique ordinal rank to every component result, including tied scores. Set `AZURE_COSMOS_HYBRID_SEARCH_USE_COMPETITION_RANKING=true` to temporarily restore the previous competition-ranking behavior.
+
 #### Bugs Fixed
 
 #### Other Changes
