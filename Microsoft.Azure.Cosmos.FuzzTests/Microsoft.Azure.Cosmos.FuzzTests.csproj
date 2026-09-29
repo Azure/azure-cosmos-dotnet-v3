@@ -16,7 +16,6 @@
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
     <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
     <PackageReference Include="SharpFuzz" Version="2.3.0" />
   </ItemGroup>
@@ -32,4 +31,5 @@
     <Content Include="configs\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <Import Project="..\Microsoft.Azure.Cosmos\Direct\DirectReference.props" />
 </Project>

@@ -184,8 +184,9 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             foreach (string dll in WindowsNativeDlls)
             {
                 string dllPath = Path.Combine(publishPath, dll);
-                Assert.IsTrue(File.Exists(dllPath),
-                    $"Windows native DLL '{dll}' SHOULD be present when publishing for {runtimeIdentifier}, but was NOT found at: {dllPath}");
+                bool expected = dll == "Microsoft.Azure.Cosmos.ServiceInterop.dll";
+                Assert.AreEqual(expected, File.Exists(dllPath),
+                    $"Unexpected native payload '{dll}' for {runtimeIdentifier}: {dllPath}");
             }
         }
 

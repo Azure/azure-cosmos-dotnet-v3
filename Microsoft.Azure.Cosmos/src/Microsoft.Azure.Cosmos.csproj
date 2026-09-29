@@ -117,8 +117,10 @@
 		</EmbeddedResource>
 	</ItemGroup>
 
+	<Import Project="..\Direct\DirectReference.props" />
+	<Import Project="..\Direct\QueryPlanInterop.props" Condition="'$(ProjectRef)' != 'True' and '$(UseDirectProject)' == 'true'" />
+
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-		<PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
 		<PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
 	</ItemGroup>
@@ -152,14 +154,15 @@
   </ItemGroup>	
 
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-		<None Include="$(OutputPath)\Cosmos.CRTCompat.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
-		<None Include="$(OutputPath)\Microsoft.Azure.Cosmos.ServiceInterop.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
-		<None Include="$(OutputPath)\vcruntime140_1.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
-		<None Include="$(OutputPath)\vcruntime140.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
-		<None Include="$(OutputPath)\msvcp140.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
+		<None Include="$(OutputPath)\Cosmos.CRTCompat.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" Condition="'$(UseDirectProject)' != 'true'" />
+		<None Include="$(OutputPath)\Microsoft.Azure.Cosmos.ServiceInterop.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" Condition="'$(UseDirectProject)' != 'true'" />
+		<None Include="$(QueryPlanInteropNativePath)" Pack="true" PackagePath="runtimes\win-x64\native\Microsoft.Azure.Cosmos.ServiceInterop.dll" Condition="'$(UseDirectProject)' == 'true'" />
+		<None Include="$(OutputPath)\vcruntime140_1.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" Condition="'$(UseDirectProject)' != 'true'" />
+		<None Include="$(OutputPath)\vcruntime140.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" Condition="'$(UseDirectProject)' != 'true'" />
+		<None Include="$(OutputPath)\msvcp140.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" Condition="'$(UseDirectProject)' != 'true'" />
 		<None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
 		<None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
-		<None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
+		<None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" Condition="'$(UseDirectProject)' != 'true'" />
 		<None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="build\netstandard2.0">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
@@ -195,4 +198,20 @@
 		<DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(ProjectRef)' != 'True' and '$(UseDirectProject)' == 'true'">
+		<TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeDirectProjectOutput</TargetsForTfmSpecificBuildOutput>
+		<BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
+	</PropertyGroup>
+
+	<Target Name="IncludeDirectProjectOutput" DependsOnTargets="ResolveReferences"
+	        Condition="'$(ProjectRef)' != 'True' and '$(UseDirectProject)' == 'true'">
+		<ItemGroup>
+			<DirectProjectOutput Include="@(ReferenceCopyLocalPaths->WithMetadataValue('Filename', 'Microsoft.Azure.Cosmos.Direct'))" />
+			<BuildOutputInPackage Include="@(DirectProjectOutput)" />
+		</ItemGroup>
+		<Error Condition="'@(DirectProjectOutput->Count())' != '1'"
+		       Text="SDK packaging requires exactly one resolved Direct project assembly." />
+		<Error Condition="!Exists('$(QueryPlanInteropNativePath)')"
+		       Text="SDK packaging requires the restored QueryPlanInterop.Windows native payload, regardless of build host or RuntimeIdentifier." />
+	</Target>
 </Project>

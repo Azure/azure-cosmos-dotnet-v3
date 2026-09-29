@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- Direct: Build the managed transport from source within the SDK and acquire the Windows x64 query-planning library from `Microsoft.Azure.Cosmos.QueryPlanInterop.Windows` 1.0.2. The native payload no longer includes the separate CRT compatibility and Visual C++ runtime DLLs. Native query-plan compatibility differences remain under investigation before release.
+
 - [6127](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6127) Direct: Updated the dependency to version 3.44.1, adding native query-planning support for `FullTextScore` expressions in the `SELECT` and `WHERE` clauses of hybrid search queries. Hybrid search query plans now also include the searched document paths and terms.
 
 ### <a name="3.64.0-preview.1"/> [3.64.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.1) - 2026-9-17

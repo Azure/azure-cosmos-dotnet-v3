@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <UseDirectProject Condition="'$(UseDirectProject)' == ''">true</UseDirectProject>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(ProjectRef)' != 'True' and '$(UseDirectProject)' == 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src\Microsoft.Azure.Cosmos.Direct.csproj" PrivateAssets="All" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(ProjectRef)' != 'True' and '$(UseDirectProject)' == 'false'">
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
+  </ItemGroup>
+  <Target Name="ValidateDirectReferenceSelection" BeforeTargets="CollectPackageReferences;PrepareForBuild">
+    <Error Condition="'$(UseDirectProject)' != 'true' and '$(UseDirectProject)' != 'false'"
+           Text="UseDirectProject must be true (local source) or false (temporary NuGet rollback)." />
+  </Target>
+</Project>
