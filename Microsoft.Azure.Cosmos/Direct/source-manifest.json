@@ -1,0 +1,2276 @@
+{
+  "revision": "743dc32433dc51e3d5357934014154419ae812aa",
+  "branch": "sdkReleases/direct/EN20260409-3.44.1",
+  "project": "Product/SDK/.net/Microsoft.Azure.Cosmos.Direct/src/Microsoft.Azure.Cosmos.Direct.csproj",
+  "inventoryMethod": "Explicit release project inputs, default project C# inputs and imported metadata template; upstream build evaluation still requires reconciliation.",
+  "files": [
+    {
+      "upstream": "Product/Cosmos/Core/Core.Trace/DefaultTrace.cs",
+      "path": "src/Diagnostics/Tracing/DefaultTrace.cs",
+      "kind": "Compile",
+      "sha256": "ddee3451793fb42384f6b94fd14f2e5773083b34159061fc38312fdd79873a48"
+    },
+    {
+      "upstream": "Product/Cosmos/Core/Core.Trace/EtwNativeInterop.cs",
+      "path": "src/Diagnostics/Tracing/EtwNativeInterop.cs",
+      "kind": "Compile",
+      "sha256": "9193b6aff644ad3a01869195a3ff64eaf1befc80c349f5e7e70d7c437f4cdbe4"
+    },
+    {
+      "upstream": "Product/Cosmos/Core/Core.Trace/EtwTraceListener.cs",
+      "path": "src/Diagnostics/Tracing/EtwTraceListener.cs",
+      "kind": "Compile",
+      "sha256": "db01d625a50b93d142b1eaa1b061fdc01b4fe0fd8f0097d874861c825124717b"
+    },
+    {
+      "upstream": "Product/Cosmos/Core/Core/Utilities/StringSyntaxAttribute.cs",
+      "path": "src/Compat/Polyfills/StringSyntaxAttribute.cs",
+      "kind": "Compile",
+      "sha256": "e7cc5c4f168a6f9a15db967e0e1d3d9d6faa7b9c5933d5dc9c8111388cb6b00c"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/Common/SharedFiles/DefaultTraceEx.cs",
+      "path": "src/Diagnostics/Tracing/DefaultTraceEx.cs",
+      "kind": "Compile",
+      "sha256": "4bb03c262b2188dfbfde79a19b51851862d17c7bf8ef4f79ced3c6fd1d49cf19"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/AccessCondition.cs",
+      "path": "src/ServiceModel/Client/AccessCondition.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "715492ea5c72c641f22bbdd159e5e069453c4b0e06f84ab7ef121eefdcd8db1e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/AccessConditionType.cs",
+      "path": "src/ServiceModel/Client/AccessConditionType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e3345f700248fb631cafc2b7e157f923781d11e703d2d62deb8f3ee1d2759cdd"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/AccountConfigurationProperties.cs",
+      "path": "src/Resources/AccountConfigurationProperties.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "9b1215b23afc35e68279dfea6e798a365df2f90488521a12a957f78d9c58e7de"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Address.cs",
+      "path": "src/Routing/Addressing/Address.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "945b9311679d6ea980801751615cdb57304d9c24f351e7c52ea62c04e41a5a7b"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/AddressCacheToken.cs",
+      "path": "src/Routing/Addressing/AddressCacheToken.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "efcc3937f71af2f5f167b8938a4a27dbcb4be95f5add50cf9d40bf7c9ccbb837"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/AddressEnumerator.cs",
+      "path": "src/Routing/Addressing/AddressEnumerator.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "89dbd1fb89c34e58d2c18c89ded6ceb7f7d0685eefbe0d8dbc1a1d0a9b3e255b"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/AddressInformation.cs",
+      "path": "src/Routing/Addressing/AddressInformation.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "ebe4cdbd19da7eaac400b5c8df501cdb211c6d963c6354c3a85a57addc99d33d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/AddressSelector.cs",
+      "path": "src/Routing/Addressing/AddressSelector.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "0d89ddbde6ccdba94703c634db26a2222a81f15d8dce83d64341e06bebb14670"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ApiType.cs",
+      "path": "src/ServiceModel/ApiType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "a70556e86a767e79eb3d72d27870ace169a46219f4d0b550c9de686dc291c978"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Attachment.cs",
+      "path": "src/Resources/Attachment.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "0913fde6c11331a736a00378694d66a1d3b850d1ee162ebe1950835b67e01d10"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/AuthorizationTokenType.cs",
+      "path": "src/Authorization/AuthorizationTokenType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "c1834ec1d57e6820d148f779c1ca70a49224196f1a3a40208cd7d05e2fbf019e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Azure.Core/AppContextSwitchHelper.cs",
+      "path": "src/Compat/AzureCore/AppContextSwitchHelper.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "ba8483831d8e27a94293aa95043e376be2981d524c6119387e3477023b64366a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Azure.Core/DiagnosticScope.cs",
+      "path": "src/Compat/AzureCore/DiagnosticScope.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "3089b5924c279bed5987bd7331c27b571444383feda19b08e592ffb307907041"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Azure.Core/DiagnosticScopeFactory.cs",
+      "path": "src/Compat/AzureCore/DiagnosticScopeFactory.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "5ce4db0ec24d4cdf9ca5e8e556d11b0f3a75afc70cd14624af0a679842c240ce"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/AzureRbac.cs",
+      "path": "src/Authorization/AzureRbac.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "d25f52292f77a1e2abf74c2fbdb8d797fb8fab9c1fefeb304bc5ed249b2eac8f"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/BadRequestException.cs",
+      "path": "src/Exceptions/BadRequestException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "284d8ce8273ec37d54a069f1c18511956a23e80259a15e80daeda8d288209e4f"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/BarrierRequestHelper.cs",
+      "path": "src/Store/BarrierRequestHelper.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "6eeaed148f358bcd73ce64134d60bfc8a40227ff144c588a8793e0448949e6fc"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/BarrierType.cs",
+      "path": "src/Store/BarrierType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "19388fbb0298a0157bd74e8954cd12a4a95dfa92f122c6a05b641839b324b4da"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/BitUtils.cs",
+      "path": "src/Utilities/BitUtils.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "f71833dcd0f9a41b8407eb95c9da01f63ca9d0dcdba586b5ac2dc63a76146d5b"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/BoundingBoxSpec.cs",
+      "path": "src/Resources/Settings/BoundingBoxSpec.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "fa7925aaf22afb72c36b583a0b8f57e8d7fa5f454935ab961c9710b3ae0e5a82"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ByokConfig.cs",
+      "path": "src/Resources/Settings/ByokConfig.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "6bafe100b7db6fc89bd723ad5fbbac6a14fc370b97811f0b7fffa0e0903391b3"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ByokStatus.cs",
+      "path": "src/Resources/Settings/ByokStatus.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "327c6dfa95fea484e04c1c395f9dd683b02024d5822c1226809f25f6c40977ad"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/CMKMetadataInfo.cs",
+      "path": "src/Resources/Settings/CMKMetadataInfo.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "a3d1513718079be7527c474279bdd02f6c854ab92cb562134033f2c5b134259a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ChangeFeedPolicy.cs",
+      "path": "src/Resources/Settings/ChangeFeedPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "41149751471f41cfae8b485d2dafcac549bdbe25499524558c3ee00b5dfef52d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ClientEncryptionIncludedPath.cs",
+      "path": "src/Resources/Settings/ClientEncryptionIncludedPath.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4849968bd60ac4b1f72f829b88b63c15d4aa627962910e447b0b28c61ffb364e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ClientEncryptionKey.cs",
+      "path": "src/Resources/ClientEncryptionKey.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "3d839df883992c0fd134f5830ab050c068d38ad8086e853dec454b5e1ba47a28"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ClientEncryptionPolicy.cs",
+      "path": "src/Resources/Settings/ClientEncryptionPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "44fb0d32f85d5642720328d8bb162f9aa2521d8eda38b04fdf9414cec053d46d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ClientSideRequestStatistics.cs",
+      "path": "src/Diagnostics/ClientSideRequestStatistics.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "bb6fc749addabc768b09e020ba6826772afeb9bfeabd24232d91a4c8a43ea167"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/CloneableStream.cs",
+      "path": "src/Utilities/IO/CloneableStream.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "47e391aa5dc614c4f7866b46a2fdea4141f6a9f9fe8ad729439a29b649137b9e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/CollectionBackupPolicy.cs",
+      "path": "src/Resources/Settings/CollectionBackupPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "5edc580ea8d4ef592b7a9595d00d6d1a8987be0d12a1c46a553eab1d736a8f6e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/CollectionBackupType.cs",
+      "path": "src/Resources/Settings/CollectionBackupType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4d1e708776a5d1044ac975d93444dffde83b86394a36f2a9dfc09a775aaf58d4"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/CollectionTieringPolicy.cs",
+      "path": "src/Resources/Settings/CollectionTieringPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "56b2587cd0ad765fc508b88c211900488e3fa41772c1489fa55d9c73079617be"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Collections/DictionaryNameValueCollection.cs",
+      "path": "src/Collections/DictionaryNameValueCollection.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "f77b1e5c27788d2386f025fbcb1973d421bfff85e2cadfde4d906eb0587a0589"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Collections/INameValueCollection.cs",
+      "path": "src/Collections/INameValueCollection.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "c6a62fc70513dbf1bab606e73b264213cd3050e92ebd6ea9ce5b297118eb06cf"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Collections/INameValueCollectionFactory.cs",
+      "path": "src/Collections/INameValueCollectionFactory.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "8a05e6eacb0e47fd922cd5e5683e1e6a33a69315bae82389d8289f6a33ddbbd4"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Collections/NameValueCollectionWrapper.cs",
+      "path": "src/Collections/NameValueCollectionWrapper.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "2430662ee285bf6b1a354f03365d960d50e56648fd8938873df8613c1cc55064"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Collections/RequestNameValueCollection.cs",
+      "path": "src/Collections/RequestNameValueCollection.cs",
+      "kind": "Compile",
+      "sha256": "b6c3ec595da347a7d7304c95524b90ba8499a29938041b8659c4837dec060866"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Collections/RequestNameValueCollection.tt",
+      "path": "src/Collections/RequestNameValueCollection.tt",
+      "kind": "None",
+      "sha256": "274c48fa4d83397cb4c89e3b81c4755025683f9f71c01622ea1d937985f9873a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Collections/StoreResponseNameValueCollection.cs",
+      "path": "src/Collections/StoreResponseNameValueCollection.cs",
+      "kind": "Compile",
+      "sha256": "31ec092210199a284558102ebe52ec36697ae80c60e86da7e4f9ac719d753f14"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Collections/StoreResponseNameValueCollection.tt",
+      "path": "src/Collections/StoreResponseNameValueCollection.tt",
+      "kind": "None",
+      "sha256": "cd17856c688f60dc122c26d5f6ead2170cb1c2395fbf52da55dab0b421174850"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/CompositePath.cs",
+      "path": "src/Resources/Settings/CompositePath.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "5dc3ff7bd42c17aa8ae4de9fa233e12e91955177cd7fb784fc3f5ea397d3504e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ComputedProperty.cs",
+      "path": "src/Resources/Settings/ComputedProperty.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "b1a3a553e5700a52cea2c21bbc3b853dd004ee0b0c7818c6d199798d0b0deb98"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ConcurrentPrng.cs",
+      "path": "src/Utilities/ConcurrentPrng.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "21946bbbef03a93122f2e785fec32fd94a8086f8f6fe0f31c6266b15abd59be4"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Conflict.cs",
+      "path": "src/Resources/Conflict.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "260e018643208aca1fff081c1f79710665305aa7fa7f5680f6c3bd2276d82239"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ConflictException.cs",
+      "path": "src/Exceptions/ConflictException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "7dad3a7f047c7693909dc0671e76884104074e0a13a07a699a561c1761cb3ae6"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ConflictResolutionMode.cs",
+      "path": "src/Resources/Settings/ConflictResolutionMode.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "27d1c86ae2b364c379d10cf896c00e1c2ce6fd3aae0944982890577473ac8b8e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ConflictResolutionPolicy.cs",
+      "path": "src/Resources/Settings/ConflictResolutionPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "2d97e6cfc3b96b827c7f7a5c4d52852ae98b041d7ade10b85695b5472f78e16b"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ConnectionEvent.cs",
+      "path": "src/Transport/ConnectionEvent.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e8c68cebc58200b8157c3a560a4fbcaac5294cb3d3e505cf395b9ab5f258cb2b"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ConnectionStateMuxListener.cs",
+      "path": "src/Transport/ConnectionStateMuxListener.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "db382f2a6f286e03eee9ca798b0a4ec1493ba3c5a99e068e9530f333b19678b3"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ConsistencyLevel.cs",
+      "path": "src/ServiceModel/ConsistencyLevel.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e6f01ad7be101530985164825d0bd2da19df7574e348104a390f1732d138c51f"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ConsistencyReader.cs",
+      "path": "src/Store/ConsistencyReader.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "545e63f3ed4e1ac016a635814a4e707398c8c4ad8b203f1f975b56d6a50ff9b0"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ConsistencyWriter.cs",
+      "path": "src/Store/ConsistencyWriter.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "12b073ced18819946bf5d05353423a64216b9bbd34a30a5c51c6769a4ed457a9"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Constants.cs",
+      "path": "src/ServiceModel/Constants/Constants.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "3d8882b35e02cd2e923331c339784bd6ebef041b84760cac542c00666d9a2eba"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ContentSerializationFormat.cs",
+      "path": "src/ServiceModel/ContentSerializationFormat.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "ba2a6aebb74102937297d2aeb4b8df5957d054e3a407b41db36f5417736bd6fa"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/DataEncryptionKeyStatus.cs",
+      "path": "src/Resources/Settings/DataEncryptionKeyStatus.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "f02737068b0555ab730791bf5631bc662923956589a803a40bf971da5c0e523e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/DataMaskingIncludedPath.cs",
+      "path": "src/Resources/Settings/DataMaskingIncludedPath.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "d2c75064f33e51887a68ccaf31bf98479d6cdf8e4772f41312739e84e8b0f7d3"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/DataMaskingPolicy.cs",
+      "path": "src/Resources/Settings/DataMaskingPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "221686a5c11ac1e03bc6f91cac5f64c493459f836148d7cc709b1ba33db8648f"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/DataType.cs",
+      "path": "src/Resources/Settings/DataType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "29f6b628dc122f41d02eed80fa8761b6b6de0476d623709e5351e30b9b07a319"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Database.cs",
+      "path": "src/Resources/Database.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4f0c4a667badeba0160145b9dac972378878ed3ffa82f467f47cb0777745f6da"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/DatabaseOrCollectionCreateMode.cs",
+      "path": "src/ServiceModel/DatabaseOrCollectionCreateMode.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4d52c23cc7ac2389916ba70d466599ffb204b389c5f2ca95f1fd781aa22db159"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/DistanceFunction.cs",
+      "path": "src/Resources/Settings/DistanceFunction.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "c102435a1c3bfb26e53d4ded97022c0714cab3002cd7f2a504e4550927b0a83b"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Document.cs",
+      "path": "src/Resources/Document.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "ccac6223cb579db70fea0d37579907ca9a59ee2c15478e1190662a64dac85e22"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/DocumentCollection.cs",
+      "path": "src/Resources/DocumentCollection.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "f481416d2adaab72cecc1174b72227e656fcf1a4c6e0eac31f1d474307c4d2b7"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/DocumentResponse.cs",
+      "path": "src/ServiceModel/Client/DocumentResponse.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "9178b6f8a408ba28fedbe871fe2205f11ddfd25d686e4f0021886953fdbd0795"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/DocumentServiceRequest.cs",
+      "path": "src/ServiceModel/DocumentServiceRequest.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "1cc53b7fbe01f68fcffa6443566ca0722bb5fd0d05cb94a82bde699f29b6f373"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/DocumentServiceRequestContext.cs",
+      "path": "src/ServiceModel/DocumentServiceRequestContext.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "d19bbac43e3bf7a9583784df510bcc1ee7b81ccfdaa184037f40be5722258cf3"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/DocumentServiceRequestExtensions.cs",
+      "path": "src/ServiceModel/DocumentServiceRequestExtensions.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "37fdd500632845ff458d3ce0e9a11ba952d8884df83eed4baab468beddc4e10b"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/DocumentServiceResponse.cs",
+      "path": "src/ServiceModel/DocumentServiceResponse.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "822ed8a022690cf8d56b7a9939a48d4e27fdf8d87d18c58e47f3d2acdfea4f35"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Embedding.cs",
+      "path": "src/Resources/Settings/Embedding.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "bfad36daf43b29ae6d747be16ce689b3b38c6d742b56e4c937ce84e13e630e4b"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/EmbeddingSource.cs",
+      "path": "src/Resources/Settings/EmbeddingSource.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "5131df2115c94b6337a757678893ae0f0ee0004fc2ffe979bd6e9f8c20f8d7e3"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/EncryptionScopeMetadata.cs",
+      "path": "src/Resources/Settings/EncryptionScopeMetadata.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "868d1d47438ed3ca356b9150dbc7a6ba11a7e3b721731e11c127ea73dcff6df8"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/EnumerationDirection.cs",
+      "path": "src/ServiceModel/EnumerationDirection.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "9101fe263f0722bceb682c5747a94ab0d7c8484a8e62f7f8f490cbbfb735f5d4"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Error.cs",
+      "path": "src/Exceptions/Error.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "652d57e06affc1a93f0799c299c8d90ad7ad679bbbb3fb404540726c1b24959a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ExceptionExtensions.cs",
+      "path": "src/Exceptions/ExceptionExtensions.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "1187aec887b3b5e0acb431410c3aa439aee7a79d4550703f187604b6a7d294e4"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ExcludedPath.cs",
+      "path": "src/Resources/Settings/ExcludedPath.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "9a3aa557bb38e6f98ca59bad37692636c8600aeba50602fd877eed23c12bf60c"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ExternalBackupFeatureFlags.cs",
+      "path": "src/Resources/Settings/ExternalBackupFeatureFlags.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "202e08c2988253fc6b78d4fb7da762ca216b36ca4754634c684a43bc54cb3b88"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/FanoutOperationState.cs",
+      "path": "src/ServiceModel/FanoutOperationState.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "8d8e724c036026570dd01b9a1cb873062deba218a911c6df2edf5e7dd0b664ba"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/FaultInjection/IChaosInterceptor.cs",
+      "path": "src/FaultInjection/IChaosInterceptor.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "9c9426abe5e021b38430d59d9a1b927ed120a5c17e80bd0cef0dfacd3ea5407e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/FeedResource.cs",
+      "path": "src/Resources/FeedResource.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "ce365444d1f6d4267a632a97bd3d496fcf45531a12714f3eb1430b0843bd5dae"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ForbiddenException.cs",
+      "path": "src/Exceptions/ForbiddenException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "5460220d90b7956d01b7cd0145db7dc2c1dffd69d3d9187ed7aba192886232f8"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/FullTextIndexPath.cs",
+      "path": "src/Resources/Settings/FullTextIndexPath.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "162cb592a01f359c234c0139b5504336e6530a9e93d8d8797d687e4b2cd1d5e4"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/FullTextPath.cs",
+      "path": "src/Resources/Settings/FullTextPath.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "1b90f4f0969864977cb758fa832842c43edc70dc841d9d0975f7b337c92d6a34"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/FullTextPolicy.cs",
+      "path": "src/Resources/Settings/FullTextPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "8ba8c015f7423f9156f42c034211f410d4d9d2f9602fef88e210803e85946776"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/GeoLinkTypes.cs",
+      "path": "src/Resources/Settings/GeoLinkTypes.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "97ba1a7194c3d2cc8b864da59d13e40847ca42ebc295461419cae6758838202e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/GeospatialConfig.cs",
+      "path": "src/Resources/Settings/GeospatialConfig.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "2de747909fb17556448d9cb67f8e89fa85c6d3367411891a3d35a6fc5163cbb2"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/GeospatialType.cs",
+      "path": "src/Resources/Settings/GeospatialType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "d280024098dd5964ee89b5bfd4dd46f1320c0dbe9f6ee2d8b0fcea8354f6c1ac"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/GoneAndRetryWithRequestRetryPolicy.cs",
+      "path": "src/Retry/GoneAndRetryWithRequestRetryPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "7e109fa7f566938029ebe2028aa75a9032c363de446aa78d5cddd223800d31b4"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/GoneAndRetryWithRetryPolicy.cs",
+      "path": "src/Retry/GoneAndRetryWithRetryPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "35b9eae9fd7e95e510a4a108bf5a6dd23ded3e071bc817977160bf3198ad96dc"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/GoneException.cs",
+      "path": "src/Exceptions/GoneException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e91bf2bd4b6ed7524b4a91140a0d2571c16e1a1e9cae3d8ed630e647d6c3af62"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/GoneOnlyRequestRetryPolicy.cs",
+      "path": "src/Retry/GoneOnlyRequestRetryPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "041b02f7a9263bda77d3f6a9a90d92f9b0b7a20e62026c3b0470a515fba6b8f0"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/HashIndex.cs",
+      "path": "src/Resources/Settings/HashIndex.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "003395b8a5dd2f3c6fc57beae877b33f8677040f9be02ddf359fb5102c43ffe6"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Helpers.cs",
+      "path": "src/Utilities/Helpers.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "13babc5d140f59bde0e6df8f462b326b28fccfb9d9eacbdc38d1684b16145273"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/HexStringUtility.cs",
+      "path": "src/Utilities/HexStringUtility.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "491b6a76a3e5d6161394efc01ca9635e745b78f0c42567d11b083aa7a429e162"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/HttpClientExtension.cs",
+      "path": "src/Transport/Http/HttpClientExtension.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "3f3088470e3d3c66c90aaf19f31e03a9643f09b50014b61a98e7d4aa3b12b160"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/HttpConstants.cs",
+      "path": "src/ServiceModel/Constants/HttpConstants.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "dbea12413ea9d1ea5c091e991ec55f0c16f4d00fe3df01cb4d5d110ad30aeef7"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/HttpException.cs",
+      "path": "src/Exceptions/HttpException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "1c33da752742310fe400faca3983356b428796115866356052fe9391cf31640f"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/HttpTransportClient.cs",
+      "path": "src/Transport/Http/HttpTransportClient.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e5355976599e60244a823b55aef5967d581d1e0563e9528a35caf6a8e915bb9a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/HttpUtility.cs",
+      "path": "src/Transport/Http/HttpUtility.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "09dbb2cc5b4895f89f26e9fecae89327854034f834d623d1c3b16139fde45b30"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IAddressEnumerator.cs",
+      "path": "src/Routing/Addressing/IAddressEnumerator.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "25f8df2cd5f0512ac541b49db2f7a9c6bd8a1d6238a6ab10af371860c2ddf9f8"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IAuthorizationTokenProvider.cs",
+      "path": "src/Authorization/IAuthorizationTokenProvider.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "7e62e8014e3d614a340b0facc195c33e9b7031d1ec8df2e233b9feb2edc8dd87"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IClientSideRequestStatistics.cs",
+      "path": "src/Diagnostics/IClientSideRequestStatistics.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "0be917267f497fbc4351640a1e8fbe27cdb2952df614a26e11d19b4f4eb87802"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ICommunicationEventSource.cs",
+      "path": "src/Diagnostics/Tracing/ICommunicationEventSource.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "a1e72562633867669a2529fdf205f9bd7cff003f506a85139438902fdfc706f6"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IConnectionStateListener.cs",
+      "path": "src/Transport/IConnectionStateListener.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "57a2fef5cbdc9573662847e10a3351ecf7da139cdc031b90ae191fe41a0f17c2"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IDocumentResponse.cs",
+      "path": "src/ServiceModel/Client/IDocumentResponse.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "32dc4b599079ae94e3333ed79d7260fc632b73db0afc15a558ec186f2dd637e3"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IRequestRetryPolicy.cs",
+      "path": "src/Retry/IRequestRetryPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "a4a036666b0a4d70dc5b9977d72942585948beaaf2ef4458dd226db66d7535ac"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IResourceResponse.cs",
+      "path": "src/ServiceModel/Client/IResourceResponse.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "d5a8a81748d3bf8c284384d2f542bf843c3ce628b885b78c56fc91b1b7d4870d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IResourceResponseBase.cs",
+      "path": "src/ServiceModel/Client/IResourceResponseBase.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "008812e9f2a367426af3d4764e2bf4014a6a9689ccf619b7bda661e6f0276e78"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IRetriableResponse.cs",
+      "path": "src/Retry/IRetriableResponse.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "551e490578e12caa9df52bd22e92b914e3ef315f5221f7ef2260b2e1abaad5b0"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IRetryPolicy.cs",
+      "path": "src/Retry/IRetryPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "015a8ad3a3d90d4694dd119a8f56b89763069d183e13bbef19f5e824fcf3bc61"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IServiceConfigurationReader.cs",
+      "path": "src/ServiceModel/IServiceConfigurationReader.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "bb83c2e7c27082a26cda0a66a00066a8bc09d1354fa66750ac92bd1c0a90b8b2"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IServiceConfigurationReaderExtension.cs",
+      "path": "src/ServiceModel/IServiceConfigurationReaderExtension.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "981aa04e26d2c10c9ba8f73c886f3f305a5c86b4be0e1f866dfdcfbad35ce38c"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IServiceConfigurationReaderVnext.cs",
+      "path": "src/ServiceModel/IServiceConfigurationReaderVnext.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "43f6c0bad46205d9d8aa1041d3a7c985630012fad0056eab809c86d8d4427ba6"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IServiceRetryParams.cs",
+      "path": "src/Retry/IServiceRetryParams.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "3ac55d6c57d5faec84331de59169101e7a20b960f7ee0a94050d1bebcb7bf518"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ISessionContainer.cs",
+      "path": "src/Session/ISessionContainer.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "bb42c7894a0d1562d37252c31df0c722f714055d66770ed84b2268083fe948fe"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ISessionRetryOptions.cs",
+      "path": "src/Session/ISessionRetryOptions.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "3854f26c7d6d61724aab25749f541d1928ebc5275eb475480761f0d4f84783e4"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ISessionToken.cs",
+      "path": "src/Session/ISessionToken.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "34ebb469950e878e8674259a2ede21bf1f0362e908ff8b3a432cf5d3e035b1f8"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IStoreClient.cs",
+      "path": "src/Store/IStoreClient.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "94d6a507d49bfb2f0131bb701fc018097a80a3e5473d5285b63dd1208916b83a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IStoreClientFactory.cs",
+      "path": "src/Store/IStoreClientFactory.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "d5fdf192dc94ce852d55fc6d72295efdc4a4821415edd031c9c4c22b84b95a2d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IStoreModel.cs",
+      "path": "src/Store/IStoreModel.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "71d4d7df526d5dc0ccae7aea2fb087b3aaa788641739369c793e4cb294df1076"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IStoreModelExtension.cs",
+      "path": "src/Store/IStoreModelExtension.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "c0c92205918683b1d2b75dbbbf42a9af41787cf65a1a22dc40ca60339b353609"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ITypeResolver.cs",
+      "path": "src/Serialization/ITypeResolver.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e271dba1c1433652dbc857c479ae719b2c09bb036fd6cca6a8e27c570986d86f"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/InAccountRestoreParameters.cs",
+      "path": "src/Resources/Settings/InAccountRestoreParameters.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "9de2ab7a9715231978929f7d12889888d100c87caefc1b266cdbf0b6a262388d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IncludedPath.cs",
+      "path": "src/Resources/Settings/IncludedPath.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "888760572e6587f7dbd692e5773e61aeca20c3f2af3cea6ac08e4d8169b58c51"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Index.cs",
+      "path": "src/Resources/Settings/Index.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "03c522746c8bad66d0fc9d82ac6b2425029cd13340fce6d2f5e810a29098a1b9"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IndexJsonConverter.cs",
+      "path": "src/Serialization/IndexJsonConverter.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "7b423a617734e6231ce69fe877ea0233034fc2a16036e1f87b2e0959931a57b9"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IndexKind.cs",
+      "path": "src/Resources/Settings/IndexKind.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "0eecbec545824cde9b43cf6e3dcfae42b2ea09d7d4eb2b8144afff0c21e02bde"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IndexingDirective.cs",
+      "path": "src/Resources/Settings/IndexingDirective.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "76a101fed9d87c20450ec568c0f9b882e4fbf6976572b2871f3782ea4ec9b946"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IndexingMode.cs",
+      "path": "src/Resources/Settings/IndexingMode.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "eef7f4fc7cfd62ffafaaa409eaed4f3651fc491c78e60977072e405ccc8f0d8c"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/IndexingPolicy.cs",
+      "path": "src/Resources/Settings/IndexingPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "b17939bc7d0a06daeb6a4b0f3af715b274ff2a927ff0971af817bc065b4ae0e1"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/InternalSchemaProperties.cs",
+      "path": "src/Resources/Settings/InternalSchemaProperties.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "1e74484f2fb5663a7508e17c4c3f127ea72ea8c26b952518f069654164ee8728"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/InternalServerErrorException.cs",
+      "path": "src/Exceptions/InternalServerErrorException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "24b575f3477454af0e83860979965a7abf2dd849d745d2cc540c5dfbee7daa97"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/InvalidPartitionException.cs",
+      "path": "src/Exceptions/InvalidPartitionException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "3fcec79a900eaf9eeec3d89cf0a9998f07add1153bcaed68ff71d74fbbc94c3f"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/JSonSerializable.cs",
+      "path": "src/Serialization/JSonSerializable.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e1d4f24f34df29c7a924f572385cfb6d34c1ef0b31445b0cc82bf1ab607d6447"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/JsonSerializableList.cs",
+      "path": "src/Serialization/JsonSerializableList.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "a91f48d54696d7326471d2c28afdd0c6b16183a5fc42dbe6be2dceca70567bc8"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/KeyWrapMetadata.cs",
+      "path": "src/Resources/Settings/KeyWrapMetadata.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "c337058e91f1800c32c74e55a1573928c5c6d13e09f004482c7783dd9f79b347"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/LocationNames.cs",
+      "path": "src/Routing/LocationNames.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "cf7bb1b3985c2320173b932f453baaeb0d212e7190cbd3429e16345897e2db86"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/LockedException.cs",
+      "path": "src/Exceptions/LockedException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "a2513466a9b18eeaa571117c11f87a98448ec1ccb831dbfa10a7734f5940babe"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Management/ReplicationPolicy.cs",
+      "path": "src/Resources/Settings/ReplicationPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4ae821f7aee520e93bd32745978dc4217cfd6a36c0df45dcb27daf565c535cbd"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/MaterializedViewDefinition.cs",
+      "path": "src/Resources/MaterializedViewDefinition.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "1ab4ad9a53538c1f019da20ec3367b4da246691846958f9cfa6573749ad6e21e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/MaterializedViews.cs",
+      "path": "src/Resources/MaterializedViews.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "f6e3b9ce241c436b3132c89d84e776c4ba3092220b73e41b9a8e379b394569a7"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/MaterializedViewsProperties.cs",
+      "path": "src/Resources/MaterializedViewsProperties.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "5984e51631f19d6adab0aecb9ecbab35968d42ab9eca440db12335bed0fffeaf"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/MathUtils.cs",
+      "path": "src/Utilities/MathUtils.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "810ffd7206b1fe345be81e9c41a00430ea89581fabb6da4d91c390a7540ed52d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/MediaIdHelper.cs",
+      "path": "src/Utilities/MediaIdHelper.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e9a1bbb1a0781c0d6344611de71b21bc6c68131c6c4eb1c4579d2689418416ef"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/MemoryStreamPool.cs",
+      "path": "src/Utilities/IO/MemoryStreamPool.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "53c6c1739d19cecfd252cd166f25e2be7b486f049e301c36488b2172fb0d9838"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/MethodNotAllowedException.cs",
+      "path": "src/Exceptions/MethodNotAllowedException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "6d53e48b074e81c63987efff4d6f1dd37835ffff15c1d4b236ba151ad6f10534"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/MigrateCollectionDirective.cs",
+      "path": "src/ServiceModel/MigrateCollectionDirective.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "35154ed2ff29cb6171ca68054bc79b0a825dbd2f217354e50ebfffee94019474"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/NetUtil.cs",
+      "path": "src/Utilities/NetUtil.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "9acbda800a43e0ebf3480ac1a69c32aeae1c7ebf74944f5196d9cf13f20d579a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/NotFoundException.cs",
+      "path": "src/Exceptions/NotFoundException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e3f2e3df742079593371754d760d0a6bdfe590b6cb382c0e40cda8420dc9953d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/NullSessionContainer.cs",
+      "path": "src/Session/NullSessionContainer.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "2e757eeaa9a6cc7d777f5acb3bb8e40709629d86c44783743ba0fcdbcce4c595"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Offer.cs",
+      "path": "src/Resources/Offer.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "06bcf595746587266fe6dcb75048e5952eb1e657a78e87b95cff67eeac4101ce"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/OfferContentV2.cs",
+      "path": "src/Resources/OfferContentV2.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "b1d751a22e356573723dfb317cc3b75a1546832e1bb11a046d36b081e5c78b6c"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/OfferTypeResolver.cs",
+      "path": "src/Resources/OfferTypeResolver.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "ef94790d7a426c0ad6314d3b631cda1dcbc4034dab1854d3b82aeede72349cbd"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/OfferV2.cs",
+      "path": "src/Resources/OfferV2.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "2d01945713699717ac6cf1168f0ee3f073bdc7e524848a438fe302c36539064a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/OperationKind.cs",
+      "path": "src/ServiceModel/OperationKind.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4353a70ea746206da750a83a035ea6bf2cd6543384f48d4eb94cb97d12b398ae"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/OperationType.cs",
+      "path": "src/ServiceModel/OperationType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "70a27b771a51a4563425b71df0b3afbcc3c1d1ac39037ad38b6975821c9d35e7"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PartitionAddressInformation.cs",
+      "path": "src/Routing/Addressing/PartitionAddressInformation.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "77ef493b5e209f410b1080ab9445c9ddd7a20dedd6351181dd772feaeaa927d7"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PartitionKey.cs",
+      "path": "src/Routing/PartitionKey.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "1c12aa56a2e1494c391c37bcbc24cf307045876f20546c40a43ee86a95a1b812"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PartitionKeyDefinition.cs",
+      "path": "src/Resources/Settings/PartitionKeyDefinition.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "5b7624cddcd34d41b206409fd0111c963d780df9db8aa793693e503b19f57e00"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PartitionKeyDefinitionVersion.cs",
+      "path": "src/Resources/Settings/PartitionKeyDefinitionVersion.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "d5f643136c6536022a0917740af898481bde85644dcc76d53ece4b2565e10bac"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PartitionKeyRange.cs",
+      "path": "src/Routing/PartitionKeyRange.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "0ef298215d51a72cd94b7da8fb8d8996bd290bea5ebc5f686a6ab8acb8615987"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PartitionKeyRangeIdentity.cs",
+      "path": "src/Routing/PartitionKeyRangeIdentity.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "c8dd0f362474cb8254c3ff6327cf027c2c6bf803f24f714763dfe89b58efdcc4"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PartitionKeyRangeStatistics.cs",
+      "path": "src/Resources/PartitionKeyRangeStatistics.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "91e57f01465971fe35762464606ff883dcc7ec8411e570dbd105703e835273e5"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PartitionKeyRangeStatus.cs",
+      "path": "src/Routing/PartitionKeyRangeStatus.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "6dc87a052086792628446382d6aa8f5239fbe5af5010edb6050bda402d3ef2ca"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PartitionKeyStatistics.cs",
+      "path": "src/Resources/PartitionKeyStatistics.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e72d272f73b35547361777077d2227ec02f7752e97bab764e2c6a7c1500e05f6"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PartitionKind.cs",
+      "path": "src/Resources/Settings/PartitionKind.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "70c1d023e41a51f967a9aaf6fa0ba64bb1272e102bf01dc69e25aa30e7ea27ae"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PartitionedSystemDocument.cs",
+      "path": "src/Resources/PartitionedSystemDocument.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4b6709d04cbca749306f9f26a662dd85f2e4ad0221c67b6a9a64ce0e80ab851a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Paths.cs",
+      "path": "src/Routing/Paths.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "d52d4c1c9341f59ff506fd78bccdc477160791414b531952962ceb585e696410"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PathsHelper.cs",
+      "path": "src/Routing/PathsHelper.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "7fad8226580ccc36f7426fbc4419c92a9e053171e31bfd311a3e640673a8d3cc"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PerProtocolPartitionAddressInformation.cs",
+      "path": "src/Routing/Addressing/PerProtocolPartitionAddressInformation.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "7c804a394bc751125da3c766125ecd916936d246d3e2dab86bb310d779902ce0"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Permission.cs",
+      "path": "src/Resources/Permission.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "d9cea93dc0c8df52d73f33d89901c5ec2b7bbdd2a28506e268cf10693ab61bae"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PermissionMode.cs",
+      "path": "src/Resources/Settings/PermissionMode.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "99d04fc6b7df48a8c8096e90146feca815a63cf95f22b9dfaf9304b8696b08b2"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PooledTimer.cs",
+      "path": "src/Utilities/Timers/PooledTimer.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "9657343f8b4f8adf96f3e04787893ebe8743672065da66cf8621bc60199adccc"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PortReuseMode.cs",
+      "path": "src/Transport/Rntbd/PortReuseMode.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "5112499cae29eb5c24207ac33916eb526e778b2de689b4b3332c71401a538003"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PreconditionFailedException.cs",
+      "path": "src/Exceptions/PreconditionFailedException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "6526fe8057cee5f4fea97dc4af5d2bf1082de74dcb9ef1affc90da060f298960"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PreviousImageRetentionPolicy.cs",
+      "path": "src/Resources/Settings/PreviousImageRetentionPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "34b8f1989045481f4070d654b8b7bdf8a490aa8c041cba4514777b01c9b2ec58"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/PriorityLevel.cs",
+      "path": "src/ServiceModel/PriorityLevel.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "0f1fe4fbb9f6c9d94a4070b6262d8ef393c617240c69505ba7786d70c0a79279"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Protocol.cs",
+      "path": "src/ServiceModel/Client/Protocol.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "72439a64985e019dc4f2b618cdaa17f716cbf43801366ffe8c48159ee5348f26"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/QuantizerType.cs",
+      "path": "src/Resources/Settings/QuantizerType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "555008b2202f1a7f36ad61cf95163c036367cafacc20a3fd54986da529f4b6c4"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Query/QueryPlanGenerationMode.cs",
+      "path": "src/ServiceModel/QueryPlanGenerationMode.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "71a60f3c46447a2c22316f67e277706e1b03f2e9271900c52ce5844f1d00b2b3"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/QueryResult.cs",
+      "path": "src/ServiceModel/QueryResult.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "a8b95e1f0f9e4ff273e89e9439781f04aca46871ffdad3f6cf8f9031729cac2d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/QuorumReader.cs",
+      "path": "src/Store/QuorumReader.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "1903a3804b03707062473a0304e9da8664a6d4ee8add55bea48ad6f11a377187"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/RMResources.Designer.cs",
+      "path": "src/Resources/RMResources.Designer.cs",
+      "kind": "Compile",
+      "sha256": "f21f4d97aae5944685b8803dd045e1a9b1207580d339cac958b543b6181a95cb"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/RMResources.resx",
+      "path": "src/Resources/RMResources.resx",
+      "kind": "EmbeddedResource",
+      "sha256": "86b579e9eb085c2a18dd306b11de274ac8dec9a7b7eb151cb2b90352f8a2f4d8"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/RangeIndex.cs",
+      "path": "src/Resources/Settings/RangeIndex.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "fa91ebe525256ff1924f34975a2b48848411694aedee67064cd7fab2d4b28127"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ReadConsistencyStrategy.cs",
+      "path": "src/ServiceModel/ReadConsistencyStrategy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "2ceb94ce9c44391a166c5c8df99929c5aaf0be623090e321d524df527e366859"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ReadFeedKeyType.cs",
+      "path": "src/ServiceModel/ReadFeedKeyType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "8a44ae41c68065565df994dfc610014fb855370f0fa28112c887291c8f342506"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ReadMode.cs",
+      "path": "src/ServiceModel/ReadMode.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "14eed10842ef1942b10a3fd73db203379b93f6294f5f84ca79479d1935204104"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ReadPolicy.cs",
+      "path": "src/Resources/Settings/ReadPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "9efd6190af969671481359fd0e860991231a896bb9a63798847147f519911064"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ReceivedResponseEventArgs.cs",
+      "path": "src/Transport/ReceivedResponseEventArgs.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "f9bd8af0476ec66687ef4ec114be4d89dfc436ca451d16cd99428417054fa59a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ReferenceCountedDisposable.cs",
+      "path": "src/Utilities/ReferenceCountedDisposable.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "769e9afebf294cb37df154962091680cbe244db9cd7f7e135a1228b75ac441f9"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/RegionProximityUtil.cs",
+      "path": "src/Routing/RegionProximityUtil.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e7e4f42d0098fddd81470781c8ec3eccc48e1ea1eaea81ab7c44ae0752040c15"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/RemoteStorageType.cs",
+      "path": "src/Resources/Settings/RemoteStorageType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "a723b929a1ad61b9607187f497c8d41bf5b76d80ff7b1a1ca8d75db89f94ee61"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ReplicatedResourceClient.cs",
+      "path": "src/Store/ReplicatedResourceClient.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "44b117a64e733f98eff284479d013007fd914839eb363064233688364a4921b6"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/RequestChargeTracker.cs",
+      "path": "src/Store/RequestChargeTracker.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "c34dd243b3db0040cdf2d3e050c6aa104f856698168756c556ad1a0db076d582"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/RequestEntityTooLargeException.cs",
+      "path": "src/Exceptions/RequestEntityTooLargeException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "f1161c964a3ce26b447093d7b02d35276b2e941368b1e64219e7aa23948e7a32"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/RequestHelper.cs",
+      "path": "src/ServiceModel/RequestHelper.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "c4e2aea88ca1f1f52c1e2828e3094a7264810fb4b5beb8074eb33d942f548256"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/RequestOptions.cs",
+      "path": "src/ServiceModel/Client/RequestOptions.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e3c9a19022da4a5a27428e93786d35393d219a0b298027581b2121392b524955"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/RequestRateTooLargeException.cs",
+      "path": "src/Exceptions/RequestRateTooLargeException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "a7f3ec3702ae765137c3606b350b617131e43d3b5525e15a1174fe901c3f2311"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/RequestRetryUtility.cs",
+      "path": "src/Retry/RequestRetryUtility.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "41a2af08aba979d8557a3cbc91184f49c2a2e77dcaaf2a470ca64376fc87d2b5"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/RequestTimeoutException.cs",
+      "path": "src/Exceptions/RequestTimeoutException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "79466252c2bcd5547ab1c3a7467932e1dd159cd6a45fdd6dfee993a16b6a0e3a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/RequestedCollectionType.cs",
+      "path": "src/ServiceModel/RequestedCollectionType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "81e1eda9aa303220413bb8a49da70e99211d711ccb9d033f0d3264a76971d232"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Resource.cs",
+      "path": "src/Resources/Resource.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "85347232fc802ad84f240583893bc41f2c6e325fb2c80501f4886ebe6a6a0c23"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ResourceId.cs",
+      "path": "src/Resources/ResourceId.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "52f9fdfeae9fe337451673a906f6a9f90ed464ecec33bf8d25186b16faa1fb12"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ResourceIdBase64Decoder.cs",
+      "path": "src/Resources/ResourceIdBase64Decoder.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "19ab034747fda53a2028592988b1a4a7e7d38b5553ccd4d02f06c57f64e0d7a1"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ResourceOperation.cs",
+      "path": "src/ServiceModel/ResourceOperation.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "901fa65521b8a01791e1a724469aeb3f3871f62c8c69d6c99a7014bf8f78f03a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ResourceResponse.cs",
+      "path": "src/ServiceModel/Client/ResourceResponse.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "8696041ea9d90c342861c8b6d644f5ee6d91c8600f432fa40e1b16cb5dfe48d7"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ResourceResponseBase.cs",
+      "path": "src/ServiceModel/Client/ResourceResponseBase.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "86c29095a62d0d8d7af306c4589162c538112849a516e5a3d29e83463398dac9"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ResourceType.cs",
+      "path": "src/ServiceModel/ResourceType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "57e6722df45ec674cab993b62f160ee91d7d0ffef78d5862143cb0c5bfd6d6b5"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/RetryWithException.cs",
+      "path": "src/Exceptions/RetryWithException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "70a6d8d406fab27e99b4a79af878f76b9a5437ec988916aa81735b51be46f8be"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rfc1123DateTimeCache.cs",
+      "path": "src/Utilities/Rfc1123DateTimeCache.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "6e5166be1cdc8cf79d25efbd1f052851602884948edbdca6890533b82b7d4bbb"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd/RntbdToken.cs",
+      "path": "src/Transport/Rntbd/RntbdToken.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "9513f082140107bbae80e36ec99738f644679aac93743159b385ec9bb8ae830a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd/RntbdTokenStream.cs",
+      "path": "src/Transport/Rntbd/RntbdTokenStream.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "8981279086fe94479fd76e90be996af2a0a6219450917b94b146c725fd62006f"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd/rntbdtokens/RntbdConstants.cs",
+      "path": "src/Transport/Rntbd/RntbdConstants.cs",
+      "kind": "Compile",
+      "sha256": "f61535e04cd51d58d1745a987d1a20cd11a3bb041919fecb2cbd2603f64a022c"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd/rntbdtokens/RntbdConstants.tt",
+      "path": "src/Transport/Rntbd/RntbdConstants.tt",
+      "kind": "None",
+      "sha256": "f44b8956977b88d5510f0d970b57c2b3c6c097ff6fea4dc998924615badf0561"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/Channel.cs",
+      "path": "src/Transport/Rntbd/Channel.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "cc6793ac1da6932ae54501238e6d3c2897382555b222306ff8db0e67901165bd"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/ChannelCallArguments.cs",
+      "path": "src/Transport/Rntbd/ChannelCallArguments.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "7adee368c8768fe071564f791de8d933c7bbf546bd67275394495f87c010c1e8"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/ChannelCommonArguments.cs",
+      "path": "src/Transport/Rntbd/ChannelCommonArguments.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4608fb2dd9e609f3b3106a9a3c04cbe1e1065e4b498b803030d507c4e4438e68"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/ChannelDictionary.cs",
+      "path": "src/Transport/Rntbd/ChannelDictionary.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "bdfeb1717b746669b016bbddd11abd8c983893d8d2c7fbb4b617a7fe2cabb175"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/ChannelOpenArguments.cs",
+      "path": "src/Transport/Rntbd/ChannelOpenArguments.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "5f8a93b031fa1777bf1998e62e4f0ceb123aa5cebf1fc609d1395005c26b3402"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/ChannelOpenTimeline.cs",
+      "path": "src/Transport/Rntbd/ChannelOpenTimeline.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "523b59021a7f23bd71ad38eea1b28f2ec481f41f5f2d48456142f55ca028ca2c"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/ChannelProperties.cs",
+      "path": "src/Transport/Rntbd/ChannelProperties.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "bfa9e9d74fdbb0664d37cc1bfa2aa5034f040960f62cd29cc92d2c1af5470d5f"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/Connection.cs",
+      "path": "src/Transport/Rntbd/Connection.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "1fc8b777a6c8526487109714e94d38b2c248ef9971222ef4bb31c459ea38c8d8"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/ConnectionHealthChecker.cs",
+      "path": "src/Transport/Rntbd/ConnectionHealthChecker.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "413debd91b5f75df97d70f283a6ba11786978290a84fe36e642edb289658db8d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/CpuLoad.cs",
+      "path": "src/Diagnostics/SystemMonitoring/CpuLoad.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "fbc95a64b32576f636916ae6c3aa095e25e4545ab05121873d73b87f0d06abcd"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/CpuLoadHistory.cs",
+      "path": "src/Diagnostics/SystemMonitoring/CpuLoadHistory.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "0055be15193b9327400cd5de8afe74bbfc0c0bd82951913b34bb9a95f45004d4"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/CpuMonitor.cs",
+      "path": "src/Diagnostics/SystemMonitoring/CpuMonitor.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "df6a087137427220ddc90de2487b7e2137ac29ef3a2eafff382d828bf7321072"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/Dispatcher.cs",
+      "path": "src/Transport/Rntbd/Dispatcher.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "5b8afd7719949f5d35d89a1deef50e9a47f0cff767136fae56609cc76c2d1cc2"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/HeadersTransportSerialization.cs",
+      "path": "src/Transport/Rntbd/HeadersTransportSerialization.cs",
+      "kind": "Compile",
+      "sha256": "c0c009ed8af88fc6039ed14be0f631c3cd6136e4c4ec6c792dd43383c889dc91"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/HeadersTransportSerialization.tt",
+      "path": "src/Transport/Rntbd/HeadersTransportSerialization.tt",
+      "kind": "None",
+      "sha256": "9e64f969f11a77d98aede389241b7ef58e978f6e936f6a0b5a4988969579e4d9"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/IChannel.cs",
+      "path": "src/Transport/Rntbd/IChannel.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "c36cf782c30dfa76df0020b878f4c2e08a0dec626a11b861b2c3a1d10114eb01"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/IChannelDictionary.cs",
+      "path": "src/Transport/Rntbd/IChannelDictionary.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4e6836410dfae414941d0c517ec5a241be6b0213993faa5e1f237fcb26142153"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/IConnection.cs",
+      "path": "src/Transport/Rntbd/IConnection.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "6a08a18fb54c6b8850e90a50500a569091a4cad0c2c77a0bcd15481d78c63050"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/IOpenConnectionsHandler.cs",
+      "path": "src/Transport/IOpenConnectionsHandler.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "d31176717c3f631004fd413a7a0a86c9598918c363070de499762acf55bd436e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/LbChannelState.cs",
+      "path": "src/Transport/Rntbd/LbChannelState.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "6648554fc265b18ddf5b99138ce0af256ef9003a0798319a3fa0691d3fda02f7"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/LinuxSystemUtilizationReader.cs",
+      "path": "src/Diagnostics/SystemMonitoring/LinuxSystemUtilizationReader.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "023a2e92a1f1a3267c600ae6c798e6173abbefc969908607b9c388ad685d599a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/LoadBalancingChannel.cs",
+      "path": "src/Transport/Rntbd/LoadBalancingChannel.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "ad28a596796b4ccd4de7c1f521da0b308d155f9763d53cec75cc0eab724637ad"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/LoadBalancingPartition.cs",
+      "path": "src/Transport/Rntbd/LoadBalancingPartition.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "f29c9211c847ceec7abd5b54bcaedda69ab3f13292846b0bf8fc4646c9c04def"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/ProxyRequest.cs",
+      "path": "src/Transport/Rntbd/ProxyRequest.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "badc0044dc9979f21099bf59a45f93ec0f75851f11bcdf21acfd12ec18c3c823"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/RntbdOpenConnectionHandler.cs",
+      "path": "src/Transport/Rntbd/RntbdOpenConnectionHandler.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "5bc9f4543322f8d61a6c55449d39e27b295fb1673b25335cc82f241c05198dab"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/ServerKey.cs",
+      "path": "src/Transport/Rntbd/ServerKey.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "1418611551b8e531bf5c54fcd7af97a25a180205841822b570a65a08d53223ef"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/ServerProperties.cs",
+      "path": "src/Transport/Rntbd/ServerProperties.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "67537923a7e901ea6b87e2d0218036a47ce9ddeb88e8c6b9668218b46696c93e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/SystemUsageHistory.cs",
+      "path": "src/Diagnostics/SystemMonitoring/SystemUsageHistory.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4ca61693765999f6db020a64d27e0e9da7929543c5eb3a01e4348d618ea97307"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/SystemUsageLoad.cs",
+      "path": "src/Diagnostics/SystemMonitoring/SystemUsageLoad.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "234e627a811456b7957d2f4f5b29f18de7e9a549f4b0d2533c11d79fb1fc745a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/SystemUsageMonitor.cs",
+      "path": "src/Diagnostics/SystemMonitoring/SystemUsageMonitor.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "1fbf043f6a553f48af08a33f054ad9b04462f7d7d8cbcbf8325a32e4f06e313b"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/SystemUsageRecorder.cs",
+      "path": "src/Diagnostics/SystemMonitoring/SystemUsageRecorder.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "71b4d36c1854be8efe7e394495859848f2e4072c56e948df3d6a4fa6c117be23"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/SystemUtilizationReaderBase.cs",
+      "path": "src/Diagnostics/SystemMonitoring/SystemUtilizationReaderBase.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "87ab5d298bf14c56e82a8ed00c9eb885291a223dc3d8b55d8d37d9e27980f541"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/ThreadInformation.cs",
+      "path": "src/Diagnostics/SystemMonitoring/ThreadInformation.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4821985787e5ced0b4c9b9b50fa61a057bcf7e7d25cfc4ee75805d5235cf6e82"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/TransportClient.cs",
+      "path": "src/Transport/Rntbd/TransportClient.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "89bcba6fd4d4522762907df0bdb50d123ef5243d3c82352a6b1989b9431c0f21"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/TransportExceptions.cs",
+      "path": "src/Transport/Rntbd/TransportExceptions.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "1162e4d5e7223d68446e804fa3733d147847c7a422d084a45f4ff0c627a2039d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/TransportSerialization.cs",
+      "path": "src/Transport/Rntbd/TransportSerialization.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "b3f1621cf0478c02da0f18ebc2eb810a0e764e5b20fbb020d2531e64f3bb9007"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/UnsupportedSystemUtilizationReader.cs",
+      "path": "src/Diagnostics/SystemMonitoring/UnsupportedSystemUtilizationReader.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "502c6ee0a5ad85eeff507229c4617a60290f4b1693a605fbd32e99f911cdc3d5"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/UserPortPool.cs",
+      "path": "src/Transport/Rntbd/UserPortPool.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "3f58704f33611144eda1e1ef6a1bcb30887ed9252a222a627dd02973287baa20"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Rntbd2/WindowsSystemUtilizationReader.cs",
+      "path": "src/Diagnostics/SystemMonitoring/WindowsSystemUtilizationReader.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "0e4f4a31627d151c6739e8bcec96b0afb1eaf3d42762eeb21d3fc859cc5099a8"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/ArchivalPartitionNotPresentException.cs",
+      "path": "src/Exceptions/ArchivalPartitionNotPresentException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4716e85fec566ad3e3dd382c432a161ba555e72bf4e58af4759883fc68b788e0"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/BoolPartitionKeyComponent.cs",
+      "path": "src/Routing/PartitionKeyComponents/BoolPartitionKeyComponent.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "7731ef1315360655812d3734976a82567064c34cd49b744cac903419bf5260d6"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/IAddressResolver.cs",
+      "path": "src/Routing/Addressing/IAddressResolver.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "3ac6076ae5016d164446f4807217bbef0ef62f4c89dc2adb737e2eb436d7ae06"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/IAddressResolverExtension.cs",
+      "path": "src/Routing/Addressing/IAddressResolverExtension.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "2e751cbc346bb6025f4b3aeb87b86100cd14defcc04aa4acfa743e8acd87cb0b"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/IMasterServiceIdentityProvider.cs",
+      "path": "src/Routing/Addressing/IMasterServiceIdentityProvider.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "b601dabc6849a4ce0071081ace49196637e9ca9dc3326ac0b9b5bcca9bb90f3f"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/IPartitionKeyComponent.cs",
+      "path": "src/Routing/PartitionKeyComponents/IPartitionKeyComponent.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "c006edd5f70f7964f5bea5bb2da5858579c82230db3507e85cc423fce2ce07eb"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/InfinityPartitionKeyComponent.cs",
+      "path": "src/Routing/PartitionKeyComponents/InfinityPartitionKeyComponent.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "a644ff5b7954fedb1ede5dab8842962125e59b63638db8d862ecac07c4b2f4ae"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/Int128.cs",
+      "path": "src/Routing/Int128.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "f1159a1ddd9ab0ff8367b24e73c12a4c5a776c3c35775a2fc1934f192d654388"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/LeaseNotFoundException.cs",
+      "path": "src/Exceptions/LeaseNotFoundException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "2c68b24932ffc7a341ff7efac73352be6bae8630098494bb317c050a5122d234"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/MaxNumberPartitionKeyComponent.cs",
+      "path": "src/Routing/PartitionKeyComponents/MaxNumberPartitionKeyComponent.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "738815c72c36b74402c91b7a22e535e95ab602bd8bda6e1ee3287bae8c2a97c6"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/MaxStringPartitionKeyComponent.cs",
+      "path": "src/Routing/PartitionKeyComponents/MaxStringPartitionKeyComponent.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "8ecd4dbf63a88ecfee9c38f9fdf4b396033df7b52e6291174f34df628c52d14d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/MinNumberPartitionKeyComponent.cs",
+      "path": "src/Routing/PartitionKeyComponents/MinNumberPartitionKeyComponent.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "00bebf4739fc6ce205a8a30ee66457a9dd9078a43fbcb992a913fd5d840be0a0"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/MinStringPartitionKeyComponent.cs",
+      "path": "src/Routing/PartitionKeyComponents/MinStringPartitionKeyComponent.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "174fb7db8108376669ddf186e8c20d6789c277826039911039a707bb5d880702"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/MurmurHash.cs",
+      "path": "src/Routing/MurmurHash.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "0f664aba24bd8e7c946cf597e210b57afaf4b760244ed8a7a0c5d19bdb085815"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/NullPartitionKeyComponent.cs",
+      "path": "src/Routing/PartitionKeyComponents/NullPartitionKeyComponent.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "ecae6b52680597bac34c5b58c3485bbe97b5fa00e76160e3d8e9f47ea61476a1"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/NumberPartitionKeyComponent.cs",
+      "path": "src/Routing/PartitionKeyComponents/NumberPartitionKeyComponent.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "df20e2e000981150aed4968021272300ed5116a8d68a555a0734962418a0d1ca"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/PartitionIsMigratingException.cs",
+      "path": "src/Exceptions/PartitionIsMigratingException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "09fa3083722cd3a4f6f59acd2024d95f833def2af3ee675967e5c3bcc5b19758"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/PartitionKeyComponentType.cs",
+      "path": "src/Routing/PartitionKeyComponents/PartitionKeyComponentType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4666f63bad770b23ed362b41e2f2f7ec68358c04fd132ff307671efc3e436b0a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/PartitionKeyInternal.cs",
+      "path": "src/Routing/PartitionKeyInternal.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "5b24a757e0903c035bb2e4d3f5faf902e3b67518f8b42dc2645765430c8c8701"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/PartitionKeyInternalJsonConverter.cs",
+      "path": "src/Routing/PartitionKeyInternalJsonConverter.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "696967bd782fd714deb8fe990f2e5dc0e932f81ee18796656be1ea3d05c648cc"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/PartitionKeyRangeGoneException.cs",
+      "path": "src/Exceptions/PartitionKeyRangeGoneException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "a53c0340568d11aac23328117623ad4af3f30583f6b3f5917c4fbf6c66537429"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/PartitionKeyRangeIsSplittingException.cs",
+      "path": "src/Exceptions/PartitionKeyRangeIsSplittingException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "7e88b71ed8aea7bab4819a59fc86e31ad96aab7352f7421a5209dd5ddb0a8aa4"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/Range.cs",
+      "path": "src/Routing/Range.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "f8db6408e77c829707070021bfe13368783edc6dfd5154cce23a40804c4545ba"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/StringPartitionKeyComponent.cs",
+      "path": "src/Routing/PartitionKeyComponents/StringPartitionKeyComponent.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "63de80da0706904e89903442819be85378c433827ed5818342754dd6128c8c89"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Routing/UndefinedPartitionKeyComponent.cs",
+      "path": "src/Routing/PartitionKeyComponents/UndefinedPartitionKeyComponent.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "59034775e08166af148c8800cb70706ee7e987825261e1c50ce76395f5eda583"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/RuntimeConstants.cs",
+      "path": "src/ServiceModel/Constants/RuntimeConstants.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "5cdc516c755790c7e6ebad1dee58ba8dfd7d82adae17fea0a5ff7fd6d1593db8"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SDKSupportedCapabilities.cs",
+      "path": "src/ServiceModel/SDKSupportedCapabilities.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "caf5ad548cc12c8128960812f7f7ca7a48780e6894c4ee491ca290e36a7481a4"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SDKSupportedCapabilitiesHelpers.cs",
+      "path": "src/ServiceModel/SDKSupportedCapabilitiesHelpers.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4a547a092acc862752e96754cb76a81ae841019cd983e47a3f70534165e3f194"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Schema.cs",
+      "path": "src/Resources/Schema.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "515b991b22b6e2a04038a08450523653586567f9c730727f4dde8cc693307857"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SchemaBuilderMode.cs",
+      "path": "src/Resources/Settings/SchemaBuilderMode.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "32e2fca25d6769e51e85890907fe4cd287fefce132f84abc1a584de25b7d26f7"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SchemaDiscoveryPolicy.cs",
+      "path": "src/Resources/Settings/SchemaDiscoveryPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e181c9b57ca26b2a295b73e1ec4cb88a0dc81ddb40faaed297b989bb22fd588c"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SendingRequestEventArgs.cs",
+      "path": "src/Transport/SendingRequestEventArgs.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4b55dba4c7323bf280fd9abc718c4189268148065c0b7e58739395ba2501955d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SerializableNameValueCollection.cs",
+      "path": "src/Collections/SerializableNameValueCollection.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "1c8466ad981719ff8ec4c8c9d7bafa70352c4f8f25d023becde799b155b88b86"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SerializationFormattingPolicy.cs",
+      "path": "src/Serialization/SerializationFormattingPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "bd4afe486d503b7e6a52dc6afc4ccbd8fad83e7f6567d4d34e5de1c1f83562e9"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ServerStoreModel.cs",
+      "path": "src/Store/ServerStoreModel.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "a92aa43931150e5ee5bc7ed43b216fe7d68a2eadd4ab3ae98b8d61a1b0e9d4d7"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ServiceIdentity.cs",
+      "path": "src/Routing/Addressing/ServiceIdentity.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "3a47589b36c8f9fab198d5dd17873c58dc23b1060895af7b6386a72ea0d29f87"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ServiceInteropWrapper.cs",
+      "path": "src/Interop/ServiceInteropWrapper.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e9f60de6663e6d484fe66b1fdc14be3cde42b1d4d561795adda0d7054b94d003"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ServiceUnavailableException.cs",
+      "path": "src/Exceptions/ServiceUnavailableException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "10abff5a4a03a822102effd3439f4f608f1e17b1b0e6f2d5a20234d28d2aa68f"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SessionTokenHelper.cs",
+      "path": "src/Session/SessionTokenHelper.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "47149166076c53c88859ee9a2f76dce4f2204860be9add01af14fd0c59bcb409"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SessionTokenMismatchRetryPolicy.cs",
+      "path": "src/Session/SessionTokenMismatchRetryPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "88cfd04f956094b89ba0c5921109f433d96826813ea07b87d5f9d4416be75c66"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SimpleSessionToken.cs",
+      "path": "src/Session/SimpleSessionToken.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "01d3ded43b10fd38a779ffc8e50bc8a50ea44e2be6eae614cdb3010fad58aaea"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Snapshot.cs",
+      "path": "src/Resources/Snapshot.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "d1e3f623790f23c52e5fcd66b2410dbc0b673930ea9dd861f5bd78279eddef33"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SnapshotContent.cs",
+      "path": "src/Resources/SnapshotContent.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "fb4aa603f6429c03e3d65638376cb3ef153d59ad6ead6979669ede83db055ba5"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SnapshotKind.cs",
+      "path": "src/Resources/Settings/SnapshotKind.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "89b69f75fe74ad20fdb7968c053591cfdb3fb65e429d80545b361d478c52e64f"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SnapshotState.cs",
+      "path": "src/Resources/Settings/SnapshotState.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "40cac7e7b0b9e1b01ee97cb06f9ea88d8143eea0bcebff2ad99c01f1852d8747"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SoftDeletionMetadata.cs",
+      "path": "src/Resources/Settings/SoftDeletionMetadata.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e84e020b12ba2cb200192c68775912a20d81ee324e03faa904584b8632c3b4fa"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SpatialIndex.cs",
+      "path": "src/Resources/Settings/SpatialIndex.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "5c023d79da7c2c742a5b83d8e62ea4f7b901fe31a72f9a421e9e9971a55b4fd6"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SpatialSpec.cs",
+      "path": "src/Resources/Settings/SpatialSpec.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "692ceb91359bacb9b2243a60ff382f7f1708daa4a0c914888988c2a10364bc8f"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SpatialType.cs",
+      "path": "src/Resources/Settings/SpatialType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "f08525fa444a7832fbcf63494010471dfed9879251d1d2a05f6ebdbc71affe79"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/StatusCodes.cs",
+      "path": "src/ServiceModel/Constants/StatusCodes.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4f1d7bf11bd9d6303ff32a1889b9ce5e27d049c917b2fe70b18876d92f96ceee"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/StoreClient.cs",
+      "path": "src/Store/StoreClient.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "92015a702f67ef1c67d9352e3d72bb0a544a025f75eb517c3944276db08e23fe"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/StoreClientFactory.cs",
+      "path": "src/Store/StoreClientFactory.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "58079bc0e8ed475f7f71aa1ce75a9e696c4e7f003636973a5c9994b16d5fe7a9"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/StoreReader.cs",
+      "path": "src/Store/StoreReader.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "d8aaaf9cf94063c2685b428e5c43ab4055379851f0ac0423b5cc8ce81467404e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/StoreResponse.cs",
+      "path": "src/Store/StoreResponse.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "95199ed39b4a80ac2865518e4a46ebc2638b42730b74478dc96442f09e0f14cd"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/StoreResult.cs",
+      "path": "src/Store/StoreResult.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "415e0eb931747a08d477f7444ffcd4ec06de3716df3d53b0f33a4cb1872a6ac2"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/StoredProcedure.cs",
+      "path": "src/Resources/StoredProcedure.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "358bf84033b6329ea9451f15490675fc8103748bb5b003754fb0b7d02fb03ed6"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/StreamExtension.cs",
+      "path": "src/Utilities/IO/StreamExtension.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "02c44b2c280a1210cc88a9fc47ff84ac16faaa69d9d4885a64807def9aeb7b17"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/StringSegment.cs",
+      "path": "src/Utilities/StringSegment.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "c20b77ba35a1b031bb8c11ef06d9f5d014b1e32c36c6849240310f6a9efac3c6"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SupportedSerializationFeatures.cs",
+      "path": "src/Serialization/SupportedSerializationFeatures.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "791e10c82484079db6351cb3d35e40798a8dc9c92f1549bc5d6a6a46c2de9fb1"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SupportedSerializationFormats.cs",
+      "path": "src/Serialization/SupportedSerializationFormats.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "8d5851c59ccce87c42d68521da868bddc28004ee710200705ebfb5c9a4166012"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SystemDocument.cs",
+      "path": "src/Resources/SystemDocument.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "87bf01ec522c5d08f867b65078ad927b59cb4bcafbdd83cef587662a2c7c9290"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/SystemDocumentType.cs",
+      "path": "src/Resources/Settings/SystemDocumentType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "cb6f0ae7142c8ddea0cd6f4bab43f02463eacc87d2a68529ee7a4cb9035dd468"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/TaskFactoryExtensions.cs",
+      "path": "src/Utilities/TaskFactoryExtensions.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "2f8c69a37b66926f7757fafdf90cc7ca81746d5c912ec36601894acf34e64cd6"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Telemetry/CosmosDistributedContextPropagatorBase.cs",
+      "path": "src/Telemetry/CosmosDistributedContextPropagatorBase.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "0ce9d1302521f870118a0cd12af690d440f78d38d9308f845e543e7abd7f8a51"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Telemetry/DefaultCosmosDistributedContextPropagator.cs",
+      "path": "src/Telemetry/DefaultCosmosDistributedContextPropagator.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "c861353bbf3c7678626d0441188bd17c7d036354600055416578e5e1fbfddd8d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Telemetry/DistributedTracingOptions.cs",
+      "path": "src/Telemetry/DistributedTracingOptions.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "fd1e000d87c13501711ea47084eedafee9ac093f043ceda1e612fe6a08b75b61"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Telemetry/OpenTelemetryRecorder.cs",
+      "path": "src/Telemetry/OpenTelemetryRecorder.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "ab2ea9ddd8c20e320ca5895e0cffd05c25608f8bfa27d76b46039caf36167dc4"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Telemetry/OpenTelemetryRecorderFactory.cs",
+      "path": "src/Telemetry/OpenTelemetryRecorderFactory.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "9d7e1ee5e9132b57248b4c2253f60c32c7c6c5455e1b807957a6c943b87e24d7"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ThroughputDistributionPolicyType.cs",
+      "path": "src/Resources/Settings/ThroughputDistributionPolicyType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "34d2ddb63faf98b7ce26e5d08f2bc3367bf811df71013bde14863ec35f6b365d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/TimeoutHelper.cs",
+      "path": "src/Utilities/Timers/TimeoutHelper.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "84576b540558733e3d73a00dfaf0c517dae348bddba669a4f9c1c564d0cb2b10"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/TimerPool.cs",
+      "path": "src/Utilities/Timers/TimerPool.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "3249802f603af2cbb37c47364aeab32fe452d6eefb52e01f73ce5f4bc67d5d89"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/TransportAddressHealthState.cs",
+      "path": "src/Transport/TransportAddressHealthState.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "ed841242bc4df59821a99d67658bd9074c01f32efbf41a68aca7e38e186000bb"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/TransportAddressUri.cs",
+      "path": "src/Transport/TransportAddressUri.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "065aa21b7dc3bdf43389c65efbeaf47fd5006e65bd6f0abc279a3e8b708a5b73"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/TransportClient.cs",
+      "path": "src/Transport/TransportClient.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4ead3a25b72dc0c8581d4d0d602bf6b47ce44b536271be253980f1a46473668e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/TransportErrorCode.cs",
+      "path": "src/Transport/TransportErrorCode.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "14b4ae4d036701512172bf47530dd76b7f8ea3ec906a7e7e482d892cb1ea8171"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/TransportException.cs",
+      "path": "src/Transport/TransportException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "1b11d0dea0a216a8a29731afeba51e9f78c6d682df2aad2f090e359e04b90cbf"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/TransportExceptionCounters.cs",
+      "path": "src/Transport/TransportExceptionCounters.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "f7b4c3c3521803f9d40c03339b064f10ec2a03ddc038bc0fcd42cd221f074423"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/TransportPerformanceCounters.cs",
+      "path": "src/Transport/TransportPerformanceCounters.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e16ed84b1a5606c20fc84c5abb7771657f47a61f8451edc70858cd40a34d6b01"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/TransportRequestStats.cs",
+      "path": "src/Transport/TransportRequestStats.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "f0027e89d4eeff72df62a39a774482745629522945b9228a5577b0eb572adb81"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Trigger.cs",
+      "path": "src/Resources/Trigger.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e997ecfa93d380f6063fa04a468ae85502353aa31b0d94bc0bc5265c816ee0bb"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/TriggerOperation.cs",
+      "path": "src/Resources/Settings/TriggerOperation.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "146e224424d7a02d619832ed2ad29816dbb5a5341cb445a11cf1cc583b59e4c8"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/TriggerType.cs",
+      "path": "src/Resources/Settings/TriggerType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "f9fe638c7faba2ce84b5e89b73cbec089c77a28a88c0c099f6fe00593353ef7c"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/UInt128.cs",
+      "path": "src/Utilities/UInt128.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "004d6faff1ddc2d3e0632d7d72ce13a03b9500503c0e6d28839f308c2067f449"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/UnauthorizedException.cs",
+      "path": "src/Exceptions/UnauthorizedException.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "536b0661341aac7c5f133e8ee7c923700f4523aee71584ec9dcff15b7846663f"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/Undefined.cs",
+      "path": "src/Serialization/Undefined.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "1e71e0c9f195529873a137ef2fee479b787da4f0e8c79d97294895fc997232fa"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/UniqueIndexReIndexContext.cs",
+      "path": "src/Resources/Settings/UniqueIndexReIndexContext.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "8cf333724db89ed80558db143fb5f6a671c02f21f75e1922b840fa7820313e47"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/UniqueKey.cs",
+      "path": "src/Resources/Settings/UniqueKey.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "da8fe7d26839992b8ac285a302f60742796f6d035746adfc20f47c0c25d6a7e3"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/UniqueKeyPolicy.cs",
+      "path": "src/Resources/Settings/UniqueKeyPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "d3fb346a29108bba341402f77842b6fac8b0bc9878cc84af94e181bc990055be"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/UnixDateTimeConverter.cs",
+      "path": "src/Serialization/UnixDateTimeConverter.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "e937dfaf17b16545dacd7a109cf1268b4f7e49f245ffc1764ca058fb4151da5a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/UriUtility.cs",
+      "path": "src/Utilities/UriUtility.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "2b18f348d36d307a573778dbad2de5aae626f4ed92fdb4cf21aebe9a0d465bef"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/User.cs",
+      "path": "src/Resources/User.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "64f036e8ca6e3297ce8f7e60ea1f42f8bdc22bf45cbb3a115995f9ccd5541d5a"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/UserAgentContainer.cs",
+      "path": "src/ServiceModel/UserAgentContainer.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "30a22214a09776bb89e08b48e73a4c8ebd0f4de8c0a03d49ad1aa694522901f3"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/UserDefinedFunction.cs",
+      "path": "src/Resources/UserDefinedFunction.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4e6c290107e80ec55d97805b233b2742f7978994fdc242adc06333fd3245d2b1"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/UserDefinedType.cs",
+      "path": "src/Resources/UserDefinedType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "a8754f36087a6773ee7402d1d9637516525a4a3b02346009ba2189d5be615773"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/ValueStopwatch.cs",
+      "path": "src/Utilities/ValueStopwatch.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "872e61409c1fc7d60a777448c7003a68de62b6e5d2dbbe3a384d929dcd06e205"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/VectorDataType.cs",
+      "path": "src/Resources/Settings/VectorDataType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "174250a8b5ecad4f0fc41ff325ba08c5be10de95fdb8f92a89960f351ac20873"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/VectorEmbeddingPolicy.cs",
+      "path": "src/Resources/Settings/VectorEmbeddingPolicy.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "7521e9a443fba86e03e6e354fe50658400e8f3eae88fe083b559fdf597094c07"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/VectorIndexPath.cs",
+      "path": "src/Resources/Settings/VectorIndexPath.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "f99398870da295dddb143b47c6d1ef78d255f59299e1cd65395a37c0795ab144"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/VectorIndexType.cs",
+      "path": "src/Resources/Settings/VectorIndexType.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "d50aae78fe3cfed02296a8ed1047cf12fa7dd6eeacbe61bec241d8a780ff0939"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/VectorSessionToken.cs",
+      "path": "src/Session/VectorSessionToken.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "4c3b9a3db9eb119b32914e217484bb0b4c81a265371b2a247e9dfde792ab8b2c"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/VersionUtility.cs",
+      "path": "src/Utilities/VersionUtility.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "d129881827c248df172ea978d7632b717694df7990e7f4f5e881dfe2c5a5954e"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/WFConstants.cs",
+      "path": "src/ServiceModel/Constants/WFConstants.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "53ecabb651766e044f8999aec9e66a57c8147c9c74e98623e48e846430da4e1d"
+    },
+    {
+      "upstream": "Product/Microsoft.Azure.Documents/SharedFiles/WebExceptionUtility.cs",
+      "path": "src/Exceptions/WebExceptionUtility.cs",
+      "kind": "CompileSharedFile",
+      "sha256": "2881cdec6301fecd02facf392a31295fc5c4b3299a632310d235e5fb9f0f92f9"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Cosmos.Direct/src/AssemblyInfoCommon.cs",
+      "path": "src/Properties/AssemblyInfoCommon.cs",
+      "kind": "Compile",
+      "sha256": "26c8f9322181d71b2cef3ffc946cee89d6a8bc31a2ed5818e089b6b69e8cd342"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Cosmos.Direct/src/BackoffRetryUtility.cs",
+      "path": "src/Retry/BackoffRetryUtility.cs",
+      "kind": "Compile",
+      "sha256": "b70760cff6ae4ecf1efe09683f07a233daecb6353754fb25c9fda204f84df11d"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Cosmos.Direct/src/BufferProvider.cs",
+      "path": "src/Transport/Rntbd/BufferProvider.cs",
+      "kind": "Compile",
+      "sha256": "29c268757a44cda6a78f08119c41b51d75a5e107b19c246e72841e74d6f48374"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Cosmos.Direct/src/BytesDeserializer.cs",
+      "path": "src/Transport/Rntbd/BytesDeserializer.cs",
+      "kind": "Compile",
+      "sha256": "c8dc822706ce652f780ed043c73cf4d578c4c921a38f99fda49b58600d4a4faa"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Cosmos.Direct/src/BytesSerializer.cs",
+      "path": "src/Transport/Rntbd/BytesSerializer.cs",
+      "kind": "Compile",
+      "sha256": "4fc361f9279e1d8aa2f3b1edb01826a57a52e74fb30d6a66ac7467de22cadee0"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Cosmos.Direct/src/GlobalSuppressions.cs",
+      "path": "src/Properties/GlobalSuppressions.cs",
+      "kind": "Compile",
+      "sha256": "6a544b96158c0b78decaa35fe68065580e3eb3337e0b7904f39b288cf2a11ea0"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Cosmos.Direct/src/License.txt",
+      "path": "License.txt",
+      "kind": "Notice",
+      "sha256": "17922c6463b916f0805e490370300c378290e44fddaf120d5bb5389c3752c6af"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Cosmos.Direct/src/RntbdStreamReader.cs",
+      "path": "src/Transport/Rntbd/RntbdStreamReader.cs",
+      "kind": "Compile",
+      "sha256": "171186765c2b9b84e1193307096d11dc0dd75a29cfa125e7bf4db7b5504dd379"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Cosmos.Direct/src/ThirdPartyNotice.txt",
+      "path": "ThirdPartyNotice.txt",
+      "kind": "Notice",
+      "sha256": "eca0b33f12442b4909a7735bccbf5cab5431129142d62e1370bcc6fd5d6cf024"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Documents.Client/LegacyXPlatform/CustomNetCoreTypes.cs",
+      "path": "src/Interop/CustomNetCoreTypes.cs",
+      "kind": "Compile",
+      "sha256": "bdbeb76543e98b1f33e4723b2636116d6b2ffe98380c36aa1c28e9ae3cd4a9ad"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Documents.Client/LegacyXPlatform/CustomTypeExtensions.cs",
+      "path": "src/Interop/CustomTypeExtensions.cs",
+      "kind": "Compile",
+      "sha256": "82a793b9ed3a557b996b70b5ed94e634dcf0b45b75b3ad573fea96691662deda"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Documents.Client/LegacyXPlatform/NativeMethods.Darwin.cs",
+      "path": "src/Interop/NativeMethods.Darwin.cs",
+      "kind": "Compile",
+      "sha256": "e2f3fb072870dca8b4a64ad62c6892f9934b0aea41c5d51dd6d9aec6baed0a5c"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Documents.Client/LegacyXPlatform/NativeMethods.Unix.cs",
+      "path": "src/Interop/NativeMethods.Unix.cs",
+      "kind": "Compile",
+      "sha256": "23e60762b112adeedd3d3a9581cc37649f5066b54e537d623e921e8b6e819b97"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Documents.Client/LegacyXPlatform/NativeMethods.Windows.cs",
+      "path": "src/Interop/NativeMethods.Windows.cs",
+      "kind": "Compile",
+      "sha256": "51f46f951b700509a2a90c46c8d1776b1f28753ae645b3677facb89731946c29"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Documents.Client/LegacyXPlatform/Platform.cs",
+      "path": "src/Interop/Platform.cs",
+      "kind": "Compile",
+      "sha256": "184b3c3f50f250e3ad34e5a0027968a562fea44fa20cd0c682ccea8c0d842536"
+    },
+    {
+      "upstream": "Product/SDK/.net/Microsoft.Azure.Documents.Client/LegacyXPlatform/PlatformApis.cs",
+      "path": "src/Interop/PlatformApis.cs",
+      "kind": "Compile",
+      "sha256": "a5fa94e1a68c8c610008c56fd5c98e67a839eb8ca39d3620ed015a91780412ba"
+    },
+    {
+      "upstream": "_BuildCommon/ProductVersion/AssemblyInfoCommon.cs",
+      "path": "src/Properties/AssemblyRef.cs",
+      "kind": "MetadataTemplate",
+      "sha256": "a2d3d33d34472fa854efb269589cb4dd9472ba948ec9c2d134ca5f5165898d45"
+    }
+  ]
+}

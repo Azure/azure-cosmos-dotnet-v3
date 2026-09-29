@@ -1,0 +1,297 @@
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Documents
+{
+    using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.Net;
+    using Microsoft.Azure.Documents.Routing;
+
+    internal sealed class DocumentServiceRequestContext
+    {
+        private ReferenceCountedDisposable<StoreResult> quorumSelectedStoreResponse;
+
+        public TimeoutHelper TimeoutHelper { get; set; }
+
+        /// <summary>
+        /// Read consistency strategy for this request (resolved from headers or request options).
+        /// This setting overrides ConsistencyLevel when set to a value other than Default.
+        /// </summary>
+        public ReadConsistencyStrategy? ReadConsistencyStrategy { get; set; }
+        public RequestChargeTracker RequestChargeTracker { get; set; }
+
+        public bool ForceRefreshAddressCache { get; set; }
+
+        /// <summary>
+        /// PartitionAddressInformation hash code is used in the cache
+        /// refresh scenarios to avoid doing a refresh when another
+        /// request already completed one.
+        /// </summary>
+        public int LastPartitionAddressInformationHashCode { get; set; }
+
+        /// <summary>
+        /// Per-partition target replica set size from address resolution.
+        /// Can be null when per-service TRSS fetch is not enabled on the account.
+        /// Set in AddressSelector.ResolveAddressesAsync.
+        /// </summary>
+        public int? ResolvedPartitionTargetReplicaSetSize { get; set; }
+
+        /// <summary>
+        /// Replica address count for the resolved protocol from address resolution.
+        /// Filtered to only the protocol used by this AddressSelector (e.g. TCP),
+        /// not all protocols. Set in AddressSelector.ResolveAddressesAsync.
+        /// </summary>
+        public int ResolvedReplicaAddressCountPerProtocol { get; set; }
+
+        /// <summary>
+        /// Max CurrentReplicaSetSize observed across all replica responses
+        /// in the current request attempt. -1 when no primary was contacted.
+        /// Set in StoreReader and ConsistencyWriter, consumed by
+        /// ReplicatedResourceClient for centralized scale-up detection.
+        /// </summary>
+        public int MaxCurrentReplicaSetSizeFromResponse { get; set; } = -1;
+
+        /// <summary>
+        /// Non thread safe.
+        /// </summary>
+        public ReferenceCountedDisposable<StoreResult> QuorumSelectedStoreResponse => this.quorumSelectedStoreResponse;
+
+        public ConsistencyLevel? OriginalRequestConsistencyLevel { get; set; }
+
+        public long QuorumSelectedLSN { get; set; }
+
+        public long GlobalCommittedSelectedLSN { get; set; }
+
+        /// <summary>
+        /// For strong consistency writes, this tracks the endpoint of the region the write was sent to.
+        /// This is used to ensure that on retries, the barrier requests are sent to the same region.
+        /// If a failover occurs and the region endpoint changes, the request is failed.
+        /// </summary>
+        public Uri GlobalStrongWriteEndpoint { get; set; }
+
+        /// <summary>
+        /// When set, forces the ConsistencyWriter to use
+        /// NRegionSynchronousCommit barrier for this request,
+        /// provided all other preconditions are met.
+        /// </summary>
+        public bool ApplyNRegionSynchronousCommit { get; set; }
+
+        /// Cache the write storeResult in context during global strong or less than strong consistency writes
+        /// where we want to lock on a single initial write response and perform barrier calls until globalCommittedLsn
+        /// or the globalNRegion CommittedLsn is caught up.
+        /// </summary>
+        public ReferenceCountedDisposable<StoreResult> CachedWriteStoreResult { get; set; }
+
+        /// <summary>
+        /// Unique Identity that represents the target partition where the request should reach.
+        /// In gateway it is same as ServiceIdentity. 
+        /// In client it is a string that represents the partition and service index
+        /// </summary>
+        public ServiceIdentity TargetIdentity { get; set; }
+
+        /// <summary>
+        /// If the StoreReader should perform the local refresh for GoneException instead of 
+        /// throwing is back to retry policy. This is done to avoid losing the state (response + LSN)
+        /// while executing quorum read logic
+        /// </summary>
+        public bool PerformLocalRefreshOnGoneException { get; set; }
+
+        /// <summary>
+        /// Effective partition key value to be used for routing.
+        /// For server resources either this, or PartitionKeyRangeId header must be specified.
+        /// </summary>
+        public PartitionKeyInternal EffectivePartitionKey { get; set; }
+
+        /// <summary>
+        /// Is used to figure out which part of global session token is relevant
+        /// for the partition to which request is sent.
+        /// It is set automatically by address cache.
+        /// Is set as part of address resolution.
+        /// </summary>
+        public PartitionKeyRange ResolvedPartitionKeyRange { get; set; }
+
+        /// <summary>
+        /// Session token used for this request.
+        /// </summary>
+        public ISessionToken SessionToken { get; set; }
+
+        /// <summary>
+        /// If the background refresh has been performed for this request to eliminate the 
+        /// extra replica that is not participating in quorum but causes Gone
+        /// </summary>
+        public bool PerformedBackgroundAddressRefresh { get; set; }
+
+        public IClientSideRequestStatistics ClientRequestStatistics
+        {
+            get;
+            set;
+        }
+
+        public string ResolvedCollectionRid { get; set; }
+
+        /// <summary>
+        /// Region which is going to serve the DocumentServiceRequest.
+        /// Populated during address resolution for the request.
+        /// </summary>
+        public string RegionName { get; set; }
+
+        /// <summary>
+        /// Indicates if the request is orginating from  the same Azure region as the Cosmos DB account
+        /// </summary>
+        public bool LocalRegionRequest { get; set; }
+
+        /// <summary>
+        /// Indicates if this request is being retried.
+        /// </summary>
+        public bool IsRetry { get; set; }
+
+        /// <summary>
+        /// Indicates if this request wants to explictly opt out of Per partition failover retry behavior.
+        /// Ex: Topology upsert with PrepareForEntityDeletionIntent currently needs to skip partition failover retry.
+        ///     Once backup restore is able to fully support collection and database deletes, this can be removed.
+        /// Ex: If a request is being retried on a different region due to Per partition failover, then skip.
+        /// </summary>
+        public bool SkipPartitionFailoverRetry { get; set; }
+
+        /// <summary>
+        /// A list of regions to exclude routing to, used for per-request level routing exclusion
+        /// </summary>
+        public List<string> ExcludeRegions { get; set; }
+
+        /// <summary>
+        /// Set of all failed enpoints for a DSR. Used for prioritizing replica selection
+        /// </summary>
+        public Lazy<ConcurrentDictionary<TransportAddressUri, bool>> FailedEndpoints { get; private set; }
+
+        public DocumentServiceRequestContext()
+        {
+            this.FailedEndpoints = new Lazy<ConcurrentDictionary<TransportAddressUri, bool>>();
+        }
+
+        /// <summary>
+        /// Uodates selected storeResult and dispose and previously selected result as no longer used/dereferenced. 
+        /// </summary>
+        /// <remarks>
+        /// Non thread safe.
+        /// </remarks>
+        public void UpdateQuorumSelectedStoreResponse(ReferenceCountedDisposable<StoreResult> storeResult)
+        {
+            ReferenceCountedDisposable<StoreResult> currentStoreResult = this.quorumSelectedStoreResponse;
+            if (currentStoreResult == storeResult)
+            {
+                // noop to avoid disposal if we try to assign same stream multiple times
+                return;
+            }
+
+            // Dispose old StoreResult referenced on context if any when it is dereferenced on request context
+            currentStoreResult?.Dispose();
+
+            this.quorumSelectedStoreResponse = storeResult;
+        }
+
+        public void AddToFailedEndpoints(Exception storeException, TransportAddressUri targetUri)
+        {
+            // Add to the FailedEnpoints hashset only for 408, 410, >= 500 to avoid the respective replica on retries
+            if (storeException is DocumentClientException dce)
+            {
+                if (dce.StatusCode == HttpStatusCode.Gone ||
+                    dce.StatusCode == HttpStatusCode.RequestTimeout ||
+                    (int)dce.StatusCode >= 500)
+                {
+                    this.FailedEndpoints.Value.TryAdd(targetUri, true);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Sets routing directive for <see cref="GlobalEndpointManager"/> to resolve
+        /// the request to endpoint based on location index
+        /// </summary>
+        /// <param name="locationIndex">Index of the location to which the request should be routed</param>
+        /// <param name="usePreferredLocations">Use preferred locations to route request</param>
+        public void RouteToLocation(int locationIndex, bool usePreferredLocations)
+        {
+            this.LocationIndexToRoute = locationIndex;
+            this.UsePreferredLocations = usePreferredLocations;
+            this.LocationEndpointToRoute = null;
+        }
+
+        /// <summary>
+        /// Sets location-based routing directive for <see cref="GlobalEndpointManager"/> to resolve
+        /// the request to given <paramref name="locationEndpoint"/>
+        /// </summary>
+        /// <param name="locationEndpoint">Location endpoint to which the request should be routed</param>
+        public void RouteToLocation(Uri locationEndpoint)
+        {
+            this.LocationEndpointToRoute = locationEndpoint;
+            this.LocationIndexToRoute = null;
+            this.UsePreferredLocations = null;
+        }
+
+        /// <summary>
+        /// Clears location-based routing directive
+        /// </summary>
+        public void ClearRouteToLocation()
+        {
+            this.LocationIndexToRoute = null;
+            this.LocationEndpointToRoute = null;
+            this.UsePreferredLocations = null;
+        }
+
+        public bool? UsePreferredLocations { get; private set; }
+
+        public int? LocationIndexToRoute { get; private set; }
+
+        public Uri LocationEndpointToRoute { get; private set; }
+
+        public bool EnsureCollectionExistsCheck { get; set; }
+
+        /// <summary>
+        /// Flag that enables ConnectionStateListener to trigger an address cache refresh
+        /// on connection reset notification
+        /// </summary>
+        public bool EnableConnectionStateListener { get; set; }
+
+        /// <summary>
+        /// contains the modified materializedview source collection content.
+        /// It is set during materializedview delete operation.
+        /// Only required for CosmosFabric based tests.
+        /// </summary>
+        public string SerializedSourceCollectionForMaterializedView { get; set; }
+
+        public DocumentServiceRequestContext Clone()
+        {
+            DocumentServiceRequestContext requestContext = new DocumentServiceRequestContext();
+
+            requestContext.TimeoutHelper = this.TimeoutHelper;
+            requestContext.RequestChargeTracker = this.RequestChargeTracker;
+            requestContext.ForceRefreshAddressCache = this.ForceRefreshAddressCache;
+            requestContext.TargetIdentity = this.TargetIdentity;
+            requestContext.PerformLocalRefreshOnGoneException = this.PerformLocalRefreshOnGoneException;
+            requestContext.SessionToken = this.SessionToken;
+            requestContext.ResolvedPartitionKeyRange = this.ResolvedPartitionKeyRange;
+            requestContext.PerformedBackgroundAddressRefresh = this.PerformedBackgroundAddressRefresh;
+            requestContext.ResolvedCollectionRid = this.ResolvedCollectionRid;
+            requestContext.EffectivePartitionKey = this.EffectivePartitionKey;
+            requestContext.ClientRequestStatistics = this.ClientRequestStatistics;
+            requestContext.OriginalRequestConsistencyLevel = this.OriginalRequestConsistencyLevel;
+            requestContext.UsePreferredLocations = this.UsePreferredLocations;
+            requestContext.LocationIndexToRoute = this.LocationIndexToRoute;
+            requestContext.LocationEndpointToRoute = this.LocationEndpointToRoute;
+            requestContext.EnsureCollectionExistsCheck = this.EnsureCollectionExistsCheck;
+            requestContext.EnableConnectionStateListener = this.EnableConnectionStateListener;
+            requestContext.LocalRegionRequest = this.LocalRegionRequest;
+            requestContext.FailedEndpoints = this.FailedEndpoints;
+            requestContext.LastPartitionAddressInformationHashCode = this.LastPartitionAddressInformationHashCode;
+            requestContext.ExcludeRegions = this.ExcludeRegions;
+            requestContext.GlobalStrongWriteEndpoint = this.GlobalStrongWriteEndpoint;
+            requestContext.ApplyNRegionSynchronousCommit = this.ApplyNRegionSynchronousCommit;
+            requestContext.ReadConsistencyStrategy = this.ReadConsistencyStrategy;
+
+            return requestContext;
+        }
+    }
+}
