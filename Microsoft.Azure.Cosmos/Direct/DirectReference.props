@@ -1,6 +1,8 @@
 <Project>
   <PropertyGroup>
     <UseDirectProject Condition="'$(UseDirectProject)' == ''">true</UseDirectProject>
+    <!-- Preserve the consumer RID through source references so Direct selects the correct native content. -->
+    <IsRidAgnostic Condition="'$(ProjectRef)' != 'True' and '$(UseDirectProject)' == 'true'">false</IsRidAgnostic>
   </PropertyGroup>
   <ItemGroup Condition="'$(ProjectRef)' != 'True' and '$(UseDirectProject)' == 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)src\Microsoft.Azure.Cosmos.Direct.csproj" PrivateAssets="All" />

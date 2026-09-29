@@ -100,6 +100,24 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             this.AssertWindowsDllsPresent(publishPath, "no RuntimeIdentifier");
         }
 
+        [TestMethod]
+        [DataRow("linux-x64")]
+        [DataRow("win-x64")]
+        public async Task Publish_WithSourceProjectReference_SelectsNativePayload(string runtimeIdentifier)
+        {
+            string publishPath = await this.CreateAndPublishTestProjectAsync(
+                $"SourceTest_{runtimeIdentifier}", runtimeIdentifier, useProjectReference: true);
+
+            if (runtimeIdentifier.StartsWith("win", StringComparison.Ordinal))
+            {
+                this.AssertWindowsDllsPresent(publishPath, runtimeIdentifier);
+            }
+            else
+            {
+                this.AssertWindowsDllsNotPresent(publishPath, runtimeIdentifier);
+            }
+        }
+
         private static async Task CreateLocalNuGetPackageAsync()
         {
             string repoRoot = GetRepositoryRoot();
@@ -117,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             localNugetPackagePath = packOutputDir;
         }
 
-        private async Task<string> CreateAndPublishTestProjectAsync(string projectName, string runtimeIdentifier)
+        private async Task<string> CreateAndPublishTestProjectAsync(string projectName, string runtimeIdentifier, bool useProjectReference = false)
         {
             string projectDir = Path.Combine(testProjectsRoot, projectName);
             Directory.CreateDirectory(projectDir);
@@ -136,7 +154,11 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
   </packageSources>
 </configuration>");
 
-            // Create a simple console app project that references the local NuGet package
+            string sdkReference = useProjectReference
+                ? $@"<ProjectReference Include=""{Path.Combine(GetRepositoryRoot(), "Microsoft.Azure.Cosmos", "src", "Microsoft.Azure.Cosmos.csproj")}"" />"
+                : $@"<PackageReference Include=""Microsoft.Azure.Cosmos"" Version=""{packageVersion}"" />";
+
+            // Create a simple console app project that references the SDK.
             File.WriteAllText(projectFile, $@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -145,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include=""Microsoft.Azure.Cosmos"" Version=""{packageVersion}"" />
+    {sdkReference}
     <PackageReference Include=""Newtonsoft.Json"" Version=""13.0.3"" />
   </ItemGroup>
 </Project>");

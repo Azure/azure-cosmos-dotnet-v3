@@ -19,6 +19,9 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <DebugType>portable</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <IsRidAgnostic>false</IsRidAgnostic>
+    <ShippingScope>External</ShippingScope>
+    <SigningType>Product</SigningType>
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>

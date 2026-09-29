@@ -157,6 +157,7 @@
 		<None Include="$(OutputPath)\Cosmos.CRTCompat.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" Condition="'$(UseDirectProject)' != 'true'" />
 		<None Include="$(OutputPath)\Microsoft.Azure.Cosmos.ServiceInterop.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" Condition="'$(UseDirectProject)' != 'true'" />
 		<None Include="$(QueryPlanInteropNativePath)" Pack="true" PackagePath="runtimes\win-x64\native\Microsoft.Azure.Cosmos.ServiceInterop.dll" Condition="'$(UseDirectProject)' == 'true'" />
+		<None Include="..\Direct\ThirdPartyNotice.txt" Pack="true" PackagePath="ThirdPartyNotices\Microsoft.Azure.Cosmos.Direct.txt" Condition="'$(UseDirectProject)' == 'true'" />
 		<None Include="$(OutputPath)\vcruntime140_1.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" Condition="'$(UseDirectProject)' != 'true'" />
 		<None Include="$(OutputPath)\vcruntime140.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" Condition="'$(UseDirectProject)' != 'true'" />
 		<None Include="$(OutputPath)\msvcp140.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" Condition="'$(UseDirectProject)' != 'true'" />

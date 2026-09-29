@@ -2,7 +2,22 @@
   "revision": "743dc32433dc51e3d5357934014154419ae812aa",
   "branch": "sdkReleases/direct/EN20260409-3.44.1",
   "project": "Product/SDK/.net/Microsoft.Azure.Cosmos.Direct/src/Microsoft.Azure.Cosmos.Direct.csproj",
-  "inventoryMethod": "Explicit release project inputs, default project C# inputs and imported metadata template; upstream build evaluation still requires reconciliation.",
+  "inventoryMethod": "Reconciled against dotnet msbuild evaluation of the pinned release project and build imports in an isolated snapshot (Release, x64, netstandard2.0).",
+  "evaluation": {
+    "compileAndResourceCount": 373,
+    "sourceAndResourceCount": 371,
+    "generatedInputs": [
+      {
+        "upstream": "AutoVersioning/AssemblyInfoCommon.cs",
+        "replacement": "src/Properties/AssemblyRef.cs and SDK-generated assembly metadata"
+      },
+      {
+        "upstream": "AutoVersioning/AssemblyVersion.cs",
+        "replacement": "GenerateDirectAssemblyVersionInfo target"
+      }
+    ],
+    "scope": "MSBuild item evaluation only; not an internal release build or production-signing validation."
+  },
   "files": [
     {
       "upstream": "Product/Cosmos/Core/Core.Trace/DefaultTrace.cs",
