@@ -45,9 +45,47 @@ processes use native planning; other platforms use the existing service query-pl
 path. Copying the x64 asset for a Windows RID does not add ARM64 or x86 native
 support.
 
-Managed dependencies remain Newtonsoft.Json, ConfigurationManager,
-DiagnosticSource, System.Memory and Tasks.Extensions. The Client package also
-continues to bundle the existing NuGet-provided Core and HybridRow assemblies.
+The SDK package contains these DLLs; the project-reference refactor adds none:
+
+| DLL | Source |
+| --- | --- |
+| `Microsoft.Azure.Cosmos.Client.dll` | Existing Client project |
+| `Microsoft.Azure.Cosmos.Direct.dll` | Local Direct project, replacing the managed Direct NuGet payload |
+| `Microsoft.Azure.Cosmos.ServiceInterop.dll` | `Cosmos.QueryPlanInterop.dll` from QueryPlanInterop.Windows 1.0.2, renamed |
+| `Microsoft.Azure.Cosmos.Core.dll` | Existing Microsoft.HybridRow NuGet dependency |
+| `Microsoft.Azure.Cosmos.Serialization.HybridRow.dll` | Existing Microsoft.HybridRow NuGet dependency |
+
+Direct retains the original managed package requirements: Newtonsoft.Json 10.0.2,
+System.Configuration.ConfigurationManager 6.0.0,
+System.Diagnostics.DiagnosticSource 6.0.1, System.Memory 4.5.5 and
+System.Threading.Tasks.Extensions 4.5.4. NuGet resolves their transitive framework
+dependencies normally; they are not copied from CosmosDB or bundled as additional
+DLLs inside the SDK package. The Client already declares these dependencies and
+requires DiagnosticSource 8.0.1. Newtonsoft.Json remains an explicit consumer
+requirement. NETStandard.Library 2.0.3 is an implicit, private build dependency of
+the netstandard2.0 Direct project.
+
+## Imported assembly metadata and suppressions
+
+Direct is a separate assembly. The Client's `AssemblyInfo.cs` and
+`GlobalSuppressions.cs` apply to Client, not automatically to Direct.
+
+| Imported file | Purpose and reuse decision |
+| --- | --- |
+| `Properties/AssemblyInfoCommon.cs` | Defines Direct's friend-assembly grants and global `AssemblyKeys` constants. Client and FaultInjection also consume those constants through Direct. Replacing it with the Client's assembly metadata would give Direct the wrong friend list. |
+| `Properties/AssemblyRef.cs` | Defines the global `AssemblyRef` key constants used by Direct's friend declarations. `AssemblyInfo_PublicKeyRefOnly` disables the upstream product-metadata template section; SDK-generated metadata supplies that part instead. There is no equivalent global helper elsewhere in v3. |
+| `Properties/GlobalSuppressions.cs` | Preserves upstream CA-rule suppressions for specific Direct types and members. It is not a runtime requirement. Default Direct builds have `EnableNETAnalyzers=false`; the file is retained for source fidelity and the upstream analyzer baseline, not because Client's style suppressions need to be duplicated. |
+
+The existing `.snk` file is already reused for signing. It is not a replacement
+for the public-key constants in `InternalsVisibleTo` declarations. Encryption's
+mirrored `AssemblyKeys` helpers are namespaced and contain only the test key;
+they are not drop-in replacements for Direct's global helpers.
+
+Keep all three imported files unchanged for this source-preserving migration.
+Their contents could be reorganized within Direct in a separate cleanup, but
+removing or renaming the key helper types changes the internal assembly contract.
+Moving Direct's suppressions into Client's suppression file would not apply them
+to Direct; broadening repository-wide analyzer rules is also not equivalent.
 
 ## Known native compatibility issue
 
@@ -61,8 +99,11 @@ before release. Expected baselines and test exclusions have not been changed.
 
 ## Provider selection and packaging
 
-`DirectReference.props` is shared by the Client, FaultInjection, tests and tools.
-Public builds default to `UseDirectProject=true`. The SDK package bundles the
+The Client, FaultInjection, tests and tools declare explicit conditional
+`ProjectReference` entries in their own project files. The existing root
+`Directory.Build.props` defaults `UseDirectProject` to `true` and validates the
+flag; reference selection and RID handling remain visible in each consuming project.
+The SDK package bundles the
 locally resolved Direct DLL; it does not expose Direct or QueryPlanInterop as
 consumer NuGet dependencies. Native packing reads directly from the restored
 NuGet asset, independently of the host OS, RID or stale output files.

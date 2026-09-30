@@ -46,5 +46,11 @@
     <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
     <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" />
   </ItemGroup>
-  <Import Project="..\..\..\Microsoft.Azure.Cosmos\Direct\DirectReference.props" Condition="'$(OSSProjectRef)' == 'True'" />
+  <PropertyGroup Condition="'$(OSSProjectRef)' == 'True' and '$(ProjectRef)' != 'True' and '$(UseDirectProject)' == 'true'">
+    <IsRidAgnostic>false</IsRidAgnostic>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(OSSProjectRef)' == 'True' and '$(ProjectRef)' != 'True'">
+    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" PrivateAssets="All" Condition="'$(UseDirectProject)' == 'true'" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" Condition="'$(UseDirectProject)' == 'false'" />
+  </ItemGroup>
 </Project>
