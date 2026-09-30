@@ -13,14 +13,18 @@ namespace Microsoft.Azure.Cosmos
     internal class DistributedTransactionServerRequest
     {
         private readonly CosmosSerializerCore serializerCore;
+        private readonly bool tracksDispatch;
+        private AttemptState attemptState;
         private byte[] serializedBody;
 
         private DistributedTransactionServerRequest(
             IReadOnlyList<DistributedTransactionOperation> operations,
-            CosmosSerializerCore serializerCore)
+            CosmosSerializerCore serializerCore,
+            bool tracksDispatch)
         {
             this.Operations = operations ?? throw new ArgumentNullException(nameof(operations));
             this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
+            this.tracksDispatch = tracksDispatch;
         }
 
         public IReadOnlyList<DistributedTransactionOperation> Operations { get; }
@@ -31,26 +35,47 @@ namespace Microsoft.Azure.Cosmos
         /// a post-Abort resubmission) and is replayed for a non-aborted retriable retry; the serialized
         /// body is decoupled and reused byte-for-byte either way.
         /// </summary>
-        public Guid IdempotencyToken { get; private set; }
+        public Guid IdempotencyToken => Volatile.Read(ref this.attemptState)?.IdempotencyToken ?? Guid.Empty;
 
         /// <summary>
-        /// Assigns a fresh <see cref="Guid"/> to <see cref="IdempotencyToken"/> and returns it. Called for
+        /// Tracks how the current <see cref="IdempotencyToken"/> has been dispatched, or null before
+        /// the first token is generated and for read transactions.
+        /// </summary>
+        public DistributedTransactionDispatchTracker DispatchTracker =>
+            Volatile.Read(ref this.attemptState)?.DispatchTracker;
+
+        /// <summary>
+        /// Assigns the supplied <see cref="Guid"/> to <see cref="IdempotencyToken"/>. Called for
         /// each new logical attempt (first attempt or a post-Abort resubmission); a non-aborted retriable
         /// retry reuses the current token instead.
         /// </summary>
-        /// <returns>The newly generated idempotency token.</returns>
-        public Guid RotateIdempotencyToken()
+        /// <param name="idempotencyToken">The idempotency token for the new logical attempt.</param>
+        public void RotateIdempotencyToken(Guid idempotencyToken)
         {
-            this.IdempotencyToken = Guid.NewGuid();
-            return this.IdempotencyToken;
+            if (idempotencyToken == Guid.Empty)
+            {
+                throw new ArgumentException("The idempotency token cannot be empty.", nameof(idempotencyToken));
+            }
+
+            DistributedTransactionDispatchTracker tracker = this.tracksDispatch
+                ? new DistributedTransactionDispatchTracker(idempotencyToken)
+                : null;
+
+            Interlocked.Exchange(
+                ref this.attemptState,
+                new AttemptState(idempotencyToken, tracker));
         }
 
         public static async Task<DistributedTransactionServerRequest> CreateAsync(
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosSerializerCore serializerCore,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool tracksDispatch)
         {
-            DistributedTransactionServerRequest request = new DistributedTransactionServerRequest(operations, serializerCore);
+            DistributedTransactionServerRequest request = new DistributedTransactionServerRequest(
+                operations,
+                serializerCore,
+                tracksDispatch);
             await request.CreateBodyStreamAsync(cancellationToken);
             return request;
         }
@@ -79,6 +104,21 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.serializedBody = stream.ToArray();
             }
+        }
+
+        private sealed class AttemptState
+        {
+            internal AttemptState(
+                Guid idempotencyToken,
+                DistributedTransactionDispatchTracker dispatchTracker)
+            {
+                this.IdempotencyToken = idempotencyToken;
+                this.DispatchTracker = dispatchTracker;
+            }
+
+            internal Guid IdempotencyToken { get; }
+
+            internal DistributedTransactionDispatchTracker DispatchTracker { get; }
         }
     }
 }
