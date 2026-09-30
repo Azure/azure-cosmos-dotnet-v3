@@ -412,7 +412,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 return;
             }
 
-            int firstMismatch = Enumerable.Range(0, Math.Min(expected.Count, actual.Count))
+            int firstMismatch =
+                Enumerable.Range(0, Math.Min(expected.Count, actual.Count))
                 .FirstOrDefault(index => expected[index] != actual[index], -1);
             Trace.WriteLine($"Expected count: {expected.Count}; actual count: {actual.Count}; first mismatch: {firstMismatch}");
             if (firstMismatch >= 0)
