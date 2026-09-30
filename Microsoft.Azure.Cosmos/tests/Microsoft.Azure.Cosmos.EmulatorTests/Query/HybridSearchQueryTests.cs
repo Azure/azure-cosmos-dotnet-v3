@@ -328,8 +328,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
-        public async Task OrdinalRankFusionWithThousandDocuments()
+        public async Task HybridSearchRrfUsesDeterministicOrdinalRanksForTiedScores()
         {
+            // One document matches the full-text terms while the other 999 receive the same lexical score.
+            // Unique vector distances make changes in the tied documents' ordinal ranks observable in the fused order.
             IEnumerable<string> documents = Enumerable.Range(0, OrdinalRrfDocumentCount)
                 .Select(index => $@"{{
                     ""id"": ""{index}"",
@@ -342,16 +344,18 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 connectionModes: ConnectionModes.Direct,
                 collectionTypes: CollectionTypes.MultiPartition,
                 documents: documents,
-                query: RunOrdinalRankFusionTest,
+                query: ValidateDeterministicOrdinalRankFusion,
                 partitionKey: "/index",
                 indexingPolicy: OrdinalRrfIndexingPolicy,
                 vectorEmbeddingPolicy: OrdinalRrfEmbeddingPolicy);
         }
 
-        private static async Task RunOrdinalRankFusionTest(
+        private static async Task ValidateDeterministicOrdinalRankFusion(
             Container container,
             IReadOnlyList<CosmosObject> documents)
         {
+            // Project the server-assigned _rid and vector distance to independently calculate the expected
+            // ordinal ranks using the same documented score and _rid ordering as the client pipeline.
             const string componentQuery = @"
                 SELECT c.index AS Index, c._rid AS Rid, VectorDistance(c.vector, [0, 0]) AS VectorScore
                 FROM c";
@@ -388,6 +392,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             int[] firstRun = (await QueryWithoutContinuationTokensAsync<OrdinalRrfDocument>(container, hybridQuery))
                 .Select(document => document.Index)
                 .ToArray();
+
+            // A second execution verifies that score ties do not expose backend or unstable-sort ordering.
             int[] secondRun = (await QueryWithoutContinuationTokensAsync<OrdinalRrfDocument>(container, hybridQuery))
                 .Select(document => document.Index)
                 .ToArray();
