@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             int maxConcurrency,
             FullTextScoreScope fullTextScoreScope,
             CosmosElement requestContinuationToken,
-            bool isHybridSearchCompetitionRankingEnabled = false)
+            bool isHybridSearchCompetitionRankingEnabled)
         {
             if (documentContainer == null)
             {

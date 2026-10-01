@@ -351,6 +351,54 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 vectorEmbeddingPolicy: OrdinalRrfEmbeddingPolicy);
         }
 
+        [TestMethod]
+        public async Task HybridSearchRrfTiesAreBrokenByRid()
+        {
+            IEnumerable<string> documents = new[]
+            {
+                @"{ ""id"": ""left"", ""index"": 0, ""vector"": [0, 0] }",
+                @"{ ""id"": ""right"", ""index"": 1, ""vector"": [10, 0] }",
+            };
+
+            await this.CreateIngestQueryDeleteAsync(
+                connectionModes: ConnectionModes.Direct,
+                collectionTypes: CollectionTypes.MultiPartition,
+                documents: documents,
+                query: ValidateRrfRidTieBreak,
+                partitionKey: "/index",
+                indexingPolicy: OrdinalRrfIndexingPolicy,
+                vectorEmbeddingPolicy: OrdinalRrfEmbeddingPolicy);
+        }
+
+        private static async Task ValidateRrfRidTieBreak(
+            Container container,
+            IReadOnlyList<CosmosObject> _)
+        {
+            const string ridQuery = "SELECT c._rid AS Rid FROM c";
+            IReadOnlyList<RidDocument> documentsByRid = await QueryWithoutContinuationTokensAsync<RidDocument>(
+                container,
+                ridQuery);
+            Assert.AreEqual(2, documentsByRid.Count);
+            string[] expectedRids = documentsByRid
+                .Select(document => document.Rid)
+                .OrderBy(rid => rid, StringComparer.Ordinal)
+                .ToArray();
+
+            // The component queries produce inverse ranks, so equal weights give both documents the same RRF score.
+            const string hybridQuery = @"
+                SELECT c._rid AS Rid
+                FROM c
+                ORDER BY RANK RRF(VectorDistance(c.vector, [0, 0]), VectorDistance(c.vector, [10, 0]))";
+            IReadOnlyList<RidDocument> actual = await QueryWithoutContinuationTokensAsync<RidDocument>(
+                container,
+                hybridQuery);
+
+            CollectionAssert.AreEqual(
+                expectedRids,
+                actual.Select(document => document.Rid).ToArray(),
+                "Documents with equal RRF scores were not ordered by _rid.");
+        }
+
         private static async Task ValidateRrfRankingModes(
             Container container,
             IReadOnlyList<CosmosObject> documents)
@@ -574,6 +622,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         private sealed class OrdinalRrfDocument
         {
             public int Index { get; set; }
+        }
+
+        private sealed class RidDocument
+        {
+            public string Rid { get; set; }
         }
 
         private static class FieldNames

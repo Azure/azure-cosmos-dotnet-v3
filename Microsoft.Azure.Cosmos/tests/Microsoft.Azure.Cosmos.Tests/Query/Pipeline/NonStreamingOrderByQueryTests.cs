@@ -646,34 +646,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
-        public async Task OrdinalRanksDetermineWeightedRrfOrder()
+        public async Task RankingModesDetermineWeightedRrfOrder()
         {
-            await AssertRankScenarioAsync(
-                firstComponentScores: new[] { 10.0, 10.0, 8.0, 7.0, 6.0 },
-                expected: new[] { 0, 1, 2, 3, 4 });
+            IReadOnlyList<(double[] FirstComponentScores, int[] OrdinalExpected, int[] CompetitionExpected)> testCases =
+                new List<(double[], int[], int[])>
+                {
+                    (new[] { 10.0, 10.0, 8.0, 7.0, 6.0 }, new[] { 0, 1, 2, 3, 4 }, new[] { 1, 0, 2, 3, 4 }),
+                    (new[] { 10.0, 9.0, 9.0, 9.0, 4.0 }, new[] { 0, 1, 2, 3, 4 }, new[] { 3, 0, 2, 1, 4 }),
+                    (new[] { 10.0, 9.0, 8.0, 7.0, 7.0 }, new[] { 0, 1, 2, 3, 4 }, new[] { 0, 1, 4, 2, 3 }),
+                    (new[] { 5.0, 5.0, 5.0, 5.0, 5.0 }, new[] { 0, 1, 2, 3, 4 }, new[] { 4, 3, 2, 1, 0 }),
+                };
 
-            await AssertRankScenarioAsync(
-                firstComponentScores: new[] { 10.0, 9.0, 9.0, 9.0, 4.0 },
-                expected: new[] { 0, 1, 2, 3, 4 });
-
-            await AssertRankScenarioAsync(
-                firstComponentScores: new[] { 10.0, 9.0, 8.0, 7.0, 7.0 },
-                expected: new[] { 0, 1, 2, 3, 4 });
-
-            await AssertRankScenarioAsync(
-                firstComponentScores: new[] { 5.0, 5.0, 5.0, 5.0, 5.0 },
-                expected: new[] { 0, 1, 2, 3, 4 });
+            foreach (bool useCompetitionRanking in new[] { false, true })
+            {
+                foreach ((double[] firstComponentScores, int[] ordinalExpected, int[] competitionExpected) in testCases)
+                {
+                    await AssertRankScenarioAsync(
+                        firstComponentScores,
+                        expected: useCompetitionRanking ? competitionExpected : ordinalExpected,
+                        useCompetitionRanking: useCompetitionRanking);
+                }
+            }
         }
-
-        [TestMethod]
-        public async Task CompetitionRankingCanBeEnabled()
-        {
-            await AssertRankScenarioAsync(
-                firstComponentScores: new[] { 10.0, 9.0, 9.0, 9.0, 4.0 },
-                expected: new[] { 3, 0, 2, 1, 4 },
-                useCompetitionRanking: true);
-        }
-
         private static async Task AssertRankScenarioAsync(
             double[] firstComponentScores,
             int[] expected,

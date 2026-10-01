@@ -764,7 +764,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 isContinuationExpected: true,
                 maxConcurrency: 10,
                 fullTextScoreScope: FullTextScoreScope.Global,
-                requestContinuationToken: state);
+                requestContinuationToken: state,
+                isHybridSearchCompetitionRankingEnabled: false);
 
             tryCreatePipeline.ThrowIfFailed();
 

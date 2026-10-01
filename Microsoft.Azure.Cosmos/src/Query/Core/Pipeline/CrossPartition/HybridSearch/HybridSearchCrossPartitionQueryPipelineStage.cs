@@ -480,9 +480,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             IReadOnlyList<List<ScoreTuple>> componentScores = tryGetComponentScores.Result;
 
             for (int index = 0; index < componentScores.Count; ++index)
-            {
                 componentScores[index].Sort(componentWeights[index].Comparison);
-            }
 
             int[,] ranks = ComputeRanks(
                 componentScores,

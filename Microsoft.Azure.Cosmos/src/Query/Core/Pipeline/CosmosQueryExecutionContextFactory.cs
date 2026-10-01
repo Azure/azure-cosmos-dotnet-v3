@@ -840,11 +840,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 bool returnResultsInDeterministicOrder,
                 bool enableOptimisticDirectExecution,
                 bool isHybridSearchQueryPlanOptimizationDisabled,
+                bool isHybridSearchCompetitionRankingEnabled,
                 bool enableDistributedQueryGatewayMode,
                 FullTextScoreScope fullTextScoreScope,
                 TestInjections testInjections,
-                IReadOnlyList<string> excludeRegions = null,
-                bool isHybridSearchCompetitionRankingEnabled = false)
+                IReadOnlyList<string> excludeRegions = null)
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.InitialUserContinuationToken = initialUserContinuationToken;
@@ -878,11 +878,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 bool? returnResultsInDeterministicOrder,
                 bool enableOptimisticDirectExecution,
                 bool isHybridSearchQueryPlanOptimizationDisabled,
+                bool isHybridSearchCompetitionRankingEnabled,
                 bool enableDistributedQueryGatewayMode,
                 FullTextScoreScope fullTextScoreScope,
                 TestInjections testInjections,
-                IReadOnlyList<string> excludeRegions = null,
-                bool isHybridSearchCompetitionRankingEnabled = false)
+                IReadOnlyList<string> excludeRegions = null)
             {
                 if (sqlQuerySpec == null)
                 {
@@ -920,11 +920,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     returnResultsInDeterministicOrder: returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder),
                     enableOptimisticDirectExecution: enableOptimisticDirectExecution,
                     isHybridSearchQueryPlanOptimizationDisabled: isHybridSearchQueryPlanOptimizationDisabled,
+                    isHybridSearchCompetitionRankingEnabled: isHybridSearchCompetitionRankingEnabled,
                     enableDistributedQueryGatewayMode: enableDistributedQueryGatewayMode,
                     fullTextScoreScope: fullTextScoreScope,
                     testInjections: testInjections,
-                    excludeRegions: excludeRegions,
-                    isHybridSearchCompetitionRankingEnabled: isHybridSearchCompetitionRankingEnabled);
+                    excludeRegions: excludeRegions);
             }
 
             public SqlQuerySpec SqlQuerySpec { get; }
@@ -961,11 +961,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     returnResultsInDeterministicOrder: this.ReturnResultsInDeterministicOrder,
                     enableOptimisticDirectExecution: this.EnableOptimisticDirectExecution,
                     isHybridSearchQueryPlanOptimizationDisabled: this.IsHybridSearchQueryPlanOptimizationDisabled,
+                    isHybridSearchCompetitionRankingEnabled: this.IsHybridSearchCompetitionRankingEnabled,
                     enableDistributedQueryGatewayMode: this.EnableDistributedQueryGatewayMode,
                     fullTextScoreScope: this.FullTextScoreScope,
                     testInjections: this.TestInjections,
-                    excludeRegions: this.ExcludeRegions,
-                    isHybridSearchCompetitionRankingEnabled: this.IsHybridSearchCompetitionRankingEnabled);
+                    excludeRegions: this.ExcludeRegions);
             }
         }
 
