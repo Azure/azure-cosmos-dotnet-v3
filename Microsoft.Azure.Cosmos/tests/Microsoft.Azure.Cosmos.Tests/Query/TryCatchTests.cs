@@ -52,6 +52,64 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             //   at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
         }
 
+        [TestMethod]
+        public void TestFromException_PreservesInnerException()
+        {
+            // Validates that TryCatch<T>.FromException wraps the inner exception (preserves
+            // the InnerException chain) while skipping the synthetic StackTrace allocation.
+            // Before this optimization, every TryCatch.FromException allocated a new StackTrace,
+            // which was the dominant allocation source under 429/exception storms.
+            Exception inner = new InvalidOperationException("inner-marker");
+            TryCatch<object> tryCatch;
+            try
+            {
+                throw inner;
+            }
+            catch (Exception ex)
+            {
+                tryCatch = TryCatch<object>.FromException(ex);
+            }
+
+            Assert.IsFalse(tryCatch.Succeeded);
+            Assert.IsNotNull(tryCatch.Exception);
+            // Wrapper is preserved (so callers using Exception.InnerException still work).
+            Assert.IsInstanceOfType(tryCatch.Exception, typeof(ExceptionWithStackTraceException));
+            Assert.AreSame(inner, tryCatch.Exception.InnerException);
+
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
+            // StackTrace falls back to the inner exception's thrown stack rather than a
+            // synthetic capture made at the FromException call site.
+            string stack = tryCatch.Exception.StackTrace;
+            Assert.IsNotNull(stack, "StackTrace should be available (fallback to inner exception's stack).");
+            Assert.IsTrue(stack.Contains(nameof(TestFromException_PreservesInnerException)),
+                $"StackTrace should include the inner exception's throw site. Actual: {stack}");
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
+        }
+
+        [TestMethod]
+        public void TestFromException_ToStringIncludesInnerStack()
+        {
+            // Validates that ex.ToString() (the standard diagnostic path) still includes the
+            // inner exception's stack trace even when no synthetic stack was captured.
+            Exception inner;
+            try
+            {
+                throw new ApplicationException("toString-marker");
+            }
+            catch (Exception ex)
+            {
+                inner = ex;
+            }
+
+            TryCatch<object> tryCatch = TryCatch<object>.FromException(inner);
+#pragma warning disable CDX1003 // DontUseExceptionToString
+            string s = tryCatch.Exception.ToString();
+#pragma warning restore CDX1003 // DontUseExceptionToString
+            Assert.IsTrue(s.Contains("toString-marker"), s);
+            Assert.IsTrue(s.Contains(nameof(TestFromException_ToStringIncludesInnerStack)),
+                $"ex.ToString() should include the inner exception's stack. Actual: {s}");
+        }
+
         private TryCatch<object> MethodWhereExceptionWasCaught()
         {
             TryCatch<object> tryCatch;

@@ -137,7 +137,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             catch (Exception ex)
             {
-                Assert.IsTrue(ex.StackTrace.Contains("GatewayAccountReader.InitializeReaderAsync"), ex.StackTrace);
+                // Use ex.ToString() (which walks both the wrapper and InnerException stacks)
+                // rather than ex.StackTrace alone. After the TryCatch.FromException stack-trace
+                // capture was deferred to the inner exception's own thrown stack, the outer
+                // wrapper no longer carries the synthetic propagation frames. The inner
+                // exception's stack still contains diagnostically useful SDK frames such as
+                // EnsureValidClientAsync (the entry point that drives account discovery).
+#pragma warning disable CDX1003 // DontUseExceptionToString
+                string full = ex.ToString();
+#pragma warning restore CDX1003 // DontUseExceptionToString
+                Assert.IsTrue(full.Contains("EnsureValidClientAsync"), full);
             }
         }
 
