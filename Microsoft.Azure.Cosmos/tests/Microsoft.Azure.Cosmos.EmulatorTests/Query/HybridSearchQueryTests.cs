@@ -19,7 +19,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         private const string CollectionDataPath = "Documents\\text-3properties-1536dimensions-100documents.json";
         private const int OrdinalRrfDocumentCount = 1000;
         private const int OrdinalRrfLexicalMatchIndex = 49;
-        private const double RrfConstant = 60;
+        private const int CompetitionRrfLexicalMatchRank = 47;
+        private const int OrdinalRrfLexicalMatchRank = 1;
 
         private const string SampleVector = @"[0.02, 0, -0.02, 0, -0.04, -0.01, -0.04, -0.01, 0.06, 0.08, -0.05, -0.04, -0.03, 0.05, -0.03, 0, -0.03, 0, 0.05, 0, 0.03,
 0.02, 0, 0.04, 0.05, 0.03, 0, 0, 0, -0.03, -0.01, 0.01, 0, -0.01, -0.03, -0.02, -0.05, 0.01, 0, 0.01, 0, 0.01, -0.03, -0.02, 0.02, 0.02, 0.04, 0.01, 0.04, 0.02, -0.01, -0.01, 0.02, 0.01, 0.02, -0.04, -0.01, 0.06, -0.01, -0.03, -0.04, -0.01, -0.01, 0, 0.03,
@@ -328,7 +329,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
-        public async Task HybridSearchRrfUsesDeterministicOrdinalRanksForTiedScores()
+        [DoNotParallelize]
+        public async Task HybridSearchRrfRankingModesProduceExpectedRanks()
         {
             // One document matches the full-text terms while the other 999 receive the same lexical score.
             // Unique vector distances make changes in the tied documents' ordinal ranks observable in the fused order.
@@ -344,84 +346,56 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 connectionModes: ConnectionModes.Direct,
                 collectionTypes: CollectionTypes.MultiPartition,
                 documents: documents,
-                query: ValidateDeterministicOrdinalRankFusion,
+                query: ValidateRrfRankingModes,
                 partitionKey: "/index",
                 indexingPolicy: OrdinalRrfIndexingPolicy,
                 vectorEmbeddingPolicy: OrdinalRrfEmbeddingPolicy);
         }
 
-        private static async Task ValidateDeterministicOrdinalRankFusion(
+        private static async Task ValidateRrfRankingModes(
             Container container,
             IReadOnlyList<CosmosObject> documents)
         {
-            // Project the server-assigned _rid and vector distance to independently calculate the expected
-            // ordinal ranks using the same documented score and _rid ordering as the client pipeline.
-            const string componentQuery = @"
-                SELECT c.index AS Index, c._rid AS Rid, VectorDistance(c.vector, [0, 0]) AS VectorScore
-                FROM c";
-            List<OrdinalRrfDocument> componentResults =
-                await QueryWithContinuationTokensAsync<OrdinalRrfDocument>(container, componentQuery);
-
-            Assert.AreEqual(OrdinalRrfDocumentCount, componentResults.Count);
-
-            Dictionary<int, int> lexicalRanks = componentResults
-                .OrderByDescending(document => document.Index == OrdinalRrfLexicalMatchIndex)
-                .ThenBy(document => document.Rid, StringComparer.Ordinal)
-                .Select((document, index) => (document.Index, Rank: index + 1))
-                .ToDictionary(entry => entry.Index, entry => entry.Rank);
-
-            Dictionary<int, int> vectorRanks = componentResults
-                .OrderBy(document => document.VectorScore)
-                .ThenBy(document => document.Rid, StringComparer.Ordinal)
-                .Select((document, index) => (document.Index, Rank: index + 1))
-                .ToDictionary(entry => entry.Index, entry => entry.Rank);
-
-            int[] expected = componentResults
-                .OrderByDescending(document =>
-                    (1 / (RrfConstant + lexicalRanks[document.Index])) +
-                    (1 / (RrfConstant + vectorRanks[document.Index])))
-                .ThenBy(document => document.Rid, StringComparer.Ordinal)
-                .Select(document => document.Index)
-                .ToArray();
-
             const string hybridQuery = @"
-                SELECT TOP 1000 c.index AS Index, c._rid AS Rid
+                SELECT TOP 1000 c.index AS Index
                 FROM c
                 ORDER BY RANK RRF(FullTextScore(c.text, 'unique target'), VectorDistance(c.vector, [0, 0]))";
 
-            int[] firstRun = (await QueryWithoutContinuationTokensAsync<OrdinalRrfDocument>(container, hybridQuery))
-                .Select(document => document.Index)
-                .ToArray();
+            string previousValue = Environment.GetEnvironmentVariable(ConfigurationManager.HybridSearchUseCompetitionRanking);
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HybridSearchUseCompetitionRanking, "true");
+                int[] firstCompetitionOrder = await QueryRrfOrderAsync(container, hybridQuery);
+                int[] secondCompetitionOrder = await QueryRrfOrderAsync(container, hybridQuery);
 
-            // A second execution verifies that score ties do not expose backend or unstable-sort ordering.
-            int[] secondRun = (await QueryWithoutContinuationTokensAsync<OrdinalRrfDocument>(container, hybridQuery))
-                .Select(document => document.Index)
-                .ToArray();
+                Environment.SetEnvironmentVariable(ConfigurationManager.HybridSearchUseCompetitionRanking, "false");
+                int[] ordinalOrder = await QueryRrfOrderAsync(container, hybridQuery);
 
-            AssertSequenceEqual(expected, firstRun, "The hybrid query did not use the expected ordinal RRF order.");
-            AssertSequenceEqual(firstRun, secondRun, "Repeated hybrid queries returned different orders.");
+                CollectionAssert.AreEqual(
+                    firstCompetitionOrder,
+                    secondCompetitionOrder,
+                    "Repeated competition-ranking queries returned different orders.");
+                Assert.IsFalse(
+                    firstCompetitionOrder.SequenceEqual(ordinalOrder),
+                    "Competition and ordinal ranking returned the same order.");
+                Assert.AreEqual(
+                    CompetitionRrfLexicalMatchRank,
+                    Array.IndexOf(firstCompetitionOrder, OrdinalRrfLexicalMatchIndex) + 1);
+                Assert.AreEqual(
+                    OrdinalRrfLexicalMatchRank,
+                    Array.IndexOf(ordinalOrder, OrdinalRrfLexicalMatchIndex) + 1);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.HybridSearchUseCompetitionRanking, previousValue);
+            }
         }
 
-        private static void AssertSequenceEqual(
-            IReadOnlyList<int> expected,
-            IReadOnlyList<int> actual,
-            string message)
+        private static async Task<int[]> QueryRrfOrderAsync(Container container, string query)
         {
-            if (expected.SequenceEqual(actual))
-            {
-                return;
-            }
-
-            int firstMismatch =
-                Enumerable.Range(0, Math.Min(expected.Count, actual.Count))
-                .FirstOrDefault(index => expected[index] != actual[index], -1);
-            Trace.WriteLine($"Expected count: {expected.Count}; actual count: {actual.Count}; first mismatch: {firstMismatch}");
-            if (firstMismatch >= 0)
-            {
-                Trace.WriteLine($"Expected[{firstMismatch}]: {expected[firstMismatch]}; actual[{firstMismatch}]: {actual[firstMismatch]}");
-            }
-
-            Assert.Fail(message);
+            return (await QueryWithoutContinuationTokensAsync<OrdinalRrfDocument>(container, query))
+                .Select(document => document.Index)
+                .ToArray();
         }
 
         private async Task RunTests(IEnumerable<SanityTestCase> testCases, bool enableFullTextPreviewFeatures = false)
@@ -604,10 +578,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         private sealed class OrdinalRrfDocument
         {
             public int Index { get; set; }
-
-            public string Rid { get; set; }
-
-            public double VectorScore { get; set; }
         }
 
         private static class FieldNames
