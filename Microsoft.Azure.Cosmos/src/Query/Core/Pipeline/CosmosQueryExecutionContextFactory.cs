@@ -568,6 +568,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 isContinuationExpected: cosmosQueryContext.IsContinuationExpected,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 fullTextScoreScope: inputParameters.FullTextScoreScope,
+                isHybridSearchCompetitionRankingEnabled: inputParameters.IsHybridSearchCompetitionRankingEnabled,
                 requestContinuationToken: inputParameters.InitialUserContinuationToken);
         }
 
@@ -842,7 +843,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 bool enableDistributedQueryGatewayMode,
                 FullTextScoreScope fullTextScoreScope,
                 TestInjections testInjections,
-                IReadOnlyList<string> excludeRegions = null)
+                IReadOnlyList<string> excludeRegions = null,
+                bool isHybridSearchCompetitionRankingEnabled = false)
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.InitialUserContinuationToken = initialUserContinuationToken;
@@ -856,6 +858,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder;
                 this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
                 this.IsHybridSearchQueryPlanOptimizationDisabled = isHybridSearchQueryPlanOptimizationDisabled;
+                this.IsHybridSearchCompetitionRankingEnabled = isHybridSearchCompetitionRankingEnabled;
                 this.EnableDistributedQueryGatewayMode = enableDistributedQueryGatewayMode;
                 this.FullTextScoreScope = fullTextScoreScope;
                 this.TestInjections = testInjections;
@@ -878,7 +881,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 bool enableDistributedQueryGatewayMode,
                 FullTextScoreScope fullTextScoreScope,
                 TestInjections testInjections,
-                IReadOnlyList<string> excludeRegions = null)
+                IReadOnlyList<string> excludeRegions = null,
+                bool isHybridSearchCompetitionRankingEnabled = false)
             {
                 if (sqlQuerySpec == null)
                 {
@@ -919,7 +923,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     enableDistributedQueryGatewayMode: enableDistributedQueryGatewayMode,
                     fullTextScoreScope: fullTextScoreScope,
                     testInjections: testInjections,
-                    excludeRegions: excludeRegions);
+                    excludeRegions: excludeRegions,
+                    isHybridSearchCompetitionRankingEnabled: isHybridSearchCompetitionRankingEnabled);
             }
 
             public SqlQuerySpec SqlQuerySpec { get; }
@@ -935,6 +940,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public TestInjections TestInjections { get; }
             public bool EnableOptimisticDirectExecution { get; }
             public bool IsHybridSearchQueryPlanOptimizationDisabled { get; }
+            public bool IsHybridSearchCompetitionRankingEnabled { get; }
             public bool EnableDistributedQueryGatewayMode { get; }
             public bool UseLengthAwareRangeComparer { get; }
             public FullTextScoreScope FullTextScoreScope { get; }
@@ -943,22 +949,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public InputParameters WithContinuationToken(CosmosElement token)
             {
                 return new InputParameters(
-                    this.SqlQuerySpec,
-                    token,
-                    this.InitialFeedRange,
-                    this.MaxConcurrency,
-                    this.MaxItemCount,
-                    this.MaxBufferedItemCount,
-                    this.PartitionKey,
-                    this.Properties,
-                    this.PartitionedQueryExecutionInfo,
-                    this.ReturnResultsInDeterministicOrder,
-                    this.EnableOptimisticDirectExecution,
-                    this.IsHybridSearchQueryPlanOptimizationDisabled,
-                    this.EnableDistributedQueryGatewayMode,
-                    this.FullTextScoreScope,
-                    this.TestInjections,
-                    this.ExcludeRegions);
+                    sqlQuerySpec: this.SqlQuerySpec,
+                    initialUserContinuationToken: token,
+                    initialFeedRange: this.InitialFeedRange,
+                    maxConcurrency: this.MaxConcurrency,
+                    maxItemCount: this.MaxItemCount,
+                    maxBufferedItemCount: this.MaxBufferedItemCount,
+                    partitionKey: this.PartitionKey,
+                    properties: this.Properties,
+                    partitionedQueryExecutionInfo: this.PartitionedQueryExecutionInfo,
+                    returnResultsInDeterministicOrder: this.ReturnResultsInDeterministicOrder,
+                    enableOptimisticDirectExecution: this.EnableOptimisticDirectExecution,
+                    isHybridSearchQueryPlanOptimizationDisabled: this.IsHybridSearchQueryPlanOptimizationDisabled,
+                    enableDistributedQueryGatewayMode: this.EnableDistributedQueryGatewayMode,
+                    fullTextScoreScope: this.FullTextScoreScope,
+                    testInjections: this.TestInjections,
+                    excludeRegions: this.ExcludeRegions,
+                    isHybridSearchCompetitionRankingEnabled: this.IsHybridSearchCompetitionRankingEnabled);
             }
         }
 

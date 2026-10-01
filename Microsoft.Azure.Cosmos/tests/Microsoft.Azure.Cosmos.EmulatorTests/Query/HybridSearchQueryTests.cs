@@ -329,7 +329,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
-        [DoNotParallelize]
         public async Task HybridSearchRrfRankingModesProduceExpectedRanks()
         {
             // One document matches the full-text terms while the other 999 receive the same lexical score.
@@ -361,39 +360,48 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 FROM c
                 ORDER BY RANK RRF(FullTextScore(c.text, 'unique target'), VectorDistance(c.vector, [0, 0]))";
 
-            string previousValue = Environment.GetEnvironmentVariable(ConfigurationManager.HybridSearchUseCompetitionRanking);
-            try
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.HybridSearchUseCompetitionRanking, "true");
-                int[] firstCompetitionOrder = await QueryRrfOrderAsync(container, hybridQuery);
-                int[] secondCompetitionOrder = await QueryRrfOrderAsync(container, hybridQuery);
+            int[] firstCompetitionOrder = await QueryRrfOrderAsync(
+                container,
+                hybridQuery,
+                useCompetitionRanking: true);
+            int[] secondCompetitionOrder = await QueryRrfOrderAsync(
+                container,
+                hybridQuery,
+                useCompetitionRanking: true);
+            int[] ordinalOrder = await QueryRrfOrderAsync(
+                container,
+                hybridQuery,
+                useCompetitionRanking: false);
 
-                Environment.SetEnvironmentVariable(ConfigurationManager.HybridSearchUseCompetitionRanking, "false");
-                int[] ordinalOrder = await QueryRrfOrderAsync(container, hybridQuery);
-
-                CollectionAssert.AreEqual(
-                    firstCompetitionOrder,
-                    secondCompetitionOrder,
-                    "Repeated competition-ranking queries returned different orders.");
-                Assert.IsFalse(
-                    firstCompetitionOrder.SequenceEqual(ordinalOrder),
-                    "Competition and ordinal ranking returned the same order.");
-                Assert.AreEqual(
-                    CompetitionRrfLexicalMatchRank,
-                    Array.IndexOf(firstCompetitionOrder, RrfLexicalMatchIndex) + 1);
-                Assert.AreEqual(
-                    OrdinalRrfLexicalMatchRank,
-                    Array.IndexOf(ordinalOrder, RrfLexicalMatchIndex) + 1);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.HybridSearchUseCompetitionRanking, previousValue);
-            }
+            CollectionAssert.AreEqual(
+                firstCompetitionOrder,
+                secondCompetitionOrder,
+                "Repeated competition-ranking queries returned different orders.");
+            Assert.IsFalse(
+                firstCompetitionOrder.SequenceEqual(ordinalOrder),
+                "Competition and ordinal ranking returned the same order.");
+            Assert.AreEqual(
+                CompetitionRrfLexicalMatchRank,
+                Array.IndexOf(firstCompetitionOrder, RrfLexicalMatchIndex) + 1);
+            Assert.AreEqual(
+                OrdinalRrfLexicalMatchRank,
+                Array.IndexOf(ordinalOrder, RrfLexicalMatchIndex) + 1);
         }
 
-        private static async Task<int[]> QueryRrfOrderAsync(Container container, string query)
+        private static async Task<int[]> QueryRrfOrderAsync(
+            Container container,
+            string query,
+            bool useCompetitionRanking)
         {
-            return (await QueryWithoutContinuationTokensAsync<OrdinalRrfDocument>(container, query))
+            QueryRequestOptions requestOptions = new QueryRequestOptions
+            {
+                IsHybridSearchCompetitionRankingEnabled = useCompetitionRanking,
+            };
+
+            return (await QueryWithoutContinuationTokensAsync<OrdinalRrfDocument>(
+                container,
+                query,
+                requestOptions))
                 .Select(document => document.Index)
                 .ToArray();
         }
@@ -542,7 +550,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         {
             public string Query { get; init; }
 
-            public IReadOnlyList<IReadOnlyList<int>> ExpectedIndices { get; init; }
+            internal IReadOnlyList<IReadOnlyList<int>> ExpectedIndices { get; init; }
 
             public PartitionKey? PartitionKey { get; init; }
 

@@ -495,11 +495,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets whether hybrid search RRF component scores use standard competition ranking.
         /// </summary>
-        public static bool IsHybridSearchCompetitionRankingEnabled()
+        public static bool IsHybridSearchCompetitionRankingEnabled(
+            bool defaultValue)
         {
             return ConfigurationManager.GetEnvironmentVariable(
                 variable: ConfigurationManager.HybridSearchUseCompetitionRanking,
-                defaultValue: false);
+                defaultValue: defaultValue);
         }
 
         /// <summary>

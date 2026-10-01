@@ -40,6 +40,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private readonly int maxConcurrency;
 
+        private readonly bool isCompetitionRankingEnabled;
+
         private readonly HybridSearchComponentPipelineFactory pipelineFactory;
 
         private readonly IQueryPipelineStage globalStatisticsPipeline;
@@ -69,6 +71,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             HybridSearchComponentPipelineFactory pipelineFactory,
             int pageSize,
             int maxConcurrency,
+            bool isCompetitionRankingEnabled,
             State state,
             IQueryPipelineStage globalStatisticsPipeline,
             IReadOnlyList<IQueryPipelineStage> queryPipelineStages)
@@ -77,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             this.pipelineFactory = pipelineFactory ?? throw new ArgumentNullException(nameof(pipelineFactory));
             this.pageSize = pageSize;
             this.maxConcurrency = maxConcurrency;
+            this.isCompetitionRankingEnabled = isCompetitionRankingEnabled;
             this.state = state;
             this.globalStatisticsPipeline = globalStatisticsPipeline;
             this.queryPipelineStages = queryPipelineStages;
@@ -93,7 +97,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             int maxItemCount,
             bool isContinuationExpected,
             int maxConcurrency,
-            Cosmos.FullTextScoreScope fullTextScoreScope)
+            Cosmos.FullTextScoreScope fullTextScoreScope,
+            bool isHybridSearchCompetitionRankingEnabled)
         {
             TryCatch<IQueryPipelineStage> ComponentPipelineFactory(QueryInfo rewrittenQueryInfo)
             {
@@ -177,6 +182,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     ComponentPipelineFactory,
                     pageSize,
                     maxConcurrency,
+                    isHybridSearchCompetitionRankingEnabled,
                     state,
                     globalStatisticsPipeline,
                     queryPipelineStages));
@@ -259,6 +265,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 this.queryPipelineStages,
                 componentWeights,
                 this.maxConcurrency,
+                this.isCompetitionRankingEnabled,
                 trace,
                 cancellationToken);
             if (tryCollateSortedPipelineStageResults.Failed)
@@ -428,6 +435,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             IReadOnlyList<IQueryPipelineStage> queryPipelineStages,
             IReadOnlyList<ComponentWeight> componentWeights,
             int maxConcurrency,
+            bool useCompetitionRanking,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -473,16 +481,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             for (int index = 0; index < componentScores.Count; ++index)
             {
-                componentScores[index].Sort((x, y) =>
-                {
-                    int scoreComparison = componentWeights[index].Comparison(x.Score, y.Score);
-                    return scoreComparison != 0 ? scoreComparison : x.Index.CompareTo(y.Index);
-                });
+                componentScores[index].Sort(componentWeights[index].Comparison);
             }
 
             int[,] ranks = ComputeRanks(
                 componentScores,
-                ConfigurationManager.IsHybridSearchCompetitionRankingEnabled());
+                useCompetitionRanking);
 
             ComputeRrfScores(ranks, componentWeights, queryResults);
 
@@ -779,14 +783,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         {
             public double Weight { get; }
 
-            public Comparison<double> Comparison { get; }
+            public Comparison<ScoreTuple> Comparison { get; }
 
             public ComponentWeight(double weight, SortOrder sortOrder)
             {
                 this.Weight = weight;
 
                 int comparisonFactor = (sortOrder == SortOrder.Ascending) ? 1 : -1;
-                this.Comparison = (x, y) => comparisonFactor * x.CompareTo(y);
+                this.Comparison = (x, y) =>
+                {
+                    int scoreComparison = comparisonFactor * x.Score.CompareTo(y.Score);
+                    return scoreComparison != 0 ? scoreComparison : x.Index.CompareTo(y.Index);
+                };
             }
         }
 
