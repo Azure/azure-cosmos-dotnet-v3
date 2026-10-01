@@ -506,21 +506,24 @@
                     partitionKey: null,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized,
+                    ignoreResultOrder: true),
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
                     expectedResult: new List<int>{ 1, 2, 3 },
                     partitionKey: PartitionKey1,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized,
+                    ignoreResultOrder: true),
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
                     expectedResult: new List<int>{ 5, 6, 7, 8 },
                     partitionKey: PartitionKey2,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized,
+                    ignoreResultOrder: true),
             };
 
             static Task RunTestsAsync(
@@ -889,9 +892,9 @@
 
                     int[] actual = items.Cast<CosmosNumber>().Select(x => (int)Number64.ToLong(x.Value)).ToArray();
 
-                    bool resultsMatched = testCase.ExpectedResult
-                        .OrderBy(number => number)
-                        .SequenceEqual(actual.OrderBy(number => number));
+                    bool resultsMatched = testCase.IgnoreResultOrder
+                        ? testCase.ExpectedResult.OrderBy(number => number).SequenceEqual(actual.OrderBy(number => number))
+                        : testCase.ExpectedResult.SequenceEqual(actual);
                     bool pipelineTypeMatched = testCase.ExpectedPipelineType == feedOptions.TestSettings.Stats.PipelineType.Value;
                     if(!resultsMatched || !pipelineTypeMatched)
                     {
@@ -955,9 +958,17 @@
             PartitionKey? partitionKey,
             bool? enableOptimisticDirectExecution,
             int[] pageSizeOptions,
-            TestInjections.PipelineType expectedPipelineType)
+            TestInjections.PipelineType expectedPipelineType,
+            bool ignoreResultOrder = false)
         {
-            return new DirectExecutionTestCase(query, expectedResult, partitionKey, enableOptimisticDirectExecution, pageSizeOptions, expectedPipelineType);
+            return new DirectExecutionTestCase(
+                query,
+                expectedResult,
+                partitionKey,
+                enableOptimisticDirectExecution,
+                pageSizeOptions,
+                expectedPipelineType,
+                ignoreResultOrder);
         }
 
         private readonly struct DirectExecutionTestCase
@@ -968,6 +979,7 @@
             public bool? EnableOptimisticDirectExecution { get; }
             public int[] PageSizeOptions { get; }
             public TestInjections.PipelineType ExpectedPipelineType { get; }
+            public bool IgnoreResultOrder { get; }
 
             public DirectExecutionTestCase(
                 string query,
@@ -975,7 +987,8 @@
                 PartitionKey? partitionKey,
                 bool? enableOptimisticDirectExecution,
                 int[] pageSizeOptions,
-                TestInjections.PipelineType expectedPipelineType)
+                TestInjections.PipelineType expectedPipelineType,
+                bool ignoreResultOrder)
             {
                 this.Query = query;
                 this.ExpectedResult = expectedResult;
@@ -983,6 +996,7 @@
                 this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
                 this.PageSizeOptions = pageSizeOptions;
                 this.ExpectedPipelineType = expectedPipelineType;
+                this.IgnoreResultOrder = ignoreResultOrder;
             }
 
             public override string ToString()
@@ -992,6 +1006,7 @@
                        $"EnableOptimisticDirectExecution: {this.EnableOptimisticDirectExecution}\n" +
                        $"PageSizeOptions: [{string.Join(", ", this.PageSizeOptions)}]\n" +
                        $"ExpectedPipelineType: {this.ExpectedPipelineType}\n" +
+                       $"IgnoreResultOrder: {this.IgnoreResultOrder}\n" +
                        $"ExpectedResult: [{string.Join(", ", this.ExpectedResult)}]\n";
             }
         }
