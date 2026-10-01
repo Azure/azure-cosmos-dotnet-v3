@@ -1,0 +1,503 @@
+﻿<#@ template language="C#" hostspecific="true" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Net" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Runtime.CompilerServices" #>
+<#@ output extension=".cs" #>
+<#
+// This is a list of all the headers. This should be a one to one mapping with RntbdConstants.Response header token properties.
+// This allows the TransportSerialization to directly set the property and avoid the dictionary overhead.
+// This list will be used to generate all the properties. The property name is the last part of the constant.
+// The header constant value is required for an optimized look up when accessing the values through the dictionary contract.
+// Order does matter in the list and common headers should be put at the top.
+// This generates a switch statement based on the key length and then uses object reference checks to avoid dictionary overhead.
+List<(string name, string value)> headerNames = new List<(string name, string value)>()
+{
+    ("HttpConstants.HttpHeaders.ActivityId", "x-ms-activity-id"),
+    ("HttpConstants.HttpHeaders.LastStateChangeUtc", "x-ms-last-state-change-utc"),
+    ("HttpConstants.HttpHeaders.Continuation", "x-ms-continuation"),
+    ("HttpConstants.HttpHeaders.ETag", "etag"),
+    ("HttpConstants.HttpHeaders.RetryAfterInMilliseconds", "x-ms-retry-after-ms"),
+    ("HttpConstants.HttpHeaders.IndexingDirective", "x-ms-indexing-directive"),
+    ("HttpConstants.HttpHeaders.MaxResourceQuota", "x-ms-resource-quota"),
+    ("HttpConstants.HttpHeaders.CurrentResourceQuotaUsage", "x-ms-resource-usage"),
+    ("HttpConstants.HttpHeaders.SchemaVersion", "x-ms-schemaversion"),
+    ("WFConstants.BackendHeaders.CollectionPartitionIndex", "collection-partition-index"),
+    ("WFConstants.BackendHeaders.CollectionServiceIndex", "collection-service-index"),
+    ("WFConstants.BackendHeaders.LSN", "lsn"),
+    ("HttpConstants.HttpHeaders.ItemCount", "x-ms-item-count"),
+    ("HttpConstants.HttpHeaders.RequestCharge", "x-ms-request-charge"),
+    ("HttpConstants.HttpHeaders.OwnerFullName", "x-ms-alt-content-path"),
+    ("HttpConstants.HttpHeaders.OwnerId", "x-ms-content-path"),
+    ("WFConstants.BackendHeaders.DatabaseAccountId", "x-ms-database-account-id"),
+    ("WFConstants.BackendHeaders.QuorumAckedLSN", "x-ms-quorum-acked-lsn"),
+    ("WFConstants.BackendHeaders.RequestValidationFailure", "x-ms-request-validation-failure"),
+    ("WFConstants.BackendHeaders.SubStatus", "x-ms-substatus"),
+    ("HttpConstants.HttpHeaders.CollectionIndexTransformationProgress", "x-ms-documentdb-collection-index-transformation-progress"),
+    ("WFConstants.BackendHeaders.CurrentWriteQuorum", "x-ms-current-write-quorum"),
+    ("WFConstants.BackendHeaders.CurrentReplicaSetSize", "x-ms-current-replica-set-size"),
+    ("HttpConstants.HttpHeaders.CollectionLazyIndexingProgress", "x-ms-documentdb-collection-lazy-indexing-progress"),
+    ("WFConstants.BackendHeaders.PartitionKeyRangeId", "x-ms-documentdb-partitionkeyrangeid"),
+    ("HttpConstants.HttpHeaders.LogResults", "x-ms-documentdb-script-log-results"),
+    ("WFConstants.BackendHeaders.XPRole", "x-ms-xp-role"),
+    ("WFConstants.BackendHeaders.IsRUPerMinuteUsed", "x-ms-documentdb-is-ru-per-minute-used"),
+    ("WFConstants.BackendHeaders.QueryMetrics", "x-ms-documentdb-query-metrics"),
+    ("WFConstants.BackendHeaders.QueryExecutionInfo", "x-ms-cosmos-query-execution-info"),
+    ("WFConstants.BackendHeaders.IndexUtilization", "x-ms-cosmos-index-utilization"),
+	("WFConstants.BackendHeaders.QueryAdvice", "x-ms-cosmos-query-advice"),
+    ("WFConstants.BackendHeaders.GlobalCommittedLSN", "x-ms-global-Committed-lsn"),
+    ("WFConstants.BackendHeaders.NumberOfReadRegions", "x-ms-number-of-read-regions"),
+    ("WFConstants.BackendHeaders.OfferReplacePending", "x-ms-offer-replace-pending"),
+    ("WFConstants.BackendHeaders.ItemLSN", "x-ms-item-lsn"),
+    ("WFConstants.BackendHeaders.RestoreState", "x-ms-restore-state"),
+    ("WFConstants.BackendHeaders.CollectionSecurityIdentifier", "x-ms-collection-security-identifier"),
+    ("HttpConstants.HttpHeaders.TransportRequestID", "x-ms-transport-request-id"),
+    ("WFConstants.BackendHeaders.ShareThroughput", "x-ms-share-throughput"),
+    ("HttpConstants.HttpHeaders.DisableRntbdChannel", "x-ms-disable-rntbd-channel"),
+    ("HttpConstants.HttpHeaders.XDate", "x-ms-date"),
+    ("WFConstants.BackendHeaders.LocalLSN", "x-ms-cosmos-llsn"),
+    ("WFConstants.BackendHeaders.QuorumAckedLocalLSN", "x-ms-cosmos-quorum-acked-llsn"),
+    ("WFConstants.BackendHeaders.ItemLocalLSN", "x-ms-cosmos-item-llsn"),
+    ("WFConstants.BackendHeaders.HasTentativeWrites", "x-ms-cosmosdb-has-tentative-writes"),
+    ("HttpConstants.HttpHeaders.SessionToken", "x-ms-session-token"),
+    ("WFConstants.BackendHeaders.ReplicatorLSNToGLSNDelta", "x-ms-cosmos-replicator-glsn-delta"),
+    ("WFConstants.BackendHeaders.ReplicatorLSNToLLSNDelta", "x-ms-cosmos-replicator-llsn-delta"),
+    ("WFConstants.BackendHeaders.VectorClockLocalProgress", "x-ms-cosmos-vectorclock-local-progress"),
+    ("WFConstants.BackendHeaders.MinimumRUsForOffer", "x-ms-cosmos-min-throughput"),
+    ("WFConstants.BackendHeaders.XPConfigurationSessionsCount", "x-ms-cosmos-xpconfiguration-sessions-count"),
+    ("WFConstants.BackendHeaders.UnflushedMergLogEntryCount", "x-ms-cosmos-internal-unflushed-merge-log-entry-count"),
+    ("WFConstants.BackendHeaders.ResourceId", "x-docdb-resource-id"),
+    ("WFConstants.BackendHeaders.TimeToLiveInSeconds", "x-ms-time-to-live-in-seconds"),
+    ("WFConstants.BackendHeaders.ReplicaStatusRevoked", "x-ms-cosmos-is-replica-status-revoked"),
+    ("WFConstants.BackendHeaders.SoftMaxAllowedThroughput", "x-ms-cosmos-offer-max-allowed-throughput"),
+    ("HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds", "x-ms-request-duration-ms"),
+    ("HttpConstants.HttpHeaders.ServerVersion", "x-ms-serviceversion"),
+    ("HttpConstants.HttpHeaders.ConfirmedStoreChecksum", "x-ms-cosmos-replica-confirmed-checksum"),
+    ("HttpConstants.HttpHeaders.TentativeStoreChecksum", "x-ms-cosmos-replica-tentative-checksum"),
+    ("WFConstants.BackendHeaders.CorrelatedActivityId", "x-ms-cosmos-correlated-activityid"),
+    ("WFConstants.BackendHeaders.PendingPKDelete", "x-ms-cosmos-is-partition-key-delete-pending"),
+    ("HttpConstants.HttpHeaders.AadAppliedRoleAssignmentId", "x-ms-aad-applied-role-assignment"),
+    ("WFConstants.BackendHeaders.CollectionUniqueIndexReIndexProgress", "x-ms-cosmos-collection-unique-index-reindex-progress"),
+    ("WFConstants.BackendHeaders.CollectionUniqueKeysUnderReIndex", "x-ms-cosmos-collection-unique-keys-under-reindex"),
+    ("WFConstants.BackendHeaders.AnalyticalMigrationProgress", "x-ms-cosmos-analytical-migration-progress"),
+    ("WFConstants.BackendHeaders.BinaryEncodingMigratorProgress", "x-ms-cosmos-binary-encoding-migrator-progress"),
+    ("HttpConstants.HttpHeaders.TotalAccountThroughput", "x-ms-cosmos-total-account-throughput"),
+    ("WFConstants.BackendHeaders.ByokEncryptionProgress", "x-ms-cosmos-byok-encryption-progress"),
+    ("HttpConstants.HttpHeaders.AppliedPolicyElementId", "x-ms-applied-policy-element"),
+    ("WFConstants.BackendHeaders.MergeProgressBlocked", "x-ms-cosmos-is-merge-progress-blocked"),
+    ("HttpConstants.HttpHeaders.ChangeFeedInfo", "x-ms-cosmos-changefeed-info"),
+    ("WFConstants.BackendHeaders.ReIndexerProgress", "x-ms-cosmos-reindexer-progress"),
+    ("WFConstants.BackendHeaders.OfferReplacePendingForMerge", "x-ms-offer-replace-pending-for-merge"),
+    ("WFConstants.BackendHeaders.OldestActiveSchemaId", "x-ms-cosmos-oldest-active-schema-id"),
+    ("HttpConstants.HttpHeaders.PhysicalPartitionId", "x-ms-cosmos-physical-partition-id"),
+    ("HttpConstants.HttpHeaders.MaxContentLength", "x-ms-cosmos-max-content-length"),
+    ("HttpConstants.HttpHeaders.IsOfferRestorePending", "x-ms-offer-restore-pending"),
+    ("HttpConstants.HttpHeaders.InstantScaleUpValue", "x-ms-cosmos-instant-scale-up-value"),
+    ("WFConstants.BackendHeaders.RequiresDistribution", "x-ms-cosmos-query-requiresdistribution"),
+    ("HttpConstants.HttpHeaders.CapacityType", "x-ms-cosmos-capacity-type"),
+    ("WFConstants.BackendHeaders.MinGLSNForTombstoneOperations", "x-ms-cosmos-min-tombstone-glsn"),
+    ("WFConstants.BackendHeaders.MinGLSNForDocumentOperations", "x-ms-cosmos-min-document-glsn"),
+    ("WFConstants.BackendHeaders.HighestTentativeWriteLLSN", "x-ms-cosmos-highest-tentative-write-llsn"),
+    ("WFConstants.BackendHeaders.PartitionThroughputInfo", "x-ms-cosmos-partition-throughput-info"),
+    ("WFConstants.BackendHeaders.DocumentRecordCount", "x-ms-cosmos-document-record-count"),
+    ("WFConstants.BackendHeaders.CosmosGatewayTransactionId", "x-ms-cosmos-gateway-transaction-id"),
+    ("WFConstants.BackendHeaders.UserStrings", "x-ms-cosmos-user-strings"),
+    ("WFConstants.BackendHeaders.OfferScaleCorrelationId", "x-ms-cosmos-offer-scale-correlation-id"),
+    ("WFConstants.BackendHeaders.GlobalNRegionCommittedGLSN", "x-ms-cosmos-global-nregion-committed-glsn"),
+    ("WFConstants.BackendHeaders.CollectionVectorIndexProgress", "x-ms-cosmos-collection-vector-index-progress"),
+    ("WFConstants.BackendHeaders.ThroughputpoolMaxConsumableRUs", "x-ms-throughputpool-max-consumable-rus"),
+    ("WFConstants.BackendHeaders.ThroughputpoolDedicatedRUs", "x-ms-throughputpool-dedicated-rus"),
+    ("WFConstants.BackendHeaders.VectorIndexAggregateProgress", "x-ms-cosmos-vector-index-aggregate-progress"),
+    ("WFConstants.BackendHeaders.MergeProgressBlockedReason", "x-ms-cosmos-merge-progress-blocked-reason"),
+    ("HttpConstants.HttpHeaders.ThroughputBucketApplied", "x-ms-cosmos-throughputbucket-applied"),
+    ("WFConstants.BackendHeaders.ConflictResolvedTimestamp", "x-ms-cosmos-conflict-resolved-timestamp"),
+    ("HttpConstants.HttpHeaders.MutualTlsStatus", "x-ms-mtls-status"),
+    ("HttpConstants.HttpHeaders.MutualTlsThumbprint", "x-ms-mtls-thumbprint"),
+    ("HttpConstants.HttpHeaders.HybridLogicalClockTimestamp", "x-ms-cosmos-internal-hybrid-logical-clock-timestamp"),
+    ("HttpConstants.HttpHeaders.IdempotencyToken", "x-ms-cosmos-idempotency-token"),
+}; #>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// THIS IS AN AUTOGENERATED FILE. ALL UPDATES SHOULD BE DONE VIA StoreResponseNameValueCollection.tt
+
+namespace Microsoft.Azure.Documents.Collections
+{
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Collections.Specialized;
+    using System.Linq;
+    using System.Threading;
+    using Microsoft.Azure.Documents;
+
+    /// <summary>
+    /// THIS IS AN AUTOGENERATED FILE. ALL UPDATES SHOULD BE DONE VIA StoreResponseNameValueCollection.tt
+    /// This should be a one to one mapping with RntbdConstants.Response header token properties.
+    /// This allows the TransportSerialization to directly set the property and avoid the dictionary overhead.
+    /// If the property does not exists please update the StoreResponseNameValueCollection.tt list to add the new field
+    /// </summary>
+    internal class StoreResponseNameValueCollection : INameValueCollection, IEnumerable<KeyValuePair<string, string>> 
+    {
+        private static readonly StringComparer DefaultStringComparer = StringComparer.OrdinalIgnoreCase;
+
+        // this is null if it's never been added to, and is created in a thread safe manner via GetOrCreateLazyHeaders()
+        private Dictionary<string, string> lazyNotCommonHeaders;
+
+        // The INameValueCollection interface is expected to be a replacement for NameValueCollection across the projects.
+        // However, there are a few public API with NameValueCollection as return type, e.g. DocumentServiceResponse.ResponseHeaders and
+        // DocumentClientException.ResponseHeaders.
+        //
+        // As a hybrid approach in those cases, we maintain the headers internally as an instance of the new INameValueCollection and create
+        // a NameValueCollection for the above public APIs. Keeping the NameValueCollection and the internal INameValueCollection in sync is
+        // not only cumbersome, it may also defeat the purpose of the new dictionary-based type.
+        //
+        // Therefore, we want to keep the NameValueCollection consistent within the ResponseHeaders APIs call. In other words,
+        // once invoked, the ResponseHeaders will return the same NameValueCollection.
+        private NameValueCollection nameValueCollection = null;
+
+<#  List<string> sortedHeaderPropertyNames = headerNames.Select(x => x.name.Split('.').Last()).OrderBy(x => x).ToList();
+    foreach(string headerName in sortedHeaderPropertyNames) { #>
+        public string <#= headerName #> { get; set; }
+<# } #>
+
+        public StoreResponseNameValueCollection()
+        {
+        }
+
+        private StoreResponseNameValueCollection(Dictionary<string, string> lazyNotCommonHeaders)
+        {
+            this.lazyNotCommonHeaders = lazyNotCommonHeaders;
+        }
+
+        public string this[string key]
+        {
+            get => this.Get(key);
+            set => this.Set(key, value);
+        }
+
+        public void Add(INameValueCollection collection)
+        {
+            if (collection == null)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
+
+            foreach (string key in collection.Keys())
+            {
+                this.Set(key, collection[key]);
+            }
+        }
+
+        public string[] AllKeys()
+        {
+            return this.Keys().ToArray();
+        }
+
+        public void Clear()
+        {
+            if (this.lazyNotCommonHeaders != null)
+            {
+                this.lazyNotCommonHeaders.Clear();
+            }
+
+<#      foreach (string name in sortedHeaderPropertyNames) { #>
+            this.<#= name #> = null;
+<#      } #>
+
+        }
+
+        public INameValueCollection Clone()
+        {
+            Dictionary<string, string> cloneNotCommonHeaders = null;
+            if (this.lazyNotCommonHeaders != null)
+            {
+                cloneNotCommonHeaders = new Dictionary<string, string>(this.lazyNotCommonHeaders, StoreResponseNameValueCollection.DefaultStringComparer);
+            }
+
+            StoreResponseNameValueCollection cloneHeaders = new StoreResponseNameValueCollection(cloneNotCommonHeaders)
+            {
+<#      foreach (string name in sortedHeaderPropertyNames) { #>
+                <#= name #> = this.<#= name #>,
+<#      } #>
+            };
+
+            return cloneHeaders;
+        }
+
+        public int Count()
+        {
+            return this.Keys().Count();
+        }
+
+        public IEnumerator GetEnumerator()
+        {
+            return this.Keys().GetEnumerator();
+        }
+
+        IEnumerator<KeyValuePair<string, string>> IEnumerable<KeyValuePair<string, string>>.GetEnumerator()
+        {
+<#      foreach ((string fullName, string keyValue) in headerNames) { #>
+            if (this.<#= fullName.Split('.').Last() #> != null)
+            {
+                yield return new KeyValuePair<string, string>(<#= fullName #>, this.<#= fullName.Split('.').Last() #>);
+            }
+<#      } #>
+
+            if (this.lazyNotCommonHeaders != null)
+            {
+                foreach (KeyValuePair<string, string> kvp in this.lazyNotCommonHeaders)
+                {
+                    yield return kvp;
+                }
+            }
+        }
+
+        public string[] GetValues(string key)
+        {
+            string value = this.Get(key);
+            if (value != null)
+            {
+                return new string[] { value };
+            }
+
+            return null;
+        }
+
+        public IEnumerable<string> Keys()
+        {
+<#      foreach ((string fullName, string keyValue) in headerNames) { #>
+            if (this.<#= fullName.Split('.').Last() #> != null)
+            {
+                yield return <#= fullName #>;
+            }
+<#      } #>
+
+            if (this.lazyNotCommonHeaders != null)
+            {
+                foreach (string key in this.lazyNotCommonHeaders.Keys)
+                {
+                    yield return key;
+                }
+            }
+        }
+
+        public NameValueCollection ToNameValueCollection()
+        {
+            // Note: See comment on line 34 of this file for the implementation. We need to respect current contracts
+            // for Backend Gateway.
+            if (this.nameValueCollection == null)
+            {
+                lock (this)
+                {
+                    if (this.nameValueCollection == null)
+                    {
+                        this.nameValueCollection = new NameValueCollection(this.Count(), StoreResponseNameValueCollection.DefaultStringComparer);
+
+ <#      foreach ((string name, string value) in headerNames) { #>
+<#          string propertyName = name.Split('.').Last(); #>
+                        if (this.<#= propertyName #> != null)
+                        {
+                            this.nameValueCollection.Add(<#= name #>, this.<#= propertyName #>);
+                        }
+<#      } #>
+                        if(this.lazyNotCommonHeaders != null)
+                        {
+                            foreach (KeyValuePair<string, string> keyValuePair in this.lazyNotCommonHeaders)
+                            {
+                                this.nameValueCollection.Add(keyValuePair.Key, keyValuePair.Value);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return this.nameValueCollection;
+        }
+
+        public void Remove(string key)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            this.UpdateHelper(
+                key: key,
+                value: null,
+                throwIfAlreadyExists: false);
+        }
+
+        public string Get(string key)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            switch (key.Length)
+            {
+<#      IEnumerable<IGrouping<int, (string name, string value)>> getGroupByLength = headerNames.GroupBy(x => x.value.Length).OrderBy(x => x.Key);
+        foreach(IGrouping<int, (string name, string value)> group in getGroupByLength) { #>
+                case <#= group.Key #>:
+<#
+        if(group.Count() > 1)
+        {
+            foreach((string name, string value) in group) { #>
+                    if (object.ReferenceEquals(<#= name #>, key))
+                    {
+                        return this.<#= name.Split('.').Last() #>;
+                    }
+<#          } #>
+<#      } #>
+<#      foreach((string name, string value) in group) { #>
+                    if (string.Equals(<#= name #>, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.<#= name.Split('.').Last() #>;
+                    }
+
+<#      } #>
+                    break;
+<#     } #>
+                default:
+                    break;
+            }
+
+            if (this.lazyNotCommonHeaders?.TryGetValue(key, out string value) ?? false)
+            {
+                return value;
+            }
+
+            return null;
+        }
+
+        public void Add(string key, string value)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            this.UpdateHelper(
+                key: key,
+                value: value,
+                throwIfAlreadyExists: true);
+        }
+
+        public void Set(string key, string value)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
+            this.UpdateHelper(
+                key: key,
+                value: value,
+                throwIfAlreadyExists: false);
+        }
+
+        public void UpdateHelper(
+            string key,
+            string value,
+            bool throwIfAlreadyExists)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            switch (key.Length)
+            {
+<#      IEnumerable<IGrouping<int, (string name, string value)>> groupByLength = headerNames.GroupBy(x => x.value.Length).OrderBy(x => x.Key);
+        foreach(IGrouping<int, (string name, string value)> group in groupByLength) { #>
+                case <#= group.Key #>:
+<#
+        if(group.Count() > 1)
+        {
+            foreach((string name, string value) in group) { #>
+                    if (object.ReferenceEquals(<#= name #>, key))
+                    {
+                        if (throwIfAlreadyExists && this.<#= name.Split('.').Last() #> != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.<#= name.Split('.').Last() #> = value;
+                        return;
+                    }
+<#          } #>
+<#      } #>
+<#      foreach((string name, string value) in group) { #>
+                    if (string.Equals(<#= name #>, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.<#= name.Split('.').Last() #> != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.<#= name.Split('.').Last() #> = value;
+                        return;
+                    }
+<#      } #>
+                    break;
+<#      } #>
+                default:
+                    break;
+            }
+
+            if (throwIfAlreadyExists)
+            {
+                this.GetOrCreateLazyHeaders().Add(key, value);
+            }
+            else
+            {
+                if (value == null)
+                {
+                    // don't create lazyNotCommonHeaders if it doesn't already exist
+
+                    if (this.lazyNotCommonHeaders != null)
+                    {
+                        this.lazyNotCommonHeaders.Remove(key);
+                    }
+                }
+                else
+                {
+                    this.GetOrCreateLazyHeaders()[key] = value;
+                }
+            }
+        }
+
+        private Dictionary<string, string> GetOrCreateLazyHeaders()
+        {
+            Dictionary<string, string> lazyHeaders = this.lazyNotCommonHeaders;
+
+            if (lazyHeaders == null)
+            {
+               // risk over allocating, but everyone will get the same dictionary in the end
+               Dictionary<string, string> newDict = new Dictionary<string, string>(StoreResponseNameValueCollection.DefaultStringComparer);
+               
+               // Either swap newDict in (getting back the old null) or obtain the Dictionary some other thread swapped in
+               // (and then we drop newDict on the floor).
+               lazyHeaders = Interlocked.CompareExchange(ref this.lazyNotCommonHeaders, newDict, null) ?? newDict;
+            }
+
+            return lazyHeaders;
+        }
+    }
+}

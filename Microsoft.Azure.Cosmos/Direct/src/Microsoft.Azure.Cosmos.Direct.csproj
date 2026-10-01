@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Staged source import only. SDK consumers still use the original Direct package. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Microsoft.Azure.Cosmos.Direct</AssemblyName>
+    <RootNamespace>Microsoft.Azure.Documents</RootNamespace>
+    <Version>$(DirectVersion)</Version>
+    <AssemblyVersion>$(DirectVersion).0</AssemblyVersion>
+    <FileVersion>$(DirectVersion)</FileVersion>
+    <InformationalVersion>$(DirectVersion)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Company>Microsoft Corporation</Company>
+    <Product>Microsoft(R) Azure Cosmos</Product>
+    <Copyright>Copyright (c) Microsoft Corporation. All rights reserved.</Copyright>
+    <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <DebugType>portable</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ShippingScope>External</ShippingScope>
+    <SigningType>Product</SigningType>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+    <DefineConstants>TRACE;NETSTANDARD20;DOCDBCLIENT;COSMOSCLIENT;CODE_ANALYSIS;NETSTANDARD2_0;DelaySignKeys;AssemblyInfo_PublicKeyRefOnly</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" NoWarn="NU1903" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="6.0.1" />
+    <PackageReference Include="System.Memory" Version="4.5.5" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
+  </ItemGroup>
+
+  <Target Name="RejectIncompleteDirectImport" BeforeTargets="PrepareForBuild">
+    <Error Text="This Direct project is an incomplete, unreferenced source import. Import the remaining sources, resources, and assembly metadata before enabling its build. SDK consumers must continue using the original Direct package." />
+  </Target>
+</Project>
