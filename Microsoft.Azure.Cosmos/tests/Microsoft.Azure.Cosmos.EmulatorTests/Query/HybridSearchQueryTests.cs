@@ -17,8 +17,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     public sealed class HybridSearchQueryTests : QueryTestsBase
     {
         private const string CollectionDataPath = "Documents\\text-3properties-1536dimensions-100documents.json";
-        private const int OrdinalRrfDocumentCount = 1000;
-        private const int OrdinalRrfLexicalMatchIndex = 49;
+        private const int RrfDocumentCount = 1000;
+        private const int RrfLexicalMatchIndex = 49;
         private const int CompetitionRrfLexicalMatchRank = 47;
         private const int OrdinalRrfLexicalMatchRank = 1;
 
@@ -333,12 +333,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         public async Task HybridSearchRrfRankingModesProduceExpectedRanks()
         {
             // One document matches the full-text terms while the other 999 receive the same lexical score.
-            // Unique vector distances make changes in the tied documents' ordinal ranks observable in the fused order.
-            IEnumerable<string> documents = Enumerable.Range(0, OrdinalRrfDocumentCount)
+            // Unique vector distances make changes in the tied documents' ordinal ranks observable.
+            IEnumerable<string> documents = Enumerable.Range(0, RrfDocumentCount)
                 .Select(index => $@"{{
                     ""id"": ""{index}"",
                     ""index"": {index},
-                    ""text"": ""{(index == OrdinalRrfLexicalMatchIndex ? "unique target" : "nonmatch")}"",
+                    ""text"": ""{(index == RrfLexicalMatchIndex ? "unique target" : "nonmatch")}"",
                     ""vector"": [{index}, 0]
                 }}");
 
@@ -380,10 +380,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     "Competition and ordinal ranking returned the same order.");
                 Assert.AreEqual(
                     CompetitionRrfLexicalMatchRank,
-                    Array.IndexOf(firstCompetitionOrder, OrdinalRrfLexicalMatchIndex) + 1);
+                    Array.IndexOf(firstCompetitionOrder, RrfLexicalMatchIndex) + 1);
                 Assert.AreEqual(
                     OrdinalRrfLexicalMatchRank,
-                    Array.IndexOf(ordinalOrder, OrdinalRrfLexicalMatchIndex) + 1);
+                    Array.IndexOf(ordinalOrder, RrfLexicalMatchIndex) + 1);
             }
             finally
             {
