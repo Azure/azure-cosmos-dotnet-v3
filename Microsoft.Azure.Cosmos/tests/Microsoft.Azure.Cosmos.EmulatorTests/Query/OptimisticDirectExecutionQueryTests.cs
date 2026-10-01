@@ -9,6 +9,7 @@
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -22,6 +23,7 @@
         private const string NullField = "nullField";
         private const string TextField = "text";
         private const string VectorField = "vector";
+        private const double RrfConstant = 60;
 
         private const string ClientDisableOptimisticDirectExecution = "clientDisableOptimisticDirectExecution";
 
@@ -500,33 +502,9 @@
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.Specialized),
 
-                CreateInput(
-                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
-                    expectedResult: new List<int>{ 1, 2, 3, 5, 6, 7, 8 },
-                    partitionKey: null,
-                    enableOptimisticDirectExecution: false,
-                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized,
-                    ignoreResultOrder: true),
-                CreateInput(
-                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
-                    expectedResult: new List<int>{ 1, 2, 3 },
-                    partitionKey: PartitionKey1,
-                    enableOptimisticDirectExecution: false,
-                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized,
-                    ignoreResultOrder: true),
-                CreateInput(
-                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
-                    expectedResult: new List<int>{ 5, 6, 7, 8 },
-                    partitionKey: PartitionKey2,
-                    enableOptimisticDirectExecution: false,
-                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized,
-                    ignoreResultOrder: true),
             };
 
-            static Task RunTestsAsync(
+            async Task RunTestsAsync(
                 CosmosClient cosmosClient,
                 Container container,
                 IReadOnlyList<DirectExecutionTestCase> testCases)
@@ -537,9 +515,36 @@
                 DatabaseInternal databaseInternal = containerInternal.Database as DatabaseInternal;
                 Assert.IsNotNull(databaseInternal, "Database should be of type DatabaseInternal for direct execution tests.");
 
+                AccountProperties account = await this.Client.ReadAccountAsync();
+                IDictionary<string, object> queryEngineConfiguration = new Dictionary<string, object>(account.QueryEngineConfiguration)
+                {
+                    ["queryEnableFullTextPreviewFeatures"] = true,
+                };
+                QueryPartitionProvider provider = await this.Client.DocumentClient.QueryPartitionProvider;
+                provider.Update(queryEngineConfiguration);
+                QueryPartitionProvider testClientProvider = await cosmosClient.DocumentClient.QueryPartitionProvider;
+                testClientProvider.Update(queryEngineConfiguration);
+
                 MockCosmosQueryClient cosmosQueryClient = new MockCosmosQueryClient(cosmosClient.ClientContext, containerInternal, forceQueryPlanGatewayElseServiceInterop: true);
                 ContainerInlineCore containerInlineCore = new ContainerInlineCore(cosmosClient.ClientContext, databaseInternal, containerInternal.Id, cosmosQueryClient);
-                return RunTests(testCases, containerInlineCore, QueryDrainingMode.HoldState);
+
+                List<DirectExecutionTestCase> testCasesWithRrf = testCases.ToList();
+                const string rrfQuery = $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))";
+                foreach (PartitionKey? partitionKey in new PartitionKey?[] { null, PartitionKey1, PartitionKey2 })
+                {
+                    IReadOnlyList<int> expectedResult = await GetExpectedOrdinalRrfOrderAsync(
+                        container,
+                        partitionKey);
+                    testCasesWithRrf.Add(CreateInput(
+                        query: rrfQuery,
+                        expectedResult: expectedResult,
+                        partitionKey: partitionKey,
+                        enableOptimisticDirectExecution: false,
+                        pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                        expectedPipelineType: TestInjections.PipelineType.Specialized));
+                }
+
+                await RunTests(testCasesWithRrf, containerInlineCore, QueryDrainingMode.HoldState);
             }
 
             foreach (ConnectionMode connectionMode in new[] { ConnectionMode.Gateway, ConnectionMode.Direct} )
@@ -892,9 +897,7 @@
 
                     int[] actual = items.Cast<CosmosNumber>().Select(x => (int)Number64.ToLong(x.Value)).ToArray();
 
-                    bool resultsMatched = testCase.IgnoreResultOrder
-                        ? testCase.ExpectedResult.OrderBy(number => number).SequenceEqual(actual.OrderBy(number => number))
-                        : testCase.ExpectedResult.SequenceEqual(actual);
+                    bool resultsMatched = testCase.ExpectedResult.SequenceEqual(actual);
                     bool pipelineTypeMatched = testCase.ExpectedPipelineType == feedOptions.TestSettings.Stats.PipelineType.Value;
                     if(!resultsMatched || !pipelineTypeMatched)
                     {
@@ -952,23 +955,90 @@
             return documents;
         }
 
+        private static async Task<IReadOnlyList<int>> GetExpectedOrdinalRrfOrderAsync(
+            Container container,
+            PartitionKey? partitionKey)
+        {
+            // FullTextScore projection requires ORDER BY RANK. The returned order is ignored below;
+            // the expectation is independently calculated from the projected scores and _rid values.
+            const string componentScoresQuery = $@"
+                SELECT
+                    r.{NumberField} AS Number,
+                    r._rid AS Rid,
+                    FullTextScore(r.{TextField}, 'paws') AS PawsScore,
+                    FullTextScore(r.{TextField}, 'fur') AS FurScore,
+                    FullTextScore(r.{TextField}, 'dogs') AS DogsScore,
+                    FullTextScore(r.{TextField}, 'bears') AS BearsScore
+                FROM r
+                WHERE NOT FullTextContains(r.{TextField}, 'elephants')
+                ORDER BY RANK RRF(
+                    FullTextScore(r.{TextField}, 'paws'),
+                    FullTextScore(r.{TextField}, 'fur'),
+                    FullTextScore(r.{TextField}, 'dogs'),
+                    FullTextScore(r.{TextField}, 'bears'))";
+
+            QueryRequestOptions requestOptions = new QueryRequestOptions
+            {
+                PartitionKey = partitionKey,
+            };
+
+            List<RrfComponentScores> componentScores = await RunQueryCombinationsAsync<RrfComponentScores>(
+                container,
+                componentScoresQuery,
+                requestOptions,
+                QueryDrainingMode.HoldState);
+
+            Dictionary<int, int> pawsRanks = GetOrdinalRanks(componentScores, scores => scores.PawsScore);
+            Dictionary<int, int> furRanks = GetOrdinalRanks(componentScores, scores => scores.FurScore);
+            Dictionary<int, int> dogsRanks = GetOrdinalRanks(componentScores, scores => scores.DogsScore);
+            Dictionary<int, int> bearsRanks = GetOrdinalRanks(componentScores, scores => scores.BearsScore);
+
+            return componentScores
+                .OrderByDescending(scores =>
+                    (1 / (RrfConstant + pawsRanks[scores.Number])) +
+                    (1 / (RrfConstant + furRanks[scores.Number])) +
+                    (1 / (RrfConstant + dogsRanks[scores.Number])) +
+                    (1 / (RrfConstant + bearsRanks[scores.Number])))
+                .ThenBy(scores => scores.Rid, StringComparer.Ordinal)
+                .Select(scores => scores.Number)
+                .ToList();
+        }
+
+        private static Dictionary<int, int> GetOrdinalRanks(
+            IEnumerable<RrfComponentScores> componentScores,
+            Func<RrfComponentScores, double> scoreSelector)
+        {
+            return componentScores
+                .OrderByDescending(scoreSelector)
+                .ThenBy(scores => scores.Rid, StringComparer.Ordinal)
+                .Select((scores, index) => (scores.Number, Rank: index + 1))
+                .ToDictionary(entry => entry.Number, entry => entry.Rank);
+        }
+
         private static DirectExecutionTestCase CreateInput(
             string query,
             IReadOnlyList<int> expectedResult,
             PartitionKey? partitionKey,
             bool? enableOptimisticDirectExecution,
             int[] pageSizeOptions,
-            TestInjections.PipelineType expectedPipelineType,
-            bool ignoreResultOrder = false)
+            TestInjections.PipelineType expectedPipelineType)
         {
-            return new DirectExecutionTestCase(
-                query,
-                expectedResult,
-                partitionKey,
-                enableOptimisticDirectExecution,
-                pageSizeOptions,
-                expectedPipelineType,
-                ignoreResultOrder);
+            return new DirectExecutionTestCase(query, expectedResult, partitionKey, enableOptimisticDirectExecution, pageSizeOptions, expectedPipelineType);
+        }
+
+        private sealed class RrfComponentScores
+        {
+            public int Number { get; set; }
+
+            public string Rid { get; set; }
+
+            public double PawsScore { get; set; }
+
+            public double FurScore { get; set; }
+
+            public double DogsScore { get; set; }
+
+            public double BearsScore { get; set; }
         }
 
         private readonly struct DirectExecutionTestCase
@@ -979,7 +1049,6 @@
             public bool? EnableOptimisticDirectExecution { get; }
             public int[] PageSizeOptions { get; }
             public TestInjections.PipelineType ExpectedPipelineType { get; }
-            public bool IgnoreResultOrder { get; }
 
             public DirectExecutionTestCase(
                 string query,
@@ -987,8 +1056,7 @@
                 PartitionKey? partitionKey,
                 bool? enableOptimisticDirectExecution,
                 int[] pageSizeOptions,
-                TestInjections.PipelineType expectedPipelineType,
-                bool ignoreResultOrder)
+                TestInjections.PipelineType expectedPipelineType)
             {
                 this.Query = query;
                 this.ExpectedResult = expectedResult;
@@ -996,7 +1064,6 @@
                 this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
                 this.PageSizeOptions = pageSizeOptions;
                 this.ExpectedPipelineType = expectedPipelineType;
-                this.IgnoreResultOrder = ignoreResultOrder;
             }
 
             public override string ToString()
@@ -1006,7 +1073,6 @@
                        $"EnableOptimisticDirectExecution: {this.EnableOptimisticDirectExecution}\n" +
                        $"PageSizeOptions: [{string.Join(", ", this.PageSizeOptions)}]\n" +
                        $"ExpectedPipelineType: {this.ExpectedPipelineType}\n" +
-                       $"IgnoreResultOrder: {this.IgnoreResultOrder}\n" +
                        $"ExpectedResult: [{string.Join(", ", this.ExpectedResult)}]\n";
             }
         }
