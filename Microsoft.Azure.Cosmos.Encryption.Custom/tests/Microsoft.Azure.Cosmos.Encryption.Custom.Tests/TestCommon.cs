@@ -9,6 +9,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System.IO;
     using System.Linq;
     using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Encryption.Custom;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Tests;
     using Newtonsoft.Json;
 
     internal static class TestCommon
@@ -60,6 +64,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 JsonSerializer serializer = new();
                 return serializer.Deserialize<T>(reader);
             }
+        }
+
+        internal static EncryptionOptions CreateLegacyEncryptionOptions(string dekId)
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
+            return new EncryptionOptions
+            {
+                DataEncryptionKeyId = dekId,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                PathsToEncrypt = TestDoc.PathsToEncrypt,
+            };
+#pragma warning restore CS0618 // Type or member is obsolete
+        }
+
+        internal static async Task<Stream> CreateLegacyEncryptedStreamAsync(
+            TestDoc document,
+            Encryptor encryptor,
+            string dekId)
+        {
+            return await EncryptionProcessor.EncryptAsync(
+                document.ToStream(),
+                encryptor,
+                RequestOptionsOverrideHelper.Create(
+                    CreateLegacyEncryptionOptions(dekId),
+                    JsonProcessor.Newtonsoft),
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
         }
 
         internal class TestDoc

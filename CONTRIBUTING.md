@@ -101,10 +101,31 @@ When evaluating adding new tests, please search in the existing test files if th
 
 ## Changelog entry
 
-Every pull request that changes shipped behavior must add a changelog
-entry. This is the same pattern used by the Cosmos DB SDKs for Java
+Every customer-observable change relative to the last published package must
+be represented by exactly one changelog entry. The pull request normally owns
+that entry; a split or stacked series may use the linked owner exception below.
+This is the same pattern used by the Cosmos DB SDKs for Java
 (`azure-sdk-for-java/sdk/cosmos/azure-cosmos/CHANGELOG.md`) and Python
 (`azure-sdk-for-python/sdk/cosmos/azure-cosmos/CHANGELOG.md`).
+
+### Release-relative and stacked PR policy
+
+- Evaluate release-note impact against the last published version of the
+  affected package, including a published preview.
+- Do not add an entry for a defect introduced and fixed entirely within
+  unreleased code or an unreleased feature.
+- A split or stacked series may designate exactly one final integration or
+  release-metadata PR as its changelog owner. Each intermediate PR description
+  must name and link that owner and explain why the slice does not independently
+  change behavior relative to the published package.
+- The designated owner writes one polished, customer-facing package summary,
+  not a diary of the series' implementation steps and intermediate fixes.
+- An independently mergeable change to shipped behavior still needs an entry,
+  unless an ordered, linked consolidation PR explicitly includes it and will
+  merge before the release.
+- Reviewers verify the published-package baseline and declared ownership rather
+  than automatically requiring a separate entry from every implementation
+  slice.
 
 ### Where to add it
 
@@ -193,8 +214,9 @@ When reviewing a PR, check:
 2. If an entry was added: it is in the right subsection, the language
    is customer-facing, and the bullet links to the PR.
 3. If the author chose "No changelog entry required": the justification
-   is genuine (test-only, doc-only, CI-only, or pure internal refactor
-   with no customer-observable effect).
+   is genuine (test-only, doc-only, CI-only, pure internal refactor, an
+   unreleased-only implementation correction, or a named final changelog
+   owner for a split/stacked series).
 
 ### Conflicts in `### Unreleased`
 

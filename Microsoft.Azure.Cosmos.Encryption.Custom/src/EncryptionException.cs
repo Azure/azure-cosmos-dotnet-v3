@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public string DataEncryptionKeyId { get; }
 
         /// <summary>
-        /// Gets the raw encrypted content as string.
+        /// Gets the original encrypted content as a string, or an empty string when encrypted content is unavailable.
         /// </summary>
         public string EncryptedContent { get; }
 

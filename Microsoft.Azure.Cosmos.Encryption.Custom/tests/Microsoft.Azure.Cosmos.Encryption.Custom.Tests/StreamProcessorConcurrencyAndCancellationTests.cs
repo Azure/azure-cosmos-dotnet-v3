@@ -123,8 +123,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             await Task.WhenAll(tasks);
         }
 
-        [TestMethod]
-        public async Task Encrypt_Cancellation_Aborts()
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task Encrypt_Cancellation_Aborts(bool replacePlaintextEncryptionMetadata)
         {
             string large = new string('z', 50_000); // forces multiple reads with small chunk size
             var doc = new { id = Guid.NewGuid().ToString(), Large = large };
@@ -135,7 +137,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             using CancellationTokenSource cts = new();
             EncryptionOptions options = CreateEncryptionOptions(new[] { "/Large" });
             EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(options, JsonProcessor.Stream);
-            Task encryptTask = EncryptionProcessor.EncryptAsync(slow, mockEncryptor.Object, requestOptions, new CosmosDiagnosticsContext(), cts.Token);
+            Task encryptTask = EncryptionProcessor.EncryptAsync(
+                slow,
+                mockEncryptor.Object,
+                requestOptions,
+                new CosmosDiagnosticsContext(),
+                cts.Token,
+                replacePlaintextEncryptionMetadata);
             cts.CancelAfter(5); // cancel shortly after start
 
             try

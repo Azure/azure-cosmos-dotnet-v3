@@ -142,6 +142,55 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             Assert.IsTrue(context.DecryptionInfoList[0].PathsDecrypted.Any(p => p == "/Sensitive"));
         }
 
+        [TestMethod]
+        [DynamicData(nameof(RequiredObjectBodies))]
+        public async Task DecryptAsync_NonObjectBody_UsesStableContractException(
+            string scenario,
+            string json,
+            bool parserFailure)
+        {
+            _ = scenario;
+            NewtonsoftAdapter adapter = new (new MdeJObjectEncryptionProcessor());
+            using MemoryStream input = new (Encoding.UTF8.GetBytes(json));
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await adapter.DecryptAsync(
+                    input,
+                    mockEncryptor.Object,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None));
+
+            Assert.AreEqual("The response body must contain a JSON object.", exception.Message);
+            Assert.AreEqual(parserFailure, exception.InnerException is JsonException);
+            Assert.IsTrue(input.CanRead);
+        }
+
+        [TestMethod]
+        public async Task DecryptAsync_ParseExceptionSurvivesResetFailure()
+        {
+            IOException resetFailure = new ("simulated reset failure");
+            using AdversarialReadStream input = new (
+                asynchronousContent: Array.Empty<byte>(),
+                synchronousContent: Encoding.UTF8.GetBytes("{\"id\":"),
+                resetFailure);
+            NewtonsoftAdapter adapter = new (new MdeJObjectEncryptionProcessor());
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await adapter.DecryptAsync(
+                    input,
+                    mockEncryptor.Object,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None));
+
+            Assert.AreEqual("The response body must contain a JSON object.", exception.Message);
+            Assert.IsInstanceOfType(exception.InnerException, typeof(JsonException));
+            Assert.AreNotSame(resetFailure, exception);
+            Assert.IsTrue(input.CanRead);
+        }
+
+        public static System.Collections.Generic.IEnumerable<object[]> RequiredObjectBodies =>
+            JsonBoundaryCases.RequiredObjectBodies;
+
         private static async Task<Stream> CreateEncryptedPayloadAsync(NewtonsoftAdapter adapter)
         {
             using Stream input = TestCommon.ToStream(new { id = "1", Sensitive = "secret" });
