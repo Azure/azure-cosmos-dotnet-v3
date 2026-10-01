@@ -84,78 +84,78 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } }),
+                    new List<int>{ 2, 57, 85 }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (c.index = 2)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<List<int>>{ new List<int>{ 2 } }),
+                    new List<int>{ 2 }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<List<int>>{ new List<int>{ 2 } },
+                    new List<int>{ 2 },
                     partitionKey: new PartitionKey(2)),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } }),
+                    new List<int>{ 2, 57, 85 }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
                     ORDER BY RANK FullTextScore(c.title, 'John')
                     OFFSET 1 LIMIT 5",
-                    new List<List<int>>{ new List<int>{ 57, 85 }, new List<int>{ 85, 57 } }),
+                    new List<int>{ 57, 85 }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<List<int>>{ new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80, 77, 85, 76 } }),
+                    new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80, 77, 85, 76 }),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<List<int>>{ new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80 } }),
+                    new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80 }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))
                     OFFSET 5 LIMIT 10",
-                    new List<List<int>>{ new List<int>{ 22, 51, 75, 57, 80, 77, 85, 76 } }),
+                    new List<int>{ 22, 51, 75, 57, 80, 77, 85, 76 }),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<List<int>>{new List<int>{ 16, 2, 1, 3, 10, 20, 6, 4, 5, 12 } }),
+                    new List<int>{ 16, 2, 1, 3, 10, 20, 6, 4, 5, 12 }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))
                     OFFSET 0 LIMIT 11",
-                    new List<List<int>>{ new List<int>{ 16, 2, 1, 3, 10, 20, 6, 4, 5, 12, 54 } }),
+                    new List<int>{ 16, 2, 1, 3, 10, 20, 6, 4, 5, 12, 54 }),
                 MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), VectorDistance(c.vector, {SampleVector}))",
-                    new List<List<int>>{new List<int>{ 3, 6, 37, 24, 2, 4, 21, 29, 16, 9 } }),
+                    new List<int>{ 3, 6, 37, 24, 2, 4, 21, 29, 16, 9 }),
                 MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<List<int>>{new List<int>{ 3, 6, 37, 24, 2, 4, 21, 29, 16, 9 } }),
+                    new List<int>{ 3, 6, 37, 24, 2, 4, 21, 29, 16, 9 }),
                 MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, 'John'), VectorDistance(c.image, {SampleVector}), VectorDistance(c.backup_image, {SampleVector}), FullTextScore(c.text, 'United States'))",
-                    new List<List<int>>{new List<int>{ 3, 2, 16, 6, 4, 1, 20, 29, 37, 10 } }),
+                    new List<int>{ 3, 2, 16, 6, 4, 1, 20, 29, 37, 10 }),
             };
 
             await this.RunTests(testCases);
@@ -171,21 +171,21 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } },
+                    new List<int>{ 2, 57, 85 },
                     ValidationMode.TextOrTitle),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (c.index = 2) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<List<int>>{ new List<int>{ 2 } },
+                    new List<int>{ 2 },
                     ValidationMode.TextOrTitle),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<List<int>>{ new List<int>{ 2 } },
+                    new List<int>{ 2 },
                     ValidationMode.TextOrTitle,
                     new PartitionKey(2)),
                 MakeSanityTest(@"
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } },
+                    new List<int>{ 2, 57, 85 },
                     ValidationMode.TextOrTitle),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore
@@ -201,21 +201,21 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')
                     OFFSET 1 LIMIT 5",
-                    new List<List<int>>{ new List<int>{ 57, 85 }, new List<int>{ 85, 57 } },
+                    new List<int>{ 57, 85 },
                     ValidationMode.TextOrTitle),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<List<int>>{ new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80, 77, 85, 76 } },
+                    new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80, 77, 85, 76 },
                     ValidationMode.TextOrTitleOrUnitedStates),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<List<int>>{ new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80 } },
+                    new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80 },
                     ValidationMode.TextOrTitleOrUnitedStates),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
@@ -223,34 +223,34 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))
                     OFFSET 5 LIMIT 10",
-                    new List<List<int>>{ new List<int>{ 22, 51, 75, 57, 80, 77, 85, 76 } },
+                    new List<int>{ 22, 51, 75, 57, 80, 77, 85, 76 },
                     ValidationMode.TextOrTitleOrUnitedStates),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<List<int>>{new List<int>{ 16, 2, 1, 3, 10, 20, 6, 4, 5, 12 } }),
+                    new List<int>{ 16, 2, 1, 3, 10, 20, 6, 4, 5, 12 }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))
                     OFFSET 0 LIMIT 11",
-                    new List<List<int>>{ new List<int>{ 16, 2, 1, 3, 10, 20, 6, 4, 5, 12, 54 } }),
+                    new List<int>{ 16, 2, 1, 3, 10, 20, 6, 4, 5, 12, 54 }),
                 MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), VectorDistance(c.vector, {SampleVector}))",
-                    new List<List<int>>{new List<int>{ 3, 6, 37, 24, 2, 4, 21, 29, 16, 9 } }),
+                    new List<int>{ 3, 6, 37, 24, 2, 4, 21, 29, 16, 9 }),
                 MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<List<int>>{new List<int>{ 3, 6, 37, 24, 2, 4, 21, 29, 16, 9 } }),
+                    new List<int>{ 3, 6, 37, 24, 2, 4, 21, 29, 16, 9 }),
                 MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, 'John'), VectorDistance(c.image, {SampleVector}), VectorDistance(c.backup_image, {SampleVector}), FullTextScore(c.text, 'United States'))",
-                    new List<List<int>>{new List<int>{ 3, 2, 16, 6, 4, 1, 20, 29, 37, 10 } }),
+                    new List<int>{ 3, 2, 16, 6, 4, 1, 20, 29, 37, 10 }),
             };
 
             await this.RunTests(testCases, enableFullTextPreviewFeatures: true);
@@ -266,28 +266,28 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0) 
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [1, 1])",
-                    new List<List<int>>{ new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80, 77, 85, 76 } },
+                    new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80, 77, 85, 76 },
                     ValidationMode.TextOrTitleOrUnitedStates),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [10, 10])",
-                    new List<List<int>>{ new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80, 77, 85, 76 } },
+                    new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80, 77, 85, 76 },
                     ValidationMode.TextOrTitleOrUnitedStates),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [0.1, 0.1])",
-                    new List<List<int>>{ new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80 } },
+                    new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80 },
                     ValidationMode.TextOrTitleOrUnitedStates),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [-1, -1])",
-                    new List<List<int>>{ new List<int>{ 22, 57, 24, 85, 54, 2, 80, 49, 76, 77, 61, 75, 51 } },
+                    new List<int>{ 22, 57, 24, 85, 54, 2, 80, 49, 76, 77, 61, 75, 51 },
                     ValidationMode.TextOrTitleOrUnitedStates),
             };
 
@@ -304,25 +304,25 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [1, 1])",
-                    new List<List<int>>{ new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80, 77, 85, 76 } }),
+                    new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80, 77, 85, 76 }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [10, 10])",
-                    new List<List<int>>{ new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80, 77, 85, 76 } }),
+                    new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80, 77, 85, 76 }),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [0.1, 0.1])",
-                    new List<List<int>>{ new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80 } }),
+                    new List<int>{ 61, 54, 24, 49, 2, 22, 51, 75, 57, 80 }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [-1, -1])",
-                    new List<List<int>>{ new List<int>{ 22, 57, 24, 85, 54, 2, 80, 49, 76, 77, 61, 75, 51 } }),
+                    new List<int>{ 22, 57, 24, 85, 54, 2, 80, 49, 76, 77, 61, 75, 51 }),
             };
 
             await this.RunTests(testCases);
@@ -469,25 +469,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                     IEnumerable<int> actual = result.Select(document => document.Index);
 
-                    bool match = false;
-                    foreach (IReadOnlyList<int> expectedIndices in testCase.ExpectedIndices)
-                    {
-                        if (expectedIndices.SequenceEqual(actual))
-                        {
-                            match = true;
-                            break;
-                        }
-                    }
-
-                    if (!match)
+                    if (!testCase.ExpectedIndices.SequenceEqual(actual))
                     {
                         Trace.WriteLine($"Query: {testCase.Query}");
                         Trace.WriteLine($"Actual: {string.Join(", ", actual)}");
 
-                        string errorMessage = @"The query results did not match any of the expected results." +
-                            "Please set HybridSearchCrossPartitionQueryPipelineStage.HybridSearchDebugTraceHelpers.Enabled = true to debug." +
-                            "Usually, the failure may be due to some swaps in the results that have equal scores. You can see this in the debug output." +
-                            "The solution is to add another expected result that matches the actual results (provided the scores are in decresing order).";
+                        string errorMessage = @"The query results did not match the expected results." +
+                            "Please set HybridSearchCrossPartitionQueryPipelineStage.HybridSearchDebugTraceHelpers.Enabled = true to debug.";
                         Assert.Fail(errorMessage);
                     }
                 }
@@ -533,7 +521,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private static SanityTestCase MakeSanityTest(
             string query,
-            IReadOnlyList<IReadOnlyList<int>> expectedIndices,
+            IReadOnlyList<int> expectedIndices,
             ValidationMode validationMode = ValidationMode.None,
             PartitionKey? partitionKey = null)
         {
@@ -550,7 +538,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         {
             public string Query { get; init; }
 
-            internal IReadOnlyList<IReadOnlyList<int>> ExpectedIndices { get; init; }
+            public IReadOnlyList<int> ExpectedIndices { get; init; }
 
             public PartitionKey? PartitionKey { get; init; }
 
