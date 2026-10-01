@@ -1327,7 +1327,8 @@
                  new PartitionKeyDefinition(),
                  vectorEmbeddingPolicy: null,
                  Cosmos.GeospatialType.Geometry,
-                 false));
+                 false,
+                 Array.Empty<Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting.ISecondaryIndexMetadata>()));
         }
 
         public override Task<bool> GetClientDisableOptimisticDirectExecutionAsync()

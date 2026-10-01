@@ -630,6 +630,11 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnableAsyncCacheExceptionNoSharing { get; set; } = true;
 
         /// <summary>
+        /// When enabled, eligible queries can use a secondary index to reduce source-container fan-out.
+        /// </summary>
+        internal bool EnableSecondaryIndexLookupRouting { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets the boolean flag to skip converting a text stream to binary and vice versa. When enabled, the request and response stream
         /// would not be converted to the desired target serialization type and will act just like a pass through. This client option will
         /// remain internal only since the consumer of this flag will be the internal components of the cosmos db ecosystem.
