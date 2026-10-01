@@ -12,7 +12,8 @@
 #   discovered when the manually-triggered release pipeline is run.
 #
 # Set IncludeIntegration=true (release pipeline only) to also run the live
-# multi-region integration tests, which require MultiRegionConnectionString.
+# multi-region and ThinClient integration tests, which require
+# MultiRegionConnectionString and ThinClientConnectionString.
 
 parameters:
   BuildConfiguration: ''
@@ -20,6 +21,7 @@ parameters:
   VmImage: ''
   IncludeIntegration: false
   MultiRegionConnectionString: ''
+  ThinClientConnectionString: ''
   UnitTestFilter: ' --filter "FullyQualifiedName~FaultInjectionUnitTests|FullyQualifiedName~FaultInjectionBuilderValidationTests" --verbosity normal '
 
 jobs:
@@ -122,9 +124,24 @@ jobs:
       inputs:
         command: test
         projects: 'Microsoft.Azure.Cosmos/FaultInjection/tests/*.csproj'
-        arguments: --verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=Windows
+        arguments: '--verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=Windows --filter "TestCategory!=ThinClientProxy"'
         nugetConfigPath: NuGet.config
         publishTestResults: true
         testRunTitle: FaultInjectionTests
       env:
         COSMOSDB_MULTI_REGION: ${{ parameters.MultiRegionConnectionString }} # Real Account Connection String used by Integration Tests while running as part of release pipeline
+        AZURE_COSMOS_THIN_CLIENT_ENABLED: 'False'
+
+    - task: DotNetCoreCLI@2
+      displayName: ThinClient Integration Test With Fault Injection
+      condition: succeededOrFailed()
+      inputs:
+        command: test
+        projects: 'Microsoft.Azure.Cosmos/FaultInjection/tests/*.csproj'
+        arguments: '--verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=Windows --filter "TestCategory=ThinClientProxy"'
+        nugetConfigPath: NuGet.config
+        publishTestResults: true
+        testRunTitle: FaultInjectionProxyTests
+      env:
+        COSMOSDB_THIN_CLIENT: ${{ parameters.ThinClientConnectionString }}
+        AZURE_COSMOS_THIN_CLIENT_ENABLED: 'True'

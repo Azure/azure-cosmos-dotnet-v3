@@ -67,17 +67,13 @@ namespace Microsoft.Azure.Cosmos
                 clientCollectionCache,
                 cancellationToken))
             {
-                if (this.chaosInterceptor != null)
+                if (this.chaosInterceptor != null
+                    && responseMessage.RequestMessage is HttpRequestMessage requestMessage
+                    && requestMessage.Properties.TryGetValue(CosmosHttpClientCore.FaultInjectionResponse, out object injectedResponse)
+                    && injectedResponse is true)
                 {
-                    request.Headers.Set("FAULTINJECTION_IS_PROXY", "true");
-                    (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(request, cancellationToken);
-                    if (hasFault)
-                    {
-                        DefaultTrace.TraceInformation("Chaos interceptor injected fault for request: {0}", request);
-                        fiResponseMessage.RequestMessage = responseMessage.RequestMessage;
-                        request.Headers.Remove("FAULTINJECTION_IS_PROXY");
-                        return await ThinClientStoreClient.ParseResponseAsync(fiResponseMessage, request.SerializerSettings ?? base.SerializerSettings, request);
-                    }
+                    // Synthetic responses are already HTTP responses, not binary proxy envelopes.
+                    return await ThinClientStoreClient.ParseResponseAsync(responseMessage, request.SerializerSettings ?? base.SerializerSettings, request);
                 }
 
                 HttpResponseMessage proxyResponse = await ThinClientTransportSerializer.ConvertProxyResponseAsync(responseMessage);
@@ -165,6 +161,12 @@ namespace Microsoft.Azure.Cosmos
 
                 requestMessage.RequestUri = thinClientEndpoint;
                 requestMessage.Method = HttpMethod.Post;
+
+                if (this.chaosInterceptor != null)
+                {
+                    // Keep interception context out of the serialized request and wire headers.
+                    requestMessage.Properties[CosmosHttpClientCore.FaultInjectionIsProxy] = true;
+                }
 
                 return requestMessage;
             }
