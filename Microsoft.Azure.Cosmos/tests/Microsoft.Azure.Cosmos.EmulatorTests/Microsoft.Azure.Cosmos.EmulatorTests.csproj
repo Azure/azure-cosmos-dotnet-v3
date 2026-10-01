@@ -1,16 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <IsTestProject>true</IsTestProject>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Platform>AnyCPU</Platform>
-    <TargetFramework>net6.0</TargetFramework>
-    <IsPackable>false</IsPackable>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
-    <AssemblyName>Microsoft.Azure.Cosmos.EmulatorTests</AssemblyName>
-    <IsEmulatorTest>true</IsEmulatorTest>
-    <EmulatorFlavor>master</EmulatorFlavor>
-    <DisableCopyEmulator>True</DisableCopyEmulator>
+	<IsTestProject>true</IsTestProject>
+	<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+	<Platform>AnyCPU</Platform>
+	<TargetFramework>net6.0</TargetFramework>
+	<IsPackable>false</IsPackable>
+	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	<RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
+	<AssemblyName>Microsoft.Azure.Cosmos.EmulatorTests</AssemblyName>
+	<IsEmulatorTest>true</IsEmulatorTest>
+	<EmulatorFlavor>master</EmulatorFlavor>
+	<DisableCopyEmulator>True</DisableCopyEmulator>
 	<LangVersion>$(LangVersion)</LangVersion>
   </PropertyGroup>
 
@@ -420,5 +420,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <PlatformTarget>x64</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);PREVIEW</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DefineConstants>$(DefineConstants);PREVIEW</DefineConstants>
   </PropertyGroup>
 </Project>
