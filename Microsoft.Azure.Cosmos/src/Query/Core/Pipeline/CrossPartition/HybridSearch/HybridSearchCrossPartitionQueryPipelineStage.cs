@@ -40,6 +40,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private readonly int maxConcurrency;
 
+        private readonly bool isHybridSearchCompetitionRankingEnabled;
+
         private readonly HybridSearchComponentPipelineFactory pipelineFactory;
 
         private readonly IQueryPipelineStage globalStatisticsPipeline;
@@ -69,6 +71,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             HybridSearchComponentPipelineFactory pipelineFactory,
             int pageSize,
             int maxConcurrency,
+            bool isHybridSearchCompetitionRankingEnabled,
             State state,
             IQueryPipelineStage globalStatisticsPipeline,
             IReadOnlyList<IQueryPipelineStage> queryPipelineStages)
@@ -77,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             this.pipelineFactory = pipelineFactory ?? throw new ArgumentNullException(nameof(pipelineFactory));
             this.pageSize = pageSize;
             this.maxConcurrency = maxConcurrency;
+            this.isHybridSearchCompetitionRankingEnabled = isHybridSearchCompetitionRankingEnabled;
             this.state = state;
             this.globalStatisticsPipeline = globalStatisticsPipeline;
             this.queryPipelineStages = queryPipelineStages;
@@ -93,7 +97,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             int maxItemCount,
             bool isContinuationExpected,
             int maxConcurrency,
-            Cosmos.FullTextScoreScope fullTextScoreScope)
+            Cosmos.FullTextScoreScope fullTextScoreScope,
+            bool isHybridSearchCompetitionRankingEnabled)
         {
             TryCatch<IQueryPipelineStage> ComponentPipelineFactory(QueryInfo rewrittenQueryInfo)
             {
@@ -177,6 +182,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     ComponentPipelineFactory,
                     pageSize,
                     maxConcurrency,
+                    isHybridSearchCompetitionRankingEnabled,
                     state,
                     globalStatisticsPipeline,
                     queryPipelineStages));
@@ -259,6 +265,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 this.queryPipelineStages,
                 componentWeights,
                 this.maxConcurrency,
+                this.isHybridSearchCompetitionRankingEnabled,
                 trace,
                 cancellationToken);
             if (tryCollateSortedPipelineStageResults.Failed)
@@ -428,6 +435,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             IReadOnlyList<IQueryPipelineStage> queryPipelineStages,
             IReadOnlyList<ComponentWeight> componentWeights,
             int maxConcurrency,
+            bool isHybridSearchCompetitionRankingEnabled,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -435,7 +443,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             // After sorting, each HybridSearchQueryResult has a fixed index in the list
             // This index can be used as the key for the ranking array
             // Now create an array (per dimension) of tuples (score, index) and sort it by score
-            // We can use these sorted arrays to compute standard competition ranks. Identical scores get the same rank.
+            // We can use these sorted arrays to compute ordinal ranks.
             // Create an array of tuples of (RRF scores, index) for each document using the ranks
             // Use the ranks array to compute the RRF scores
             // Sort the array by RRF scores
@@ -473,16 +481,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             for (int index = 0; index < componentScores.Count; ++index)
             {
-                componentScores[index].Sort((x, y) => componentWeights[index].Comparison(x.Score, y.Score));
+                componentScores[index].Sort(componentWeights[index].Comparison);
             }
 
-            int[,] ranks = ComputeRanks(componentScores);
+            int[,] ranks = ComputeRanks(componentScores, isHybridSearchCompetitionRankingEnabled);
 
             ComputeRrfScores(ranks, componentWeights, queryResults);
 
             HybridSearchDebugTraceHelpers.TraceQueryResultsWithRanks(queryResults, ranks);
 
-            queryResults.Sort((x, y) => (-1) * x.Score.CompareTo(y.Score)); // higher scores are better
+            queryResults.Sort((x, y) =>
+            {
+                int scoreComparison = y.Score.CompareTo(x.Score); // higher scores are better
+                return scoreComparison != 0
+                    ? scoreComparison
+                    : string.CompareOrdinal(x.Rid.Value, y.Rid.Value);
+            });
 
             HybridSearchDebugTraceHelpers.TraceQueryResults(queryResults, queryPipelineStages.Count);
 
@@ -601,7 +615,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             return TryCatch<IReadOnlyList<List<ScoreTuple>>>.FromResult(componentScores);
         }
 
-        private static int[,] ComputeRanks(IReadOnlyList<List<ScoreTuple>> componentScores)
+        private static int[,] ComputeRanks(
+            IReadOnlyList<List<ScoreTuple>> componentScores,
+            bool isHybridSearchCompetitionRankingEnabled)
         {
             int[,] ranks = new int[componentScores.Count, componentScores[0].Count];
             for (int componentIndex = 0; componentIndex < componentScores.Count; ++componentIndex)
@@ -609,8 +625,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 int rank = 1; // ranks are 1 based
                 for (int index = 0; index < componentScores[componentIndex].Count; ++index)
                 {
-                    // Identical scores should have the same rank
-                    if ((index > 0) && (componentScores[componentIndex][index].Score != componentScores[componentIndex][index - 1].Score))
+                    if (!isHybridSearchCompetitionRankingEnabled ||
+                        (index > 0 && componentScores[componentIndex][index].Score != componentScores[componentIndex][index - 1].Score))
                     {
                         rank = index + 1;
                     }
@@ -765,14 +781,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         {
             public double Weight { get; }
 
-            public Comparison<double> Comparison { get; }
+            public Comparison<ScoreTuple> Comparison { get; }
 
             public ComponentWeight(double weight, SortOrder sortOrder)
             {
                 this.Weight = weight;
 
                 int comparisonFactor = (sortOrder == SortOrder.Ascending) ? 1 : -1;
-                this.Comparison = (x, y) => comparisonFactor * x.CompareTo(y);
+                this.Comparison = (x, y) =>
+                {
+                    int scoreComparison = comparisonFactor * x.Score.CompareTo(y.Score);
+                    return scoreComparison != 0 ? scoreComparison : x.Index.CompareTo(y.Index);
+                };
             }
         }
 
