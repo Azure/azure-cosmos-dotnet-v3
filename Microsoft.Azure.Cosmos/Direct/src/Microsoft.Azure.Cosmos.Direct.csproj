@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Staged source import only. SDK consumers still use the original Direct package. -->
+  <!-- Buildable foundation import only. SDK consumers still use the original Direct package. -->
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Microsoft.Azure.Cosmos.Direct</AssemblyName>
@@ -33,8 +33,4 @@
     <PackageReference Include="System.Memory" Version="4.5.5" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
   </ItemGroup>
-
-  <Target Name="RejectIncompleteDirectImport" BeforeTargets="PrepareForBuild">
-    <Error Text="This Direct project is an incomplete, unreferenced source import. Import the remaining sources, resources, and assembly metadata before enabling its build. SDK consumers must continue using the original Direct package." />
-  </Target>
 </Project>
