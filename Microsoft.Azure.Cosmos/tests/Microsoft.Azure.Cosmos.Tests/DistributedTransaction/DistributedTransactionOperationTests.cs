@@ -101,5 +101,52 @@ namespace Microsoft.Azure.Cosmos.Tests
             options.SessionToken = "0:-1#123";
             Assert.AreEqual("0:-1#123", operation.SessionToken);
         }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void CaptureRequestOptions_IsolatesValuesAndPreservesSubtype(bool typed)
+        {
+            DistributedTransactionPatchItemRequestOptions options = new DistributedTransactionPatchItemRequestOptions
+            {
+                IfMatchEtag = "match",
+                IfNoneMatchEtag = "nonmatch",
+                SessionToken = "0:-1#123",
+                FilterPredicate = "from c where c.value = 1"
+            };
+            DistributedTransactionOperation operation = typed
+                ? new DistributedTransactionOperation<object>(OperationType.Patch, 0, "db", "container", new PartitionKey("pk"), "id", new object(), options)
+                : new DistributedTransactionOperation(OperationType.Read, 0, "db", "container", new PartitionKey("pk"), "id", options);
+
+            options.IfMatchEtag = "before-capture";
+            operation.CaptureRequestOptions();
+            Assert.AreNotSame(options, operation.RequestOptions);
+            Assert.IsInstanceOfType(operation.RequestOptions, typeof(DistributedTransactionPatchItemRequestOptions));
+
+            options.IfMatchEtag = null;
+            options.IfNoneMatchEtag = null;
+            options.SessionToken = null;
+            options.FilterPredicate = null;
+
+            Assert.AreEqual("before-capture", operation.IfMatch);
+            Assert.AreEqual("nonmatch", operation.IfNoneMatch);
+            Assert.AreEqual("0:-1#123", operation.SessionToken);
+            Assert.AreEqual("from c where c.value = 1",
+                ((DistributedTransactionPatchItemRequestOptions)operation.RequestOptions).FilterPredicate);
+        }
+
+        [TestMethod]
+        public void CaptureRequestOptions_NullOptions_RemainNull()
+        {
+            DistributedTransactionOperation operation = new DistributedTransactionOperation(
+                OperationType.Read, 0, "db", "container", new PartitionKey("pk"), "id");
+
+            operation.CaptureRequestOptions();
+
+            Assert.IsNull(operation.RequestOptions);
+            Assert.IsNull(operation.IfMatch);
+            Assert.IsNull(operation.IfNoneMatch);
+            Assert.IsNull(operation.SessionToken);
+        }
     }
 }

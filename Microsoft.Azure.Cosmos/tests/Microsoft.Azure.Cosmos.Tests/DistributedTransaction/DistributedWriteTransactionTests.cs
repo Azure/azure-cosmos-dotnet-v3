@@ -1549,7 +1549,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(6)]
         [DataRow(7)]
         [DataRow(8)]
-        public async Task ExecuteTransactionAsync_ReusedOptions_ReadsValuesAtSerialization(int mutationIndex)
+        public async Task ExecuteTransactionAsync_ReusedOptions_CapturesValuesAtRequestConstruction(int mutationIndex)
         {
             TaskCompletionSource<bool> release = NewGate();
             Mock<CosmosClientContext> contextMock = this.BuildContextSetup(async callback =>

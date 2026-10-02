@@ -69,6 +69,12 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task CreateBodyStreamAsync(CancellationToken cancellationToken)
         {
+            // Capture all options before asynchronous materialization can separate their read times.
+            foreach (DistributedTransactionOperation operation in this.Operations)
+            {
+                operation.CaptureRequestOptions();
+            }
+
             foreach (DistributedTransactionOperation operation in this.Operations)
             {
                 await operation.MaterializeResourceAsync(this.serializerCore, cancellationToken);

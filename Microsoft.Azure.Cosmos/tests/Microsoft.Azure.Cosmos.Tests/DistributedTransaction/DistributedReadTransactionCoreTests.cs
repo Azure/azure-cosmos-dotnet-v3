@@ -1106,7 +1106,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task ExecuteTransactionAsync_ReusedOptions_ReadsValuesAtSerialization()
+        public async Task ExecuteTransactionAsync_ReusedOptions_CapturesValuesAtRequestConstruction()
         {
             TaskCompletionSource<bool> release = NewGate();
             Mock<CosmosClientContext> contextMock = this.BuildContextSetup(async callback =>

@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
 
         public string DatabaseResourceId { get; internal set; }
 
-        internal DistributedTransactionRequestOptions RequestOptions { get; }
+        internal DistributedTransactionRequestOptions RequestOptions { get; private set; }
 
         internal string PartitionKeyJson { get; set; }
 
@@ -67,6 +67,11 @@ namespace Microsoft.Azure.Cosmos
         {
             get => this.body;
             set => this.body = value;
+        }
+
+        internal void CaptureRequestOptions()
+        {
+            this.RequestOptions = (DistributedTransactionRequestOptions)this.RequestOptions?.ShallowCopy();
         }
 
         internal virtual async Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
