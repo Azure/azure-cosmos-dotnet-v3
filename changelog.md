@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [6139](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6139) Query: Fixes an issue where a query whose `OFFSET`, `LIMIT`, or `TOP` value was fractional or too large for a 64-bit integer threw an unexpected `ArgumentOutOfRangeException` during client-side query parsing. These queries are now treated as parse failures.
+
 #### Other Changes
 
 ### <a name="3.64.0-preview.2"/> [3.64.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.2) - 2026-9-29

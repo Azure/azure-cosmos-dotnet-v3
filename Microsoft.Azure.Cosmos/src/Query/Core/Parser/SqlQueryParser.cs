@@ -54,7 +54,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                     return TryCatch<SqlQuery>.FromException(listener.parseException);
                 }
 
-                SqlQuery sqlQuery = (SqlQuery)CstToAstVisitor.Singleton.Visit(programContext);
+                // The grammar can accept inputs that are rejected when building the AST
+                // (e.g. an OFFSET / LIMIT / TOP literal that is not an integer or overflows Int64).
+                SqlQuery sqlQuery;
+                try
+                {
+                    sqlQuery = (SqlQuery)CstToAstVisitor.Singleton.Visit(programContext);
+                }
+                catch (Exception ex)
+                {
+                    return TryCatch<SqlQuery>.FromException(ex);
+                }
+
                 return TryCatch<SqlQuery>.FromResult(sqlQuery);
             }
 
