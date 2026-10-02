@@ -949,23 +949,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public InputParameters WithContinuationToken(CosmosElement token)
             {
                 return new InputParameters(
-                    sqlQuerySpec: this.SqlQuerySpec,
-                    initialUserContinuationToken: token,
-                    initialFeedRange: this.InitialFeedRange,
-                    maxConcurrency: this.MaxConcurrency,
-                    maxItemCount: this.MaxItemCount,
-                    maxBufferedItemCount: this.MaxBufferedItemCount,
-                    partitionKey: this.PartitionKey,
-                    properties: this.Properties,
-                    partitionedQueryExecutionInfo: this.PartitionedQueryExecutionInfo,
-                    returnResultsInDeterministicOrder: this.ReturnResultsInDeterministicOrder,
-                    enableOptimisticDirectExecution: this.EnableOptimisticDirectExecution,
-                    isHybridSearchQueryPlanOptimizationDisabled: this.IsHybridSearchQueryPlanOptimizationDisabled,
-                    isHybridSearchCompetitionRankingEnabled: this.IsHybridSearchCompetitionRankingEnabled,
-                    enableDistributedQueryGatewayMode: this.EnableDistributedQueryGatewayMode,
-                    fullTextScoreScope: this.FullTextScoreScope,
-                    testInjections: this.TestInjections,
-                    excludeRegions: this.ExcludeRegions);
+                    this.SqlQuerySpec,
+                    token,
+                    this.InitialFeedRange,
+                    this.MaxConcurrency,
+                    this.MaxItemCount,
+                    this.MaxBufferedItemCount,
+                    this.PartitionKey,
+                    this.Properties,
+                    this.PartitionedQueryExecutionInfo,
+                    this.ReturnResultsInDeterministicOrder,
+                    this.EnableOptimisticDirectExecution,
+                    this.IsHybridSearchQueryPlanOptimizationDisabled,
+                    this.IsHybridSearchCompetitionRankingEnabled,
+                    this.EnableDistributedQueryGatewayMode,
+                    this.FullTextScoreScope,
+                    this.TestInjections,
+                    this.ExcludeRegions);
             }
         }
 
