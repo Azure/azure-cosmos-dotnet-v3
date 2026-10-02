@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<int>{ 2, 57, 85 }),
+                    new int[][] { new[] { 2, 57, 85 }, new[] { 2, 85, 57 } }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
@@ -103,14 +103,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<int>{ 2, 57, 85 }),
+                    new int[][] { new[] { 2, 57, 85 }, new[] { 2, 85, 57 } }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
                     ORDER BY RANK FullTextScore(c.title, 'John')
                     OFFSET 1 LIMIT 5",
-                    new List<int>{ 57, 85 }),
+                    new int[][] { new[] { 57, 85 }, new[] { 85, 57 } }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<int>{ 2, 57, 85 },
+                    new int[][] { new[] { 2, 57, 85 }, new[] { 2, 85, 57 } },
                     ValidationMode.TextOrTitle),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<int>{ 2, 57, 85 },
+                    new int[][] { new[] { 2, 57, 85 }, new[] { 2, 85, 57 } },
                     ValidationMode.TextOrTitle),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')
                     OFFSET 1 LIMIT 5",
-                    new List<int>{ 57, 85 },
+                    new int[][] { new[] { 57, 85 }, new[] { 85, 57 } },
                     ValidationMode.TextOrTitle),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
@@ -517,7 +517,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                     IEnumerable<int> actual = result.Select(document => document.Index);
 
-                    if (!testCase.ExpectedIndices.SequenceEqual(actual))
+                    if (!testCase.ExpectedOrderings.Any(expected => expected.SequenceEqual(actual)))
                     {
                         Trace.WriteLine($"Query: {testCase.Query}");
                         Trace.WriteLine($"Actual: {string.Join(", ", actual)}");
@@ -573,10 +573,19 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             ValidationMode validationMode = ValidationMode.None,
             PartitionKey? partitionKey = null)
         {
+            return MakeSanityTest(query, new[] { expectedIndices }, validationMode, partitionKey);
+        }
+
+        private static SanityTestCase MakeSanityTest(
+            string query,
+            IReadOnlyList<IReadOnlyList<int>> expectedOrderings,
+            ValidationMode validationMode = ValidationMode.None,
+            PartitionKey? partitionKey = null)
+        {
             return new SanityTestCase
             {
                 Query = query,
-                ExpectedIndices = expectedIndices,
+                ExpectedOrderings = expectedOrderings,
                 ValidationMode = validationMode,
                 PartitionKey = partitionKey,
             };
@@ -586,7 +595,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         {
             public string Query { get; init; }
 
-            public IReadOnlyList<int> ExpectedIndices { get; init; }
+            public IReadOnlyList<IReadOnlyList<int>> ExpectedOrderings { get; init; }
 
             public PartitionKey? PartitionKey { get; init; }
 
