@@ -522,6 +522,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.ParameterDefinitions.Add(binding);
         }
 
+        public bool Remove(Binding binding)
+        {
+            return this.ParameterDefinitions.Remove(binding);
+        }
+
         public IEnumerable<Binding> GetBindings()
         {
             return this.ParameterDefinitions;
