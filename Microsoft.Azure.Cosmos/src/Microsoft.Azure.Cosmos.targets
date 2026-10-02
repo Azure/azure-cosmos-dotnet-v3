@@ -31,22 +31,23 @@ Copyright (C) Microsoft Corporation. All rights reserved.
       <TargetPath>Microsoft.Azure.Cosmos.ServiceInterop.dll</TargetPath>
       <Visible>False</Visible>
     </ContentWithTargetPath>
-    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Cosmos.CRTCompat.dll">
+    <!-- The source-built Direct payload is statically linked; legacy package-mode payloads also contain these CRT DLLs. -->
+    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Cosmos.CRTCompat.dll" Condition="Exists('$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Cosmos.CRTCompat.dll')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>Cosmos.CRTCompat.dll</TargetPath>
       <Visible>False</Visible>
     </ContentWithTargetPath>
-      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\msvcp140.dll">
+      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\msvcp140.dll" Condition="Exists('$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\msvcp140.dll')">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
           <TargetPath>msvcp140.dll</TargetPath>
           <Visible>False</Visible>
       </ContentWithTargetPath>
-      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140.dll">
+      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140.dll" Condition="Exists('$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140.dll')">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
           <TargetPath>vcruntime140.dll</TargetPath>
           <Visible>False</Visible>
       </ContentWithTargetPath>
-      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140_1.dll">
+      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140_1.dll" Condition="Exists('$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140_1.dll')">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
           <TargetPath>vcruntime140_1.dll</TargetPath>
           <Visible>False</Visible>

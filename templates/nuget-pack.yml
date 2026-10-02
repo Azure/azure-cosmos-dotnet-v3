@@ -30,6 +30,12 @@ jobs:
     name: 'OneES'
 
   steps:
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0 for build and Direct input evaluation
+    inputs:
+      packageType: sdk
+      version: '8.x'
+
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.Cosmos
     inputs: 
@@ -47,6 +53,16 @@ jobs:
       projects: 'Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj'
       custom: pack
       arguments: '-v detailed -c ${{ parameters.BuildConfiguration }} --no-build ${{ parameters.Arguments }} --no-restore -o "${{ parameters.OutputPath }}"'
+
+  - task: PowerShell@2
+    displayName: Verify Direct sources and packaged native provenance
+    inputs:
+      pwsh: true
+      targetType: inline
+      script: |
+        $packages = @(Get-ChildItem -LiteralPath '${{ parameters.OutputPath }}' -Filter 'Microsoft.Azure.Cosmos.*.nupkg')
+        if ($packages.Count -ne 1) { throw "Expected exactly one SDK package, found $($packages.Count)." }
+        & .\Microsoft.Azure.Cosmos\Direct\Validate-Direct.ps1 -Configuration '${{ parameters.BuildConfiguration }}' -PackagePath $packages[0].FullName
 
   - ${{ if eq(parameters.ReleasePackage, true) }}:
     - task: DotNetCoreCLI@2
