@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 if (buffer.IsEmpty)
                 {
-                    TryCatch<TCosmosElement>.FromException(
+                    return TryCatch<TCosmosElement>.FromException(
                         new ArgumentException($"{nameof(buffer)} must not be empty."));
                 }
 
@@ -109,9 +109,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
                     unTypedCosmosElement = CosmosElement.Dispatch(jsonNavigator, jsonNavigatorNode);
                 }
-                catch (JsonParseException jpe)
+                catch (Exception ex) when (CosmosElement.Monadic.IsMalformedBufferException(ex))
                 {
-                    return TryCatch<TCosmosElement>.FromException(jpe);
+                    return TryCatch<TCosmosElement>.FromException(ex);
                 }
 
                 if (!(unTypedCosmosElement is TCosmosElement typedCosmosElement))
@@ -151,6 +151,20 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             public static TryCatch<CosmosElement> Parse(string serializedCosmosElement)
             {
                 return CosmosElement.Monadic.Parse<CosmosElement>(serializedCosmosElement);
+            }
+
+            /// <summary>
+            /// The text and binary navigators surface malformed or truncated buffers through several exception types
+            /// (e.g. corrupt binary length prefixes result in out-of-range reads), so all of them are treated as parse failures.
+            /// </summary>
+            private static bool IsMalformedBufferException(Exception ex)
+            {
+                return ex is JsonParseException
+                    || ex is ArgumentException
+                    || ex is InvalidOperationException
+                    || ex is IndexOutOfRangeException
+                    || ex is FormatException
+                    || ex is OverflowException;
             }
         }
 
@@ -241,7 +255,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 JsonNodeType.Float64 => CosmosFloat64.Create(jsonNavigator, jsonNavigatorNode),
                 JsonNodeType.Guid => CosmosGuid.Create(jsonNavigator, jsonNavigatorNode),
                 JsonNodeType.Binary => CosmosBinary.Create(jsonNavigator, jsonNavigatorNode),
-                _ => throw new ArgumentException($"Unknown {nameof(JsonNodeType)}: {jsonNodeType}")
+                // An unknown node type means the underlying buffer is malformed (e.g. a corrupt binary type marker).
+                _ => throw new JsonInvalidTokenException()
             };
         }
 
