@@ -1357,6 +1357,8 @@ namespace Microsoft.Azure.Cosmos
         public HttpResponseHeaders Headers { get; }
         public Dictionary<string, object> Latency { get; }
         public IReadOnlyList<RerankScore> RerankScores { get; }
+        public Dictionary<string, object> TokenUsage { get; }
+        [System.Obsolete("Use TokenUsage instead.")]
         public Dictionary<string, object> TokenUseage { get; }
     }
     public abstract class ServerSideCumulativeMetrics
