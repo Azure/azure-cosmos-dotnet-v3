@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsInstanceOfType(container, typeof(EncryptionContainer));
         }
 
-#if PREVIEW || SDKPROJECTREF
+#if PREVIEW
         [TestMethod]
         public async Task GetPartitionKeyRangesAsync_ForwardsFeedRangeAndCancellationToken()
         {
