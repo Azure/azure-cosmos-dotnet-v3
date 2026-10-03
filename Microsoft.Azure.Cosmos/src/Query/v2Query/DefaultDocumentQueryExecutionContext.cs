@@ -177,7 +177,8 @@ namespace Microsoft.Azure.Cosmos.Query
                                 queryPartitionProvider,
                                 routingMapProvider,
                                 rangeFromContinuationToken,
-                                suppliedTokens);
+                                suppliedTokens,
+                                cancellationToken: cancellationToken);
 
                         if (request.IsNameBased && queryRoutingInfo == null)
                         {
@@ -189,7 +190,8 @@ namespace Microsoft.Azure.Cosmos.Query
                                 queryPartitionProvider,
                                 routingMapProvider,
                                 rangeFromContinuationToken,
-                                suppliedTokens);
+                                suppliedTokens,
+                                cancellationToken: cancellationToken);
                         }
 
                         if (queryRoutingInfo == null)
@@ -253,7 +255,8 @@ namespace Microsoft.Azure.Cosmos.Query
            QueryPartitionProvider queryPartitionProvider,
            IRoutingMapProvider routingMapProvider,
            Range<string> rangeFromContinuationToken,
-           List<CompositeContinuationToken> suppliedTokens)
+           List<CompositeContinuationToken> suppliedTokens,
+           CancellationToken cancellationToken = default)
         {
             string version = request.Headers[HttpConstants.HttpHeaders.Version];
             version = string.IsNullOrEmpty(version) ? HttpConstants.Versions.CurrentVersion : version;
