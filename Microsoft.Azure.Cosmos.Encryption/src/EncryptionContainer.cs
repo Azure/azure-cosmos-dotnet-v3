@@ -777,9 +777,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 processorName,
                 onChangesDelegate);
         }
-#endif
 
-#if ENCRYPTIONPREVIEW
         public override Task<bool> IsFeedRangePartOfAsync(
             Cosmos.FeedRange x,
             Cosmos.FeedRange y,
