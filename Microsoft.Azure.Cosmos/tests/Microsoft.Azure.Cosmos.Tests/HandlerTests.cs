@@ -52,6 +52,38 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void GetHttpMethod_ReadDistributedTransaction_ReturnsPost()
+        {
+            // A DistributedReadTransaction is dispatched as OperationType.Read but carries a
+            // request body (the batch of read operations), so it must be sent as POST — not the
+            // GET that a plain Read would use. A regression to GET would drop the body.
+            Assert.AreEqual(
+                HttpMethod.Post,
+                RequestInvokerHandler.GetHttpMethod(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.Read));
+
+            // Symmetry: a DistributedWriteTransaction (CommitDistributedTransaction) is also POST.
+            Assert.AreEqual(
+                HttpMethod.Post,
+                RequestInvokerHandler.GetHttpMethod(
+                    ResourceType.DistributedTransactionBatch,
+                    OperationType.CommitDistributedTransaction));
+        }
+
+        [TestMethod]
+        public void GetHttpMethod_PlainPointRead_ReturnsGet()
+        {
+            // Negative control: a normal point read (Read + Document) must remain a GET so the
+            // DTX-specific POST classification does not leak into the regular read path.
+            Assert.AreEqual(
+                HttpMethod.Get,
+                RequestInvokerHandler.GetHttpMethod(
+                    ResourceType.Document,
+                    OperationType.Read));
+        }
+
+        [TestMethod]
         public async Task TestPreProcessingHandler()
         {
             RequestHandler preProcessHandler = new PreProcessingTestHandler();
@@ -490,16 +522,34 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestRequestThroughputBucketWithBulkExecution()
         {
+            // Regression guard for the removed handler-level guard: previously RequestInvokerHandler
+            // threw when a request-level ThroughputBucket was set while AllowBulkExecution was true.
+            // That guard fired in the wrong place - item point operations never reach the handler under
+            // bulk (they are batched and rejected earlier in BatchAsyncContainerExecutor), while everything
+            // that does reach the handler (queries, change feed, stored procs, batch, container/DB ops)
+            // was thrown incorrectly. This test drives the handler directly with bulk enabled and verifies
+            // it now sets the header to the request-level value instead of throwing.
+            int requestBucket = 1;
+
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                accountConsistencyLevel: null,
                customizeClientBuilder: builder => builder.WithBulkExecution(true));
+
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                Assert.AreEqual(requestBucket.ToString(), request.Headers[HttpConstants.HttpHeaders.ThroughputBucket]);
+                return TestHandler.ReturnSuccess();
+            });
 
             RequestInvokerHandler invoker = new RequestInvokerHandler(
                 client,
                 requestedClientConsistencyLevel: null,
                 requestedClientReadConsistencyStrategy: null,
                 requestedClientPriorityLevel: null,
-                requestedClientThroughputBucket: null);
+                requestedClientThroughputBucket: null)
+            {
+                InnerHandler = testHandler
+            };
 
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
             {
@@ -509,21 +559,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             requestMessage.OperationType = OperationType.Read;
             requestMessage.RequestOptions = new RequestOptions
             {
-                ThroughputBucket = 1
+                ThroughputBucket = requestBucket
             };
 
-            try
-            {
-                await invoker.SendAsync(requestMessage, new CancellationToken());
-                Assert.Fail();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-                Assert.AreEqual(typeof(ArgumentException), ex.GetType()) ;
-                Assert.AreEqual("ThroughputBucket cannot be set in RequestOptions when AllowBulkExecution is set to true. " +
-                    "Instead, set ThroughputBucket only in ClientOptions.", ex.Message);
-            }
+            await invoker.SendAsync(requestMessage, new CancellationToken());
         }
 
         [TestMethod]

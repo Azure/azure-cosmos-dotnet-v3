@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Utf8;
@@ -1640,6 +1641,17 @@ namespace Microsoft.Azure.Cosmos.Json
                 bool isFieldName,
                 IJsonStringDictionary jsonStringDictionary)
             {
+                // Defense in depth against stack exhaustion on attacker-supplied
+                // buffers. The StrR1-4 reference-string cases below recurse via
+                // a byte offset read from the buffer itself, and the structural
+                // Arr / Obj cases recurse per element; both are bounded by
+                // RewriteResolvedReferenceString (reference invariant) and
+                // JsonObjectState.Push (256 nesting depth) respectively, but
+                // EnsureSufficientExecutionStack converts any escape from those
+                // checks into a catchable InsufficientExecutionStackException
+                // rather than an unrecoverable StackOverflowException.
+                RuntimeHelpers.EnsureSufficientExecutionStack();
+
                 ReadOnlyMemory<byte> rawJsonValue = rootBuffer.Slice(valueOffset);
                 byte typeMarker = rawJsonValue.Span[0];
 
@@ -1698,34 +1710,30 @@ namespace Microsoft.Azure.Cosmos.Json
                             break;
 
                         case RawValueType.StrR1:
-                            this.ForceRewriteRawJsonValue(
+                            this.RewriteResolvedReferenceString(
                                 rootBuffer,
                                 JsonBinaryEncoding.GetFixedSizedValue<byte>(rawJsonValue.Slice(start: 1).Span),
-                                default,
                                 isFieldName,
                                 jsonStringDictionary);
                             break;
                         case RawValueType.StrR2:
-                            this.ForceRewriteRawJsonValue(
+                            this.RewriteResolvedReferenceString(
                                 rootBuffer,
                                 JsonBinaryEncoding.GetFixedSizedValue<ushort>(rawJsonValue.Slice(start: 1).Span),
-                                default,
                                 isFieldName,
                                 jsonStringDictionary);
                             break;
                         case RawValueType.StrR3:
-                            this.ForceRewriteRawJsonValue(
+                            this.RewriteResolvedReferenceString(
                                 rootBuffer,
                                 JsonBinaryEncoding.GetFixedSizedValue<JsonBinaryEncoding.UInt24>(rawJsonValue.Slice(start: 1).Span),
-                                default,
                                 isFieldName,
                                 jsonStringDictionary);
                             break;
                         case RawValueType.StrR4:
-                            this.ForceRewriteRawJsonValue(
+                            this.RewriteResolvedReferenceString(
                                 rootBuffer,
                                 JsonBinaryEncoding.GetFixedSizedValue<int>(rawJsonValue.Slice(start: 1).Span),
-                                default,
                                 isFieldName,
                                 jsonStringDictionary);
                             break;
@@ -1831,6 +1839,64 @@ namespace Microsoft.Azure.Cosmos.Json
                             throw new InvalidOperationException($"Unknown {nameof(RawValueType)} {rawType}.");
                     }
                 }
+            }
+
+            /// <summary>
+            /// Rewrites a reference string (StrR1/2/3/4) by validating that the
+            /// target offset is in-bounds and does not itself point at another
+            /// reference string, then delegating to
+            /// <see cref="ForceRewriteRawJsonValue"/>.
+            /// </summary>
+            /// <remarks>
+            /// The binary writer's invariant (enforced by
+            /// <see cref="FixReferenceStringOffsets"/>) is that every reference
+            /// string in a well-formed buffer points to a single non-reference
+            /// string value (StrL1/2/4, StrEncLen, StrUsr). In a
+            /// well-formed buffer the dereference is always exactly one hop deep.
+            ///
+            /// On a hostile / corrupted buffer the target byte could be another
+            /// StrR marker, which would let an attacker construct an arbitrarily
+            /// deep chain or a cycle (e.g. StrR1@a -> StrR1@b -> StrR1@a) that
+            /// would otherwise drive <see cref="ForceRewriteRawJsonValue"/> into
+            /// an unrecoverable <see cref="StackOverflowException"/>. This method
+            /// rejects reference-to-reference at the precise byte where the
+            /// malformation occurs with a catchable
+            /// <see cref="JsonInvalidTokenException"/>, which is strictly cheaper
+            /// than relying on a depth counter and handles cycles of any size.
+            ///
+            /// The unsigned bounds check also catches negative offsets (StrR4
+            /// reads a signed <c>int</c>) so the caller cannot index before the
+            /// start of the root buffer. Targets that are not string literals
+            /// (including other StrR markers) are rejected directly by this
+            /// helper, matching the writer-side invariant in
+            /// <see cref="FixReferenceStringOffsets"/>.
+            /// </remarks>
+            private void RewriteResolvedReferenceString(
+                ReadOnlyMemory<byte> rootBuffer,
+                int targetOffset,
+                bool isFieldName,
+                IJsonStringDictionary jsonStringDictionary)
+            {
+                if (!JsonBinaryEncoding.IsValidReferenceStringTarget(rootBuffer, targetOffset))
+                {
+                    // Writer invariant (see FixReferenceStringOffsets): an StrR
+                    // marker always resolves to a string literal in exactly one
+                    // hop. Anything else (another reference, an array/object
+                    // marker, a number, etc.) -- including an out-of-bounds or
+                    // negative offset -- is malformed and, left alone, would let
+                    // a hostile buffer build cycles or non-string targets that
+                    // recurse through ForceRewriteRawJsonValue. The shared
+                    // IsValidReferenceStringTarget predicate is the same gate the
+                    // binary reader uses; reject up front.
+                    throw new JsonInvalidTokenException();
+                }
+
+                this.ForceRewriteRawJsonValue(
+                    rootBuffer,
+                    targetOffset,
+                    externalArrayInfo: default,
+                    isFieldName: isFieldName,
+                    jsonStringDictionary: jsonStringDictionary);
             }
 
             private void WriteRawStringValue(RawValueType rawValueType, ReadOnlyMemory<byte> buffer, bool isFieldName, IJsonStringDictionary jsonStringDictionary)

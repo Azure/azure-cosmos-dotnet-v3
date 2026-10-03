@@ -15,6 +15,10 @@ schedules:
 variables:
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops 
   BuildConfiguration: Release
+  # Mirrors ReleaseArguments in azure-pipelines.yml. templates/build-preview.yml
+  # runs Microsoft.Azure.Cosmos.Tests on an agent with no emulator installed, so
+  # the quarantined, account-dependent tests must stay filtered out.
+  PreviewArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Ignore" --verbosity normal '
   Packaging.EnableSBOMSigning: true
   Codeql.Enabled: true
 
@@ -53,6 +57,10 @@ stages:
 # the nightly schedule so any newly-added abstract member on Container under
 # #if PREVIEW that lacks an unconditional override in EncryptionContainer is
 # caught off-PR as well.
+# IncludeEmulatorTests is false because this pipeline definition does not define
+# the EMULATORMSIURL variable (it has never run an emulator job) and the emulator
+# integration suite is already covered by the rolling pipeline, which runs it
+# 4x/weekday and 12x/weekend-day. The parity *builds* are the point here.
 - stage:
   displayName: Preview parity build
   variables:
@@ -61,5 +69,20 @@ stages:
     - template:  templates/build-preview.yml
       parameters:
         BuildConfiguration: Release
-        Arguments: ' '
+        Arguments: $(PreviewArguments)
         VmImage: $(VmImage)
+        IncludeEmulatorTests: false
+
+# Live-account AAD (Microsoft Entra ID) integration tests (TestCategory=MultiRegionAad).
+# Runs against the AAD-only live Cosmos DB account dotnet-v3-multiregion via an Azure Resource
+# Manager (Workload Identity Federation) service connection whose app-registration identity
+# (co-tenant with the account) holds the Cosmos DB data-plane role.
+- stage:
+  displayName: Live-account AAD tests
+  dependsOn: []
+  jobs:
+    - template:  templates/build-test-aad.yml
+      parameters:
+        BuildConfiguration: Release
+        AadAccountEndpoint: 'https://dotnet-v3-multiregion.documents.azure.com:443/'
+        AadServiceConnection: 'dotnet-v3-aad-ci'

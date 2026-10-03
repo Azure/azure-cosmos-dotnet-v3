@@ -1,0 +1,1 @@
+SELECT DISTINCT VALUE c.name FROM c WHERE c.id IN (SELECT VALUE t.id FROM t IN c.refs) AND udf.myFunc(c.val) = true

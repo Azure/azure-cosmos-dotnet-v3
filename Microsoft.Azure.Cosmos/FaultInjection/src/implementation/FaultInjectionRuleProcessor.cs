@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     result.GetTimes(),
                     result.GetDelay(),
                     result.GetSuppressServiceRequests(),
-                    result.GetInjectionRate(),
+                    rule.GetInjectionRate(),
                     this.applicationContext, 
                     this.globalEndpointManager,
                     result.GetHeaderOverrides()));
@@ -286,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     result.GetTimes(),
                     result.GetDelay(),
                     result.GetSuppressServiceRequests(),
-                    result.GetInjectionRate(),
+                    rule.GetInjectionRate(),
                     this.applicationContext));
         }
 

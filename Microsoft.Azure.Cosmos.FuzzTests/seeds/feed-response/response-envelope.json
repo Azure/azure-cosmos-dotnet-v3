@@ -1,0 +1,1 @@
+{"_rid":"KV5oAJkTkAQ=","Documents":[{"id":"doc1","partitionKey":"pk1","value":42},{"id":"doc2","partitionKey":"pk2","value":99}],"_count":2}

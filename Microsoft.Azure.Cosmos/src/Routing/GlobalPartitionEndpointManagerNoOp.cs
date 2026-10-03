@@ -24,7 +24,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public override bool TryAddPartitionLevelLocationOverride(
-            DocumentServiceRequest request)
+            DocumentServiceRequest request,
+            bool checkHubRegionOverrideInCache = false)
         {
             return false;
         }
@@ -70,5 +71,13 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             return false;
         }
+
+#if !INTERNAL
+        public override void TryCacheHubRegionLocationForPartition(
+            DocumentServiceRequest request)
+        {
+            // No-op: hub region caching not applicable when partition-level failover is disabled.
+        }
+#endif
     }
 }

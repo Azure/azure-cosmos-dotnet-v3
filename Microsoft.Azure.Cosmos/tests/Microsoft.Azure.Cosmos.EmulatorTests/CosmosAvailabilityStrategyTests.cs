@@ -109,6 +109,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 //Do not delete the resources (except MM Write test object), georeplication is slow and we want to reuse the resources
                 this.client?.Dispose();
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
             }
         }
 
@@ -587,10 +588,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() :new List<string>() { region1, region2 },
+                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() : new List<string>() { region1, region2 },
                 AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
-                        threshold: TimeSpan.FromMilliseconds(200),
-                        thresholdStep: TimeSpan.FromMilliseconds(50)),
+                       // Threshold is intentionally aggressive: for single-master read 404/1002,
+                       // ClientRetryPolicy.ShouldRetryOnSessionNotAvailable retries wire 2 to the
+                       // WRITE region (RetryLocationIndex = 0, RetryRequestOnPreferredLocations = false).
+                       // When the write region differs from region1 and has no fault, wire 2 succeeds
+                       // in ~50-100ms — beating any threshold >= 50ms.
+                       threshold: TimeSpan.FromMilliseconds(50),
+                       thresholdStep: TimeSpan.FromMilliseconds(20)),
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
@@ -615,7 +621,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         if (isPreferredLocationsEmpty)
                         {
-                            itemRequestOptions.ExcludeRegions = new List<string>() { "East US" };
+                            itemRequestOptions.ExcludeRegions = new List<string>() { region3 };
                         }
 
                         ItemResponse<CosmosIntegrationTestObject> ir = await container.ReadItemAsync<CosmosIntegrationTestObject>(
@@ -642,7 +648,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         if (isPreferredLocationsEmpty)
                         {
-                            requestOptions.ExcludeRegions = new List<string>() { "East US" };
+                            requestOptions.ExcludeRegions = new List<string>() { region3 };
                         }
 
                         FeedIterator<CosmosIntegrationTestObject> queryIterator = container.GetItemQueryIterator<CosmosIntegrationTestObject>(
@@ -671,7 +677,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         
                         if (isPreferredLocationsEmpty)
                         {
-                            queryRequestOptions.ExcludeRegions = new List<string>() { "East US" };
+                            queryRequestOptions.ExcludeRegions = new List<string>() { region3 };
                         }
                         
                         FeedIterator<CosmosIntegrationTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<CosmosIntegrationTestObject>(
@@ -701,7 +707,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         
                         if (isPreferredLocationsEmpty)
                         {
-                            readManyRequestOptions.ExcludeRegions = new List<string>() { "East US" };
+                            readManyRequestOptions.ExcludeRegions = new List<string>() { region3 };
                         }
 
                         FeedResponse<CosmosIntegrationTestObject> readManyResponse = await container.ReadManyItemsAsync<CosmosIntegrationTestObject>(
@@ -1375,16 +1381,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                              condition:
                                  new FaultInjectionConditionBuilder()
                                      .WithRegion(region1)
-                                     .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                                     .WithEndpoint(
-                                        new FaultInjectionEndpointBuilder(
-                                            MultiRegionSetupHelpers.dbName,
-                                            MultiRegionSetupHelpers.containerName,
-                                            feedRanges[0])
-                                        .WithIncludePrimary(true)
-                                        .WithReplicaCount(4)
-                                        .Build())
-                                    .Build(),
+                                     .WithOperationType(FaultInjectionOperationType.CreateItem)
+                                     .Build(),
                             result:
                                 FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
                                     .WithDelay(TimeSpan.FromMilliseconds(8000))
@@ -1411,6 +1409,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
 
                 sendDelay.Enable();
 
@@ -1605,6 +1605,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task AvailabilityStrategy_HedgePicksUpHubHeaderAfter_404_1002_And_403_3()
         {
             // ── Tracking counters (thread-safe for concurrent primary + hedge) ──
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
             int noHubHeaderRequestCount = 0;
             int hubHeaderRequestCount = 0;
             int return403Count = 0;

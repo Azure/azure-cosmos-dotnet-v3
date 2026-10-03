@@ -11,6 +11,24 @@
 8. After the run the results will be published to the runsummary container. 
 9. It's recommended to run the project at least 3 times per a commit to average the numbers to get a solid baseline to compare commits.
 
+## Authentication
+
+The tool supports two authentication modes:
+
+* **Account key** – pass the master key with `-k {ACCOUNT_KEY}` (or set `ACCOUNT_KEY` for the shell scripts).
+* **AAD / Microsoft Entra ID** – omit `-k` (leave `ACCOUNT_KEY` empty). The tool then authenticates
+  with [`DefaultAzureCredential`](https://learn.microsoft.com/dotnet/api/azure.identity.defaultazurecredential),
+  which on an Azure VM resolves the VM's managed identity, and locally falls back to the Azure CLI,
+  Visual Studio, environment variables, etc. Grant the identity a Cosmos DB data-plane role
+  (for example **Cosmos DB Built-in Data Contributor**) on the account.
+
+  Because a data-plane RBAC token cannot perform control-plane operations, the database and the
+  `testcol` / `runsummary` containers **must already exist** (create them via ARM / Bicep / the
+  Azure portal / the Azure CLI) when running in AAD mode. If the VM has more than one user-assigned
+  managed identity, select one with `--aadmanagedidentityclientid {CLIENT_ID}` (or the
+  `ACCOUNT_MI_CLIENT_ID` env var for the shell scripts). AAD mode supports V3 (`CosmosClient`)
+  workloads only; V2 workloads require an account key.
+
 ## Sample tool usage
 ```
 dotnet run CosmosBenchmark.csproj -e {ACCOUNT_ENDPOINT} -k {ACCOUNT_KEY}  -w {workloadtype}
@@ -45,7 +63,8 @@ git clone https://github.com/Azure/azure-cosmos-dotnet-v3.git
 # Set environment variables
 export OSSProjectRef=True
 export ACCOUNT_ENDPOINT=<ENDPOINT>
-export ACCOUNT_KEY=<KEY>
+export ACCOUNT_KEY=<KEY> # Leave empty to use AAD (managed identity) auth; see the Authentication section
+# export ACCOUNT_MI_CLIENT_ID=<CLIENT_ID> # Optional: user-assigned managed identity for AAD auth
 export RESULTS_PK="runs-summary" #For test runs use different one
 export PL=18
 
@@ -90,7 +109,8 @@ CosmosBenchmark 1.0.0
 Copyright (C) 2019 CosmosBenchmark
   -w                                Required. Workload type insert, read
   -e                                Required. Cosmos account end point
-  -k                                Required. Cosmos account master key
+  -k                                Cosmos account master key. If not provided, AAD (Microsoft Entra ID) authentication via DefaultAzureCredential is used.
+  --aadmanagedidentityclientid      User-assigned managed identity client id to use for AAD auth. Only used when no account key is provided.
   --workloadname                    Workload Name, it will override the workloadType value in published results
   --database                        Database to use
   --container                       Collection to use

@@ -384,6 +384,9 @@
     <Content Include="BaselineTest\TestBaseline\LinqGeneralBaselineTests.TestLambdaReuse.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="BaselineTest\TestBaseline\LinqDictionaryBaselineTests.TestDictionaryLinqTranslations.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Tracing\EndToEndTraceWriterBaselineTests.cs">
