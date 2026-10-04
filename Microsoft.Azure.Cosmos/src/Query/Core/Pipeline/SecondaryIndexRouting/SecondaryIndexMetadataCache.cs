@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             this.cache = new AsyncCache<string, IEnumerable<ISecondaryIndexMetadata>>(enableAsyncCacheExceptionNoSharing);
         }
 
-        public Task<IEnumerable<ISecondaryIndexMetadata>> TryGetSecondaryIndexMetadataAsync(
+        public Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
             string sourceCollectionRid,
             ITrace trace,
             bool forceRefresh = false,

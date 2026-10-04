@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Newtonsoft.Json;
     using HttpConstants = Microsoft.Azure.Documents.HttpConstants;
     using TraceLevel = Microsoft.Azure.Cosmos.Tracing.TraceLevel;
 
@@ -24,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
     internal sealed class ContainerMetadataSecondaryIndexMetadataProvider : ISecondaryIndexMetadataProvider
     {
         internal const string GlobalSecondaryIndexContainerType = "GlobalSecondaryIndex";
-        internal const string WildcardProjectionPath = "/*";
 
         private readonly DocumentClient documentClient;
 
@@ -57,7 +55,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             List<ISecondaryIndexMetadata> secondaryIndexesMetadata = new ();
             foreach (MaterializedViewProperties mvReference in mvReferences)
             {
-                cancellationToken.ThrowIfCancellationRequested();
                 ContainerProperties candidate = await collectionCache.ResolveByRidAsync(
                     HttpConstants.Versions.CurrentVersion,
                     mvReference.ResourceId,
@@ -85,16 +82,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 && string.Equals(definition.SourceContainerId, source.Id, StringComparison.Ordinal);
         }
        
-        // Query parsing logic is not exhaustive. This is intended to cover MVP scenarios, which intentionally limits possible defintion queries.
+        // Query parsing logic is temporary and not exhaustive. This is intended to cover MVP scenarios, which intentionally limits possible defintion queries.
         private static bool TryGetIncludedProperties(
-            SqlQuery query,
+            string definition,
             ContainerProperties source,
-            out IReadOnlyDictionary<string, string> includedProperties)
+            out IReadOnlyDictionary<PropertyPath, PropertyPath> includedProperties)
         {
             includedProperties = null;
-            if (query == null)
+            if (definition == null)
             {
-                throw new ArgumentNullException(nameof(query));
+                throw new ArgumentNullException(nameof(definition));
             }
 
             if (source == null)
@@ -102,19 +99,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 throw new ArgumentNullException(nameof(source));
             }
 
-            if (!TryGetRootCollectionIdentifier(query.FromClause, out string rootCollectionIdentifier))
+            if (!SqlQueryParser.TryParse(definition, out SqlQuery query)
+                || query.WhereClause != null
+                || !TryGetRootCollectionIdentifier(query.FromClause, out string rootCollectionIdentifier))
             {
                 return false;
             }
 
-            Dictionary<string, string> projections = new ();
+            Dictionary<PropertyPath, PropertyPath> projections = new ();
             switch (query.SelectClause.SelectSpec)
             {
                 case SqlSelectStarSpec:
-                    projections[WildcardProjectionPath] = WildcardProjectionPath;
+                    projections[PropertyPath.Wildcard] = PropertyPath.Wildcard;
                     foreach (string partitionKeyPath in source.PartitionKeyPaths)
                     {
-                        projections[partitionKeyPath] = partitionKeyPath;
+                        PropertyPath path = new PropertyPath(PathParser.GetPathParts(partitionKeyPath));
+                        projections[path] = path;
                     }
 
                     break;
@@ -130,14 +130,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                             return false;
                         }
 
-                        string sourcePath = ToCanonicalPath(sourcePathSegments);
+                        PropertyPath sourcePath = new PropertyPath(sourcePathSegments);
                         string projectedProperty = item.Alias?.Value ?? sourcePathSegments[sourcePathSegments.Count - 1];
                         if (projectedProperty == null)
                         {
                             return false;
                         }
 
-                        projections[sourcePath] = ToCanonicalPath(new[] { projectedProperty });
+                        projections[sourcePath] = new PropertyPath(new[] { projectedProperty });
                     }
 
                     break;
@@ -171,15 +171,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             }
 
             MaterializedViewDefinition definition = candidate.MaterializedViewDefinition;
-            if (definition.Definition == null
-                || !SqlQueryParser.TryParse(definition.Definition, out SqlQuery query)
-                || query.WhereClause != null
-                || !TryGetIncludedProperties(query, source, out IReadOnlyDictionary<string, string> includedProperties))
+            if (!TryGetIncludedProperties(definition.Definition, source, out IReadOnlyDictionary<PropertyPath, PropertyPath> includedProperties))
             {
                 return false;
             }
 
-            // MV secondaryIndexesMetadata does not expose synchronization consistency; current MV-backed indexes are Eventual.
             metadata = new SecondaryIndexMetadata(
                 candidate.Id,
                 candidate.ResourceId,
@@ -187,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 candidate.PartitionKey,
                 candidate.IndexingPolicy,
                 includedProperties,
-                ConsistencyLevel.Eventual);
+                ConsistencyLevel.Eventual); // MV secondaryIndexesMetadata does not expose consistency level. Current MV-backed indexes are Eventual.
             return true;
         }
 
@@ -250,18 +246,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 
             sourcePathSegments = segments.Skip(1).ToArray();
             return true;
-        }
-
-        private static string ToCanonicalPath(IEnumerable<string> segments)
-        {
-            return "/" + string.Join("/", segments.Select(ToCanonicalPathSegment));
-        }
-
-        private static string ToCanonicalPathSegment(string segment)
-        {
-            return segment.All(character => char.IsLetterOrDigit(character) || character == '_')
-                ? segment
-                : JsonConvert.ToString(segment);
         }
     }
 }

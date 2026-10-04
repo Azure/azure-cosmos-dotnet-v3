@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerProperties nullViews =
                 SettingsContractTests.CosmosDeserialize<ContainerProperties>(
                     @"{""id"":""source"",""materializedViews"":null}");
-            Assert.IsNull(nullViews.MaterializedViews);
+            Assert.AreEqual(0, nullViews.MaterializedViews.Count);
             Assert.IsNull(nullViews.MaterializedViewDefinition);
             Assert.IsNull(
                 JObject.Parse(SettingsContractTests.CosmosSerialize(nullViews))["materializedViews"]);
@@ -198,7 +198,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerProperties emptyViews =
                 SettingsContractTests.CosmosDeserialize<ContainerProperties>(
                     @"{""id"":""source"",""materializedViews"":[]}");
-            Assert.IsNotNull(emptyViews.MaterializedViews);
             Assert.AreEqual(0, emptyViews.MaterializedViews.Count);
             Assert.IsNull(emptyViews.MaterializedViewDefinition);
 
@@ -231,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SettingsContractTests.CosmosDeserialize<ContainerProperties>(materializedViewContainerJson);
             Cosmos.MaterializedViewDefinition definition = containerProperties.MaterializedViewDefinition;
 
-            Assert.IsNull(containerProperties.MaterializedViews);
+            Assert.AreEqual(0, containerProperties.MaterializedViews.Count);
             Assert.IsNotNull(definition);
             Assert.AreEqual("sourceRid", definition.SourceContainerResourceId);
             Assert.AreEqual("source", definition.SourceContainerId);
@@ -267,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SettingsContractTests.CosmosDeserialize<ContainerProperties>(materializedViewContainerJson);
             Cosmos.MaterializedViewDefinition definition = containerProperties.MaterializedViewDefinition;
 
-            Assert.IsNull(containerProperties.MaterializedViews);
+            Assert.AreEqual(0, containerProperties.MaterializedViews.Count);
             Assert.IsNotNull(definition);
             Assert.AreEqual("sourceRid", definition.SourceContainerResourceId);
             Assert.AreEqual("source", definition.SourceContainerId);
@@ -282,7 +281,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ContainerProperties containerProperties = new ContainerProperties("container", "/partitionKey");
 
-            Assert.IsNull(containerProperties.MaterializedViews);
+            Assert.AreEqual(0, containerProperties.MaterializedViews.Count);
             Assert.IsNull(containerProperties.MaterializedViewDefinition);
 
             JObject serialized = JObject.Parse(SettingsContractTests.CosmosSerialize(containerProperties));

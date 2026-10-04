@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         private static readonly string EligibleRid = ResourceId.NewDocumentCollectionId(42, 135).DocumentCollectionId.ToString();
 
         [TestMethod]
-        public async Task ProviderNormalizesOrdersAndDeduplicatesMetadata()
+        public async Task ProviderPreservesReferenceOrderAndDuplicates()
         {
             ContainerProperties source = CreateSource();
             source.MaterializedViews = new List<MaterializedViewProperties>
@@ -70,29 +70,24 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.AreEqual(3, context.ResolveCount);
-            Assert.AreEqual(2, metadata.Count());
+            Assert.AreEqual(3, metadata.Count());
             CollectionAssert.AreEqual(
-                new[] { GsiARid, GsiBRid }.OrderBy(rid => rid, StringComparer.Ordinal).ToArray(),
+                new[] { GsiBRid, GsiARid, GsiARid },
                 metadata.Select(candidate => candidate.Rid).ToArray());
-            ISecondaryIndexMetadata gsiA = metadata.Single(candidate => candidate.Rid == GsiARid);
+            ISecondaryIndexMetadata gsiA = metadata.ElementAt(1);
             ISecondaryIndexMetadata gsiB = metadata.Single(candidate => candidate.Rid == GsiBRid);
             Assert.AreEqual(GsiARid, gsiA.Id);
             Assert.AreEqual(SourceRid, gsiA.SourceCollectionRid);
-            Assert.AreEqual("/_id", gsiA.IncludedProperties["/id"]);
-            Assert.AreEqual("/region", gsiA.IncludedProperties["/region"]);
+            Assert.AreEqual(new PropertyPath(new[] { "_id" }), gsiA.IncludedProperties[new PropertyPath(new[] { "id" })]);
+            Assert.AreEqual(new PropertyPath(new[] { "region" }), gsiA.IncludedProperties[new PropertyPath(new[] { "region" })]);
             Assert.AreEqual(ConsistencyLevel.Eventual, gsiA.ConsistencyLevel);
-            Assert.AreEqual("/category", gsiB.IncludedProperties["/category"]);
+            Assert.AreEqual(new PropertyPath(new[] { "category" }), gsiB.IncludedProperties[new PropertyPath(new[] { "category" })]);
 
-            collections[GsiARid].PartitionKey.Paths[0] = "/changed";
-            Assert.AreEqual(
-                "/region",
-                gsiA.PartitionKey.Paths[0].ToString(),
-                "Normalized metadata must not retain mutable collection metadata references.");
-            collections[GsiARid].IndexingPolicy.IncludedPaths[0].Path = "/changed";
-            Assert.AreEqual(
-                "/*",
-                gsiA.IndexingPolicy.IncludedPaths[0].Path,
-                "Normalized metadata must not retain mutable indexing policy references.");
+            foreach (ISecondaryIndexMetadata candidate in metadata)
+            {
+                Assert.AreSame(collections[candidate.Rid].PartitionKey, candidate.PartitionKey);
+                Assert.AreSame(collections[candidate.Rid].IndexingPolicy, candidate.IndexingPolicy);
+            }
         }
 
         [TestMethod]
@@ -137,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         }
 
         [TestMethod]
-        public async Task ProviderRejectsFilteredAndNonGsiViews()
+        public async Task ProviderSkipsFilteredViewsWithoutFilteringContainerType()
         {
             ContainerProperties source = CreateSource();
             source.MaterializedViews = new List<MaterializedViewProperties>
@@ -163,6 +158,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 FilteredRid,
                 "SELECT c.id, c.region FROM c WHERE c.enabled = true",
                 "/region");
+            ContainerProperties otherType = CreateMaterializedView(
+                OtherTypeRid,
+                "SELECT c.id, c.region FROM c",
+                "/region");
+            otherType.MaterializedViewDefinition.ContainerType = "MaterializedView";
             ContainerProperties eligible = CreateMaterializedView(
                 EligibleRid,
                 "SELECT c.id, c.region FROM c",
@@ -172,35 +172,46 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 {
                     [SourceRid] = source,
                     [FilteredRid] = filtered,
+                    [OtherTypeRid] = otherType,
                     [EligibleRid] = eligible,
                 };
             using ProviderTestContext context = new ProviderTestContext(collections);
 
             IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton);
 
-            Assert.AreEqual(1, metadata.Count());
-            Assert.AreEqual(EligibleRid, metadata.ElementAt(0).Rid);
+            Assert.AreEqual(4, context.ResolveCount);
+            Assert.AreEqual(2, metadata.Count());
+            CollectionAssert.AreEqual(
+                new[] { OtherTypeRid, EligibleRid },
+                metadata.Select(candidate => candidate.Rid).ToArray());
         }
 
         #region TryGetIncludedProperties Tests
 
         [DataTestMethod]
-        [DataRow("SELECT c.id AS _id FROM c", "/id", "/_id")]
-        [DataRow("SELECT c['category'] FROM c", "/category", "/category")]
-        [DataRow("SELECT c.address.zip AS postalCode FROM c", "/address/zip", "/postalCode")]
-        [DataRow("SELECT c['address']['zip'] AS postalCode FROM c", "/address/zip", "/postalCode")]
-        [DataRow("SELECT c.address['zip'] FROM c", "/address/zip", "/zip")]
-        [DataRow("SELECT item.id FROM ROOT item", "/id", "/id")]
-        [DataRow("SELECT item.id FROM c AS item", "/id", "/id")]
+        [DataRow("SELECT c.id AS _id FROM c", new[] { "id" }, "_id")]
+        [DataRow("SELECT c['category'] FROM c", new[] { "category" }, "category")]
+        [DataRow("SELECT c.address.zip AS postalCode FROM c", new[] { "address", "zip" }, "postalCode")]
+        [DataRow("SELECT c['address']['zip'] AS postalCode FROM c", new[] { "address", "zip" }, "postalCode")]
+        [DataRow("SELECT c.address['zip'] FROM c", new[] { "address", "zip" }, "zip")]
+        [DataRow("SELECT item.id FROM ROOT item", new[] { "id" }, "id")]
+        [DataRow("SELECT item.id FROM c AS item", new[] { "id" }, "id")]
+        [DataRow("SELECT c[''] AS empty FROM c", new[] { "" }, "empty")]
+        [DataRow("SELECT c[''].zip FROM c", new[] { "", "zip" }, "zip")]
+        [DataRow("SELECT c['a.b'] FROM c", new[] { "a.b" }, "a.b")]
+        [DataRow("SELECT c['a b'] FROM c", new[] { "a b" }, "a b")]
+        [DataRow("SELECT c['a\"b'] FROM c", new[] { "a\"b" }, "a\"b")]
         public async Task TryGetIncludedPropertiesMapsPropertyPaths(
             string query,
-            string sourcePath,
-            string projectedPath)
+            string[] sourceSegments,
+            string projectedProperty)
         {
             ISecondaryIndexMetadata metadata = (await GetMetadataAsync(query)).Single();
 
             Assert.AreEqual(1, metadata.IncludedProperties.Count);
-            Assert.AreEqual(projectedPath, metadata.IncludedProperties[sourcePath]);
+            Assert.AreEqual(
+                new PropertyPath(new[] { projectedProperty }),
+                metadata.IncludedProperties[new PropertyPath(sourceSegments)]);
         }
 
         [TestMethod]
@@ -210,9 +221,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 "SELECT c.id AS _id, c.region, c.address.zip AS postalCode FROM c")).Single();
 
             Assert.AreEqual(3, metadata.IncludedProperties.Count);
-            Assert.AreEqual("/_id", metadata.IncludedProperties["/id"]);
-            Assert.AreEqual("/region", metadata.IncludedProperties["/region"]);
-            Assert.AreEqual("/postalCode", metadata.IncludedProperties["/address/zip"]);
+            Assert.AreEqual(new PropertyPath(new[] { "_id" }), metadata.IncludedProperties[new PropertyPath(new[] { "id" })]);
+            Assert.AreEqual(new PropertyPath(new[] { "region" }), metadata.IncludedProperties[new PropertyPath(new[] { "region" })]);
+            Assert.AreEqual(new PropertyPath(new[] { "postalCode" }), metadata.IncludedProperties[new PropertyPath(new[] { "address", "zip" })]);
+        }
+
+        [TestMethod]
+        public async Task TryGetIncludedPropertiesUnifiesDotAndBracketPaths()
+        {
+            ISecondaryIndexMetadata metadata = (await GetMetadataAsync(
+                "SELECT c.address.zip, c['address']['zip'] FROM c")).Single();
+
+            Assert.AreEqual(1, metadata.IncludedProperties.Count);
+            Assert.AreEqual(new PropertyPath(new[] { "zip" }), metadata.IncludedProperties[new PropertyPath(new[] { "address", "zip" })]);
         }
 
         [TestMethod]
@@ -222,8 +243,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 "SELECT c[\"a/b\"], c[\"a~1b\"] FROM c")).Single();
 
             Assert.AreEqual(2, metadata.IncludedProperties.Count);
-            Assert.AreEqual("/\"a/b\"", metadata.IncludedProperties["/\"a/b\""]);
-            Assert.AreEqual("/\"a~1b\"", metadata.IncludedProperties["/\"a~1b\""]);
+            Assert.AreEqual(new PropertyPath(new[] { "a/b" }), metadata.IncludedProperties[new PropertyPath(new[] { "a/b" })]);
+            Assert.AreEqual(new PropertyPath(new[] { "a~1b" }), metadata.IncludedProperties[new PropertyPath(new[] { "a~1b" })]);
         }
 
         [TestMethod]
@@ -233,21 +254,46 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 "SELECT c[\"a/b\"], c.a.b FROM c")).Single();
 
             Assert.AreEqual(2, metadata.IncludedProperties.Count);
-            Assert.AreEqual("/\"a/b\"", metadata.IncludedProperties["/\"a/b\""]);
-            Assert.AreEqual("/b", metadata.IncludedProperties["/a/b"]);
+            Assert.AreEqual(new PropertyPath(new[] { "a/b" }), metadata.IncludedProperties[new PropertyPath(new[] { "a/b" })]);
+            Assert.AreEqual(new PropertyPath(new[] { "b" }), metadata.IncludedProperties[new PropertyPath(new[] { "a", "b" })]);
         }
 
         [TestMethod]
-        public async Task TryGetIncludedPropertiesMapsWildcardAndPartitionKey()
+        public async Task TryGetIncludedPropertiesDistinguishesLiteralStarFromWildcard()
         {
-            ISecondaryIndexMetadata metadata = (await GetMetadataAsync("SELECT * FROM c")).Single();
+            ISecondaryIndexMetadata metadata = (await GetMetadataAsync("SELECT c['*'] FROM c")).Single();
+            PropertyPath literalStar = new PropertyPath(new[] { "*" });
 
-            Assert.AreEqual("/*", metadata.IncludedProperties["/*"]);
-            Assert.AreEqual("/tenantId", metadata.IncludedProperties["/tenantId"]);
+            Assert.AreEqual(1, metadata.IncludedProperties.Count);
+            Assert.AreEqual(literalStar, metadata.IncludedProperties[literalStar]);
+            Assert.IsFalse(metadata.IncludedProperties.ContainsKey(PropertyPath.Wildcard));
         }
 
         [DataTestMethod]
-        [DataRow(null)]
+        [DataRow("/tenantId", new[] { "tenantId" })]
+        [DataRow("/address/zip", new[] { "address", "zip" })]
+        [DataRow("/\"a/b\"", new[] { "a/b" })]
+        [DataRow("/\"\"", new[] { "" })]
+        [DataRow("/*", new[] { "*" })]
+        public async Task TryGetIncludedPropertiesMapsWildcardAndPartitionKey(string partitionKeyPath, string[] partitionKeySegments)
+        {
+            ISecondaryIndexMetadata metadata = (await GetMetadataAsync("SELECT * FROM c", partitionKeyPath)).Single();
+            PropertyPath expectedPartitionKeyPath = new PropertyPath(partitionKeySegments);
+
+            Assert.AreEqual(2, metadata.IncludedProperties.Count);
+            Assert.AreEqual(PropertyPath.Wildcard, metadata.IncludedProperties[PropertyPath.Wildcard]);
+            Assert.AreEqual(expectedPartitionKeyPath, metadata.IncludedProperties[expectedPartitionKeyPath]);
+        }
+
+        [TestMethod]
+        public async Task TryGetIncludedPropertiesThrowsForNullDefinition()
+        {
+            ArgumentNullException exception = await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => GetMetadataAsync(null));
+
+            Assert.AreEqual("definition", exception.ParamName);
+        }
+
+        [DataTestMethod]
         [DataRow("")]
         [DataRow("not a query")]
         [DataRow("SELECT VALUE c.id FROM c")]
@@ -277,9 +323,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Assert.AreEqual(expected ? 0 : 1, (await GetMetadataAsync(query)).Count());
         }
 
-        private static async Task<IEnumerable<ISecondaryIndexMetadata>> GetMetadataAsync(string query)
+        private static async Task<IEnumerable<ISecondaryIndexMetadata>> GetMetadataAsync(string query, string partitionKeyPath = "/tenantId")
         {
-            ContainerProperties source = CreateSource();
+            ContainerProperties source = CreateSource(partitionKeyPath);
             source.MaterializedViews = new List<MaterializedViewProperties>
             {
                 new MaterializedViewProperties
@@ -292,18 +338,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Dictionary<string, ContainerProperties> collections = new Dictionary<string, ContainerProperties>
             {
                 [SourceRid] = source,
-                [EligibleRid] = CreateMaterializedView(EligibleRid, query, "/tenantId"),
+                [EligibleRid] = CreateMaterializedView(EligibleRid, query, partitionKeyPath),
             };
 
             using ProviderTestContext context = new ProviderTestContext(collections);
             return await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton);
         }
 
-        private static ContainerProperties CreateSource()
+        private static ContainerProperties CreateSource(string partitionKeyPath = "/tenantId")
         {
             ContainerProperties source = ContainerProperties.CreateWithResourceId(SourceRid);
             source.Id = "source";
-            source.PartitionKey = new ContainerProperties("source", "/tenantId").PartitionKey;
+            source.PartitionKey = new ContainerProperties("source", partitionKeyPath).PartitionKey;
             return source;
         }
 

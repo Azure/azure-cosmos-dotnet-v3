@@ -28,7 +28,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         IndexingPolicy IndexingPolicy { get; }
 
         /// <summary>Gets the mapping from source paths to projected secondary index paths.</summary>
-        IReadOnlyDictionary<string, string> IncludedProperties { get; }
+        /// <remarks>
+        /// Paths contain literal segments rather than encoded strings. A wildcard projection is represented
+        /// by a mapping from <see cref="PropertyPath.Wildcard"/> to itself, not a literal "*" segment.
+        /// </remarks>
+        IReadOnlyDictionary<PropertyPath, PropertyPath> IncludedProperties { get; }
 
         /// <summary>Gets the consistency level of the secondary index.</summary>
         ConsistencyLevel ConsistencyLevel { get; }

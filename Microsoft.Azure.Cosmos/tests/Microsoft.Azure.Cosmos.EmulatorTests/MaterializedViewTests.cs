@@ -73,7 +73,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, materializedViewCreateResponse.StatusCode);
 
             ContainerResponse sourceReadResponse = await sourceCreateResponse.Container.ReadContainerAsync();
-            Assert.IsNotNull(sourceReadResponse.Resource.MaterializedViews);
             Assert.AreEqual(1, sourceReadResponse.Resource.MaterializedViews.Count);
             MaterializedViewProperties sourceMetadata = sourceReadResponse.Resource.MaterializedViews[0];
             Assert.AreEqual(materializedViewContainerId, sourceMetadata.Id);
@@ -99,8 +98,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(materializedViewCreateResponse.Resource.ResourceId, metadata.ElementAt(0).Rid);
             Assert.AreEqual(sourceCreateResponse.Resource.ResourceId, metadata.ElementAt(0).SourceCollectionRid);
             Assert.AreEqual("/pk", metadata.ElementAt(0).PartitionKey.Paths[0]);
-            Assert.AreEqual("/*", metadata.ElementAt(0).IncludedProperties["/*"]);
-            Assert.AreEqual("/pk", metadata.ElementAt(0).IncludedProperties["/pk"]);
+            Assert.AreEqual(PropertyPath.Wildcard, metadata.ElementAt(0).IncludedProperties[PropertyPath.Wildcard]);
+            PropertyPath partitionKeyPath = new PropertyPath(new[] { "pk" });
+            Assert.AreEqual(partitionKeyPath, metadata.ElementAt(0).IncludedProperties[partitionKeyPath]);
             Assert.AreEqual(ConsistencyLevel.Eventual, metadata.ElementAt(0).ConsistencyLevel);
         }
     }
