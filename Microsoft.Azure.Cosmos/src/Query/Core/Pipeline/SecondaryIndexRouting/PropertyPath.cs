@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 int hash = this.IsWildcard ? 1 : 0;
                 foreach (string segment in this.Segments)
                 {
-                    hash = (hash * 31) + StringComparer.Ordinal.GetHashCode(segment);
+                    hash = (hash * 397) ^ StringComparer.Ordinal.GetHashCode(segment);
                 }
 
                 return hash;

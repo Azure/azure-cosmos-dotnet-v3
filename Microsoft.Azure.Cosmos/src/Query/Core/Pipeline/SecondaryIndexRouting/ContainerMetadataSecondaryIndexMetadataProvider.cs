@@ -75,9 +75,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             ContainerProperties candidate,
             ContainerProperties source)
         {
-            MaterializedViewDefinition definition = candidate?.MaterializedViewDefinition;
+            if (candidate == null || source == null)
+            {
+                return false;
+            }
+
+            MaterializedViewDefinition definition = candidate.MaterializedViewDefinition;
             return definition != null
-                && source != null
                 && string.Equals(definition.SourceContainerResourceId, source.ResourceId, StringComparison.Ordinal)
                 && string.Equals(definition.SourceContainerId, source.Id, StringComparison.Ordinal);
         }
