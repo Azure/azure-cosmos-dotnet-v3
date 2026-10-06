@@ -264,6 +264,18 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 jsonWriter.WriteFieldName("ActivityId");
                 this.WriteStringValueOrNull(stat.ActivityId);
 
+                if (!string.IsNullOrEmpty(stat.IsDtxRetry))
+                {
+                    jsonWriter.WriteFieldName("IsDtxRetry");
+                    jsonWriter.WriteStringValue(stat.IsDtxRetry);
+                }
+
+                if (!string.IsNullOrEmpty(stat.IsDtxCrossRegionRedirect))
+                {
+                    jsonWriter.WriteFieldName("IsDtxCrossRegionRedirect");
+                    jsonWriter.WriteStringValue(stat.IsDtxCrossRegionRedirect);
+                }
+
                 if (stat.Exception != null)
                 {
                     jsonWriter.WriteFieldName("ExceptionType");
