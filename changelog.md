@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [6138](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6138) CosmosElements: Fixes an issue where parsing an empty, whitespace-only, or malformed JSON payload threw an unexpected `InvalidOperationException`, `ArgumentException`, or `IndexOutOfRangeException`. These payloads are now reported as JSON parse failures.
 - Bulk execution now honors server-provided retry delays for individually throttled operations without blocking other operations in the same batch.
+- [6144](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6144) Bulk execution now honors server-provided retry delays for individually throttled operations without blocking other operations in the same batch.
 
 #### Other Changes
 
