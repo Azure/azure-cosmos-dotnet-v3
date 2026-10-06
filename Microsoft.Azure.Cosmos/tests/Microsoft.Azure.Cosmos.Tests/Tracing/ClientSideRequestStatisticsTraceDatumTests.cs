@@ -113,6 +113,91 @@
             Assert.IsNotNull(clientSideRequestStatistics.RegionsContacted);
         }
 
+        [TestMethod]
+        public void RecordHttpResponseEmitsDtxRequestHeaders()
+        {
+            using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, ClientSideRequestStatisticsTraceDatumTests.uri);
+            requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxRetry, new[] { "true", "false" });
+            requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxCrossRegionRedirect, "false");
+            requestMessage.Headers.Add("x-ms-cosmos-internal-something-else", "true");
+
+            ITrace trace = Trace.GetRootTrace(nameof(RecordHttpResponseEmitsDtxRequestHeaders));
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+
+            using HttpResponseMessage responseMessage = new HttpResponseMessage();
+            datum.RecordHttpResponse(requestMessage, responseMessage, ResourceType.Document, DateTime.UtcNow);
+
+            trace.AddDatum("stats", datum);
+            JToken httpResponseStat = JObject.Parse(new CosmosTraceDiagnostics(trace).ToString())
+                ["data"]["stats"]["HttpResponseStats"][0];
+
+            Assert.AreEqual("true", httpResponseStat["IsDtxRetry"].Value<string>());
+            Assert.AreEqual("false", httpResponseStat["IsDtxCrossRegionRedirect"].Value<string>());
+            Assert.IsNull(httpResponseStat["x-ms-cosmos-internal-something-else"]);
+        }
+
+        [TestMethod]
+        public void RecordHttpResponseOmitsDtxRequestHeadersWhenAbsent()
+        {
+            using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, ClientSideRequestStatisticsTraceDatumTests.uri);
+            requestMessage.Headers.Add("x-ms-version", "2020-07-15");
+
+            ITrace trace = Trace.GetRootTrace(nameof(RecordHttpResponseOmitsDtxRequestHeadersWhenAbsent));
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+
+            using HttpResponseMessage responseMessage = new HttpResponseMessage();
+            datum.RecordHttpResponse(requestMessage, responseMessage, ResourceType.Document, DateTime.UtcNow);
+
+            trace.AddDatum("stats", datum);
+            JToken httpResponseStat = JObject.Parse(new CosmosTraceDiagnostics(trace).ToString())
+                ["data"]["stats"]["HttpResponseStats"][0];
+
+            Assert.IsNull(httpResponseStat["IsDtxRetry"]);
+            Assert.IsNull(httpResponseStat["IsDtxCrossRegionRedirect"]);
+        }
+
+        [TestMethod]
+        public void RecordHttpExceptionEmitsDtxRequestHeaders()
+        {
+            using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, ClientSideRequestStatisticsTraceDatumTests.uri);
+            requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxRetry, "true");
+
+            ITrace trace = Trace.GetRootTrace(nameof(RecordHttpExceptionEmitsDtxRequestHeaders));
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+
+            datum.RecordHttpException(requestMessage, new OperationCanceledException(), ResourceType.Document, DateTime.UtcNow);
+
+            trace.AddDatum("stats", datum);
+            JToken httpResponseStat = JObject.Parse(new CosmosTraceDiagnostics(trace).ToString())
+                ["data"]["stats"]["HttpResponseStats"][0];
+
+            Assert.AreEqual("true", httpResponseStat["IsDtxRetry"].Value<string>());
+        }
+
+        [TestMethod]
+        public void TraceToTextEmitsDtxRequestHeaders()
+        {
+            using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, ClientSideRequestStatisticsTraceDatumTests.uri);
+            requestMessage.Headers.Add(DistributedTransactionConstants.IsDtxRetry, "true");
+
+            Trace trace = Trace.GetRootTrace(nameof(TraceToTextEmitsDtxRequestHeaders));
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+
+            using HttpResponseMessage responseMessage = new HttpResponseMessage();
+            datum.RecordHttpResponse(requestMessage, responseMessage, ResourceType.Document, DateTime.UtcNow);
+
+            trace.AddDatum("stats", datum);
+
+            // TraceWriter reads trace data directly, which callers must mark as walkable first. In production
+            // CosmosTraceDiagnostics does this before serializing.
+            trace.SetWalkingStateRecursively();
+            string[] lines = TraceWriter.TraceToText(trace).Split(Environment.NewLine);
+
+            Assert.IsTrue(
+                lines.Any(line => line.EndsWith("IsDtxRetry: true")),
+                "The captured request header was not emitted.");
+        }
+
         private async Task ConcurrentUpdateTestHelper<T>(
             Action<ClientSideRequestStatisticsTraceDatum, CancellationToken> backgroundUpdater,
             Func<ClientSideRequestStatisticsTraceDatum, IEnumerable<T>> getList)
