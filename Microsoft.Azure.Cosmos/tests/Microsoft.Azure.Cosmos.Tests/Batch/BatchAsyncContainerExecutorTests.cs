@@ -147,11 +147,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task RetryOn429()
         {
             ItemBatchOperation itemBatchOperation = CreateItem("test");
+            TimeSpan retryDelay = TimeSpan.FromMilliseconds(300);
+            DateTime firstRequestTime = default;
+            DateTime secondRequestTime = default;
+            int requestCount = 0;
 
             Mock<CosmosClientContext> mockedContext = this.MockClientContext();
             mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             mockedContext
-                .SetupSequence(c => c.ProcessResourceOperationStreamAsync(
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
                     It.IsAny<string>(),
                     It.IsAny<ResourceType>(),
                     It.IsAny<OperationType>(),
@@ -162,8 +166,17 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(Generate429ResponseAsync(itemBatchOperation))
-                .Returns(GenerateOkResponseAsync(itemBatchOperation));
+                .Returns(() =>
+                {
+                    if (Interlocked.Increment(ref requestCount) == 1)
+                    {
+                        firstRequestTime = DateTime.UtcNow;
+                        return Generate429ResponseAsync(itemBatchOperation, retryDelay);
+                    }
+
+                    secondRequestTime = DateTime.UtcNow;
+                    return GenerateOkResponseAsync(itemBatchOperation);
+                });
 
             mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
 
@@ -199,6 +212,57 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             Assert.IsNotNull(result.ToResponseMessage().Trace);
+            Assert.IsTrue(
+                secondRequestTime - firstRequestTime >= retryDelay,
+                $"Retry occurred after {secondRequestTime - firstRequestTime}, before the expected delay of {retryDelay}.");
+        }
+
+        [TestMethod]
+        public async Task CancellationPreventsDelayedRetry()
+        {
+            ItemBatchOperation itemBatchOperation = CreateItem("test");
+            TimeSpan retryDelay = TimeSpan.FromMilliseconds(500);
+            TaskCompletionSource<bool> firstRequestCompleted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            int requestCount = 0;
+
+            Mock<CosmosClientContext> mockedContext = this.MockClientContext();
+            mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            mockedContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.FeedRange>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(async () =>
+                {
+                    Interlocked.Increment(ref requestCount);
+                    ResponseMessage response = await Generate429ResponseAsync(itemBatchOperation, retryDelay);
+                    firstRequestCompleted.TrySetResult(true);
+                    return response;
+                });
+
+            mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
+
+            Mock<ContainerInternal> mockContainer = this.CreateMockContainer();
+            BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(
+                mockContainer.Object,
+                mockedContext.Object,
+                20,
+                BatchAsyncContainerExecutorCache.DefaultMaxBulkRequestBodySizeInBytes);
+
+            Task<TransactionalBatchOperationResult> operationTask = executor.AddAsync(itemBatchOperation, NoOpTrace.Singleton);
+            await firstRequestCompleted.Task;
+            executor.Dispose();
+
+            await Assert.ThrowsExceptionAsync<TaskCanceledException>(async () => await operationTask);
+            await Task.Delay(retryDelay + TimeSpan.FromMilliseconds(100));
+            Assert.AreEqual(1, requestCount);
         }
 
         [TestMethod]
@@ -290,7 +354,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static async Task<ResponseMessage> GenerateResponseAsync(
             ItemBatchOperation itemBatchOperation,
             HttpStatusCode httpStatusCode,
-            SubStatusCodes subStatusCode)
+            SubStatusCodes subStatusCode,
+            TimeSpan? retryAfter = null)
         {
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
@@ -298,7 +363,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TransactionalBatchOperationResult(httpStatusCode)
                 {
                     ETag = itemBatchOperation.Id,
-                    SubStatusCode = subStatusCode
+                    SubStatusCode = subStatusCode,
+                    RetryAfter = retryAfter ?? TimeSpan.Zero
                 });
 
             arrayOperations[0] = itemBatchOperation;
@@ -349,9 +415,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             return GenerateResponseAsync(itemBatchOperation, HttpStatusCode.Gone, SubStatusCodes.NameCacheIsStale);
         }
 
-        private static Task<ResponseMessage> Generate429ResponseAsync(ItemBatchOperation itemBatchOperation)
+        private static Task<ResponseMessage> Generate429ResponseAsync(
+            ItemBatchOperation itemBatchOperation,
+            TimeSpan? retryAfter = null)
         {
-            return GenerateResponseAsync(itemBatchOperation, (HttpStatusCode)429, SubStatusCodes.Unknown);
+            return GenerateResponseAsync(itemBatchOperation, (HttpStatusCode)429, SubStatusCodes.Unknown, retryAfter);
         }
 
         private static Task<ResponseMessage> GenerateOkResponseAsync(ItemBatchOperation itemBatchOperation)
@@ -390,6 +458,24 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.Client).Returns(MockCosmosUtil.CreateMockCosmosClient());
 
             return mockContext;
+        }
+
+        private Mock<ContainerInternal> CreateMockContainer()
+        {
+            Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
+            mockContainer.Setup(x => x.LinkUri).Returns("/dbs/db/colls/colls");
+            mockContainer.Setup(x => x.GetCachedContainerPropertiesAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new ContainerProperties() { PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } } }));
+
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                new[]
+                {
+                    Tuple.Create(new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" }, (ServiceIdentity)null)
+                },
+                string.Empty,
+                false);
+            mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
+            return mockContainer;
         }
 
         private class MyDocument

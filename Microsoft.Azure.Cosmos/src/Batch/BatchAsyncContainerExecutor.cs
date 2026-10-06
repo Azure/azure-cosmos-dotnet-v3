@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -35,9 +36,12 @@ namespace Microsoft.Azure.Cosmos
         private readonly int maxServerRequestOperationCount;
         private readonly ConcurrentDictionary<string, BatchAsyncStreamer> streamersByPartitionKeyRange = new ConcurrentDictionary<string, BatchAsyncStreamer>();
         private readonly ConcurrentDictionary<string, SemaphoreSlim> limitersByPartitionkeyRange = new ConcurrentDictionary<string, SemaphoreSlim>();
+        private readonly ConcurrentDictionary<long, Task> delayedRetryTasks = new ConcurrentDictionary<long, Task>();
+        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly TimerWheel timerWheel;
         private readonly RetryOptions retryOptions;
         private readonly int defaultMaxDegreeOfConcurrency = 50;
+        private long nextDelayedRetryId;
 
         /// <summary>
         /// For unit testing.
@@ -121,6 +125,8 @@ namespace Microsoft.Azure.Cosmos
 
         public void Dispose()
         {
+            this.cancellationTokenSource.Cancel();
+
             foreach (KeyValuePair<string, BatchAsyncStreamer> streamer in this.streamersByPartitionKeyRange)
             {
                 streamer.Value.Dispose();
@@ -132,6 +138,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.timerWheel.Dispose();
+            this.cancellationTokenSource.Dispose();
         }
 
         internal virtual async Task ValidateOperationAsync(
@@ -215,7 +222,64 @@ namespace Microsoft.Azure.Cosmos
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchRequest, bool.TrueString);
         }
 
-        private async Task ReBatchAsync(
+        private Task ReBatchAsync(
+            ItemBatchOperation operation,
+            TimeSpan retryDelay,
+            CancellationToken cancellationToken)
+        {
+            if (retryDelay <= TimeSpan.Zero)
+            {
+                return this.ReBatchOperationAsync(operation, cancellationToken);
+            }
+
+            long delayedRetryId = Interlocked.Increment(ref this.nextDelayedRetryId);
+            Task delayedRetryTask = this.ReBatchAfterDelayAsync(operation, retryDelay, cancellationToken);
+            if (!this.delayedRetryTasks.TryAdd(delayedRetryId, delayedRetryTask))
+            {
+                throw new InvalidOperationException("Failed to track delayed batch retry.");
+            }
+
+            _ = delayedRetryTask.ContinueWith(
+                completedTask => this.delayedRetryTasks.TryRemove(delayedRetryId, out Task _),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+
+            return Task.CompletedTask;
+        }
+
+        private async Task ReBatchAfterDelayAsync(
+            ItemBatchOperation operation,
+            TimeSpan retryDelay,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                using (CancellationTokenSource linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
+                    cancellationToken,
+                    this.cancellationTokenSource.Token))
+                {
+                    await Task.Delay(retryDelay, linkedCancellationTokenSource.Token).ConfigureAwait(false);
+                    await this.ReBatchOperationAsync(operation, linkedCancellationTokenSource.Token).ConfigureAwait(false);
+                }
+            }
+            catch (Exception exception)
+            {
+                try
+                {
+                    operation.Context.Fail(operation.Context.CurrentBatcher, exception);
+                }
+                catch (Exception completionException)
+                {
+                    DefaultTrace.TraceError(
+                        "Failed to complete delayed batch retry after exception. Retry exception: {0}; completion exception: {1}",
+                        exception.Message,
+                        completionException.Message);
+                }
+            }
+        }
+
+        private async Task ReBatchOperationAsync(
             ItemBatchOperation operation,
             CancellationToken cancellationToken)
         {
