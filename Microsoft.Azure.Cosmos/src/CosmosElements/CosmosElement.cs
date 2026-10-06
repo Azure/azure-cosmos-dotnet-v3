@@ -109,7 +109,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
                     unTypedCosmosElement = CosmosElement.Dispatch(jsonNavigator, jsonNavigatorNode);
                 }
-                catch (Exception ex) when (CosmosElement.Monadic.IsMalformedBufferException(ex))
+                // Malformed binary lengths and values can also surface as non-JSON exceptions.
+                catch (Exception ex) when (ex is JsonParseException
+                    or ArgumentException
+                    or InvalidOperationException
+                    or IndexOutOfRangeException
+                    or FormatException
+                    or OverflowException)
                 {
                     return TryCatch<TCosmosElement>.FromException(ex);
                 }
@@ -151,20 +157,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             public static TryCatch<CosmosElement> Parse(string serializedCosmosElement)
             {
                 return CosmosElement.Monadic.Parse<CosmosElement>(serializedCosmosElement);
-            }
-
-            /// <summary>
-            /// The text and binary navigators surface malformed or truncated buffers through several exception types
-            /// (e.g. corrupt binary length prefixes result in out-of-range reads), so all of them are treated as parse failures.
-            /// </summary>
-            private static bool IsMalformedBufferException(Exception ex)
-            {
-                return ex is JsonParseException
-                    || ex is ArgumentException
-                    || ex is InvalidOperationException
-                    || ex is IndexOutOfRangeException
-                    || ex is FormatException
-                    || ex is OverflowException;
             }
         }
 
