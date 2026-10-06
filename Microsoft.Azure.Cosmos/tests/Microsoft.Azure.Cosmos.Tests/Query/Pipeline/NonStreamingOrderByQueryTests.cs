@@ -651,10 +651,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IReadOnlyList<(double[] FirstComponentScores, int[] OrdinalExpected, int[] CompetitionExpected)> testCases =
                 new List<(double[], int[], int[])>
                 {
-                    (new[] { 10.0, 10.0, 8.0, 7.0, 6.0 }, new[] { 0, 1, 2, 3, 4 }, new[] { 1, 0, 2, 3, 4 }),
-                    (new[] { 10.0, 9.0, 9.0, 9.0, 4.0 }, new[] { 0, 1, 2, 3, 4 }, new[] { 3, 0, 2, 1, 4 }),
-                    (new[] { 10.0, 9.0, 8.0, 7.0, 7.0 }, new[] { 0, 1, 2, 3, 4 }, new[] { 0, 1, 4, 2, 3 }),
-                    (new[] { 5.0, 5.0, 5.0, 5.0, 5.0 }, new[] { 0, 1, 2, 3, 4 }, new[] { 4, 3, 2, 1, 0 }),
+                    (new[] { 10.0, 10.0, 8.0, 7.0, 6.0 }, new[] { 1, 0, 2, 3, 4 }, new[] { 1, 0, 2, 3, 4 }),
+                    (new[] { 10.0, 9.0, 9.0, 9.0, 4.0 }, new[] { 3, 0, 2, 4, 1 }, new[] { 3, 0, 2, 1, 4 }),
+                    (new[] { 10.0, 9.0, 8.0, 7.0, 7.0 }, new[] { 0, 1, 4, 2, 3 }, new[] { 0, 1, 4, 2, 3 }),
+                    (new[] { 5.0, 5.0, 5.0, 5.0, 5.0 }, new[] { 4, 3, 2, 1, 0 }, new[] { 4, 3, 2, 1, 0 }),
                 };
 
             foreach (bool useCompetitionRanking in new[] { false, true })

@@ -467,7 +467,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             HybridSearchDebugTraceHelpers.TraceQueryResults(queryResults, queryPipelineStages.Count);
 
-            queryResults.Sort((x, y) => string.CompareOrdinal(x.Rid.Value, y.Rid.Value));
+            queryResults.Sort((x, y) => string.CompareOrdinal(y.Rid.Value, x.Rid.Value));
 
             CoalesceDuplicateRids(queryResults);
 
@@ -495,7 +495,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 int scoreComparison = y.Score.CompareTo(x.Score); // higher scores are better
                 return scoreComparison != 0
                     ? scoreComparison
-                    : string.CompareOrdinal(x.Rid.Value, y.Rid.Value);
+                    : string.CompareOrdinal(y.Rid.Value, x.Rid.Value);
             });
 
             HybridSearchDebugTraceHelpers.TraceQueryResults(queryResults, queryPipelineStages.Count);
