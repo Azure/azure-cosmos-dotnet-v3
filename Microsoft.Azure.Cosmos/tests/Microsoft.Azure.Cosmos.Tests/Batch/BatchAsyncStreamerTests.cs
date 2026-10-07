@@ -131,6 +131,28 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void AddAfterDisposeFails()
+        {
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(
+                2,
+                MaxBatchByteSize,
+                this.TimerWheel,
+                this.limiter,
+                1,
+                MockCosmosUtil.Serializer,
+                this.Executor,
+                this.Retrier,
+                this.GetMockClientContext());
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null, "disposed");
+            AttachContext(operation);
+
+            batchAsyncStreamer.Dispose();
+
+            Assert.ThrowsException<ObjectDisposedException>(() => batchAsyncStreamer.Add(operation));
+            Assert.AreEqual(TaskStatus.WaitingForActivation, operation.Context.OperationTask.Status);
+        }
+
+        [TestMethod]
         public async Task ValidatesCongestionControlAsync()
         {
             SemaphoreSlim newLimiter = new SemaphoreSlim(1, defaultMaxDegreeOfConcurrency);

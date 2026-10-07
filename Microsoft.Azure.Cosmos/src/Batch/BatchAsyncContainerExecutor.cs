@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -38,10 +37,13 @@ namespace Microsoft.Azure.Cosmos
         private readonly ConcurrentDictionary<string, SemaphoreSlim> limitersByPartitionkeyRange = new ConcurrentDictionary<string, SemaphoreSlim>();
         private readonly ConcurrentDictionary<long, Task> delayedRetryTasks = new ConcurrentDictionary<long, Task>();
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        private readonly CancellationToken executorCancellationToken;
+        private readonly object streamerLock = new object();
         private readonly TimerWheel timerWheel;
         private readonly RetryOptions retryOptions;
         private readonly int defaultMaxDegreeOfConcurrency = 50;
         private long nextDelayedRetryId;
+        private bool isDisposed;
 
         /// <summary>
         /// For unit testing.
@@ -70,6 +72,7 @@ namespace Microsoft.Azure.Cosmos
             this.cosmosClientContext = cosmosClientContext;
             this.maxServerRequestBodyLength = maxServerRequestBodyLength;
             this.maxServerRequestOperationCount = maxServerRequestOperationCount;
+            this.executorCancellationToken = this.cancellationTokenSource.Token;
             this.timerWheel = TimerWheel.CreateTimerWheel(BatchAsyncContainerExecutor.TimerWheelResolution, BatchAsyncContainerExecutor.TimerWheelBucketCount);
             this.retryOptions = cosmosClientContext.ClientOptions.GetConnectionPolicy(cosmosClientContext.Client.ClientId).RetryOptions;
         }
@@ -96,7 +99,8 @@ namespace Microsoft.Azure.Cosmos
             ItemBatchOperationContext context = new ItemBatchOperationContext(
                 resolvedPartitionKeyRangeId,
                 trace,
-                BatchAsyncContainerExecutor.GetRetryPolicy(this.cosmosContainer, operation.OperationType, this.retryOptions));
+                BatchAsyncContainerExecutor.GetRetryPolicy(this.cosmosContainer, operation.OperationType, this.retryOptions),
+                cancellationToken);
 
             if (itemRequestOptions != null && itemRequestOptions.AddRequestHeaders != null)
             {
@@ -119,17 +123,34 @@ namespace Microsoft.Azure.Cosmos
             }
             
             operation.AttachContext(context);
-            streamer.Add(operation);
+            try
+            {
+                streamer.Add(operation);
+            }
+            catch (Exception exception)
+            {
+                context.Fail(context.CurrentBatcher, exception);
+            }
+
             return await context.OperationTask;
         }
 
         public void Dispose()
         {
-            this.cancellationTokenSource.Cancel();
-
-            foreach (KeyValuePair<string, BatchAsyncStreamer> streamer in this.streamersByPartitionKeyRange)
+            lock (this.streamerLock)
             {
-                streamer.Value.Dispose();
+                if (this.isDisposed)
+                {
+                    return;
+                }
+
+                this.isDisposed = true;
+                this.cancellationTokenSource.Cancel();
+
+                foreach (KeyValuePair<string, BatchAsyncStreamer> streamer in this.streamersByPartitionKeyRange)
+                {
+                    streamer.Value.Dispose();
+                }
             }
 
             foreach (KeyValuePair<string, SemaphoreSlim> limiter in this.limitersByPartitionkeyRange)
@@ -229,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (retryDelay <= TimeSpan.Zero)
             {
-                return this.ReBatchOperationAsync(operation, cancellationToken);
+                return this.ReBatchOperationAndHandleFailureAsync(operation, cancellationToken);
             }
 
             long delayedRetryId = Interlocked.Increment(ref this.nextDelayedRetryId);
@@ -257,25 +278,41 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (CancellationTokenSource linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(
                     cancellationToken,
-                    this.cancellationTokenSource.Token))
+                    this.executorCancellationToken,
+                    operation.Context.CallerCancellationToken))
                 {
                     await Task.Delay(retryDelay, linkedCancellationTokenSource.Token).ConfigureAwait(false);
                     await this.ReBatchOperationAsync(operation, linkedCancellationTokenSource.Token).ConfigureAwait(false);
                 }
             }
+            catch (OperationCanceledException)
+            {
+                CancellationToken cancellationTokenToReport = operation.Context.CallerCancellationToken.IsCancellationRequested
+                    ? operation.Context.CallerCancellationToken
+                    : cancellationToken;
+                operation.Context.Cancel(operation.Context.CurrentBatcher, cancellationTokenToReport);
+            }
             catch (Exception exception)
             {
-                try
-                {
-                    operation.Context.Fail(operation.Context.CurrentBatcher, exception);
-                }
-                catch (Exception completionException)
-                {
-                    DefaultTrace.TraceError(
-                        "Failed to complete delayed batch retry after exception. Retry exception: {0}; completion exception: {1}",
-                        exception.Message,
-                        completionException.Message);
-                }
+                operation.Context.Fail(operation.Context.CurrentBatcher, exception);
+            }
+        }
+
+        private async Task ReBatchOperationAndHandleFailureAsync(
+            ItemBatchOperation operation,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                await this.ReBatchOperationAsync(operation, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                operation.Context.Cancel(operation.Context.CurrentBatcher, cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                operation.Context.Fail(operation.Context.CurrentBatcher, exception);
             }
         }
 
@@ -372,30 +409,39 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private BatchAsyncStreamer GetOrAddStreamerForPartitionKeyRange(string partitionKeyRangeId, ItemRequestOptions options = null)
+        internal virtual BatchAsyncStreamer GetOrAddStreamerForPartitionKeyRange(string partitionKeyRangeId, ItemRequestOptions options = null)
         {
-            if (this.streamersByPartitionKeyRange.TryGetValue(partitionKeyRangeId, out BatchAsyncStreamer streamer))
+            lock (this.streamerLock)
             {
-                return streamer;
-            }
-            SemaphoreSlim limiter = this.GetOrAddLimiterForPartitionKeyRange(partitionKeyRangeId);
-            BatchAsyncStreamer newStreamer = new BatchAsyncStreamer(
-                this.maxServerRequestOperationCount,
-                this.maxServerRequestBodyLength,
-                this.timerWheel,
-                limiter,
-                this.defaultMaxDegreeOfConcurrency,
-                this.cosmosClientContext.SerializerCore,
-                this.ExecuteAsync,
-                this.ReBatchAsync,
-                this.cosmosClientContext,
-                options);
-            if (!this.streamersByPartitionKeyRange.TryAdd(partitionKeyRangeId, newStreamer))
-            {
-                newStreamer.Dispose();
-            }
+                if (this.isDisposed)
+                {
+                    throw new ObjectDisposedException(nameof(BatchAsyncContainerExecutor));
+                }
 
-            return this.streamersByPartitionKeyRange[partitionKeyRangeId];
+                if (this.streamersByPartitionKeyRange.TryGetValue(partitionKeyRangeId, out BatchAsyncStreamer streamer))
+                {
+                    return streamer;
+                }
+
+                SemaphoreSlim limiter = this.GetOrAddLimiterForPartitionKeyRange(partitionKeyRangeId);
+                BatchAsyncStreamer newStreamer = new BatchAsyncStreamer(
+                    this.maxServerRequestOperationCount,
+                    this.maxServerRequestBodyLength,
+                    this.timerWheel,
+                    limiter,
+                    this.defaultMaxDegreeOfConcurrency,
+                    this.cosmosClientContext.SerializerCore,
+                    this.ExecuteAsync,
+                    this.ReBatchAsync,
+                    this.cosmosClientContext,
+                    options);
+                if (!this.streamersByPartitionKeyRange.TryAdd(partitionKeyRangeId, newStreamer))
+                {
+                    newStreamer.Dispose();
+                }
+
+                return this.streamersByPartitionKeyRange[partitionKeyRangeId];
+            }
         }
 
         private SemaphoreSlim GetOrAddLimiterForPartitionKeyRange(string partitionKeyRangeId)
