@@ -174,7 +174,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 },
                 (JsonProcessor)writerProcessor,
                 new CosmosDiagnosticsContext(),
-                CancellationToken.None);
+                CancellationToken.None,
+                replacePlaintextEncryptionMetadata: false);
             (Stream decrypted, DecryptionContext context) = await processor.DecryptAsync(
                 encrypted,
                 publicWriter ? CreateFixtureEncryptor() : CreatePublicFixtureEncryptor(),
