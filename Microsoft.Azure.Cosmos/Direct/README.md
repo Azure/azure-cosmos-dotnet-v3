@@ -37,7 +37,7 @@ internal namespaces, friend assemblies and resource name. The upstream generated
 `AssemblyVersionInfo` type is generated locally from `DirectVersion`.
 
 Native query planning uses `Microsoft.Azure.Cosmos.QueryPlanInterop.Windows`
-**1.0.2**, acquired exclusively through NuGet. Only its Windows x64 DLL is used,
+**1.0.5**, acquired exclusively through NuGet. Only its Windows x64 DLL is used,
 renamed to `Microsoft.Azure.Cosmos.ServiceInterop.dll` for the existing P/Invoke
 contract. No `.lib`, `.pdb`, CRTCompat or Visual C++ runtime DLL is copied from
 CosmosDB. Existing platform-selection logic is unchanged: supported Windows
@@ -51,7 +51,7 @@ The SDK package contains these DLLs; the project-reference refactor adds none:
 | --- | --- |
 | `Microsoft.Azure.Cosmos.Client.dll` | Existing Client project |
 | `Microsoft.Azure.Cosmos.Direct.dll` | Local Direct project, replacing the managed Direct NuGet payload |
-| `Microsoft.Azure.Cosmos.ServiceInterop.dll` | `Cosmos.QueryPlanInterop.dll` from QueryPlanInterop.Windows 1.0.2, renamed |
+| `Microsoft.Azure.Cosmos.ServiceInterop.dll` | `Cosmos.QueryPlanInterop.dll` from QueryPlanInterop.Windows 1.0.5, renamed |
 | `Microsoft.Azure.Cosmos.Core.dll` | Existing Microsoft.HybridRow NuGet dependency |
 | `Microsoft.Azure.Cosmos.Serialization.HybridRow.dll` | Existing Microsoft.HybridRow NuGet dependency |
 
@@ -87,15 +87,21 @@ removing or renaming the key helper types changes the internal assembly contract
 Moving Direct's suppressions into Client's suppression file would not apply them
 to Direct; broadening repository-wide analyzer rules is also not equivalent.
 
-## Known native compatibility issue
+## Native compatibility validation
 
-Do not ship this migration as regression-free. With native package 1.0.2,
-`QueryPlanBaselineTests` fails `NonValueAggregates`, `GroupBy`, `Negative`,
-`PointRange`, `Top`, `OffsetLimit` and `Spatial`. Spatial and some point-range
-queries fail with `NotImplementedException` instead of producing a valid plan.
-The isolated original Direct 3.44.1 package passes the corresponding tests.
-The native-package owner must resolve or explicitly disposition these differences
-before release. Expected baselines and test exclusions have not been changed.
+Native package 1.0.5 passes 19 of the 21 targeted query-plan and ODE validity
+tests in both Debug and Release preview builds. This includes `NonValueAggregates`,
+`GroupBy`, `Negative`, `PointRange`, `Spatial` and
+`TestQueryValidityCheckWithODEAsync`, which failed with 1.0.2.
+
+`QueryPlanBaselineTests.Top` and `OffsetLimit` still fail exact-output comparison.
+The only differences are the added default-valued `embeddingParameterMap: null`
+and `requiresExtendedQueryPlan: 0` fields in native plan JSON embedded in
+out-of-range exceptions. Query rewrites, ranges, exception types and
+`fullTextSearchTerms` match the existing expectations. Expected baselines and
+test exclusions have not been changed; these differences still require explicit
+disposition before calling the migration regression-free. Emulator/live-account
+coverage remains a separate release requirement.
 
 ## Provider selection and packaging
 

@@ -1,6 +1,6 @@
 <Project>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.Cosmos.QueryPlanInterop.Windows" Version="1.0.2"
+    <PackageReference Include="Microsoft.Azure.Cosmos.QueryPlanInterop.Windows" Version="1.0.5"
                       PrivateAssets="All" ExcludeAssets="All" GeneratePathProperty="true" />
   </ItemGroup>
   <PropertyGroup>
