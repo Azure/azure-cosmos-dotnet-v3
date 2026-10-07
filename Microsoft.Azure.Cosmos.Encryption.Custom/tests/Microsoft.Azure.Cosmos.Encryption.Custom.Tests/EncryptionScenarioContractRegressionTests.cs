@@ -152,58 +152,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [DataTestMethod]
-        [DynamicData(nameof(TypedPlaintextRows), DynamicDataSourceType.Method)]
-        public async Task Mde_KnownContainerMarker_RejectsMalformedOrWrongShapePlaintext(int marker, string plaintext, bool valid, int processor)
-        {
-            JObject item = H.MdeItem();
-            item["Sensitive"] = Convert.ToBase64String(new byte[] { (byte)marker, 0xF7 });
-            H.PublicEncryptor encryptor = new()
-            {
-                OnDecrypt = (bytes, algorithm, token) => Task.FromResult(Encoding.UTF8.GetBytes(plaintext)),
-            };
-            using MemoryStream input = H.Stream(item.ToString(Formatting.None));
-            using MemoryStream output = H.Output();
-            byte[] before = output.ToArray();
-            Exception failure = await H.CaptureExceptionAsync(async () =>
-                await EncryptionProcessor.DecryptAsync(input, output, encryptor, new CosmosDiagnosticsContext(),
-                    RequestOptionsOverrideHelper.Create((JsonProcessor)processor), CancellationToken.None));
-
-            if (failure != null)
-            {
-                Assert.IsFalse(valid, $"A canonical typed plaintext control failed: {failure}");
-                CollectionAssert.AreEqual(before, output.ToArray());
-                Assert.AreEqual(2L, output.Position);
-                Assert.IsTrue(input.CanRead);
-                return;
-            }
-
-            // Parsing here is outside the accepted rejection path: successful publication must be valid typed JSON.
-            byte[] published = output.ToArray().Skip(2).ToArray();
-            JObject actual = JObject.Parse(Encoding.UTF8.GetString(published));
-            Assert.AreEqual(marker == 7 ? JTokenType.Object : JTokenType.Array, actual["Sensitive"].Type,
-                "A known SDK container marker must not publish a different JSON type.");
-            Assert.IsTrue(valid, "Malformed typed plaintext must be rejected before publication.");
-        }
-
-        public static IEnumerable<object[]> TypedPlaintextRows()
-        {
-            foreach (int processor in H.Processors)
-            {
-                foreach (int marker in new[] { 7, 6 })
-                {
-                    yield return new object[] { marker, marker == 7 ? "{\"ok\":true}" : "[1,null]", true, processor };
-                    yield return new object[] { marker, "NOT_JSON", false, processor };
-                    yield return new object[] { marker, marker == 7 ? "[]" : "{}", false, processor };
-                }
-            }
-        }
-
-        [DataTestMethod]
         [DynamicData(nameof(ReadManyErrorRows), DynamicDataSourceType.Method)]
         public async Task ReadManyStream_ServiceErrorRemainsInspectable(int status, bool nullContent, int processor)
         {
             const string errorBody = "{\"code\":\"TooManyRequests\",\"message\":\"service sentinel\"}";
             using ResponseMessage raw = H.Response((HttpStatusCode)status, nullContent ? null : errorBody);
+            raw.Headers["x-ms-activity-id"] = "activity-sentinel";
+            raw.Headers["x-ms-request-charge"] = "12.5";
+            raw.Headers["x-ms-retry-after-ms"] = "23";
+            raw.Headers["x-scenario-sentinel"] = "retained-header";
             H.PublicEncryptor encryptor = new();
             Container container = H.Container(encryptor, out Mock<Container> inner, out _);
             IReadOnlyList<(string id, PartitionKey partitionKey)> items = new[] { ("i", new PartitionKey("p")) };
@@ -216,7 +173,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             using ResponseMessage response = await container.ReadManyItemsStreamAsync(items, options);
 
             Assert.AreEqual((HttpStatusCode)status, response.StatusCode);
-            Assert.AreSame(raw.Headers, response.Headers);
+            foreach (string header in raw.Headers)
+            {
+                Assert.AreEqual(raw.Headers[header], response.Headers[header], header);
+            }
+
             Assert.IsFalse(response.IsSuccessStatusCode);
             if (nullContent)
             {

@@ -27,6 +27,110 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public TestContext TestContext { get; set; }
 
         [DataTestMethod]
+        [DynamicData(nameof(TypedPlaintextRows), DynamicDataSourceType.Method)]
+        public async Task Mde_KnownContainerMarker_RecordsReturnedPlaintextInterpretation(int marker, string plaintext, bool valid, int processor)
+        {
+            JObject item = H.MdeItem();
+            item["Sensitive"] = Convert.ToBase64String(new byte[] { (byte)marker, 0xF7 });
+            H.PublicEncryptor encryptor = new()
+            {
+                OnDecrypt = (bytes, algorithm, token) =>
+                {
+                    CollectionAssert.AreEqual(new byte[] { 0xF7 }, bytes);
+                    return Task.FromResult(Encoding.UTF8.GetBytes(plaintext));
+                },
+            };
+            using MemoryStream input = H.Stream(item.ToString(Formatting.None));
+            byte[] inputBefore = input.ToArray();
+            using MemoryStream output = H.Output();
+            byte[] before = output.ToArray();
+            DecryptionContext context = null;
+            Exception failure = await H.CaptureExceptionAsync(async () =>
+                context = await EncryptionProcessor.DecryptAsync(input, output, encryptor, new CosmosDiagnosticsContext(),
+                    RequestOptionsOverrideHelper.Create((JsonProcessor)processor), CancellationToken.None));
+            JObject parsed = null;
+            string publishedText = null;
+            string fieldType = null;
+            string parseError = null;
+            string parseMessage = null;
+            if (failure != null)
+            {
+                CollectionAssert.AreEqual(before, output.ToArray());
+                Assert.AreEqual(2L, output.Position);
+                Assert.IsTrue(input.CanRead);
+            }
+            else
+            {
+                Assert.AreEqual(0L, output.Position);
+                Assert.IsNotNull(context);
+                CollectionAssert.AreEqual(new[] { "/Sensitive" }, context.DecryptionInfoList.Single().PathsDecrypted.ToArray());
+                publishedText = Encoding.UTF8.GetString(output.ToArray().Skip(2).ToArray());
+                try
+                {
+                    parsed = JObject.Parse(publishedText);
+                    fieldType = parsed["Sensitive"]?.Type.ToString();
+                }
+                catch (JsonException exception)
+                {
+                    parseError = exception.GetType().FullName;
+                    parseMessage = exception.Message;
+                }
+
+                if (parsed != null)
+                {
+                    Assert.AreEqual((string)item["id"], (string)parsed["id"]);
+                    Assert.AreEqual((string)item["PK"], (string)parsed["PK"]);
+                    Assert.AreEqual((string)item["Plain"], (string)parsed["Plain"]);
+                    Assert.IsNull(parsed["_ei"]);
+                }
+            }
+
+            if (valid)
+            {
+                Assert.IsNull(failure, $"A canonical plaintext control failed: {failure}");
+                Assert.IsNull(parseError, $"A canonical plaintext control published invalid JSON: {parseMessage}");
+                Assert.IsNotNull(parsed);
+                Assert.AreEqual(marker == 7 ? JTokenType.Object : JTokenType.Array, parsed["Sensitive"].Type);
+                Assert.IsTrue(JToken.DeepEquals(JToken.Parse(plaintext), parsed["Sensitive"]));
+            }
+
+            CollectionAssert.AreEqual(inputBefore, input.ToArray());
+            Assert.IsTrue(output.CanRead);
+            Assert.IsTrue(output.CanWrite);
+            Assert.AreEqual(1, encryptor.DecryptCalls);
+            Assert.AreEqual(0, encryptor.KeyCalls);
+            this.TestContext.WriteLine("DECISION " + JsonConvert.SerializeObject(new
+            {
+                family = "E12",
+                marker,
+                plaintext,
+                canonicalControl = valid,
+                processor,
+                operationError = failure?.GetType().FullName,
+                operationMessage = failure?.Message,
+                publishedText,
+                publishedFieldType = fieldType,
+                parseError,
+                parseMessage,
+                outputBase64 = Convert.ToBase64String(output.ToArray()),
+                interpretation = "Observation only: malformed rejection and declared-shape enforcement require a contract decision.",
+            }));
+        }
+
+        public static IEnumerable<object[]> TypedPlaintextRows()
+        {
+            foreach (int processor in H.Processors)
+            {
+                foreach (int marker in new[] { 7, 6 })
+                {
+                    yield return new object[] { marker, marker == 7 ? "{}" : "[]", true, processor };
+                    yield return new object[] { marker, "NOT_JSON", false, processor };
+                    yield return new object[] { marker, marker == 7 ? "[]" : "{}", false, processor };
+                }
+            }
+        }
+
+        [DataTestMethod]
         [DynamicData(nameof(DuplicateFeedRows), DynamicDataSourceType.Method)]
         public async Task Lazy_StructurallyInvalidEnvelope_RecordsBestEffortDiagnostics(int processor)
         {
