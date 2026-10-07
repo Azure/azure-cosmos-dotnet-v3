@@ -40,12 +40,10 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(ProjectRef)' != 'True'">
-    <ProjectReference Include="..\..\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" PrivateAssets="All" Condition="'$(UseDirectProject)' == 'true'" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" Condition="'$(UseDirectProject)' == 'false'" />
+    <ProjectReference Include="..\..\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" PrivateAssets="All" />
   </ItemGroup>
-  <PropertyGroup Condition="'$(ProjectRef)' != 'True' and '$(UseDirectProject)' == 'true'">
+  <PropertyGroup Condition="'$(ProjectRef)' != 'True'">
     <IsRidAgnostic>false</IsRidAgnostic>
-    <DefineConstants>$(DefineConstants);DIRECT_SOURCE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
@@ -81,10 +79,7 @@
     <None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\microsoft.hybridrow.nuspec">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\Microsoft.Azure.Cosmos.Direct.nuspec" Condition="'$(UseDirectProject)' != 'true'">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\..\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" Condition="'$(UseDirectProject)' == 'true'">
+    <None Include="..\..\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\..\src\Microsoft.Azure.Cosmos.csproj">

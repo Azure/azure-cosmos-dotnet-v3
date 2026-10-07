@@ -31,11 +31,10 @@
     <Content Include="configs\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(ProjectRef)' != 'True' and '$(UseDirectProject)' == 'true'">
+  <PropertyGroup Condition="'$(ProjectRef)' != 'True'">
     <IsRidAgnostic>false</IsRidAgnostic>
   </PropertyGroup>
   <ItemGroup Condition="'$(ProjectRef)' != 'True'">
-    <ProjectReference Include="..\Microsoft.Azure.Cosmos\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" PrivateAssets="All" Condition="'$(UseDirectProject)' == 'true'" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" Condition="'$(UseDirectProject)' == 'false'" />
+    <ProjectReference Include="..\Microsoft.Azure.Cosmos\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" PrivateAssets="All" />
   </ItemGroup>
 </Project>

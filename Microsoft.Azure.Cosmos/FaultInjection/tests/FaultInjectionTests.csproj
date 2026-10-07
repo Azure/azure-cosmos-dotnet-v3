@@ -16,12 +16,11 @@
 	<LangVersion>$(LangVersion)</LangVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ProjectRef)' != 'True' and '$(UseDirectProject)' == 'true'">
+  <PropertyGroup Condition="'$(ProjectRef)' != 'True'">
     <IsRidAgnostic>false</IsRidAgnostic>
   </PropertyGroup>
   <ItemGroup Condition="'$(ProjectRef)' != 'True'">
-    <ProjectReference Include="..\..\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" PrivateAssets="All" Condition="'$(UseDirectProject)' == 'true'" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" Condition="'$(UseDirectProject)' == 'false'" />
+    <ProjectReference Include="..\..\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">

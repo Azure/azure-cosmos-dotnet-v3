@@ -111,6 +111,24 @@ namespace Microsoft.Azure.Cosmos.Contracts
         }
 
         [TestMethod]
+        public void LocalDirectProjectReferenceTest()
+        {
+            XDocument project = XDocument.Load(Path.Combine(Directory.GetCurrentDirectory(), "Microsoft.Azure.Cosmos.csproj"));
+            XElement directReference = project.Descendants("ProjectReference")
+                .Single(reference => (string)reference.Attribute("Include") == @"..\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj");
+
+            Assert.IsNull(directReference.Attribute("Condition"), "Public builds must not select a different Direct provider.");
+            Assert.IsFalse(
+                project.Descendants("PackageReference")
+                    .Any(reference => (string)reference.Attribute("Include") == "Microsoft.Azure.Cosmos.Direct"),
+                "The SDK must not reference the original Direct package.");
+            Assert.IsTrue(
+                project.Descendants("Import")
+                    .Any(import => (string)import.Attribute("Project") == @"..\Direct\QueryPlanInterop.props"),
+                "The native implementation must come from the QueryPlanInterop package.");
+        }
+
+        [TestMethod]
         public void ProjectPackageDependenciesTest()
         {
             string csprojFile = "Microsoft.Azure.Cosmos.csproj";
@@ -149,13 +167,8 @@ namespace Microsoft.Azure.Cosmos.Contracts
             string csprojFile = "Microsoft.Azure.Cosmos.csproj";
             Dictionary<string, Version> projDependencies = DirectContractTests.GetPackageReferencies(csprojFile);
 
-#if DIRECT_SOURCE
             string[] files = { "microsoft.hybridrow.nuspec" };
             Dictionary<string, Version> allDependencies = DirectContractTests.GetPackageReferencies("Microsoft.Azure.Cosmos.Direct.csproj");
-#else
-            string[] files = { "microsoft.hybridrow.nuspec", "Microsoft.Azure.Cosmos.Direct.nuspec" };
-            Dictionary<string, Version> allDependencies = new Dictionary<string, Version>();
-#endif
             foreach (string nuspecFile in files)
             {
                 Dictionary<string, Version> nuspecDependencies = DirectContractTests.GetNuspecDependencies(nuspecFile);

@@ -105,10 +105,11 @@ coverage remains a separate release requirement.
 
 ## Provider selection and packaging
 
-The Client, FaultInjection, tests and tools declare explicit conditional
-`ProjectReference` entries in their own project files. The existing root
-`Directory.Build.props` defaults `UseDirectProject` to `true` and validates the
-flag; reference selection and RID handling remain visible in each consuming project.
+The Client, FaultInjection, tests and source-consuming tools declare explicit
+`ProjectReference` entries to the local Direct project. Public builds always use
+that source and the QueryPlanInterop NuGet; there is no original Direct package
+or native DLL fallback. Reference selection and RID handling remain visible in
+each consuming project.
 The SDK package bundles the
 locally resolved Direct DLL; it does not expose Direct or QueryPlanInterop as
 consumer NuGet dependencies. Native packing reads directly from the restored
@@ -116,10 +117,14 @@ NuGet asset, independently of the host OS, RID or stale output files.
 The original Direct third-party notice is retained in the package under
 `ThirdPartyNotices/Microsoft.Azure.Cosmos.Direct.txt`.
 
-`UseDirectProject=false` is a temporary rollback to the original Direct 3.44.1
-NuGet package. Use a separate `--artifacts-path` for A/B comparisons so native
-outputs from the two providers cannot contaminate one another. The source-mode
-packaging provenance gate intentionally requires the new payload.
+Encryption projects built with `SdkProjectRef=true` also reference local Direct
+explicitly. Their test and performance consumers explicitly reference HybridRow
+in this mode because the SDK's private packaging dependencies do not flow through
+source project references. These additions do not apply to internal OSS builds.
+
+The packaging provenance gate requires the locally built Direct assembly and
+the QueryPlanInterop native payload. Legacy Direct-package DLLs and CRT payloads
+are not packaged or copied by the SDK's consumer targets.
 
 For internal OSS builds, `ProjectRef=True` suppresses both public providers and
 the public native package. The existing outer OSS `Directory.Build.targets`
