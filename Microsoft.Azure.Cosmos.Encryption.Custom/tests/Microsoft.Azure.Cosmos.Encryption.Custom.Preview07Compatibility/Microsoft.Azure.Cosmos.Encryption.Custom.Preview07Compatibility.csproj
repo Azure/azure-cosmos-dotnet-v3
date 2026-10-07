@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Microsoft.Azure.Cosmos.Encryption.Custom.Preview07Compatibility</AssemblyName>
+    <RootNamespace>Microsoft.Azure.Cosmos.Encryption.Custom.Preview07Compatibility</RootNamespace>
+    <LangVersion>10.0</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      This fixture must compile against the released package, not the project under test.
+      Package SHA256: 121AA0ED2A518D1F791992AC4E6A90B8E3A16A9BEDE4CB719F6156CF384398F8
+    -->
+    <PackageReference Include="Microsoft.Azure.Cosmos.Encryption.Custom" Version="1.0.0-preview07" PrivateAssets="all" />
+  </ItemGroup>
+</Project>
