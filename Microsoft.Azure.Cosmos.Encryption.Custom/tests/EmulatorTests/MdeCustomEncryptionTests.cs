@@ -791,10 +791,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             encryptor = new TestEncryptor(dekProvider);
             encryptionContainer = itemContainer.WithEncryptor(encryptor);
             for (int i = 0; i < 2; i++)
+            {
                 await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
 
-            testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
-            Assert.AreEqual(4, unwrapcount);
+                // The public TestEncryptor fallback fetches the key for every populated path on both
+                // the encrypt request and the decrypt response; zero TTL retains none between fetches.
+                testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
+                Assert.AreEqual((i + 1) * 2 * TestDoc.PathsToEncrypt.Count, unwrapcount);
+            }
 
             // 2 hours default
             testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
