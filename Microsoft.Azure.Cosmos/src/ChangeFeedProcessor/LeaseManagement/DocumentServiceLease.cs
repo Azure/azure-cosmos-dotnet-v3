@@ -62,9 +62,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public abstract string PartitionKey { get; }
 
         /// <summary>
-        /// Gets the Concurrency Token.
+        /// Gets or sets the Concurrency Token.
         /// </summary>
-        public abstract string ConcurrencyToken { get; }
+        public abstract string ConcurrencyToken { get; set; }
 
         /// <summary>
         /// Gets or sets custom lease properties which can be managed from <see cref="LoadBalancingStrategy"/>.
@@ -75,5 +75,27 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// Gets or sets the ChangeFeedMode.
         /// </summary>
         public abstract string Mode { get; set; }
+
+        internal DocumentServiceLease Clone()
+        {
+            // Preserve private persisted state, including legacy-schema migration metadata.
+            DocumentServiceLease clone = (DocumentServiceLease)this.MemberwiseClone();
+            if (clone.Properties != null)
+            {
+                clone.Properties = new Dictionary<string, string>(clone.Properties, clone.Properties.Comparer);
+            }
+
+            // Other supported feed ranges contain read-only partition-key values or strings.
+            if (clone.FeedRange is FeedRangeEpk epk)
+            {
+                clone.FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>(
+                    epk.Range.Min,
+                    epk.Range.Max,
+                    epk.Range.IsMinInclusive,
+                    epk.Range.IsMaxInclusive));
+            }
+
+            return clone;
+        }
     }
 }

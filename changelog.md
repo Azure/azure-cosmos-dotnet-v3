@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- Change Feed Processor: Fixes stale lease ETags after successful updates, avoiding unnecessary precondition failures and recovery reads during sequential checkpoints while preserving retries for concurrent updates.
+
 #### Other Changes
 
 ### <a name="3.64.0-preview.2"/> [3.64.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.2) - 2026-9-29
