@@ -218,6 +218,54 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task RetryOn429StopsAfterConfiguredRetryAttempts()
+        {
+            const int maxRetryAttempts = 2;
+            ItemBatchOperation itemBatchOperation = CreateItem("test");
+            TimeSpan retryDelay = TimeSpan.FromMilliseconds(50);
+            int requestCount = 0;
+
+            Mock<CosmosClientContext> mockedContext = this.MockClientContext();
+            mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions
+            {
+                MaxRetryAttemptsOnRateLimitedRequests = maxRetryAttempts,
+                MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(1)
+            });
+            mockedContext
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<Cosmos.FeedRange>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(() =>
+                {
+                    Interlocked.Increment(ref requestCount);
+                    return Generate429ResponseAsync(itemBatchOperation, retryDelay);
+                });
+            mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
+
+            using BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(
+                this.CreateMockContainer().Object,
+                mockedContext.Object,
+                20,
+                BatchAsyncContainerExecutorCache.DefaultMaxBulkRequestBodySizeInBytes);
+
+            TransactionalBatchOperationResult result = await executor.AddAsync(
+                itemBatchOperation,
+                NoOpTrace.Singleton);
+
+            Assert.AreEqual(HttpStatusCode.TooManyRequests, result.StatusCode);
+            Assert.AreEqual(maxRetryAttempts + 1, requestCount);
+            Assert.AreEqual(retryDelay, result.RetryAfter);
+        }
+
+        [TestMethod]
         public async Task CancellationPreventsDelayedRetry()
         {
             ItemBatchOperation itemBatchOperation = CreateItem("test");
