@@ -34,12 +34,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             DocumentServiceLease lease = cachedLease;
             for (int retryCount = RetryCountOnConflict; retryCount >= 0; retryCount--)
             {
-                lease = updateLease(lease);
+                // Do not let update delegates mutate a lease shared by the processor's tasks.
+                lease = updateLease(lease.Clone());
                 if (lease == null)
                 {
                     return null;
                 }
 
+                // Delegates can reattach caller-owned state (for example, lease.Properties).
+                // Detach it before serialization and never apply a response ETag to shared state.
+                lease = lease.Clone();
                 lease.Timestamp = DateTime.UtcNow;
                 DocumentServiceLease leaseDocument = await this.TryReplaceLeaseAsync(lease, partitionKey, itemId).ConfigureAwait(false);
                 if (leaseDocument != null)
@@ -87,7 +91,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     partitionKey,
                     itemRequestOptions).ConfigureAwait(false);
 
-                return response.Resource;
+                if (string.IsNullOrWhiteSpace(response.ETag))
+                {
+                    DefaultTrace.TraceError("Lease with token {0} replace response did not contain an ETag.", lease.CurrentLeaseToken);
+                    throw new InvalidOperationException("The lease replace response did not contain an ETag.");
+                }
+
+                lease.ConcurrencyToken = response.ETag;
+                return lease;
             }
             catch (CosmosException ex)
             {
