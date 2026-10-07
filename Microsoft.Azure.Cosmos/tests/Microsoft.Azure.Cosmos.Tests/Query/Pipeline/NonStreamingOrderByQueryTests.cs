@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
@@ -668,6 +669,85 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
             }
         }
+        [DataTestMethod]
+        [DataRow(false, false)]
+        [DataRow(false, true)]
+        [DataRow(true, false)]
+        [DataRow(true, true)]
+        public void HybridSearchResultPreservesCachedDocumentRid(bool nestedPayload, bool includePayload)
+        {
+            const ulong documentRid = 256;
+            CosmosString rid = CosmosString.Create(Documents.ResourceId.NewCollectionChildResourceId(
+                CollectionRid,
+                documentRid,
+                Documents.ResourceType.Document).ToString());
+            CosmosArray scores = CosmosArray.Create(new CosmosElement[] { CosmosNumber64.Create(1) });
+            CosmosElement payload = CosmosString.Create("document");
+            Dictionary<string, CosmosElement> properties = new Dictionary<string, CosmosElement>
+            {
+                [ComponentScores] = scores,
+            };
+            if (includePayload)
+            {
+                properties[Payload] = payload;
+            }
+
+            if (nestedPayload)
+            {
+                properties = new Dictionary<string, CosmosElement>
+                {
+                    [Payload] = CosmosObject.Create(properties),
+                };
+            }
+
+            properties[RId] = rid;
+            HybridSearchQueryResult result = HybridSearchQueryResult.Create(CosmosObject.Create(properties));
+            HybridSearchQueryResult scored = result.WithScore(0.25).WithScore(0.5);
+
+            Assert.AreEqual(documentRid, result.DocumentRid);
+            Assert.AreEqual(documentRid, scored.DocumentRid);
+            Assert.AreSame(rid, scored.Rid);
+            Assert.AreSame(scores, scored.ComponentScores);
+            Assert.AreSame(includePayload ? payload : CosmosUndefined.Create(), scored.Payload);
+            Assert.AreEqual(0.0, result.Score);
+            Assert.AreEqual(0.5, scored.Score);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task HybridSearchComponentTiesUseNumericRidOrder(bool useCompetitionRanking)
+        {
+            // Include base64 characters whose ordinal order differs from numeric RID order.
+            const int count = 64;
+            double[] scores = Enumerable.Repeat(1.0, count).ToArray();
+            int[] actual = await RunRankScenarioAsync(
+                scores,
+                useCompetitionRanking,
+                secondComponentScores: scores);
+
+            CollectionAssert.AreEqual(Enumerable.Range(0, count).Reverse().ToArray(), actual);
+        }
+
+        [TestMethod]
+        public async Task HybridSearchFinalScoreTiesUseNumericRidOrder()
+        {
+            const int count = 64;
+            double[] firstScores = Enumerable.Range(0, count).Select(index => (double)(count - index)).ToArray();
+            double[] secondScores = Enumerable.Range(0, count).Select(index => index + 1.0).ToArray();
+            int[] expected = Enumerable.Range(0, count)
+                .OrderByDescending(index => (1.0 / (61 + index)) + (1.0 / (60 + count - index)))
+                .ThenByDescending(index => index)
+                .ToArray();
+            int[] actual = await RunRankScenarioAsync(
+                firstScores,
+                useCompetitionRanking: false,
+                secondComponentScores: secondScores,
+                weights: new[] { 1.0, 1.0 });
+
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
         private static async Task AssertRankScenarioAsync(
             double[] firstComponentScores,
             int[] expected,
@@ -685,7 +765,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static async Task<int[]> RunRankScenarioAsync(
             double[] firstComponentScores,
-            bool useCompetitionRanking)
+            bool useCompetitionRanking,
+            double[] secondComponentScores = null,
+            double[] weights = null)
         {
             IReadOnlyList<FeedRangeEpk> feedRanges = new List<FeedRangeEpk>
             {
@@ -706,7 +788,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 calculateScores: (_, index) => new[]
                 {
                     firstComponentScores[index],
-                    index + 1.0,
+                    secondComponentScores == null ? index + 1.0 : secondComponentScores[index],
                 });
 
             (IReadOnlyList<CosmosElement> results, _) = await CreateAndRunHybridSearchQueryPipelineStage(
@@ -717,7 +799,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 pageSize: firstComponentScores.Length,
                 skip: null,
                 take: null,
-                weights: new[] { 2.0, 1.0 },
+                weights: weights ?? new[] { 2.0, 1.0 },
                 skipOrderByRewrite: false,
                 fullTextScoreScope: FullTextScoreScope.Local,
                 useCompetitionRanking: useCompetitionRanking);
