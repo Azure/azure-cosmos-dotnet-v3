@@ -811,13 +811,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             Assert.AreEqual(1, unwrapcount);
         }
 
-        [TestMethod]
-        public async Task ValidateCachingIsolationAcrossCoexistingProviders()
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ValidateCachingIsolationAcrossCoexistingProviders(bool usePublicFallback)
         {
-            // Two providers coexisting in one process must each honor their own DataEncryptionKeyCacheTimeToLive: a
-            // provider set to TimeSpan.Zero keeps unwrapping on every operation while another with a positive
-            // lifetime caches. Each gets its own key store provider so unwrap calls are counted independently.
-            string dekId = "coexistDek";
+            // The public TestEncryptor wrapper uses the per-property fallback, while CosmosEncryptor
+            // fetches the key once per encrypt/decrypt direction through its internal accessor.
+            string dekId = $"coexistDek-{usePublicFallback}";
             await CreateDekAsync(dualDekProvider, dekId);
 
             TestEncryptionKeyStoreProvider cachingStoreProvider = new()
@@ -834,22 +835,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             CosmosDataEncryptionKeyProvider noRetentionProvider = new(noRetentionStoreProvider);
             await noRetentionProvider.InitializeAsync(database, keyContainer.Id);
 
-            Container cachingContainer = itemContainer.WithEncryptor(new TestEncryptor(cachingProvider));
-            Container noRetentionContainer = itemContainer.WithEncryptor(new TestEncryptor(noRetentionProvider));
+            Encryptor cachingEncryptor = usePublicFallback ? new TestEncryptor(cachingProvider) : new CosmosEncryptor(cachingProvider);
+            Encryptor noRetentionEncryptor = usePublicFallback ? new TestEncryptor(noRetentionProvider) : new CosmosEncryptor(noRetentionProvider);
+            Container cachingContainer = itemContainer.WithEncryptor(cachingEncryptor);
+            Container noRetentionContainer = itemContainer.WithEncryptor(noRetentionEncryptor);
 
             // Interleave operations so both providers stay active throughout.
             for (int i = 0; i < 2; i++)
             {
                 await CreateItemAsync(cachingContainer, dekId, TestDoc.PathsToEncrypt);
+                cachingStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int cachingUnwrapCount);
+                Assert.AreEqual(1, cachingUnwrapCount, "Caching provider (30 min TTL) should reuse its own unwrapped key.");
+
                 await CreateItemAsync(noRetentionContainer, dekId, TestDoc.PathsToEncrypt);
+                noRetentionStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int noRetentionUnwrapCount);
+
+                // Each create encrypts all populated paths and decrypts the response; only the built-in
+                // accessor fetches the key once per direction rather than once per path.
+                int unwrapsPerCreate = usePublicFallback ? 2 * TestDoc.PathsToEncrypt.Count : 2;
+                Assert.AreEqual((i + 1) * unwrapsPerCreate, noRetentionUnwrapCount, "Zero-TTL provider should unwrap for every required key fetch.");
+                cachingStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out cachingUnwrapCount);
+                Assert.AreEqual(1, cachingUnwrapCount, "Interleaved zero-TTL operations must not evict the caching provider's key.");
             }
-
-            cachingStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int cachingUnwrapCount);
-            noRetentionStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int noRetentionUnwrapCount);
-
-            // Each create performs one encrypt plus one decrypt of the response, so the uncached provider unwraps four times.
-            Assert.AreEqual(1, cachingUnwrapCount, "Caching provider (30 min TTL) should unwrap the key exactly once.");
-            Assert.AreEqual(4, noRetentionUnwrapCount, "No-retention provider (TimeSpan.Zero) should unwrap on every operation, independently of the caching provider.");
         }
 
         [TestMethod]
@@ -3219,4 +3226,3 @@ cancellationToken) =>
         #endregion
     }
 }
-
