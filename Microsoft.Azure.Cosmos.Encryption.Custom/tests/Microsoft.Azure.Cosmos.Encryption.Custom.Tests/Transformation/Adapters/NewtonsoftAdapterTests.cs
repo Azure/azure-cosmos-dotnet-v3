@@ -83,21 +83,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         {
             NewtonsoftAdapter adapter = new (new MdeJObjectEncryptionProcessor());
 
-            #pragma warning disable CS0618
-            EncryptionProperties legacyProps = new (
-                encryptionFormatVersion: 2,
-                encryptionAlgorithm: CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                dataEncryptionKeyId: "legacy-dek",
-                encryptedData: null,
-                encryptedPaths: new[] { "/Sensitive" });
-            #pragma warning restore CS0618
-            JObject legacyDoc = new ()
-            {
-                ["id"] = "1",
-                [Constants.EncryptedInfo] = JObject.FromObject(legacyProps),
-            };
-
-            using MemoryStream input = new (Encoding.UTF8.GetBytes(legacyDoc.ToString(Formatting.None)));
+            using MemoryStream input = new (Convert.FromBase64String(EncryptionMetadataEnvelopeTests.Preview07LegacyFixtureBase64));
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
             (Stream result, DecryptionContext context) = await adapter.DecryptAsync(input, mockEncryptor.Object, diagnostics, CancellationToken.None);

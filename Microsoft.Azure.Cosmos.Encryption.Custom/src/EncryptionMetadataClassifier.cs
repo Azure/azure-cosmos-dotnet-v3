@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
+    using System.Globalization;
     using Newtonsoft.Json.Linq;
 #if NET8_0_OR_GREATER
     using System.Text.Json;
@@ -42,12 +43,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             JToken algorithm = metadata[Constants.EncryptionAlgorithm];
+            JToken version = metadata[Constants.EncryptionFormatVersion];
+            JToken dekId = metadata[Constants.EncryptionDekId];
             JToken encryptedData = metadata[Constants.EncryptedData];
             JToken encryptedPaths = metadata[Constants.EncryptedPaths];
 
             return Classify(
                 GetString(algorithm, out string algorithmValue),
                 algorithmValue,
+                GetVersionState(version),
+                GetString(dekId, out string dekIdValue),
+                dekIdValue,
                 GetEncryptedDataState(encryptedData),
                 GetPathsState(encryptedPaths));
         }
@@ -66,9 +72,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             JsonElement algorithm = default;
+            JsonElement version = default;
+            JsonElement dekId = default;
             JsonElement encryptedData = default;
             JsonElement encryptedPaths = default;
             bool hasAlgorithm = encryptionMetadata.TryGetProperty(Constants.EncryptionAlgorithm, out algorithm);
+            bool hasVersion = encryptionMetadata.TryGetProperty(Constants.EncryptionFormatVersion, out version);
+            bool hasDekId = encryptionMetadata.TryGetProperty(Constants.EncryptionDekId, out dekId);
             bool hasEncryptedData = encryptionMetadata.TryGetProperty(Constants.EncryptedData, out encryptedData);
             bool hasEncryptedPaths = encryptionMetadata.TryGetProperty(Constants.EncryptedPaths, out encryptedPaths);
 
@@ -80,12 +90,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         ? ValueState.Value
                         : ValueState.Invalid;
             string algorithmValue = algorithmState == ValueState.Value ? algorithm.GetString() : null;
+            ValueState dekIdState = !hasDekId
+                ? ValueState.Missing
+                : dekId.ValueKind == JsonValueKind.Null
+                    ? ValueState.Null
+                    : dekId.ValueKind == JsonValueKind.String
+                        ? ValueState.Value
+                        : ValueState.Invalid;
+            string dekIdValue = dekIdState == ValueState.Value ? dekId.GetString() : null;
             EncryptedDataState encryptedDataState = !hasEncryptedData
                 ? EncryptedDataState.Missing
                 : encryptedData.ValueKind == JsonValueKind.Null
                     ? EncryptedDataState.Null
                     : encryptedData.ValueKind == JsonValueKind.String
-                        ? EncryptedDataState.Value
+                        ? encryptedData.GetString().Length == 0
+                            ? EncryptedDataState.Empty
+                            : EncryptedDataState.Value
                         : EncryptedDataState.Invalid;
             PathsState pathsState;
             if (!hasEncryptedPaths)
@@ -106,6 +126,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return Classify(
                 algorithmState,
                 algorithmValue,
+                hasVersion ? GetVersionState(version) : ValueState.Missing,
+                dekIdState,
+                dekIdValue,
                 encryptedDataState,
                 pathsState);
         }
@@ -122,6 +145,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private static EncryptionMetadataDisposition Classify(
             ValueState algorithmState,
             string algorithm,
+            ValueState versionState,
+            ValueState dekIdState,
+            string dekId,
             EncryptedDataState encryptedDataState,
             PathsState pathsState)
         {
@@ -145,10 +171,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return EncryptionMetadataDisposition.Invalid;
             }
 
-            if (string.Equals(
+            bool isMde = string.Equals(
                 algorithm,
                 CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                StringComparison.Ordinal))
+                StringComparison.Ordinal);
+#pragma warning disable CS0618
+            bool isLegacy = string.Equals(
+                algorithm,
+                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                StringComparison.Ordinal);
+#pragma warning restore CS0618
+            if ((isMde || isLegacy) &&
+                (versionState != ValueState.Value ||
+                 dekIdState != ValueState.Value ||
+                 string.IsNullOrWhiteSpace(dekId)))
+            {
+                return EncryptionMetadataDisposition.Invalid;
+            }
+
+            if (isMde)
             {
                 return (encryptedDataState == EncryptedDataState.Missing ||
                         encryptedDataState == EncryptedDataState.Null) &&
@@ -157,14 +198,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     : EncryptionMetadataDisposition.Invalid;
             }
 
-#pragma warning disable CS0618
-            if (string.Equals(
-                algorithm,
-                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                StringComparison.Ordinal))
-#pragma warning restore CS0618
+            if (isLegacy)
             {
-                return EncryptionMetadataDisposition.Legacy;
+                // Legacy owns the _ed envelope field, not the encryptor's ciphertext byte format.
+                return encryptedDataState == EncryptedDataState.Value
+                    ? EncryptionMetadataDisposition.Legacy
+                    : EncryptionMetadataDisposition.Invalid;
             }
 
             return EncryptionMetadataDisposition.Unsupported;
@@ -192,6 +231,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return ValueState.Value;
         }
 
+        private static ValueState GetVersionState(JToken value)
+        {
+            if (value == null)
+            {
+                return ValueState.Missing;
+            }
+
+            if (value.Type == JTokenType.Null)
+            {
+                return ValueState.Null;
+            }
+
+            return (value.Type == JTokenType.Integer || value.Type == JTokenType.String) &&
+                int.TryParse(value.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out _)
+                ? ValueState.Value
+                : ValueState.Invalid;
+        }
+
         private static EncryptedDataState GetEncryptedDataState(JToken value)
         {
             if (value == null)
@@ -202,7 +259,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return value.Type switch
             {
                 JTokenType.Null => EncryptedDataState.Null,
-                JTokenType.String => EncryptedDataState.Value,
+                JTokenType.String => value.Value<string>().Length == 0
+                    ? EncryptedDataState.Empty
+                    : EncryptedDataState.Value,
                 _ => EncryptedDataState.Invalid,
             };
         }
@@ -236,6 +295,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
 #if NET8_0_OR_GREATER
+        private static ValueState GetVersionState(JsonElement value)
+        {
+            if (value.ValueKind == JsonValueKind.Null)
+            {
+                return ValueState.Null;
+            }
+
+            return (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out _)) ||
+                (value.ValueKind == JsonValueKind.String &&
+                 int.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                ? ValueState.Value
+                : ValueState.Invalid;
+        }
+
         private static PathsState GetPathsState(JsonElement paths)
         {
             int count = 0;
@@ -274,6 +347,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             Missing,
             Null,
+            Empty,
             Value,
             Invalid,
         }

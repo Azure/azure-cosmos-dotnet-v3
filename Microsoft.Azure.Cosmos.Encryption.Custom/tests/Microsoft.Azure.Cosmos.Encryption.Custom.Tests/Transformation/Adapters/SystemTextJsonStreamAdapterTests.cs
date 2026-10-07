@@ -368,10 +368,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         public async Task DecryptAsync_WithLegacyAlgorithm_Throws()
         {
             SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
-            EncryptionProperties legacyProps = CreateLegacyEncryptionProperties();
-            EncryptionPropertiesWrapper wrapper = new (legacyProps);
-            byte[] payload = JsonSerializer.SerializeToUtf8Bytes(wrapper);
-            using MemoryStream input = new (payload);
+            using MemoryStream input = new (Convert.FromBase64String(EncryptionMetadataEnvelopeTests.Preview07LegacyFixtureBase64));
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
             NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(async () =>
@@ -393,17 +390,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             return encrypted;
         }
 
-        private static EncryptionProperties CreateLegacyEncryptionProperties()
-        {
-#pragma warning disable CS0618
-            return new EncryptionProperties(
-                encryptionFormatVersion: 2,
-                encryptionAlgorithm: CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                dataEncryptionKeyId: "legacy-dek",
-                encryptedData: null,
-                encryptedPaths: new[] { "/Sensitive" });
-#pragma warning restore CS0618
-        }
     }
 }
 #endif
