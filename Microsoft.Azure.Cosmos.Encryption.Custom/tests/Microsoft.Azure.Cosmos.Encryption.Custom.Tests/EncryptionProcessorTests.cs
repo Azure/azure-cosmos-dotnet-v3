@@ -25,14 +25,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     [TestClass]
     public class EncryptionProcessorTests
     {
-        private static Mock<Encryptor> mockEncryptor;
+        private static TestEncryptorFactory.MdeConcreteEncryptor mockEncryptor;
         private const string DekId = "dekId";
 
         [ClassInitialize]
         public static void ClassInitialize(TestContext ctx)
         {
             _ = ctx;
-            mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out _);
+            mockEncryptor = TestEncryptorFactory.CreateMde(DekId);
         }
 
 #if NET8_0_OR_GREATER

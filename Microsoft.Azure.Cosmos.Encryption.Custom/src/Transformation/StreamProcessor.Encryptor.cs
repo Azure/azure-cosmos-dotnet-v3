@@ -45,7 +45,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             using ArrayPoolManager arrayPoolManager = new ();
 
-            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, cancellationToken);
+            MdeCryptoOperationAdapter cryptoOperationAdapter = await MdeCryptoOperationAdapter.CreateAsync(
+                encryptor,
+                encryptionOptions.DataEncryptionKeyId,
+                encryptionOptions.EncryptionAlgorithm,
+                this.Encryptor,
+                cancellationToken).ConfigureAwait(false);
+            if (cryptoOperationAdapter.UsesPublicEncryptor)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            using PooledMemoryStream publicFallbackOutput = cryptoOperationAdapter.UsesPublicEncryptor
+                ? new PooledMemoryStream()
+                : null;
+            Stream encryptionOutput = publicFallbackOutput ?? outputStream;
 
             // Pre-encode the paths-to-encrypt as UTF-8 byte sequences so that we can match
             // against Utf8JsonReader tokens with ValueTextEquals (which correctly handles
@@ -55,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             // preserved for the pathsEncrypted output list.
             (byte[] nameBytes, string fullPath)[] encryptedPathsTable = BuildEncryptedPathsTable(encryptionOptions.PathsToEncrypt);
 
-            using Utf8JsonWriter writer = new (outputStream);
+            using Utf8JsonWriter writer = new (encryptionOutput);
 
             byte[] buffer = arrayPoolManager.Rent(PooledStreamConfiguration.Current.StreamProcessorBufferSize);
 
@@ -73,6 +87,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             bool awaitingEncryptionMetadataValue = false;
             bool awaitingEncryptionAlgorithmValue = false;
             int encryptionMetadataObjectDepth = -1;
+            Task<MdeCryptoResult> pendingCryptoOperation = null;
 
             try
             {
@@ -82,17 +97,38 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     int dataSize = dataLength + leftOver;
                     isFinalBlock = dataLength == 0;
 
-                    long bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
+                    while (true)
+                    {
+                        pendingCryptoOperation = null;
+                        long bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
+                        int remaining = dataSize - (int)bytesConsumed;
 
-                    leftOver = dataSize - (int)bytesConsumed;
+                        if (pendingCryptoOperation != null)
+                        {
+                            MdeCryptoResult result = await pendingCryptoOperation.ConfigureAwait(false);
+                            WriteEncryptedValue(result);
 
-                    buffer = HandleReadBuffer(
-                        buffer,
-                        dataSize,
-                        leftOver,
-                        isFinalBlock,
-                        arrayPoolManager,
-                        JsonFeedStreamHelper.MaximumBufferSize);
+                            if (remaining == 0)
+                            {
+                                leftOver = 0;
+                                break;
+                            }
+
+                            buffer.AsSpan((int)bytesConsumed, remaining).CopyTo(buffer);
+                            dataSize = remaining;
+                            continue;
+                        }
+
+                        leftOver = remaining;
+                        buffer = HandleReadBuffer(
+                            buffer,
+                            dataSize,
+                            leftOver,
+                            isFinalBlock,
+                            arrayPoolManager,
+                            JsonFeedStreamHelper.MaximumBufferSize);
+                        break;
+                    }
                 }
 
                 await inputStream.DisposeAsync();
@@ -121,6 +157,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             writer.WriteEndObject();
 
             writer.Flush();
+
+            if (publicFallbackOutput != null)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (publicFallbackOutput.TryGetBuffer(out ArraySegment<byte> encryptedDocument) &&
+                    encryptedDocument.Count > 0)
+                {
+                    await outputStream.WriteAsync(
+                        encryptedDocument.Array.AsMemory(
+                            encryptedDocument.Offset,
+                            encryptedDocument.Count),
+                        CancellationToken.None).ConfigureAwait(false);
+                }
+            }
+
             outputStream.Position = 0;
 
             long TransformEncryptBuffer(ReadOnlySpan<byte> buffer)
@@ -229,13 +280,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             {
                                 currentWriter.Flush();
                                 (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
-                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Object);
-                                writer.WriteBase64StringValue(encryptedBytes);
-
-                                encryptPropertyName = null;
+                                bool encryptionCompleted = TryTransformEncryptPayload(bytes, length, TypeMarker.Object, out MdeCryptoResult result);
                                 encryptionPayloadWriter = null;
                                 bufferWriter?.Dispose();
                                 bufferWriter = null;
+                                if (!encryptionCompleted)
+                                {
+                                    state = reader.CurrentState;
+                                    return reader.BytesConsumed;
+                                }
+
+                                WriteEncryptedValue(result);
                             }
 
                             break;
@@ -258,13 +313,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             {
                                 currentWriter.Flush();
                                 (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
-                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Array);
-                                writer.WriteBase64StringValue(encryptedBytes);
-
-                                encryptPropertyName = null;
+                                bool encryptionCompleted = TryTransformEncryptPayload(bytes, length, TypeMarker.Array, out MdeCryptoResult result);
                                 encryptionPayloadWriter = null;
                                 bufferWriter?.Dispose();
                                 bufferWriter = null;
+                                if (!encryptionCompleted)
+                                {
+                                    state = reader.CurrentState;
+                                    return reader.BytesConsumed;
+                                }
+
+                                WriteEncryptedValue(result);
                             }
 
                             break;
@@ -314,9 +373,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             {
                                 byte[] bytes = arrayPoolManager.Rent(reader.ValueSpan.Length);
                                 int length = reader.CopyString(bytes);
-                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.String);
-                                currentWriter.WriteBase64StringValue(encryptedBytes);
-                                encryptPropertyName = null;
+                                if (!TryTransformEncryptPayload(bytes, length, TypeMarker.String, out MdeCryptoResult result))
+                                {
+                                    state = reader.CurrentState;
+                                    return reader.BytesConsumed;
+                                }
+
+                                WriteEncryptedValue(result);
                             }
                             else
                             {
@@ -328,9 +391,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
                             {
                                 (TypeMarker typeMarker, byte[] bytes, int length) = SerializeNumber(reader.ValueSpan, arrayPoolManager);
-                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, typeMarker);
-                                currentWriter.WriteBase64StringValue(encryptedBytes);
-                                encryptPropertyName = null;
+                                if (!TryTransformEncryptPayload(bytes, length, typeMarker, out MdeCryptoResult result))
+                                {
+                                    state = reader.CurrentState;
+                                    return reader.BytesConsumed;
+                                }
+
+                                WriteEncryptedValue(result);
                             }
                             else
                             {
@@ -342,9 +409,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
                             {
                                 (byte[] bytes, int length) = Serialize(true, arrayPoolManager);
-                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Boolean);
-                                currentWriter.WriteBase64StringValue(encryptedBytes);
-                                encryptPropertyName = null;
+                                if (!TryTransformEncryptPayload(bytes, length, TypeMarker.Boolean, out MdeCryptoResult result))
+                                {
+                                    state = reader.CurrentState;
+                                    return reader.BytesConsumed;
+                                }
+
+                                WriteEncryptedValue(result);
                             }
                             else
                             {
@@ -356,9 +427,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
                             {
                                 (byte[] bytes, int length) = Serialize(false, arrayPoolManager);
-                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Boolean);
-                                currentWriter.WriteBase64StringValue(encryptedBytes);
-                                encryptPropertyName = null;
+                                if (!TryTransformEncryptPayload(bytes, length, TypeMarker.Boolean, out MdeCryptoResult result))
+                                {
+                                    state = reader.CurrentState;
+                                    return reader.BytesConsumed;
+                                }
+
+                                WriteEncryptedValue(result);
                             }
                             else
                             {
@@ -386,15 +461,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return reader.BytesConsumed;
             }
 
-            ReadOnlySpan<byte> TransformEncryptPayload(byte[] payload, int payloadSize, TypeMarker typeMarker)
+            bool TryTransformEncryptPayload(
+                byte[] payload,
+                int payloadSize,
+                TypeMarker typeMarker,
+                out MdeCryptoResult result)
             {
-                byte[] processedBytes = payload;
-                int processedBytesLength = payloadSize;
+                return cryptoOperationAdapter.TryEncrypt(
+                    typeMarker,
+                    payload,
+                    payloadSize,
+                    arrayPoolManager,
+                    out result,
+                    out pendingCryptoOperation);
+            }
 
-                (byte[] encryptedBytes, int encryptedBytesCount) = this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength, arrayPoolManager);
-
+            void WriteEncryptedValue(MdeCryptoResult result)
+            {
+                writer.WriteBase64StringValue(result.Buffer.AsSpan(0, result.Length));
                 pathsEncrypted.Add(encryptPropertyName);
-                return encryptedBytes.AsSpan(0, encryptedBytesCount);
+                encryptPropertyName = null;
             }
         }
 

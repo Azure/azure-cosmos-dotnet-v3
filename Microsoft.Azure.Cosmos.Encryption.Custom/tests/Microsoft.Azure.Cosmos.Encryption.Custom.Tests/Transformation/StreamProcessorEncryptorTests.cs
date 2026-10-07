@@ -17,15 +17,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
     using Microsoft.Azure.Cosmos.Encryption.Custom.Tests;
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
 
     [TestClass]
     public class StreamProcessorEncryptorTests
     {
         private const string DekId = "dekId";
-        private static Mock<Encryptor> mockEncryptor;
-        private static Mock<DataEncryptionKey> mockDek;
-
+        private static TestEncryptorFactory.MdeConcreteEncryptor mockEncryptor;
         [ClassInitialize]
         public static void Init(TestContext ctx)
         {
@@ -33,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             // Exercise buffer growth with small initial buffer size
             PooledStreamConfiguration.SetConfiguration(new PooledStreamConfiguration { StreamProcessorBufferSize = 8 });
 
-            mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out mockDek);
+            mockEncryptor = TestEncryptorFactory.CreateMde(DekId);
         }
 
         private static EncryptionOptions CreateOptions(IEnumerable<string> paths)
