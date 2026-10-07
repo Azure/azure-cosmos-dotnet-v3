@@ -19,15 +19,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
-- [6129](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6129) Query: Support hybrid search queries that project or filter on `FullTextScore`.
-
 #### Breaking Changes
 
 #### Bugs Fixed
 
 #### Other Changes
 
+### <a name="3.64.0-preview.2"/> [3.64.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.2) - 2026-9-29
+
+#### Other Changes
+
+- [6086](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6086) Distributed Transactions (preview): Distinguishes write retries and possible cross-region replays from first submissions using token-scoped request headers. Cross-region signaling remains set until the token rotates; read transactions omit these headers.
+
+### <a name="3.63.2"/> [3.63.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.2) - 2026-9-29
+
+#### Features Added
+
+- [6129](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6129) Query: Support hybrid search queries that project or filter on `FullTextScore`.
+
+#### Other Changes
+
 - [6127](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6127) Direct: Updated the dependency to version 3.44.1, adding native query-planning support for `FullTextScore` expressions in the `SELECT` and `WHERE` clauses of hybrid search queries. Hybrid search query plans now also include the searched document paths and terms.
+- [6095](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6095) Diagnostics: Adds behavior-influencing distributed transaction request headers to `CosmosDiagnostics`. Traces now report `IsDtxRetry` and `IsDtxCrossRegionRedirect` on the `HttpResponseStats` entry. Traces for requests that do not carry these headers are unchanged.
 
 ### <a name="3.64.0-preview.1"/> [3.64.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.1) - 2026-9-17
 
@@ -92,8 +105,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [6097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6097) ClientId: Adds an SDK-generated `x-ms-client-id` header, carrying a stable per-`CosmosClient` identifier, to every HTTP request the SDK issues — gateway data-plane, metadata, and control-plane (including database account reads), thin-client requests, and automatically retried and cross-region hedged requests. This lets the service correlate all requests originating from the same client. Direct-mode (TCP) requests are unaffected, as the RNTBD protocol has no client-id token.
 - [6063](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6063) Query: Reduces backend over-fetch for cross-partition `ORDER BY` queries that use `TOP`, `LIMIT`, or `OFFSET`/`LIMIT` by lowering the per-partition page size from 5x each partition's proportional share of the requested document count to 2x, which reduces query latency and backend load without changing results. Workloads with a heavily skewed sort key may see additional round trips; the previous behavior can be restored by setting the environment variable `AZURE_COSMOS_PAGE_SIZE_FACTOR_FOR_TOP=5`.
 - [5991](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5991) TargetReplicaSetSize : Updated address cache logic to use partition-specific target replica set size when available, falling back to the user replication policy value.
-- [6086](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6086) Distributed Transactions (preview): Distinguishes write retries and possible cross-region replays from first submissions using token-scoped request headers. Cross-region signaling remains set until the token rotates; read transactions omit these headers.
-- [6095](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6095) Diagnostics: Adds behavior-influencing distributed transaction request headers to `CosmosDiagnostics`. Traces now report `IsDtxRetry` and `IsDtxCrossRegionRedirect` on the `HttpResponseStats` entry. Traces for requests that do not carry these headers are unchanged.
 
 ### <a name="3.63.0-preview.1"/> [3.63.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.0-preview.1) - 2026-8-5
 
