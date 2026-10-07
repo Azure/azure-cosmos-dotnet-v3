@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
-- Change Feed Processor: Fixes stale lease ETags after successful updates, avoiding unnecessary precondition failures and recovery reads during sequential checkpoints while preserving retries for concurrent updates.
+- [6147](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6147) Change Feed Processor: Fixes stale lease ETags after successful updates, avoiding unnecessary precondition failures and recovery reads during sequential checkpoints while preserving retries for concurrent updates.
 
 #### Other Changes
 
