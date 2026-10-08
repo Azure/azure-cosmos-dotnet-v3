@@ -247,5 +247,104 @@ namespace Microsoft.Azure.Documents
                 }
             }
         }
+
+        /// <summary>
+        /// Exceptionless retry loop. The <paramref name="callbackMethod"/> returns
+        /// <see cref="Result{T}"/> instead of throwing. Exceptions carried inside the
+        /// result are passed to the <paramref name="retryPolicy"/> to decide whether
+        /// to retry.
+        /// </summary>
+        /// <remarks>
+        /// Mirrors the SDK-specific behavior: does not check cancellationToken between
+        /// capturing an error and evaluating the retry policy.
+        /// </remarks>
+        public static async Task<Res<T>> TryExecuteAsync(
+            Func<Task<Res<T>>> callbackMethod,
+            IRetryPolicy retryPolicy,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            while (true)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Res.FromException<T>(new OperationCanceledException(cancellationToken));
+                }
+
+                Res<T> result;
+                Exception escapedException = null;
+                try
+                {
+                    result = await callbackMethod();
+                }
+                catch (Exception ex)
+                {
+                    // Not every layer below this loop is exceptionless yet. Address resolution in
+                    // particular still throws (for example InvalidPartitionException when the
+                    // collection no longer exists, or GoneException when no primary replica is
+                    // present). Capture those the same way the throwing loop does so the retry
+                    // policy still sees them; otherwise they escape unretried and an intermediate
+                    // status reaches the caller instead of the terminal status the retry would
+                    // have resolved to.
+                    //
+                    // The Yield resets the stack to avoid deep async continuation chains on retry.
+                    await Task.Yield();
+
+                    escapedException = ex;
+                    result = Res.FromException<T>(ex);
+                }
+
+                if (result.IsSuccess)
+                {
+                    return result;
+                }
+
+                ShouldRetryResult shouldRetry;
+                try
+                {
+                    shouldRetry = await retryPolicy.ShouldRetryAsync(result.Exception, cancellationToken);
+                }
+                catch (Exception retryPolicyException)
+                {
+                    return Res.FromException<T>(retryPolicyException);
+                }
+
+                if (escapedException != null)
+                {
+                    // Reported after the policy resolves so retryable is the policy's real verdict
+                    // rather than a guess. A retryable escape is the dangerous kind: before this
+                    // loop caught it the policy never ran, so the client could receive an
+                    // intermediate status instead of the terminal one.
+                    ExceptionlessEscapeTrace.TraceEscape(
+                        ExceptionlessEscapeTrace.BackoffRetryUtilityLoop,
+                        escapedException,
+                        shouldRetry.ShouldRetry);
+                }
+
+                if (shouldRetry.ShouldIgnoreException.HasValue && shouldRetry.ShouldIgnoreException.Value)
+                {
+                    DefaultTrace.TraceInformation("Ignoring exception since ShouldIgnoreException is true. Exception: {0}", result.Exception.Message);
+                    return Res.Success<T>(default);
+                }
+
+                if (!shouldRetry.ShouldRetry)
+                {
+                    if (shouldRetry.ExceptionToThrow != null)
+                    {
+                        return Res.FromException<T>(shouldRetry.ExceptionToThrow);
+                    }
+
+                    return result;
+                }
+
+                if (shouldRetry.BackoffTime != TimeSpan.Zero)
+                {
+                    Exception delayException = await Res.Wrap(Task.Delay(shouldRetry.BackoffTime, cancellationToken));
+                    if (delayException != null)
+                    {
+                        return Res.FromException<T>(delayException);
+                    }
+                }
+            }
+        }
     }
 }

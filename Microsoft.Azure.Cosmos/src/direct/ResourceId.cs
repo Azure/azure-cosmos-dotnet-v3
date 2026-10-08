@@ -22,6 +22,9 @@ namespace Microsoft.Azure.Documents
 
     internal sealed class ResourceId : IEquatable<ResourceId>
     {
+        public const int EncodedCollectionIdLength = 12;
+        public const int EncodedRbacResourceIdLength = 8;
+
         private const int EncryptionScopeIdLength = 5;
         private const int OfferIdLength = 3;
         private const int RbacResourceIdLength = 6;
@@ -53,7 +56,9 @@ namespace Microsoft.Azure.Documents
             this.SystemDocument = 0;
             this.PartitionedSystemDocument = 0;
             this.HistoricalPartitionKeyRange = 0;
+            this.UserStringDictionary = 0;
             this.EncryptionScope = 0;
+            this.AbacPolicy = 0;
         }
 
         public uint Offer
@@ -102,7 +107,8 @@ namespace Microsoft.Azure.Documents
             {
                 return this.Database != 0 && this.DocumentCollection != 0
                     && (this.Document == 0 && this.PartitionKeyRange == 0 && this.StoredProcedure == 0 && this.Trigger == 0 && this.UserDefinedFunction == 0 
-                    && this.SystemDocument == 0 && this.PartitionedSystemDocument == 0);
+                    && this.SystemDocument == 0 && this.PartitionedSystemDocument == 0 && this.HistoricalPartitionKeyRange == 0
+                    && this.UserStringDictionary == 0);
             }
         }
 
@@ -250,6 +256,12 @@ namespace Microsoft.Azure.Documents
         }
 
         public ulong HistoricalPartitionKeyRange
+        {
+            get;
+            private set;
+        }
+
+        public ulong UserStringDictionary
         {
             get;
             private set;
@@ -581,6 +593,20 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        public ulong AbacPolicy
+        {
+            get;
+            private set;
+        }
+
+        public bool IsAbacPolicyId
+        {
+            get
+            {
+                return this.AbacPolicy != 0;
+            }
+        }
+
         public byte[] Value
         {
             get
@@ -602,6 +628,10 @@ namespace Microsoft.Azure.Documents
                     len += ResourceId.RbacResourceIdLength;
                 else if (this.AzureRbac > 0)
                     len += ResourceId.RbacResourceIdLength;
+                else if (this.AbacPolicy > 0)
+                {
+                    len += ResourceId.RbacResourceIdLength;
+                }
                 else if (this.Database > 0)
                     len += 4;
                 if (this.DocumentCollection > 0 || this.User > 0 || this.UserDefinedType > 0 || this.ClientEncryptionKey > 0)
@@ -609,7 +639,8 @@ namespace Microsoft.Azure.Documents
                 if (this.Document > 0 || this.Permission > 0 || this.StoredProcedure > 0 || this.Trigger > 0
                     || this.UserDefinedFunction > 0 || this.Conflict > 0 || this.PartitionKeyRange > 0 || this.Schema > 0
                     || this.UserDefinedType > 0 || this.ClientEncryptionKey > 0 || this.SystemDocument > 0
-                    || this.PartitionedSystemDocument > 0 || this.HistoricalPartitionKeyRange > 0)
+                    || this.PartitionedSystemDocument > 0 || this.HistoricalPartitionKeyRange > 0
+                    || this.UserStringDictionary > 0)
                     len += 8;
                 if (this.Attachment > 0)
                     len += 4;
@@ -648,6 +679,11 @@ namespace Microsoft.Azure.Documents
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.AzureRbac), 0, val, 0, ResourceId.RbacResourceIdLength);
                     ResourceId.BlockCopy(BitConverter.GetBytes(0x4000), 0, val, 4, 2);
                 }
+                else if (this.AbacPolicy > 0)
+                {
+                    ResourceId.BlockCopy(BitConverter.GetBytes(this.AbacPolicy), 0, val, 0, ResourceId.RbacResourceIdLength);
+                    ResourceId.BlockCopy(BitConverter.GetBytes(0x5000), 0, val, 4, 2);
+                }
 
                 if (this.DocumentCollection > 0)
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.DocumentCollection), 0, val, 4, 4);
@@ -676,6 +712,8 @@ namespace Microsoft.Azure.Documents
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.PartitionedSystemDocument), 0, val, 8, 8);
                 else if (this.HistoricalPartitionKeyRange > 0)
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.HistoricalPartitionKeyRange), 0, val, 8, 8);
+                else if (this.UserStringDictionary > 0)
+                    ResourceId.BlockCopy(BitConverter.GetBytes(this.UserStringDictionary), 0, val, 8, 8);
                 else if (this.UserDefinedType > 0)
                 {
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.UserDefinedType), 0, val, 8, 4);
@@ -780,6 +818,14 @@ namespace Microsoft.Azure.Documents
             };
         }
 
+        public static ResourceId NewAbacPolicyId(ulong abacPolicyId)
+        {
+            return new ResourceId()
+            {
+                AbacPolicy = abacPolicyId
+            };
+        }
+
         public static ResourceId NewDocumentCollectionId(string databaseId, uint collectionId)
         {
             ResourceId dbId = ResourceId.Parse(databaseId);
@@ -847,6 +893,10 @@ namespace Microsoft.Azure.Documents
 
                 case ResourceType.HistoricalPartitionKeyRange:
                     childResourceId.HistoricalPartitionKeyRange = childId;
+                    return childResourceId;
+
+                case ResourceType.UserStringDictionary:
+                    childResourceId.UserStringDictionary = childId;
                     return childResourceId;
 
                 case ResourceType.Document:
@@ -938,6 +988,13 @@ namespace Microsoft.Azure.Documents
 
                 case ResourceType.HistoricalPartitionKeyRange:
                     subCollRes[7] = (byte)CollectionChildResourceType.HistoricalPartitionKeyRange << 4;
+                    break;
+
+                case ResourceType.UserStringDictionary:
+                    ulong extendedResourceType =
+                        ((ulong)CollectionChildResourceType.Extended << 60) |
+                        ((ulong)ExtendedCollectionChildResourceType.UserStringDictionary << 55);
+                    Buffer.BlockCopy(BitConverter.GetBytes(extendedResourceType), 0, subCollRes, 0, sizeof(ulong));
                     break;
 
                 default:
@@ -1036,6 +1093,10 @@ namespace Microsoft.Azure.Documents
                             rid.AzureRbac = rbacResourceId;
                             break;
 
+                        case RbacResourceType.RbacResourceType_AbacPolicy:
+                            rid.AbacPolicy = rbacResourceId;
+                            break;
+
                         default:
                             return false;
                     }
@@ -1101,6 +1162,17 @@ namespace Microsoft.Azure.Documents
                             else if ((subCollRes[7] >> 4) == (byte)CollectionChildResourceType.HistoricalPartitionKeyRange)
                             {
                                 rid.HistoricalPartitionKeyRange = subCollectionResource;
+                            }
+                            else if ((subCollRes[7] >> 4) == (byte)CollectionChildResourceType.Extended)
+                            {
+                                ExtendedCollectionChildResourceType extendedResourceType =
+                                    (ExtendedCollectionChildResourceType)((subCollectionResource >> 55) & 0x1F);
+                                if (extendedResourceType != ExtendedCollectionChildResourceType.UserStringDictionary)
+                                {
+                                    return false;
+                                }
+
+                                rid.UserStringDictionary = subCollectionResource;
                             }
                             else if((subCollRes[7] >> 4) == (byte)CollectionChildResourceType.Schema)
                             {
@@ -1338,6 +1410,12 @@ namespace Microsoft.Azure.Documents
             PartitionedSystemDocument = 0x0A,
             SystemDocument = 0x0D,
             HistoricalPartitionKeyRange = 0x0E,
+            Extended = 0x0F,
+        }
+
+        private enum ExtendedCollectionChildResourceType : byte
+        {
+            UserStringDictionary = 0x06,
         }
 
         private enum ExtendedDatabaseChildResourceType
@@ -1353,6 +1431,7 @@ namespace Microsoft.Azure.Documents
             RbacResourceType_InteropUser = 0x20,
             RbacResourceType_AuthPolicyElement  = 0x30,
             RbacResourceType_AzureRbac = 0x40,
+            RbacResourceType_AbacPolicy = 0x50,
         }
     }
 }

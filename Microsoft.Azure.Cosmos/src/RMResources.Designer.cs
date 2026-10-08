@@ -866,29 +866,29 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Embedding Generator cannot be enabled. This feature requires continuous backups with point-in-time restore (PITR) to be enabled on your account. Please enable PITR and try again.
+        ///   Looks up a localized string similar to Integrated Embeddings cannot be enabled. This feature requires Continuous Backups (and All Versions and Deletes Change Feed) features to be enabled on your account. Please enable both features and try again.
         /// </summary>
-        internal static string EnablingEmbeddingGeneratorOnNonPITRNonFullFidelityChangeFeedEnabledAccountNotAllowed
+        internal static string EnablingEmbeddingGeneratorOnNonPITRAccountNotAllowed
         {
             get
             {
-                return ResourceManager.GetString("EnablingEmbeddingGeneratorOnNonPITRNonFullFidelityChangeFeedEnabledAccountNotAllowed", resourceCulture);
+                return ResourceManager.GetString("EnablingEmbeddingGeneratorOnNonPITRAccountNotAllowed", resourceCulture);
             }
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Enabling both EmbeddingGenerator and MaterializedViews are not supported together on GlobalDatabaseAccount.
+        ///   Looks up a localized string similar to Integrated Embeddings cannot be enabled. This feature requires All Versions and Deletes Change Feed (and Continuous Backups) features to be enabled on your account. Please enable both features and try again.
         /// </summary>
-        internal static string EnablingBothEmbeddingGeneratorAndMaterializedViewsNotSupported
+        internal static string EnablingEmbeddingGeneratorOnNonFFCFWithPITRAccountNotAllowed
         {
             get
             {
-                return ResourceManager.GetString("EnablingBothEmbeddingGeneratorAndMaterializedViewsNotSupported", resourceCulture);
+                return ResourceManager.GetString("EnablingEmbeddingGeneratorOnNonFFCFWithPITRAccountNotAllowed", resourceCulture);
             }
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Embedding Generator cannot be disabled once it is enabled on an account..
+        ///   Looks up a localized string similar to Integrated Embeddings cannot be disabled once it is enabled on an account.
         /// </summary>
         internal static string DisableEmbeddingGeneratorNotAllowed
         {
@@ -928,6 +928,17 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("EnableMultipleWriteLocationsNotModified", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to This account already has EnableAllVersionsAndDeletesChangeFeed flag set to {0}..
+        /// </summary>
+        internal static string EnableAllVersionsAndDeletesChangeFeedNotModified
+        {
+            get
+            {
+                return ResourceManager.GetString("EnableAllVersionsAndDeletesChangeFeedNotModified", resourceCulture);
             }
         }
 
@@ -1693,6 +1704,72 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("InvalidOfferIsAutoScaleEnabled", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The value of the x-ms-cosmos-offer-infrequent-access header is invalid. Please specify a boolean value..
+        /// </summary>
+        internal static string InvalidOfferInfrequentAccess
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidOfferInfrequentAccess", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Infrequent Access is only supported for the Core (SQL) API..
+        /// </summary>
+        internal static string InfrequentAccessNotSupportedForApi
+        {
+            get
+            {
+                return ResourceManager.GetString("InfrequentAccessNotSupportedForApi", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Infrequent Access is not supported on serverless accounts..
+        /// </summary>
+        internal static string InfrequentAccessNotSupportedForServerless
+        {
+            get
+            {
+                return ResourceManager.GetString("InfrequentAccessNotSupportedForServerless", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Infrequent Access requires the EnableInfrequentAccess capability on account {0}..
+        /// </summary>
+        internal static string InfrequentAccessCapabilityRequired
+        {
+            get
+            {
+                return ResourceManager.GetString("InfrequentAccessCapabilityRequired", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Infrequent Access cannot be set directly on a global secondary index. Set it on the source container..
+        /// </summary>
+        internal static string InfrequentAccessNotSupportedOnGlobalSecondaryIndex
+        {
+            get
+            {
+                return ResourceManager.GetString("InfrequentAccessNotSupportedOnGlobalSecondaryIndex", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Infrequent Access is not supported on shared-throughput database offers..
+        /// </summary>
+        internal static string InfrequentAccessNotSupportedOnSharedThroughputDatabase
+        {
+            get
+            {
+                return ResourceManager.GetString("InfrequentAccessNotSupportedOnSharedThroughputDatabase", resourceCulture);
             }
         }
 
@@ -4400,6 +4477,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Creation of V1 offers is no longer supported. Please specify offer throughput using the &apos;x-ms-offer-throughput&apos; header or autopilot settings to create a V2 offer..
+        /// </summary>
+        internal static string V1OfferCreationBlocked
+        {
+            get
+            {
+                return ResourceManager.GetString("V1OfferCreationBlocked", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to AAD tokens are not supported by the Dedicated Gateway endpoint.
         /// </summary>
         internal static string UnsupportedAadAccessControlType
@@ -4563,6 +4651,18 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("CollectionCreateInProgress", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to A previous collection replace transaction is still in progress for this collection.
+        ///   Please retry after the previous transaction completes. More info: https://aka.ms/cosmosdb-tsg-collectionreplace.
+        /// </summary>
+        internal static string CollectionReplaceTransactionInProgress
+        {
+            get
+            {
+                return ResourceManager.GetString("CollectionReplaceTransactionInProgress", resourceCulture);
             }
         }
 

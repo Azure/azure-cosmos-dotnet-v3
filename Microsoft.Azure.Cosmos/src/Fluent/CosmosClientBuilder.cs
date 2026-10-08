@@ -438,9 +438,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// At the transport boundary, values in [<see cref="TimeSpan.Zero"/>, 1 second) are treated as 0
         /// (use the configured request timeout). Values greater than or equal to 1 second are rounded up to
         /// the nearest whole second (for example, 2.3 seconds becomes 3 seconds).
-        /// Negative values are not recommended and will emit a warning trace. They are preserved for
-        /// backward compatibility; at the transport boundary they are truncated to whole seconds and the
-        /// TransportClient returns the configured request timeout for any stored value not greater than zero.
+        /// Negative values are not recommended. They are preserved for backward compatibility and will
+        /// cause the underlying <c>DocumentClient</c> to emit a warning trace at client construction time;
+        /// at the transport boundary they are truncated to whole seconds and the TransportClient returns
+        /// the configured request timeout for any stored value not greater than zero.
         /// </param>
         /// <param name="maxRequestsPerTcpConnection">
         /// Controls the number of requests allowed simultaneously over a single TCP connection. When more requests are in flight simultaneously, the direct/TCP client will open additional connections.
@@ -840,17 +841,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <remarks>
         /// If throughput bucket is also set at request level in <see cref="RequestOptions.ThroughputBucket"/>, that throughput bucket is used.
-        /// If <see cref="WithBulkExecution(bool)"/> is set to true, throughput bucket can only be set at client level.
+        /// When <see cref="WithBulkExecution(bool)"/> is set to true, a request-level throughput bucket is not supported for item
+        /// point operations (they are batched); set the throughput bucket at the client level instead.
         /// </remarks>
         /// <param name="throughputBucket">The desired throughput bucket for the client.</param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithThroughputBucket(int throughputBucket)
+        public CosmosClientBuilder WithThroughputBucket(int throughputBucket)
         {
             this.clientOptions.ThroughputBucket = throughputBucket;
             return this;
@@ -865,12 +862,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </remarks>
         /// <param name="readConsistencyStrategy">The desired read consistency strategy for the client.</param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy readConsistencyStrategy)
+        public CosmosClientBuilder WithReadConsistencyStrategy(Cosmos.ReadConsistencyStrategy readConsistencyStrategy)
         {
             this.clientOptions.ReadConsistencyStrategy = readConsistencyStrategy;
             return this;

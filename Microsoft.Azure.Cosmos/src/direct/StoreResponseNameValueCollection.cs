@@ -77,6 +77,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string IndexingDirective { get; set; }
         public string IndexUtilization { get; set; }
         public string InstantScaleUpValue { get; set; }
+        public string IsDtxAggregatedResponse { get; set; }
         public string IsOfferRestorePending { get; set; }
         public string IsRUPerMinuteUsed { get; set; }
         public string ItemCount { get; set; }
@@ -106,6 +107,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string PartitionThroughputInfo { get; set; }
         public string PendingPKDelete { get; set; }
         public string PhysicalPartitionId { get; set; }
+        public string PhysicalSplitCopyState { get; set; }
         public string QueryAdvice { get; set; }
         public string QueryExecutionInfo { get; set; }
         public string QueryMetrics { get; set; }
@@ -220,6 +222,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.IndexingDirective = null;
             this.IndexUtilization = null;
             this.InstantScaleUpValue = null;
+            this.IsDtxAggregatedResponse = null;
             this.IsOfferRestorePending = null;
             this.IsRUPerMinuteUsed = null;
             this.ItemCount = null;
@@ -249,6 +252,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.PartitionThroughputInfo = null;
             this.PendingPKDelete = null;
             this.PhysicalPartitionId = null;
+            this.PhysicalSplitCopyState = null;
             this.QueryAdvice = null;
             this.QueryExecutionInfo = null;
             this.QueryMetrics = null;
@@ -335,6 +339,7 @@ namespace Microsoft.Azure.Documents.Collections
                 IndexingDirective = this.IndexingDirective,
                 IndexUtilization = this.IndexUtilization,
                 InstantScaleUpValue = this.InstantScaleUpValue,
+                IsDtxAggregatedResponse = this.IsDtxAggregatedResponse,
                 IsOfferRestorePending = this.IsOfferRestorePending,
                 IsRUPerMinuteUsed = this.IsRUPerMinuteUsed,
                 ItemCount = this.ItemCount,
@@ -364,6 +369,7 @@ namespace Microsoft.Azure.Documents.Collections
                 PartitionThroughputInfo = this.PartitionThroughputInfo,
                 PendingPKDelete = this.PendingPKDelete,
                 PhysicalPartitionId = this.PhysicalPartitionId,
+                PhysicalSplitCopyState = this.PhysicalSplitCopyState,
                 QueryAdvice = this.QueryAdvice,
                 QueryExecutionInfo = this.QueryExecutionInfo,
                 QueryMetrics = this.QueryMetrics,
@@ -824,6 +830,14 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.IdempotencyToken, this.IdempotencyToken);
             }
+            if (this.PhysicalSplitCopyState != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.PhysicalSplitCopyState, this.PhysicalSplitCopyState);
+            }
+            if (this.IsDtxAggregatedResponse != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.IsDtxAggregatedResponse, this.IsDtxAggregatedResponse);
+            }
 
             if (this.lazyNotCommonHeaders != null)
             {
@@ -1255,6 +1269,14 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return HttpConstants.HttpHeaders.IdempotencyToken;
             }
+            if (this.PhysicalSplitCopyState != null)
+            {
+                yield return WFConstants.BackendHeaders.PhysicalSplitCopyState;
+            }
+            if (this.IsDtxAggregatedResponse != null)
+            {
+                yield return HttpConstants.HttpHeaders.IsDtxAggregatedResponse;
+            }
 
             if (this.lazyNotCommonHeaders != null)
             {
@@ -1684,6 +1706,14 @@ namespace Microsoft.Azure.Documents.Collections
                         if (this.IdempotencyToken != null)
                         {
                             this.nameValueCollection.Add(HttpConstants.HttpHeaders.IdempotencyToken, this.IdempotencyToken);
+                        }
+                        if (this.PhysicalSplitCopyState != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.PhysicalSplitCopyState, this.PhysicalSplitCopyState);
+                        }
+                        if (this.IsDtxAggregatedResponse != null)
+                        {
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.IsDtxAggregatedResponse, this.IsDtxAggregatedResponse);
                         }
                         if(this.lazyNotCommonHeaders != null)
                         {
@@ -2594,6 +2624,20 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.BinaryEncodingMigratorProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.BinaryEncodingMigratorProgress;
+                    }
+
+                    break;
+                case 46:
+                    if (string.Equals(WFConstants.BackendHeaders.PhysicalSplitCopyState, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.PhysicalSplitCopyState;
+                    }
+
+                    break;
+                case 47:
+                    if (string.Equals(HttpConstants.HttpHeaders.IsDtxAggregatedResponse, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.IsDtxAggregatedResponse;
                     }
 
                     break;
@@ -4544,6 +4588,30 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.BinaryEncodingMigratorProgress = value;
+                        return;
+                    }
+                    break;
+                case 46:
+                    if (string.Equals(WFConstants.BackendHeaders.PhysicalSplitCopyState, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.PhysicalSplitCopyState != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.PhysicalSplitCopyState = value;
+                        return;
+                    }
+                    break;
+                case 47:
+                    if (string.Equals(HttpConstants.HttpHeaders.IsDtxAggregatedResponse, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.IsDtxAggregatedResponse != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.IsDtxAggregatedResponse = value;
                         return;
                     }
                     break;

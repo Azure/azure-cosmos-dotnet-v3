@@ -88,5 +88,67 @@ namespace Microsoft.Azure.Documents
         {
             return taskFactory.StartNew(function, default(CancellationToken), creationOptions, TaskScheduler.Current);
         }
+
+        /// <summary>
+        /// Extracts the value or fault of an already-completed <paramref name="completedTask"/>
+        /// as a tuple, without rethrowing. A non-null <c>exception</c> (already unwrapped from
+        /// any <see cref="AggregateException"/>, with cancellation mapped to
+        /// <see cref="OperationCanceledException"/>) indicates failure. This is the single shared
+        /// decision point for how a faulted cache task is read: both <c>AsyncCache.TryGetAsync</c>
+        /// and <c>Res.Wrap</c> extract through it, so that logic can never drift between them.
+        /// </summary>
+        public static (T value, Exception exception) GetValueOrException<T>(this Task<T> completedTask)
+        {
+            if (!completedTask.IsCompleted)
+            {
+                throw new InvalidOperationException("GetValueOrException requires an already-completed task.");
+            }
+
+            if (completedTask.Status == TaskStatus.RanToCompletion)
+            {
+                // Completed successfully - reading Result does not block.
+#pragma warning disable VSTHRD002, VSTHRD103, AsyncFixer02
+                return (completedTask.Result, null);
+#pragma warning restore VSTHRD002, VSTHRD103, AsyncFixer02
+            }
+
+            Exception exception = completedTask.Exception;
+            if (exception is AggregateException aggregate)
+            {
+                exception = aggregate.InnerException ?? aggregate;
+            }
+
+            if (exception == null)
+            {
+                exception = new OperationCanceledException();
+            }
+
+            return (default, exception);
+        }
+
+        /// <summary>
+        /// Awaits <paramref name="task"/> without rethrowing, returning its value or fault as a
+        /// tuple via <see cref="GetValueOrException{T}(Task{T})"/>. Faulted/canceled tasks are
+        /// inspected via their completed state rather than awaited-to-throw, so the many callers
+        /// coalesced onto a single faulted task do not each pay for a throw.
+        /// </summary>
+        public static Task<(T value, Exception exception)> TryAwaitAsync<T>(this Task<T> task)
+        {
+            if (task.IsCompleted)
+            {
+                return Task.FromResult(task.GetValueOrException());
+            }
+
+            TaskCompletionSource<(T value, Exception exception)> completionSource = new TaskCompletionSource<(T value, Exception exception)>();
+            Task unused = task.ContinueWith(
+                static (completedTask, state) =>
+                {
+                    TaskCompletionSource<(T value, Exception exception)> source = (TaskCompletionSource<(T value, Exception exception)>)state;
+                    source.SetResult(completedTask.GetValueOrException());
+                },
+                completionSource);
+
+            return completionSource.Task;
+        }
     }
 }

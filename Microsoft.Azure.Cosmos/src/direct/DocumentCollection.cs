@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -134,6 +134,28 @@ namespace Microsoft.Azure.Documents
         public DocumentCollection()
         {
         }
+
+#if !COSMOSCLIENT
+        internal enum PartitionKeyState
+        {
+            Default = 0,
+            HPKPrePersistingID = 1,
+            HPKPostPersistingID = 2,
+        }
+
+        [JsonProperty(PropertyName = Constants.Properties.PartitionKeyState, NullValueHandling = NullValueHandling.Ignore)]
+        internal PartitionKeyState? PartitionKeyStateValue
+        {
+            get
+            {
+                return this.GetValue<PartitionKeyState?>(Constants.Properties.PartitionKeyState);
+            }
+            set
+            {
+                this.SetValue(Constants.Properties.PartitionKeyState, value);
+            }
+        }
+#endif
 
         /// <summary>
         /// Gets the <see cref="IndexingPolicy"/> associated with the collection from the Azure Cosmos DB service. 

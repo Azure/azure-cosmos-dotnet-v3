@@ -67,18 +67,21 @@ namespace Microsoft.Azure.Documents
         private readonly IServiceConfigurationReader serviceConfigReader;
         private readonly IServiceConfigurationReaderExtension serviceConfigurationReaderExtension;
         private readonly IAuthorizationTokenProvider authorizationTokenProvider;
+        private readonly bool enableBarrierEarlyYieldOn429;
 
         public QuorumReader(
             TransportClient transportClient,
             AddressSelector addressSelector,
             StoreReader storeReader,
             IServiceConfigurationReader serviceConfigReader,
-            IAuthorizationTokenProvider authorizationTokenProvider)
+            IAuthorizationTokenProvider authorizationTokenProvider,
+            bool enableBarrierEarlyYieldOn429 = false)
         {
             this.storeReader = storeReader;
             this.serviceConfigReader = serviceConfigReader;
             this.serviceConfigurationReaderExtension = serviceConfigReader as IServiceConfigurationReaderExtension;
             this.authorizationTokenProvider = authorizationTokenProvider;
+            this.enableBarrierEarlyYieldOn429 = enableBarrierEarlyYieldOn429;
         }
 
         public async Task<StoreResponse> ReadStrongAsync(
@@ -95,7 +98,8 @@ namespace Microsoft.Azure.Documents
             // 2 secondaries; losing one makes quorum unreachable without the
             // primary. Include primary upfront to avoid an extra round-trip.
             int? trss = entity.RequestContext.ResolvedPartitionTargetReplicaSetSize;
-            bool includePrimary = trss.HasValue && trss.Value <= 3;
+            bool includePrimary = (trss.HasValue && trss.Value <= 3)
+                || entity.AlwaysIncludePrimaryForQuorumReads == true;
 
             do
             {
@@ -297,6 +301,839 @@ namespace Microsoft.Azure.Documents
             return totalAllowedDelay;
         }
 
+        public async Task<Res<StoreResponse>> TryReadStrongAsync(
+            DocumentServiceRequest entity,
+            int readQuorumValue,
+            ReadMode readMode)
+        {
+            int readQuorumRetry = QuorumReader.maxNumberOfReadQuorumRetries;
+            bool shouldRetryOnSecondary = false;
+            bool hasPerformedReadFromPrimary = false;
+
+            // Use the partition-level TargetReplicaSetSize (TRSS) resolved
+            // during address resolution. When TRSS <= 3 there are at most
+            // 2 secondaries; losing one makes quorum unreachable without the
+            // primary. Include primary upfront to avoid an extra round-trip.
+            int? trss = entity.RequestContext.ResolvedPartitionTargetReplicaSetSize;
+            bool includePrimary = (trss.HasValue && trss.Value <= 3)
+                || entity.AlwaysIncludePrimaryForQuorumReads == true;
+
+            do
+            {
+                if (entity.RequestContext.TimeoutHelper.TryGetGoneOrCancelledException(out Exception timeoutException))
+                {
+                    return Res.FromException<StoreResponse>(timeoutException);
+                }
+
+                shouldRetryOnSecondary = false;
+                Res<ReadQuorumResult> secondaryQuorumReadResultResult =
+                    await this.TryReadQuorumAsync(entity, readQuorumValue, includePrimary, readMode);
+                if (!secondaryQuorumReadResultResult.IsSuccess)
+                {
+                    return Res.FromException<StoreResponse>(secondaryQuorumReadResultResult.Exception);
+                }
+
+                using ReadQuorumResult secondaryQuorumReadResult = secondaryQuorumReadResultResult.Value;
+
+                switch (secondaryQuorumReadResult.QuorumResult)
+                {
+                    case ReadQuorumResultKind.QuorumThrottled:
+                        {
+                            ReferenceCountedDisposable<StoreResult> storeResult =
+                                secondaryQuorumReadResult.GetSelectedResponseAndSkipStoreResultDispose();
+                            return storeResult.Target.TryToResponse(entity.RequestContext.RequestChargeTracker);
+                        }
+
+                    case ReadQuorumResultKind.QuorumMet:
+                        {
+                            return secondaryQuorumReadResult.TryGetResponseAndSkipStoreResultDispose();
+                        }
+
+                    case ReadQuorumResultKind.QuorumSelected:
+                        {
+                            Res<DocumentServiceRequest> barrierRequestResult = await Res.Wrap(
+                                BarrierRequestHelper.CreateAsync(
+                                    entity,
+                                    this.authorizationTokenProvider,
+                                    secondaryQuorumReadResult.SelectedLsn,
+                                    secondaryQuorumReadResult.GlobalCommittedSelectedLsn));
+                            if (!barrierRequestResult.IsSuccess)
+                            {
+                                return Res.FromException<StoreResponse>(barrierRequestResult.Exception);
+                            }
+
+                            Res<(bool isSuccess, StoreResponse throttledResponse)> barrierResult =
+                                await this.TryWaitForReadBarrierAsync(
+                                    barrierRequestResult.Value,
+                                    allowPrimary: true,
+                                    readQuorum: readQuorumValue,
+                                    readBarrierLsn: secondaryQuorumReadResult.SelectedLsn,
+                                    targetGlobalCommittedLSN: secondaryQuorumReadResult.GlobalCommittedSelectedLsn,
+                                    readMode: readMode);
+                            if (!barrierResult.IsSuccess)
+                            {
+                                return Res.FromException<StoreResponse>(barrierResult.Exception);
+                            }
+
+                            (bool isSuccess, StoreResponse throttledResponse) = barrierResult.Value;
+
+                            if (throttledResponse != null)
+                            {
+                                DefaultTrace.TraceInformation(
+                                    "ReadStrongAsync: Throttling occurred during read barrier. Returning throttled response. StatusCode: {0}, SubStatusCode: {1}, PkRangeId :{2}.",
+                                    throttledResponse.StatusCode,
+                                    throttledResponse.SubStatusCode,
+                                    throttledResponse.PartitionKeyRangeId);
+
+                                return Res.Success(throttledResponse);
+                            }
+
+                            if (isSuccess)
+                            {
+                                return secondaryQuorumReadResult.TryGetResponseAndSkipStoreResultDispose();
+                            }
+
+                            DefaultTrace.TraceWarning(
+                                "QuorumSelected: Could not converge on the LSN {0} GlobalCommittedLSN {3} ReadMode {4} after primary read barrier with read quorum {1} for strong read, Responses: {2}, resourceType: {5}, operationType: {6}",
+                                secondaryQuorumReadResult.SelectedLsn,
+                                readQuorumValue,
+                                secondaryQuorumReadResult,
+                                secondaryQuorumReadResult.GlobalCommittedSelectedLsn,
+                                readMode,
+                                entity.ResourceType,
+                                entity.OperationType);
+
+                            entity.RequestContext.UpdateQuorumSelectedStoreResponse(
+                                secondaryQuorumReadResult.GetSelectedResponseAndSkipStoreResultDispose());
+                            entity.RequestContext.QuorumSelectedLSN = secondaryQuorumReadResult.SelectedLsn;
+                            entity.RequestContext.GlobalCommittedSelectedLSN =
+                                secondaryQuorumReadResult.GlobalCommittedSelectedLsn;
+                        }
+
+                        break;
+
+                    case ReadQuorumResultKind.QuorumNotSelected:
+                        {
+                            if (hasPerformedReadFromPrimary)
+                            {
+                                DefaultTrace.TraceWarning(
+                                    "QuorumNotSelected: Primary read already attempted. Quorum could not be selected after retrying on secondaries. ReadStoreResponses: {0}, resourceType: {1}, operationType: {2}",
+                                    secondaryQuorumReadResult.ToString(),
+                                    entity.ResourceType,
+                                    entity.OperationType);
+
+                                return Res.FromException<StoreResponse>(
+                                    new GoneException(
+                                        RMResources.ReadQuorumNotMet + $", partitionId: {entity.PartitionKeyRangeIdentity}",
+                                        SubStatusCodes.Server_ReadQuorumNotMet));
+                            }
+
+                            DefaultTrace.TraceWarning(
+                                "QuorumNotSelected: Quorum could not be selected with read quorum of {0}, resourceType: {1}, operationType: {2}",
+                                readQuorumValue,
+                                entity.ResourceType,
+                                entity.OperationType);
+
+                            Res<ReadPrimaryResult> responseResult =
+                                await this.TryReadPrimaryInternalAsync(entity, readQuorumValue, false);
+                            if (!responseResult.IsSuccess)
+                            {
+                                return Res.FromException<StoreResponse>(responseResult.Exception);
+                            }
+
+                            using ReadPrimaryResult response = responseResult.Value;
+
+                            if (response.IsSuccessful && response.ShouldRetryOnSecondary)
+                            {
+                                Debug.Assert(
+                                    false,
+                                    "QuorumNotSelected: PrimaryResult has both Successful and ShouldRetryOnSecondary flags set");
+                                DefaultTrace.TraceCritical(
+                                    "PrimaryResult has both Successful and ShouldRetryOnSecondary flags set. ReadQuorumResult StoreResponses: {0}, resourceType: {1}, operationType: {2}",
+                                    secondaryQuorumReadResult.ToString(),
+                                    entity.ResourceType,
+                                    entity.OperationType);
+                            }
+                            else if (response.IsSuccessful)
+                            {
+                                DefaultTrace.TraceInformation(
+                                    "QuorumNotSelected: ReadPrimary successful, resourceType: {0}, operationType: {1}",
+                                    entity.ResourceType,
+                                    entity.OperationType);
+
+                                return response.TryGetResponseAndSkipStoreResultDispose();
+                            }
+                            else if (response.ShouldRetryOnSecondary)
+                            {
+                                shouldRetryOnSecondary = true;
+                                DefaultTrace.TraceWarning(
+                                    "QuorumNotSelected: ReadPrimary did not succeed. Will retry on secondary. ReadQuorumResult StoreResponses: {0}, resourceType: {1}, operationType: {2}",
+                                    secondaryQuorumReadResult.ToString(),
+                                    entity.ResourceType,
+                                    entity.OperationType);
+
+                                hasPerformedReadFromPrimary = true;
+
+                                // We have failed to select a quorum before - could very well happen again
+                                // especially with reduced replica set size (1 Primary and 2 Secondaries
+                                // left, one Secondary might be unreachable - due to endpoint health like
+                                // service-side crashes or network/connectivity issues). Including the
+                                // Primary replica even for quorum selection in this case for the retry
+                                includePrimary = true;
+                            }
+                            else
+                            {
+                                DefaultTrace.TraceWarning(
+                                    "QuorumNotSelected: Could not get successful response from ReadPrimary, resourceType: {0}, operationType: {1}",
+                                    entity.ResourceType,
+                                    entity.OperationType);
+
+                                return Res.FromException<StoreResponse>(
+                                    new GoneException(
+                                        RMResources.ReadQuorumNotMet,
+                                        SubStatusCodes.Server_ReadQuorumNotMet));
+                            }
+                        }
+
+                        break;
+
+                    default:
+                        DefaultTrace.TraceCritical(
+                            "Unknown ReadQuorum result {0}, resourceType: {1}, operationType: {2}",
+                            secondaryQuorumReadResult.QuorumResult.ToString(),
+                            entity.ResourceType,
+                            entity.OperationType);
+
+                        return Res.FromException<StoreResponse>(
+                            new InternalServerErrorException(RMResources.InternalServerError));
+                }
+            }
+            while (--readQuorumRetry > 0 && shouldRetryOnSecondary);
+
+            DefaultTrace.TraceWarning(
+                "Could not complete read quorum with read quorum value of {0}, resourceType: {1}, operationType: {2}",
+                readQuorumValue,
+                entity.ResourceType,
+                entity.OperationType);
+
+            return Res.FromException<StoreResponse>(
+                new GoneException(
+                    string.Format(
+                        CultureInfo.CurrentUICulture,
+                        RMResources.ReadQuorumNotMet,
+                        readQuorumValue),
+                    SubStatusCodes.Server_ReadQuorumNotMet));
+        }
+
+        private async Task<Res<ReadQuorumResult>> TryReadQuorumAsync(
+            DocumentServiceRequest entity,
+            int readQuorum,
+            bool includePrimary,
+            ReadMode readMode)
+        {
+            if (entity.RequestContext.TimeoutHelper.TryGetGoneOrCancelledException(out Exception timeoutException))
+            {
+                return Res.FromException<ReadQuorumResult>(timeoutException);
+            }
+
+            long readLsn = -1;
+            long globalCommittedLSN = -1;
+            ReferenceCountedDisposable<StoreResult> storeResult = null;
+            StoreResult[] responsesForLogging = null;
+            if (entity.RequestContext.QuorumSelectedStoreResponse == null)
+            {
+                Res<IList<ReferenceCountedDisposable<StoreResult>>> readResult =
+                    await this.storeReader.TryReadMultipleReplicaAsync(
+                        entity,
+                        includePrimary: includePrimary,
+                        replicaCountToRead: readQuorum,
+                        requiresValidLsn: true,
+                        useSessionToken: false,
+                        readMode: readMode,
+                        checkMinLSN: false);
+                if (!readResult.IsSuccess)
+                {
+                    return Res.FromException<ReadQuorumResult>(readResult.Exception);
+                }
+
+                using StoreResultList disposableResponseResult = new(readResult.Value);
+                IList<ReferenceCountedDisposable<StoreResult>> responseResult = disposableResponseResult.Value;
+
+                responsesForLogging = new StoreResult[responseResult.Count];
+                for (int i = 0; i < responseResult.Count; i++)
+                {
+                    responsesForLogging[i] = responseResult[i].Target;
+                }
+
+                int responseCount = responseResult.Count(response => response.Target.IsValid);
+                if (responseCount < readQuorum)
+                {
+                    return Res.Success(
+                        new ReadQuorumResult(
+                            entity.RequestContext.RequestChargeTracker,
+                            ReadQuorumResultKind.QuorumNotSelected,
+                            -1,
+                            -1,
+                            null,
+                            responsesForLogging));
+                }
+
+                // GlobalStrong read is a candidate when:
+                // 1. Global strong is enabled and account default consistency is Strong (or overridden to Strong for PPF-eligible resources)
+                // 2. Request does not override ConsistencyLevel OR overrides with Strong
+                // 3. Request does not override ReadConsistencyStrategy (null = use account default)
+                //    OR explicitly requests GlobalStrong
+                ConsistencyLevel effectiveDefaultConsistencyLevel = this.serviceConfigReader.DefaultConsistencyLevel;
+                if (this.serviceConfigurationReaderExtension != null &&
+                    this.serviceConfigurationReaderExtension.TryGetConsistencyLevel(entity, out ConsistencyLevel consistencyLevelOverride))
+                {
+                    DefaultTrace.TraceInformation(
+                        "QuorumReader: ConsistencyLevel is overridden from {0} to {1} for resourceType {2} and operationType {3}",
+                        effectiveDefaultConsistencyLevel,
+                        consistencyLevelOverride,
+                        entity.ResourceType.ToResourceTypeString(),
+                        entity.OperationType.ToOperationTypeString());
+                    effectiveDefaultConsistencyLevel = consistencyLevelOverride;
+                }
+
+                bool isGlobalStrongReadCandidate =
+                    (ReplicatedResourceClient.IsGlobalStrongEnabled() &&
+                     effectiveDefaultConsistencyLevel == ConsistencyLevel.Strong) &&
+                    (!entity.RequestContext.OriginalRequestConsistencyLevel.HasValue ||
+                     entity.RequestContext.OriginalRequestConsistencyLevel == ConsistencyLevel.Strong) &&
+                    (!entity.RequestContext.ReadConsistencyStrategy.HasValue ||
+                     entity.RequestContext.ReadConsistencyStrategy == ReadConsistencyStrategy.GlobalStrong);
+
+                if (isGlobalStrongReadCandidate && readMode != ReadMode.Strong)
+                {
+                    DefaultTrace.TraceError(
+                        "Unexpected difference in consistency level isGlobalStrongReadCandidate {0}, ReadMode: {1}",
+                        isGlobalStrongReadCandidate,
+                        readMode);
+                }
+
+                if (this.IsQuorumMet(
+                    responseResult,
+                    readQuorum,
+                    false,
+                    isGlobalStrongReadCandidate,
+                    out readLsn,
+                    out globalCommittedLSN,
+                    out storeResult))
+                {
+                    return Res.Success(
+                        new ReadQuorumResult(
+                            entity.RequestContext.RequestChargeTracker,
+                            ReadQuorumResultKind.QuorumMet,
+                            readLsn,
+                            globalCommittedLSN,
+                            storeResult,
+                            responsesForLogging));
+                }
+
+                // at this point, if refresh were necessary, we would have refreshed it in ReadMultipleReplicaAsync
+                // so set to false here to avoid further refrehses for this request.
+                entity.RequestContext.ForceRefreshAddressCache = false;
+            }
+            else
+            {
+                readLsn = entity.RequestContext.QuorumSelectedLSN;
+                globalCommittedLSN = entity.RequestContext.GlobalCommittedSelectedLSN;
+                storeResult = entity.RequestContext.QuorumSelectedStoreResponse.TryAddReference();
+            }
+
+            // ReadBarrier required
+            // Use partition-level TRSS to decide whether to include the primary
+            // in the barrier. With 3 or fewer replicas, a single unavailable
+            // secondary would prevent barrier convergence without the primary.
+            int? barrierTrss = entity.RequestContext.ResolvedPartitionTargetReplicaSetSize;
+            bool allowPrimaryForBarrier = barrierTrss.HasValue && barrierTrss.Value <= 3;
+            Res<DocumentServiceRequest> barrierRequestResult = await Res.Wrap(
+                BarrierRequestHelper.CreateAsync(
+                    entity,
+                    this.authorizationTokenProvider,
+                    readLsn,
+                    globalCommittedLSN));
+            if (!barrierRequestResult.IsSuccess)
+            {
+                return Res.FromException<ReadQuorumResult>(barrierRequestResult.Exception);
+            }
+
+            Res<(bool isSuccess, StoreResponse throttledResponse)> barrierResult =
+                await this.TryWaitForReadBarrierAsync(
+                    barrierRequestResult.Value,
+                    allowPrimaryForBarrier,
+                    readQuorum,
+                    readLsn,
+                    globalCommittedLSN,
+                    readMode);
+            if (!barrierResult.IsSuccess)
+            {
+                return Res.FromException<ReadQuorumResult>(barrierResult.Exception);
+            }
+
+            (bool isSuccess, StoreResponse throttledResponse) = barrierResult.Value;
+            if (throttledResponse != null)
+            {
+                using (ReferenceCountedDisposable<StoreResult> throttledStoreResult = StoreResult.CreateStoreResult(
+                    storeResponse: throttledResponse,
+                    responseException: null,
+                    requiresValidLsn: false,
+                    useLocalLSNBasedHeaders: false,
+                    replicaHealthStatuses: null,
+                    storePhysicalAddress: null))
+                {
+                    return Res.Success(
+                        new ReadQuorumResult(
+                            entity.RequestContext.RequestChargeTracker,
+                            ReadQuorumResultKind.QuorumThrottled,
+                            readLsn,
+                            globalCommittedLSN,
+                            throttledStoreResult.TryAddReference(),
+                            responsesForLogging));
+                }
+            }
+
+            if (!isSuccess)
+            {
+                return Res.Success(
+                    new ReadQuorumResult(
+                        entity.RequestContext.RequestChargeTracker,
+                        ReadQuorumResultKind.QuorumSelected,
+                        readLsn,
+                        globalCommittedLSN,
+                        storeResult,
+                        responsesForLogging));
+            }
+
+            return Res.Success(
+                new ReadQuorumResult(
+                    entity.RequestContext.RequestChargeTracker,
+                    ReadQuorumResultKind.QuorumMet,
+                    readLsn,
+                    globalCommittedLSN,
+                    storeResult,
+                    responsesForLogging));
+        }
+
+        private Task<Res<(bool isSuccess, StoreResponse throttledResponse)>> TryWaitForReadBarrierAsync(
+            DocumentServiceRequest barrierRequest,
+            bool allowPrimary,
+            int readQuorum,
+            long readBarrierLsn,
+            long targetGlobalCommittedLSN,
+            ReadMode readMode)
+        {
+            return this.TryWaitForReadBarrierNewAsync(
+                barrierRequest,
+                allowPrimary,
+                readQuorum,
+                readBarrierLsn,
+                targetGlobalCommittedLSN,
+                readMode);
+        }
+
+        private async Task<Res<ReadPrimaryResult>> TryReadPrimaryInternalAsync(
+            DocumentServiceRequest entity,
+            int readQuorum,
+            bool useSessionToken)
+        {
+            if (entity.RequestContext.TimeoutHelper.TryGetGoneOrCancelledException(out Exception timeoutException))
+            {
+                return Res.FromException<ReadPrimaryResult>(timeoutException);
+            }
+
+            // We would have already refreshed address before reaching here. Avoid performing here.
+            entity.RequestContext.ForceRefreshAddressCache = false;
+            Res<ReferenceCountedDisposable<StoreResult>> readResult = await this.storeReader.TryReadPrimaryAsync(
+                    entity,
+                    requiresValidLsn: true,
+                    useSessionToken: useSessionToken);
+            if (!readResult.IsSuccess)
+            {
+                return Res.FromException<ReadPrimaryResult>(readResult.Exception);
+            }
+
+            using ReferenceCountedDisposable<StoreResult> disposableStoreResult = readResult.Value;
+            StoreResult storeResult = disposableStoreResult.Target;
+
+            ReadPrimaryResult CreateReadPrimaryThrottledResult() =>
+                new ReadPrimaryResult(
+                    requestChargeTracker: entity.RequestContext.RequestChargeTracker,
+                    isSuccessful: true,
+                    shouldRetryOnSecondary: false,
+                    response: disposableStoreResult.TryAddReference());
+
+            // even though the response is throttled it has valid metadata so LSN wont be < 0 hence the below IsValidStatusCodeForExceptionlessRetry  && storeResult.LSN < 0 condition wont trigger throttling response so making a check here
+            if (this.enableBarrierEarlyYieldOn429
+                && storeResult.StatusCode == StatusCodes.TooManyRequests)
+            {
+                // Let ResourceThrottleRetryPolicy handle 429
+                // Instead of throwing an exception, return a result that indicates throttling
+                return Res.Success(CreateReadPrimaryThrottledResult());
+            }
+
+            if (!storeResult.IsValid)
+            {
+                return Res.FromException<ReadPrimaryResult>(storeResult.GetException());
+            }
+
+            if (entity.IsValidStatusCodeForExceptionlessRetry((int)storeResult.StatusCode, storeResult.SubStatusCode)
+                && storeResult.LSN < 0)
+            {
+                // Exceptionless failures should be treated similar to exceptions
+                // Validate LSN for cases where there is no exception because the ReadPrimary has requiresValidLsn: true
+                return Res.Success(CreateReadPrimaryThrottledResult());
+            }
+
+            if (storeResult.CurrentReplicaSetSize <= 0 || storeResult.LSN < 0 || storeResult.QuorumAckedLSN < 0)
+            {
+                string message = string.Format(
+                    CultureInfo.CurrentCulture,
+                    "Invalid value received from response header. CurrentReplicaSetSize {0}, StoreLSN {1}, QuorumAckedLSN {2}",
+                    storeResult.CurrentReplicaSetSize,
+                    storeResult.LSN,
+                    storeResult.QuorumAckedLSN);
+
+                // trace critical only if LSN / QuorumAckedLSN are not returned, since replica set size
+                // might not be returned if primary is still building the secondary replicas (during churn)
+                if (storeResult.CurrentReplicaSetSize <= 0)
+                {
+                    DefaultTrace.TraceError(message);
+                }
+                else
+                {
+                    DefaultTrace.TraceCritical(message);
+                }
+
+                // throw exeption instead of returning inconsistent result.
+                return Res.FromException<ReadPrimaryResult>(
+                    new GoneException(RMResources.ReadQuorumNotMet, SubStatusCodes.Server_ReadQuorumNotMet));
+            }
+
+            if (storeResult.CurrentReplicaSetSize > readQuorum)
+            {
+                DefaultTrace.TraceWarning(
+                    "Unexpected response. Replica Set size is {0} which is greater than min value {1}",
+                    storeResult.CurrentReplicaSetSize,
+                    readQuorum);
+                return Res.Success(
+                    new ReadPrimaryResult(
+                        requestChargeTracker: entity.RequestContext.RequestChargeTracker,
+                        isSuccessful: false,
+                        shouldRetryOnSecondary: true,
+                        response: null));
+            }
+
+            // To accomodate for store latency, where an LSN may be acked by not persisted in the store, we compare the quorum acked LSN and store LSN.
+            // In case of sync replication, the store LSN will follow the quorum committed LSN
+            // In case of async replication (if enabled for bounded staleness), the store LSN can be ahead of the quorum committed LSN if the primary is able write to faster than secondary acks.
+            // We pick higher of the 2 LSN and wait for the other to reach that LSN.
+            if (storeResult.LSN != storeResult.QuorumAckedLSN)
+            {
+                DefaultTrace.TraceWarning(
+                    "Store LSN {0} and quorum acked LSN {1} don't match",
+                    storeResult.LSN,
+                    storeResult.QuorumAckedLSN);
+                long higherLsn = storeResult.LSN > storeResult.QuorumAckedLSN
+                    ? storeResult.LSN
+                    : storeResult.QuorumAckedLSN;
+
+                Res<DocumentServiceRequest> waitForLsnRequestResult = await Res.Wrap(
+                    BarrierRequestHelper.CreateAsync(entity, this.authorizationTokenProvider, higherLsn, null));
+                if (!waitForLsnRequestResult.IsSuccess)
+                {
+                    return Res.FromException<ReadPrimaryResult>(waitForLsnRequestResult.Exception);
+                }
+
+                Res<PrimaryReadOutcome> primaryWaitForLsnResult = await this.TryWaitForPrimaryLsnAsync(
+                    waitForLsnRequestResult.Value,
+                    higherLsn,
+                    readQuorum);
+                if (!primaryWaitForLsnResult.IsSuccess)
+                {
+                    return Res.FromException<ReadPrimaryResult>(primaryWaitForLsnResult.Exception);
+                }
+
+                PrimaryReadOutcome primaryWaitForLsnResponse = primaryWaitForLsnResult.Value;
+                if (primaryWaitForLsnResponse == PrimaryReadOutcome.QuorumNotMet)
+                {
+                    return Res.Success(
+                        new ReadPrimaryResult(
+                            requestChargeTracker: entity.RequestContext.RequestChargeTracker,
+                            isSuccessful: false,
+                            shouldRetryOnSecondary: false,
+                            response: null));
+                }
+                else if (primaryWaitForLsnResponse == PrimaryReadOutcome.QuorumInconclusive)
+                {
+                    return Res.Success(
+                        new ReadPrimaryResult(
+                            requestChargeTracker: entity.RequestContext.RequestChargeTracker,
+                            isSuccessful: false,
+                            shouldRetryOnSecondary: true,
+                            response: null));
+                }
+
+                return Res.Success(
+                    new ReadPrimaryResult(
+                        requestChargeTracker: entity.RequestContext.RequestChargeTracker,
+                        isSuccessful: true,
+                        shouldRetryOnSecondary: false,
+                        response: disposableStoreResult.TryAddReference()));
+            }
+
+            return Res.Success(
+                new ReadPrimaryResult(
+                    requestChargeTracker: entity.RequestContext.RequestChargeTracker,
+                    isSuccessful: true,
+                    shouldRetryOnSecondary: false,
+                    response: disposableStoreResult.TryAddReference()));
+        }
+
+        private async Task<Res<PrimaryReadOutcome>> TryWaitForPrimaryLsnAsync(
+            DocumentServiceRequest barrierRequest,
+            long lsnToWaitFor,
+            int readQuorum)
+        {
+            int primaryRetries = QuorumReader.maxNumberOfPrimaryReadRetries;
+
+            do // Loop for store and quorum LSN to match
+            {
+                if (barrierRequest.RequestContext.TimeoutHelper.TryGetGoneOrCancelledException(out Exception timeoutException))
+                {
+                    return Res.FromException<PrimaryReadOutcome>(timeoutException);
+                }
+
+                // We would have already refreshed address before reaching here. Avoid performing here.
+                barrierRequest.RequestContext.ForceRefreshAddressCache = false;
+                Res<ReferenceCountedDisposable<StoreResult>> readResult = await this.storeReader.TryReadPrimaryAsync(
+                        barrierRequest,
+                        requiresValidLsn: true,
+                        useSessionToken: false);
+                if (!readResult.IsSuccess)
+                {
+                    return Res.FromException<PrimaryReadOutcome>(readResult.Exception);
+                }
+
+                using ReferenceCountedDisposable<StoreResult> storeResult = readResult.Value;
+                if (!storeResult.Target.IsValid)
+                {
+                    return Res.FromException<PrimaryReadOutcome>(storeResult.Target.GetException());
+                }
+
+                if (storeResult.Target.CurrentReplicaSetSize > readQuorum)
+                {
+                    DefaultTrace.TraceWarning(
+                        "Unexpected response. Replica Set size is {0} which is greater than min value {1}",
+                        storeResult.Target.CurrentReplicaSetSize,
+                        readQuorum);
+                    return Res.Success(PrimaryReadOutcome.QuorumInconclusive);
+                }
+
+                if (storeResult.Target.LSN < lsnToWaitFor || storeResult.Target.QuorumAckedLSN < lsnToWaitFor)
+                {
+                    DefaultTrace.TraceWarning(
+                        "Store LSN {0} or quorum acked LSN {1} are lower than expected LSN {2}",
+                        storeResult.Target.LSN,
+                        storeResult.Target.QuorumAckedLSN,
+                        lsnToWaitFor);
+                    await Task.Delay(QuorumReader.delayBetweenReadBarrierCallsInMs);
+
+                    continue;
+                }
+
+                return Res.Success(PrimaryReadOutcome.QuorumMet);
+            }
+            while (--primaryRetries > 0);
+
+            return Res.Success(PrimaryReadOutcome.QuorumNotMet);
+        }
+
+        private async Task<Res<(bool isSuccess, StoreResponse throttledResponse)>> TryWaitForReadBarrierNewAsync(
+            DocumentServiceRequest barrierRequest,
+            bool allowPrimary,
+            int readQuorum,
+            long readBarrierLsn,
+            long targetGlobalCommittedLSN,
+            ReadMode readMode)
+        {
+            TimeSpan remainingDelay = totalAllowedBarrierRequestDelay;
+
+            long maxGlobalCommittedLsn = 0;
+            bool hasConvergedOnLSN = false;
+            int readBarrierRetryCount = 0;
+            while (readBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero) // Retry loop
+            {
+                if (barrierRequest.RequestContext.TimeoutHelper.TryGetGoneOrCancelledException(out Exception timeoutException, SubStatusCodes.Server_ReadBarrierFailed))
+                {
+                    return Res.FromException<(bool isSuccess, StoreResponse throttledResponse)>(timeoutException);
+                }
+
+                ValueStopwatch barrierRequestStopWatch = ValueStopwatch.StartNew();
+                Res<IList<ReferenceCountedDisposable<StoreResult>>> readResult =
+                    await this.storeReader.TryReadMultipleReplicaAsync(
+                        barrierRequest,
+                        includePrimary: allowPrimary,
+                        replicaCountToRead: hasConvergedOnLSN ? 1 : readQuorum, // for GCLSN a single replica is sufficient
+                        requiresValidLsn: !hasConvergedOnLSN,
+                        useSessionToken: false,
+                        readMode: readMode,
+                        checkMinLSN: false,
+                        forceReadAll: !hasConvergedOnLSN); // for GCLSN a single replica is sufficient - and requests should be issued sequentially
+                if (!readResult.IsSuccess)
+                {
+                    return Res.FromException<(bool isSuccess, StoreResponse throttledResponse)>(readResult.Exception);
+                }
+
+                using StoreResultList disposableResponses = new(readResult.Value);
+                barrierRequestStopWatch.Stop();
+                IList<ReferenceCountedDisposable<StoreResult>> responses = disposableResponses.Value;
+
+                // Check if all replicas returned 429
+                if (responses.Count > 0 && responses.All(response => response.Target.StatusCode == StatusCodes.TooManyRequests))
+                {
+                    DefaultTrace.TraceInformation(
+                        "WaitForReadBarrierNewAsync: All replicas returned 429 Too Many Requests. Yielding early to ResourceThrottleRetryPolicy. StatusCode: {0}, SubStatusCode: {1}, PkRangeId :{2}.",
+                        responses[0].Target.StatusCode,
+                        responses[0].Target.SubStatusCode,
+                        responses[0].Target.PartitionKeyRangeId);
+                    if (this.enableBarrierEarlyYieldOn429)
+                    {
+                        Res<StoreResponse> responseResult = responses.First().Target.TryToResponse();
+                        if (!responseResult.IsSuccess)
+                        {
+                            return Res.FromException<(bool isSuccess, StoreResponse throttledResponse)>(responseResult.Exception);
+                        }
+
+                        return Res.Success((false, responseResult.Value));
+                    }
+                }
+
+                TimeSpan previousBarrierRequestLatency = barrierRequestStopWatch.Elapsed;
+
+                //pivot to primary if any 410/1022 seen
+                if (BarrierRequestHelper.IsGoneLeaseNotFound(responses))
+                {
+                    Res<bool> primaryBarrierResult = await this.TryPrimaryOnlyReadBarrierExceptionlessAsync(
+                        barrierRequest,
+                        requiresValidLsn: !hasConvergedOnLSN,
+                        readBarrierLsn: readBarrierLsn,
+                        targetGlobalCommittedLSN: targetGlobalCommittedLSN,
+                        readQuorum: readQuorum,
+                        readMode: readMode);
+                    if (!primaryBarrierResult.IsSuccess)
+                    {
+                        return Res.FromException<(bool isSuccess, StoreResponse throttledResponse)>(primaryBarrierResult.Exception);
+                    }
+
+                    if (primaryBarrierResult.Value)
+                    {
+                        return Res.Success((true, (StoreResponse)null));
+                    }
+
+                    barrierRequest.RequestContext.ForceRefreshAddressCache = false;
+                }
+                else
+                {
+                    int readBarrierLsnReachedCount = 0;
+                    long maxGlobalCommittedLsnInResponses = 0;
+                    foreach (ReferenceCountedDisposable<StoreResult> response in responses)
+                    {
+                        maxGlobalCommittedLsnInResponses = Math.Max(
+                            maxGlobalCommittedLsnInResponses,
+                            response.Target.GlobalCommittedLSN);
+                        if (!hasConvergedOnLSN && response.Target.LSN >= readBarrierLsn)
+                        {
+                            readBarrierLsnReachedCount++;
+                        }
+                    }
+
+                    if (!hasConvergedOnLSN && readBarrierLsnReachedCount >= readQuorum)
+                    {
+                        hasConvergedOnLSN = true;
+                    }
+
+                    if (hasConvergedOnLSN &&
+                        (targetGlobalCommittedLSN <= 0 || maxGlobalCommittedLsnInResponses >= targetGlobalCommittedLSN))
+                    {
+                        return Res.Success((true, (StoreResponse)null));
+                    }
+
+                    maxGlobalCommittedLsn = Math.Max(maxGlobalCommittedLsn, maxGlobalCommittedLsnInResponses);
+
+                    //only refresh on first barrier call, set to false for subsequent attempts.
+                    barrierRequest.RequestContext.ForceRefreshAddressCache = false;
+
+                    bool shouldDelay = BarrierRequestHelper.ShouldDelayBetweenHeadRequests(
+                        previousBarrierRequestLatency,
+                        responses,
+                        defaultBarrierRequestDelays[readBarrierRetryCount],
+                        out TimeSpan maxDelay);
+
+                    readBarrierRetryCount++;
+                    if (readBarrierRetryCount >= defaultBarrierRequestDelays.Length || remainingDelay <= TimeSpan.Zero)
+                    {
+                        //trace on last retry.
+                        DefaultTrace.TraceInformation(
+                            "QuorumReader: WaitForReadBarrierAsync - Last barrier request. ReadMode: {0}, " +
+                                "HasLSNConverged: {1}, BarrierRequestRetryCount: {2}, Responses: {3}",
+                            readMode,
+                            hasConvergedOnLSN,
+                            readBarrierRetryCount,
+                            string.Join("; ", responses.Select(r => r.Target)));
+                    }
+                    else if (shouldDelay)
+                    {
+                        TimeSpan delay = maxDelay < remainingDelay ? maxDelay : remainingDelay;
+                        await Task.Delay(delay);
+                        remainingDelay -= delay;
+                    }
+                }
+            }
+
+            DefaultTrace.TraceInformation(
+                "QuorumReader: WaitForReadBarrierAsync - TargetGlobalCommittedLsn: {0}, MaxGlobalCommittedLsn: {1} ReadMode: {2}, HasLSNConverged:{3}.",
+                targetGlobalCommittedLSN,
+                maxGlobalCommittedLsn,
+                readMode,
+                hasConvergedOnLSN);
+            return Res.Success((false, (StoreResponse)null));
+        }
+
+        private async Task<Res<bool>> TryPrimaryOnlyReadBarrierExceptionlessAsync(
+            DocumentServiceRequest barrierRequest,
+            bool requiresValidLsn,
+            long readBarrierLsn,
+            long targetGlobalCommittedLSN,
+            int readQuorum,
+            ReadMode readMode)
+        {
+            // Always force refresh before hitting primary to avoid stale primary selection
+            barrierRequest.RequestContext.ForceRefreshAddressCache = true;
+            Res<ReferenceCountedDisposable<StoreResult>> readResult = await this.storeReader.TryReadPrimaryAsync(
+                    barrierRequest,
+                    requiresValidLsn: requiresValidLsn,
+                    useSessionToken: false);
+            if (!readResult.IsSuccess)
+            {
+                return Res.FromException<bool>(readResult.Exception);
+            }
+
+            using (ReferenceCountedDisposable<StoreResult> primaryResult = readResult.Value)
+            {
+                if (!primaryResult.Target.IsValid || BarrierRequestHelper.IsGoneLeaseNotFound(primaryResult.Target))
+                {
+                    return Res.FromException<bool>(primaryResult.Target.GetException());
+                }
+
+                bool hasRequiredLsn = readBarrierLsn <= 0 || primaryResult.Target.LSN >= readBarrierLsn;
+                bool hasRequiredGlobalCommittedLsn =
+                    targetGlobalCommittedLSN <= 0 || primaryResult.Target.GlobalCommittedLSN >= targetGlobalCommittedLSN;
+                return Res.Success(hasRequiredLsn && hasRequiredGlobalCommittedLsn);
+            }
+        }
+
         private async Task<ReadQuorumResult> ReadQuorumAsync(
             DocumentServiceRequest entity,
             int readQuorum,
@@ -481,7 +1318,8 @@ namespace Microsoft.Azure.Documents
                     response: disposableStoreResult.TryAddReference());
             
             // even though the response is throttled it has valid metadata so LSN wont be < 0 hence the below IsValidStatusCodeForExceptionlessRetry  && storeResult.LSN < 0 condition wont trigger throttling response so making a check here
-            if (storeResult.StatusCode == StatusCodes.TooManyRequests)
+            if (this.enableBarrierEarlyYieldOn429
+                && storeResult.StatusCode == StatusCodes.TooManyRequests)
             {
                 // Let ResourceThrottleRetryPolicy handle 429
                 // Instead of throwing an exception, return a result that indicates throttling
@@ -640,7 +1478,7 @@ namespace Microsoft.Azure.Documents
 
             while (readBarrierRetryCount-- > 0) // Retry loop
             {
-                barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
+                barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed(SubStatusCodes.Server_ReadBarrierFailed);
                 using StoreResultList disposableResponses = new(await this.storeReader.ReadMultipleReplicaAsync(
                     barrierRequest,
                     includePrimary: allowPrimary,
@@ -660,7 +1498,10 @@ namespace Microsoft.Azure.Documents
                                      responses[0].Target.SubStatusCode,
                                      responses[0].Target.PartitionKeyRangeId);
 
-                    return (false, responses.First().Target.ToResponse()); // Return the first 429 response
+                    if (this.enableBarrierEarlyYieldOn429)
+                    {
+                        return (false, responses.First().Target.ToResponse()); // Return the first 429 response
+                    }
                 }
 
                 //pivot to primary if any 410/1022 seen
@@ -712,7 +1553,7 @@ namespace Microsoft.Azure.Documents
             {
                 while (readBarrierRetryCountMultiRegion-- > 0)
                 {
-                    barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
+                    barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed(SubStatusCodes.Server_ReadBarrierFailed);
                     using StoreResultList disposableResponses = new(await this.storeReader.ReadMultipleReplicaAsync(
                         barrierRequest,
                         includePrimary: allowPrimary,
@@ -801,7 +1642,7 @@ namespace Microsoft.Azure.Documents
             int readBarrierRetryCount = 0;
             while(readBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero) // Retry loop
             {
-                barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
+                barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed(SubStatusCodes.Server_ReadBarrierFailed);
                 ValueStopwatch barrierRequestStopWatch = ValueStopwatch.StartNew();
                 using StoreResultList disposableResponses = new(await this.storeReader.ReadMultipleReplicaAsync(
                     barrierRequest,
@@ -822,7 +1663,10 @@ namespace Microsoft.Azure.Documents
                                      responses[0].Target.StatusCode,
                                      responses[0].Target.SubStatusCode,
                                      responses[0].Target.PartitionKeyRangeId);
-                    return (false, responses.First().Target.ToResponse());  // Yield early if all replicas return 429
+                    if (this.enableBarrierEarlyYieldOn429)
+                    {
+                        return (false, responses.First().Target.ToResponse());  // Yield early if all replicas return 429
+                    }
                 }
 
 
@@ -1074,6 +1918,18 @@ namespace Microsoft.Azure.Documents
 
                 this.skipStoreResultDispose = true;
                 return this.response.Target.ToResponse(requestChargeTracker);
+            }
+
+            public Res<StoreResponse> TryGetResponseAndSkipStoreResultDispose()
+            {
+                if (!this.IsValidResult())
+                {
+                    DefaultTrace.TraceCritical("GetResponse called for invalid result");
+                    return Res.FromException<StoreResponse>(new InternalServerErrorException(RMResources.InternalServerError));
+                }
+
+                this.skipStoreResultDispose = true;
+                return this.response.Target.TryToResponse(requestChargeTracker);
             }
 
             protected abstract bool IsValidResult();

@@ -71,6 +71,19 @@ namespace Microsoft.Azure.Documents
             public const string Merge = "MERGE";
         }
 
+        public enum MutualTlsAuthIntentValue : ushort
+        {
+            OBO = 0,
+            S2S = 1,
+        }
+
+        public static class MutualTlsAuthIntent
+        {
+            public const string OBO = nameof(MutualTlsAuthIntentValue.OBO);
+            public const string S2S = nameof(MutualTlsAuthIntentValue.S2S);
+            public const string Base64EncodedWellKnownKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
+        }
+
         public static class HttpHeaders
         {
             public const string Authorization = "authorization";
@@ -119,11 +132,14 @@ namespace Microsoft.Azure.Documents
             public const string AccessControlAllowOrigin = "Access-Control-Allow-Origin";
             public const string AccessControlAllowHeaders = "Access-Control-Allow-Headers";
             public const string AccessControlAllowMethods = "Access-Control-Allow-Methods";
+            public const string AccessControlAllowPrivateNetwork = "Access-Control-Allow-Private-Network";
             public const string AccessControlExposeHeaders = "Access-Control-Expose-Headers";
             public const string AccessControlMaxAge = "Access-Control-Max-Age";
             public const string AccessControlRequestHeaders = "Access-Control-Request-Headers";
             public const string AccessControlRequestMethod = "Access-Control-Request-Method";
+            public const string AccessControlRequestPrivateNetwork = "Access-Control-Request-Private-Network";
             public const string KeyValueEncodingFormat = "application/x-www-form-urlencoded";
+            public const string ProtobufContentType = "application/x-protobuf";
             public const string WrapAssertionFormat = "wrap_assertion_format";
             public const string WrapAssertion = "wrap_assertion";
             public const string WrapScope = "wrap_scope";
@@ -144,6 +160,12 @@ namespace Microsoft.Azure.Documents
             public const string XForwardedFor = "x-forwarded-for";
             public const string IsForwardedRequest = "isForwardedRequest";
             public const string Date = "Date";
+
+            // Azure Portal Data Explorer forwards the end-user client IP in this header
+            // so the Compute Gateway Authorizer can evaluate the customer's IP firewall
+            // against the actual end-user IP (instead of only the Portal infrastructure
+            // source IP). Honored only on the Compute Gateway untrusted-origin path.
+            public const string PortalClientIpAddress = "x-ms-client-ip-address";
 
             // StoreTableEntity request
             public const string TablePartitonKey = "Partiton-Key";
@@ -368,7 +390,26 @@ namespace Microsoft.Azure.Documents
             // Client-request-id: Optional caller-specified request ID, in the form of a GUID
             public const string ClientRequestId = "x-ms-client-request-id";
             public const string ClientAppId = "x-ms-client-app-id";
+
+            // ARM-forwarded appidacr claim describing how the calling app authenticated to Entra ID:
+            // "0" public client / no credential, "1" shared secret, "2" certificate / managed identity / federated.
+            public const string ClientAppIdAcr = "x-ms-client-app-id-acr";
+
             public const string ClientId = "x-ms-client-id";
+
+            // ARM-injected caller identity header carrying the original caller's claims as a signed JWT.
+            // ARM treats it as reserved: any client-supplied copy is stripped at the ARM frontdoor and the value
+            // is re-populated from the caller token that ARM itself validated. It therefore describes the
+            // original caller, unlike the Authorization header, which ARM always replaces with its own token.
+            // It is only emitted when the RP manifest opts in via
+            // "requestHeaderOptions": { "optInHeaders": "UserContext" }.
+            public const string ArmUserContext = "x-ms-arm-user-context";
+
+            // Deprecated predecessor of ArmUserContext, signed with ARM's service client certificate rather
+            // than the DPP SDK. It carries the same caller claims and needs its own manifest opt-in via
+            // "requestHeaderOptions": { "optInHeaders": "SignedUserToken" }. ARM is retiring this contract in
+            // September 2026, so it is only a bridge until UserContext is available in every region.
+            public const string ArmSignedUserToken = "x-ms-arm-signed-user-token";
 
             // Offer header
             public const string OfferType = "x-ms-offer-type";
@@ -379,6 +420,7 @@ namespace Microsoft.Azure.Documents
             public const string OfferAutopilotTier = "x-ms-cosmos-offer-autopilot-tier";
             public const string OfferAutopilotAutoUpgrade = "x-ms-cosmos-offer-autopilot-autoupgrade";
             public const string OfferAutopilotSettings = "x-ms-cosmos-offer-autopilot-settings";
+            public const string OfferInfrequentAccess = "x-ms-cosmos-offer-infrequent-access";
             public const string PopulateCollectionThroughputInfo = "x-ms-documentdb-populatecollectionthroughputinfo";
             public const string IsRUPerGBEnforcementRequest = "x-ms-cosmos-internal-is-ru-per-gb-enforcement-request";
             public const string IsOfferStorageRefreshRequest = "x-ms-cosmos-internal-is-offer-storage-refresh-request";
@@ -403,6 +445,15 @@ namespace Microsoft.Azure.Documents
             public const string ForceResetThroughputFractions = "x-ms-force-reset-throughput-fractions";
             public const string PopulateThroughputPoolInfo = "x-ms-populate-throughputpool-info";
             public const string PopulatePartitionCount = "x-ms-populate-partition-count";
+
+            // Controller service forwarding
+            public const string ControllerRequestSource = "x-ms-cosmos-controller-request-source";
+            public const string ControllerRequestTargetControllerId = "x-ms-cosmos-controller-request-target-controller-id";
+            // Set to the shared HTTP status code (e.g. "410") only when every per-controller entry in a
+            // batch response shares the same status; omitted when statuses are mixed. Lets the GW caller
+            // act on a uniform batch (in particular all-Gone) without buffering and parsing the body.
+            public const string ControllerBatchStatusCode = "x-ms-cosmos-controller-batch-status";
+            public const string ControllerTargetServiceName = "x-ms-cosmos-controller-target-service-name";
 
             // Microsoft Fabric
             public const string FabricTenantId = "x-ms-tid";
@@ -444,6 +495,7 @@ namespace Microsoft.Azure.Documents
             public const string UsePolygonsSmallerThanAHemisphere = "x-ms-documentdb-usepolygonssmallerthanahemisphere";
             public const string GatewaySignature = "x-ms-gateway-signature";
             public const string MtlsSignature = "x-ms-gateway-use-mtls";
+            public const string MutualTlsAuthIntent = "x-ms-cosmos-mtls-auth-intent";
             public const string MutualTlsStatus = "x-ms-mtls-status";
             public const string MutualTlsThumbprint = "x-ms-mtls-thumbprint";
             public const string UseGatewaySignature = "x-ms-use-gateway-signature";
@@ -710,6 +762,9 @@ namespace Microsoft.Azure.Documents
             // Allow Topology Upserts without TopologyUpsertIntent for Per-Partition Automatic Failover(PPAF) enabled accounts
             public const string AllowTopologyUpsertWithoutIntent = "x-ms-cosmos-internal-allow-topology-upsert-without-intent";
 
+            // Overrides account configuration for change-feed false-progress prevention.
+            public const string IsChangeFeedFalseProgressPreventionEnabled = "x-ms-cosmos-internal-is-change-feed-false-progress-prevention-enabled";
+
             // Header to indicate Embedding Generator request.
             public const string IsEmbeddingGeneratorRequest = "x-ms-cosmos-internal-is-embedding-generator-request";
 
@@ -768,6 +823,22 @@ namespace Microsoft.Azure.Documents
             public const string DistributedTransactionId = "x-ms-cosmos-internal-distributed-transaction-id";
             public const string RetriggerDTX = "x-ms-cosmos-internal-retrigger-dtx";
             public const string ShouldCheckInflightDtx = "x-ms-cosmos-internal-should-check-inflight-distributed-txn";
+            public const string ResolveDistributedTransactionBatch = "x-ms-cosmos-internal-resolve-distributed-transaction-batch";
+            public const string PersistDistributedTransactionPrepareFailure = "x-ms-cosmos-internal-persist-distributed-transaction-prepare-failure";
+            public const string IsDtxAggregatedResponse = "x-ms-cosmos-internal-is-dtx-aggregated-response";
+
+            // Set by the SDK on a distributed transaction request and carried through the
+            // SQL app to the DTC coordinator. Both are advisory hints about how the SDK
+            // arrived at this request — the coordinator records them, it does not change
+            // transaction semantics based on them.
+
+            // True when the SDK is resending a distributed transaction it has already sent
+            // at least once (same idempotency token), rather than issuing it for the first time.
+            public const string IsDtxRetry = "x-ms-cosmos-internal-is-dtx-retry";
+
+            // True when the SDK is sending this distributed transaction to a region other
+            // than the one it originally targeted (for example after a regional failover).
+            public const string IsDtxCrossRegionRedirect = "x-ms-cosmos-internal-is-dtx-cross-region-redirect";
 
             // Tracks first authorization token type received
             public const string OriginalAuthorizationTokenType = "x-ms-cosmos-key-type";

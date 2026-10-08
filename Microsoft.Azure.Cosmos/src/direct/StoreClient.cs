@@ -43,7 +43,8 @@ namespace Microsoft.Azure.Documents
             bool disableRetryWithRetryPolicy = false,
             bool enableReplicaValidation = false,
             RetryWithConfiguration retryWithConfiguration = null,
-            ISessionRetryOptions sessionRetryOptions = null)
+            ISessionRetryOptions sessionRetryOptions = null,
+            bool enableBarrierEarlyYieldOn429 = false)
         {
             this.transportClient = transportClient;
             this.serviceConfigurationReader = serviceConfigurationReader;
@@ -72,6 +73,7 @@ namespace Microsoft.Azure.Documents
                 disableRetryWithRetryPolicy: disableRetryWithRetryPolicy,
                 retryWithConfiguration: retryWithConfiguration,
                 enableReplicaValidation: enableReplicaValidation,
+                enableBarrierEarlyYieldOn429: enableBarrierEarlyYieldOn429,
                 sessionRetryOptions: sessionRetryOptions);
         }
 
@@ -154,6 +156,54 @@ namespace Microsoft.Azure.Documents
             }
 
             return this.CompleteResponse(storeResponse, request);
+        }
+
+        public async Task<Res<DocumentServiceResponse>> TryProcessMessageAsync(
+            DocumentServiceRequest request,
+            IRetryPolicy retryPolicy = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (request == null)
+            {
+                return Res.FromException<DocumentServiceResponse>(new ArgumentNullException(nameof(request)));
+            }
+
+            Exception bufferException = await Res.Wrap(request.EnsureBufferedBodyAsync());
+            if (bufferException != null)
+            {
+                return Res.FromException<DocumentServiceResponse>(bufferException);
+            }
+
+            Res<StoreResponse> storeResult = retryPolicy != null
+                ? await BackoffRetryUtility<StoreResponse>.TryExecuteAsync(
+                    () => this.replicatedResourceClient.TryInvokeAsync(request, cancellationToken),
+                    retryPolicy,
+                    cancellationToken)
+                : await this.replicatedResourceClient.TryInvokeAsync(request, cancellationToken);
+
+            if (!storeResult.IsSuccess)
+            {
+                if (storeResult.Exception is DocumentClientException dce)
+                {
+                    if (request.RequestContext.ClientRequestStatistics != null)
+                    {
+                        dce.RequestStatistics = request.RequestContext.ClientRequestStatistics;
+                    }
+
+                    this.UpdateResponseHeader(request, dce.Headers);
+
+                    if ((!ReplicatedResourceClient.IsMasterResource(request.ResourceType)) &&
+                        (dce.StatusCode == HttpStatusCode.PreconditionFailed || dce.StatusCode == HttpStatusCode.Conflict
+                        || (dce.StatusCode == HttpStatusCode.NotFound && dce.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
+                    {
+                        this.CaptureSessionToken(dce.StatusCode, dce.GetSubStatus(), request, dce.Headers);
+                    }
+                }
+
+                return Res.FromException<DocumentServiceResponse>(storeResult.Exception);
+            }
+
+            return Res.Success(this.CompleteResponse(storeResult.Value, request));
         }
 
         /// <inheritdoc/>>

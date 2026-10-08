@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Documents
                         request.ResourceType,
                         requestMessage.Headers);
 
-                    responseMessage = await this.httpClient.SendAsync(requestMessage,
+                    responseMessage = await this.httpClient.SendAsync(requestMessage, // CodeQL [SM03781] The transport constructs this request from the physical address supplied by its routing caller.
                         HttpCompletionOption.ResponseHeadersRead);
                 }
                 catch (Exception exception)
@@ -338,6 +338,7 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.Continuation, request.Continuation);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PartitionKey, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PartialPartitionKey, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PartitionKeyRangeId, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.EnableCrossPartitionQuery, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.SDKSupportedCapabilities, request);
@@ -430,6 +431,8 @@ namespace Microsoft.Azure.Documents
             // UsePolygonsSmallerThanAHemisphere
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UsePolygonsSmallerThanAHemisphere, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.GatewaySignature, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.MutualTlsAuthIntent, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.MtlsSignature, request);
 
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateQuotaInfo, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.DisableRUPerMinuteUsage, request);
@@ -522,6 +525,7 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.RetrieveUserStrings, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateVectorIndexAggregateProgress, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowTopologyUpsertWithoutIntent, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsChangeFeedFalseProgressPreventionEnabled, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ReadGlobalCommittedData, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsSoftDeletionOrRecoveryOperation, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.WorkloadId, request);
@@ -534,12 +538,34 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.DistributedTransactionId, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.HybridLogicalClockTimestamp, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ShouldCheckInflightDtx, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ResolveDistributedTransactionBatch, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PersistDistributedTransactionPrepareFailure, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsDtxAggregatedResponse, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ReadConsistencyStrategy, request);
 
 
             // Set the CollectionOperation TransactionId if present
             // Currently only being done for SharedThroughputTransactionHandler in the collection create path
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.CosmosGatewayTransactionId, request.Headers[WFConstants.BackendHeaders.CosmosGatewayTransactionId]);
+
+            // Controller service forwarding headers: request source and target controller ID.
+            // Used by ForwarderControllerService to bypass GW aggregation/caching.
+            if (request.Headers[HttpConstants.HttpHeaders.ControllerRequestSource] != null)
+            {
+                HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ControllerRequestSource, request.Headers[HttpConstants.HttpHeaders.ControllerRequestSource]);
+            }
+
+            if (request.Headers[HttpConstants.HttpHeaders.ControllerRequestTargetControllerId] != null)
+            {
+                HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ControllerRequestTargetControllerId, request.Headers[HttpConstants.HttpHeaders.ControllerRequestTargetControllerId]);
+            }
+
+            // Controller service forwarding header: target controller ServiceName (master vs server).
+            // Carried on Forwarder -> GW -> Processor requests so GW routes to the correct controller service.
+            if (request.Headers[HttpConstants.HttpHeaders.ControllerTargetServiceName] != null)
+            {
+                HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ControllerTargetServiceName, request.Headers[HttpConstants.HttpHeaders.ControllerTargetServiceName]);
+            }
 
             Stream clonedStream = null;
             if (request.Body != null)
@@ -805,6 +831,8 @@ namespace Microsoft.Azure.Documents
                     return HttpTransportClient.GetAuthPolicyElementFeedUri(physicalAddress, request);
                 case ResourceType.AzureRbac:
                     return HttpTransportClient.GetAzureRbacFeedUri(physicalAddress, request);
+                case ResourceType.AbacPolicy:
+                    return HttpTransportClient.GetAbacPolicyFeedUri(physicalAddress, request);
                 case ResourceType.SystemDocument:
                     return HttpTransportClient.GetSystemDocumentFeedUri(physicalAddress, request);
                 case ResourceType.PartitionedSystemDocument:
@@ -875,6 +903,8 @@ namespace Microsoft.Azure.Documents
                     return HttpTransportClient.GetInteropUserEntryUri(physicalAddress, request);
                 case ResourceType.AzureRbac:
                     return HttpTransportClient.GetAzureRbacEntryUri(physicalAddress, request);
+                case ResourceType.AbacPolicy:
+                    return HttpTransportClient.GetAbacPolicyEntryUri(physicalAddress, request);
                 case ResourceType.SystemDocument:
                     return HttpTransportClient.GetSystemDocumentEntryUri(physicalAddress, request);
                 case ResourceType.PartitionedSystemDocument:
@@ -1116,6 +1146,16 @@ namespace Microsoft.Azure.Documents
         private static Uri GetAzureRbacEntryUri(Uri baseAddress, DocumentServiceRequest request)
         {
             return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.AzureRbac, request, isFeed: false));
+        }
+
+        private static Uri GetAbacPolicyFeedUri(Uri baseAddress, DocumentServiceRequest request)
+        {
+            return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.AbacPolicy, request, isFeed: true));
+        }
+
+        private static Uri GetAbacPolicyEntryUri(Uri baseAddress, DocumentServiceRequest request)
+        {
+            return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.AbacPolicy, request, isFeed: false));
         }
 
         private static Uri GetSystemDocumentFeedUri(Uri baseAddress, DocumentServiceRequest request)

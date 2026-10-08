@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Documents
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using Microsoft.Azure.Documents.Common.AttributeBasedAccessControl;
 
     internal sealed class FeedResource<T> : Resource, IEnumerable<T> where T : JsonSerializable, new()
     {
@@ -29,6 +30,10 @@ namespace Microsoft.Azure.Documents
                     else if (typeof(AzureRbac).IsAssignableFrom(typeof(T)))
                     {
                         FeedResource<T>.collectionName = "AzureRbac";
+                    }
+                    else if (typeof(AbacPolicy).IsAssignableFrom(typeof(T)))
+                    {
+                        FeedResource<T>.collectionName = "AbacPolicies";
                     }
                     else
                     {

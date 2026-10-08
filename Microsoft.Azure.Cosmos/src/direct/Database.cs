@@ -155,6 +155,20 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// Gets or sets the database instance identifier for in-account restore of shared throughput databases.
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// A valid value is a non-empty GUID string set during in-account restore when EnablePersistingDatabaseInstanceIdDuringRestore is enabled.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.DatabaseInstanceId, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal string DatabaseInstanceId
+        {
+            get { return base.GetValue<string>(Constants.Properties.DatabaseInstanceId); }
+            set { base.SetValue(Constants.Properties.DatabaseInstanceId, value); }
+        }
+
+        /// <summary>
         /// Gets or sets the <see cref="RestoreParameters"/> for triggering the InAccountRestore of the database
         /// </summary>
         /// <value>

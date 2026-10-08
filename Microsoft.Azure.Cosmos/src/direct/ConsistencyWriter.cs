@@ -71,6 +71,7 @@ Sequence of steps:
         private readonly IAuthorizationTokenProvider authorizationTokenProvider;
         private readonly bool useMultipleWriteLocations;
         private readonly ISessionRetryOptions sessionRetryOptions;
+        private readonly bool enableBarrierEarlyYieldOn429;
 
         public ConsistencyWriter(
             AddressSelector addressSelector,
@@ -80,7 +81,8 @@ Sequence of steps:
             IAuthorizationTokenProvider authorizationTokenProvider,
             bool useMultipleWriteLocations,
             bool enableReplicaValidation,
-            ISessionRetryOptions sessionRetryOptions = null)
+            ISessionRetryOptions sessionRetryOptions = null,
+            bool enableBarrierEarlyYieldOn429 = false)
         {
             this.transportClient = transportClient;
             this.addressSelector = addressSelector;
@@ -89,6 +91,7 @@ Sequence of steps:
             this.serviceConfigurationReaderExtension = serviceConfigReader as IServiceConfigurationReaderExtension;
             this.authorizationTokenProvider = authorizationTokenProvider;
             this.useMultipleWriteLocations = useMultipleWriteLocations;
+            this.enableBarrierEarlyYieldOn429 = enableBarrierEarlyYieldOn429;
             this.sessionRetryOptions = sessionRetryOptions;
             this.storeReader = new StoreReader(
                                     transportClient,
@@ -170,6 +173,45 @@ Sequence of steps:
             }
         }
 
+        public async Task<Res<StoreResponse>> TryWriteAsync(
+            DocumentServiceRequest entity,
+            TimeoutHelper timeout,
+            bool forceRefresh,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (timeout.TryGetTimeoutException(out Exception timeoutException))
+            {
+                return Res.FromException<StoreResponse>(timeoutException);
+            }
+
+            string sessionToken = entity.Headers[HttpConstants.HttpHeaders.SessionToken];
+            try
+            {
+                // RequestRetryUtility vs BackoffRetryUtility: is purely for safe flighting purpose only
+                // Post flighting can be fully pivoted to RequestRetryUtility and remove BackoffRetryUtility below
+                if (entity.UseStatusCodeFor4041002
+                    && entity.IsValidRequestFor4041002())
+                {
+                    return await RequestRetryUtility.TryProcessRequestAsync<DocumentServiceRequest, StoreResponse>(
+                        executeAsync: () => this.TryWritePrivateAsync(entity, timeout, forceRefresh),
+                        prepareRequest: () => entity,
+                        policy: new SessionTokenMismatchRetryPolicy(
+                            sessionRetryOptions: this.sessionRetryOptions),
+                        cancellationToken: cancellationToken);
+                }
+
+                return await BackoffRetryUtility<StoreResponse>.TryExecuteAsync(
+                    callbackMethod: () => this.TryWritePrivateAsync(entity, timeout, forceRefresh),
+                    retryPolicy: new SessionTokenMismatchRetryPolicy(
+                        sessionRetryOptions: this.sessionRetryOptions),
+                    cancellationToken: cancellationToken);
+            }
+            finally
+            {
+                SessionTokenHelper.SetOriginalSessionToken(entity, sessionToken);
+            }
+        }
+
         private async Task<StoreResponse> WritePrivateAsync(
             DocumentServiceRequest request,
             TimeoutHelper timeout,
@@ -209,7 +251,7 @@ Sequence of steps:
 
                 // the transportclient relies on this contacted replicas being present *before* the request is made
                 // TODO: Can we not rely on this inversion of dependencies.
-                request.RequestContext.ClientRequestStatistics.ContactedReplicas = partitionPerProtocolAddress.ReplicaTransportAddressUris.ToList();
+                request.RequestContext.ClientRequestStatistics.RecordContactedReplicas(partitionPerProtocolAddress.ReplicaTransportAddressUris);
 
                 TransportAddressUri primaryUri = partitionPerProtocolAddress.GetPrimaryAddressUri(request);
                 this.LastWriteAddress = primaryUri.ToString();
@@ -324,6 +366,221 @@ Sequence of steps:
             return request.RequestContext.CachedWriteStoreResult.Target.ToResponse();
         }
 
+        /// <summary>
+        /// Applies the session token handling that <see cref="WritePrivateAsync"/> performs inline,
+        /// returning any failure as a <see cref="Res{T}"/> failure instead of throwing.
+        /// </summary>
+        /// <remarks>
+        /// Every helper called here reads a client supplied header - the consistency level, and the
+        /// session token by way of GetLocalSessionToken - so a malformed value is client
+        /// triggerable and would otherwise let a caller drive throw volume on the exceptionless
+        /// path. They are shared helpers with many callers elsewhere, so rather than duplicating
+        /// them the call is contained here and converted at the boundary.
+        /// </remarks>
+        private Res<bool> TryApplySessionToken(DocumentServiceRequest request)
+        {
+            try
+            {
+                if ((this.useMultipleWriteLocations || request.OperationType == OperationType.Batch) &&
+                    RequestHelper.GetConsistencyLevelToUse(this.serviceConfigReader, request) == ConsistencyLevel.Session)
+                {
+                    // Set session token to ensure session consistency for write requests
+                    // 1. when writes can be issued to multiple locations
+                    // 2. When we have Batch requests, since it can have Reads in it.
+                    SessionTokenHelper.SetPartitionLocalSessionToken(request, this.sessionContainer);
+                }
+                else
+                {
+                    // When writes can only go to single location, there is no reason
+                    // to session session token to the server.
+                    SessionTokenHelper.ValidateAndRemoveSessionToken(request);
+                }
+
+                return Res.Success(true);
+            }
+            catch (Exception exception)
+            {
+                return Res.FromException<bool>(exception);
+            }
+        }
+
+        private async Task<Res<StoreResponse>> TryWritePrivateAsync(
+            DocumentServiceRequest request,
+            TimeoutHelper timeout,
+            bool forceRefresh)
+        {
+            if (timeout.TryGetTimeoutException(out Exception timeoutException))
+            {
+                return Res.FromException<StoreResponse>(timeoutException);
+            }
+
+            request.RequestContext.TimeoutHelper = timeout;
+
+            if (request.RequestContext.RequestChargeTracker == null)
+            {
+                request.RequestContext.RequestChargeTracker = new RequestChargeTracker();
+            }
+
+            if (request.RequestContext.ClientRequestStatistics == null)
+            {
+                request.RequestContext.ClientRequestStatistics = new ClientSideRequestStatistics();
+            }
+
+            request.RequestContext.ForceRefreshAddressCache = forceRefresh;
+
+            if (request.RequestContext.CachedWriteStoreResult == null)
+            {
+                StoreResponse response = null;
+                Exception exception = null;
+
+                string requestedCollectionRid = request.RequestContext.ResolvedCollectionRid;
+
+                Res<PerProtocolPartitionAddressInformation> addressResult = await this.addressSelector.NonThrowingResolveAddressesAsync(request, forceRefresh);
+                if (!addressResult.IsSuccess)
+                {
+                    return Res.FromException<StoreResponse>(addressResult.Exception);
+                }
+
+                PerProtocolPartitionAddressInformation partitionPerProtocolAddress = addressResult.Value;
+
+                if (!string.IsNullOrEmpty(requestedCollectionRid) && !string.IsNullOrEmpty(request.RequestContext.ResolvedCollectionRid))
+                {
+                    if (!requestedCollectionRid.Equals(request.RequestContext.ResolvedCollectionRid))
+                    {
+                        this.sessionContainer.ClearTokenByResourceId(requestedCollectionRid);
+                    }
+                }
+
+                // the transportclient relies on this contacted replicas being present *before* the request is made
+                // TODO: Can we not rely on this inversion of dependencies.
+                request.RequestContext.ClientRequestStatistics.RecordContactedReplicas(partitionPerProtocolAddress.ReplicaTransportAddressUris);
+
+                Res<TransportAddressUri> primaryUriRes = partitionPerProtocolAddress.TryGetPrimaryAddressUri(request);
+                if (!primaryUriRes.IsSuccess)
+                {
+                    return Res.FromException<StoreResponse>(primaryUriRes.Exception);
+                }
+
+                TransportAddressUri primaryUri = primaryUriRes.Value;
+                this.LastWriteAddress = primaryUri.ToString();
+
+                Res<bool> sessionTokenResult = this.TryApplySessionToken(request);
+                if (!sessionTokenResult.IsSuccess)
+                {
+                    return Res.FromException<StoreResponse>(sessionTokenResult.Exception);
+                }
+
+                DateTime startTimeUtc = DateTime.UtcNow;
+                ReferenceCountedDisposable<StoreResult> storeResult = null;
+
+                Res<StoreResponse> transportResult = await this.transportClient.TryInvokeResourceOperationAsync(primaryUri, request);
+
+                if (transportResult.IsSuccess)
+                {
+                    response = transportResult.Value;
+
+                    storeResult = StoreResult.CreateStoreResult(
+                        storeResponse: response,
+                        responseException: null,
+                        requiresValidLsn: true,
+                        useLocalLSNBasedHeaders: false,
+                        replicaHealthStatuses: primaryUri.GetCurrentHealthState().GetHealthStatusDiagnosticsAsReadOnlyEnumerable(),
+                        storePhysicalAddress: primaryUri.Uri);
+
+                    request.RequestContext.ClientRequestStatistics.RecordResponse(
+                        request: request,
+                        storeResult: storeResult.Target,
+                        startTimeUtc: startTimeUtc,
+                        endTimeUtc: DateTime.UtcNow);
+                }
+                else
+                {
+                    exception = transportResult.Exception;
+
+                    storeResult = StoreResult.CreateStoreResult(
+                        storeResponse: null,
+                        responseException: exception,
+                        requiresValidLsn: true,
+                        useLocalLSNBasedHeaders: false,
+                        replicaHealthStatuses: primaryUri.GetCurrentHealthState().GetHealthStatusDiagnosticsAsReadOnlyEnumerable(),
+                        storePhysicalAddress: primaryUri.Uri);
+
+                    request.RequestContext.ClientRequestStatistics.RecordResponse(
+                        request: request,
+                        storeResult: storeResult.Target,
+                        startTimeUtc: startTimeUtc,
+                        endTimeUtc: DateTime.UtcNow);
+
+                    if (exception is DocumentClientException dce)
+                    {
+                        if (!StoreResult.CanContinueOnException(dce))
+                        {
+                            return Res.FromException<StoreResponse>(exception);
+                        }
+
+                        string value = dce.Headers[HttpConstants.HttpHeaders.WriteRequestTriggerAddressRefresh];
+                        if (!string.IsNullOrWhiteSpace(value))
+                        {
+                            int refreshResult;
+                            if (int.TryParse(dce.Headers.GetValues(HttpConstants.HttpHeaders.WriteRequestTriggerAddressRefresh)[0],
+                                NumberStyles.Integer,
+                                CultureInfo.InvariantCulture,
+                                out refreshResult) && refreshResult == 1)
+                            {
+                                // This may fire alongside the CRSS-based refresh in
+                                // ReplicatedResourceClient. Duplicate refreshes are
+                                // coalesced by AsyncCacheNonBlocking.
+                                this.addressSelector.StartBackgroundAddressRefresh(request);
+                            }
+                        }
+                    }
+                }
+
+                if (storeResult?.Target is null)
+                {
+                    Debug.Assert(false, "StoreResult cannot be null at this point.");
+                    DefaultTrace.TraceCritical("ConsistencyWriter did not get storeResult!");
+                    return Res.FromException<StoreResponse>(new InternalServerErrorException());
+                }
+
+                // Stash CRSS for centralized scale-up detection
+                // in ReplicatedResourceClient.
+                if (storeResult.Target.CurrentReplicaSetSize
+                    > request.RequestContext.MaxCurrentReplicaSetSizeFromResponse)
+                {
+                    request.RequestContext.MaxCurrentReplicaSetSizeFromResponse =
+                        storeResult.Target.CurrentReplicaSetSize;
+                }
+
+                BarrierType barrierType = this.ComputeBarrierType(storeResult, request);
+
+                if (barrierType == BarrierType.None)
+                {
+                    // If barrier is not performed, we can return the store result directly.
+                    return storeResult.Target.TryToResponse();
+                }
+
+                Res<bool> barrierResult = await this.TryPerformBarriersForWritesAsync(storeResult, request, barrierType);
+                if (!barrierResult.IsSuccess)
+                {
+                    return Res.FromException<StoreResponse>(barrierResult.Exception);
+                }
+            }
+            else
+            {
+                BarrierType barrierType = this.ComputeBarrierType(request.RequestContext.CachedWriteStoreResult, request);
+                Func<StoreResult, long> lsnAttributeSelector = barrierType == BarrierType.GlobalStrongWrite ? (sr => sr.GlobalCommittedLSN) : (sr => sr.GlobalNRegionCommittedGLSN);
+
+                Res<bool> barrierResult = await this.TryCreateAndWaitForWriteBarrierAsync(request, barrierType, lsnAttributeSelector);
+                if (!barrierResult.IsSuccess)
+                {
+                    return Res.FromException<StoreResponse>(barrierResult.Exception);
+                }
+            }
+
+            return request.RequestContext.CachedWriteStoreResult.Target.TryToResponse();
+        }
+
         internal bool ShouldPerformWriteBarrierForGlobalStrong(
             StoreResult storeResult,
             DocumentServiceRequest incomingRequest)
@@ -386,7 +643,7 @@ Sequence of steps:
         ///  For less than Strong Accounts and If EnableNRegionSynchronousCommit is enabled for the account:
         ///      1. After receiving response from primary of write region, look at GlobalCommittedLsn and LSN headers.
         ///      2. If GlobalNRegionCommittedGLSN = LSN, return response to caller
-        ///      3. If GlobalNRegionCommittedGLSN &lt; LSN &amp;&amp; storeResponse.NumberOFReadRegions &gt; 0 , cache LSN in request as SelectedGlobalNRegionCommittedGLSN, and issue barrier requests against any/all replicas.
+        ///      3. If GlobalNRegionCommittedGLSN &lt; LSN &amp;&amp; storeResponse.NumberOFReadRegions > 0 , cache LSN in request as SelectedGlobalNRegionCommittedGLSN, and issue barrier requests against any/all replicas.
         ///      4. Each barrier response will contain its own LSN and GlobalNRegionCommittedGLSN, check for any response that satisfies GlobalNRegionCommittedGLSN >= SelectedGlobalNRegionCommittedGLSN
         ///      5. Return to caller on success.
         /// </summary>
@@ -483,7 +740,7 @@ Sequence of steps:
                 targetGlobalCommittedLsn: request.RequestContext.GlobalCommittedSelectedLSN,
                 includeRegionContext: true))
             {
-                if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN, lsnAttributeSelector))
+                if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN, lsnAttributeSelector, barrierType))
                 {
                     if (barrierType == BarrierType.GlobalStrongWrite)
                     {
@@ -508,14 +765,15 @@ Sequence of steps:
         private Task<bool> WaitForWriteBarrierAsync(
             DocumentServiceRequest barrierRequest,
             long selectedGlobalCommittedLsn,
-            Func<StoreResult, long> lsnAttributeSelector)
+            Func<StoreResult, long> lsnAttributeSelector,
+            BarrierType barrierType)
         {
             if (BarrierRequestHelper.IsOldBarrierRequestHandlingEnabled)
             {
-                return this.WaitForWriteBarrierOldAsync(barrierRequest, selectedGlobalCommittedLsn, lsnAttributeSelector);
+                return this.WaitForWriteBarrierOldAsync(barrierRequest, selectedGlobalCommittedLsn, lsnAttributeSelector, barrierType);
             }
 
-            return this.WaitForWriteBarrierNewAsync(barrierRequest, selectedGlobalCommittedLsn, lsnAttributeSelector);
+            return this.WaitForWriteBarrierNewAsync(barrierRequest, selectedGlobalCommittedLsn, lsnAttributeSelector, barrierType);
         }
 
         // NOTE this is only temporarily kept to have a feature flag
@@ -525,8 +783,13 @@ Sequence of steps:
         private async Task<bool> WaitForWriteBarrierOldAsync(
             DocumentServiceRequest barrierRequest,
             long selectedGlobalCommittedLsn,
-            Func<StoreResult, long> lsnAttributeSelector)
+            Func<StoreResult, long> lsnAttributeSelector,
+            BarrierType barrierType)
         {
+            SubStatusCodes barrierSubStatus = barrierType == BarrierType.NRegionSynchronousCommit
+                ? SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet
+                : SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet;
+
             int writeBarrierRetryCount = ConsistencyWriter.maxNumberOfWriteBarrierReadRetries;
             bool lastAttemptWasThrottled = false;
             long maxGlobalCommittedLsnReceived = 0;
@@ -534,7 +797,7 @@ Sequence of steps:
             {
                 this.ValidateGlobalStrongWriteEndpoint(barrierRequest);
 
-                barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed();
+                barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed(barrierSubStatus);
                 IList<ReferenceCountedDisposable<StoreResult>> responses = await this.storeReader.ReadMultipleReplicaAsync(
                     barrierRequest,
                     includePrimary: true,
@@ -565,7 +828,10 @@ Sequence of steps:
                                     responses[0].Target.StatusCode,
                                     responses[0].Target.SubStatusCode,
                                     responses[0].Target.PartitionKeyRangeId);
-                        lastAttemptWasThrottled = true;
+                        if (this.enableBarrierEarlyYieldOn429)
+                        {
+                            lastAttemptWasThrottled = true;
+                        }
                     }
 
                     // Check if any response satisfies the barrier condition
@@ -600,7 +866,7 @@ Sequence of steps:
                     }
                 }
             }
-            if (lastAttemptWasThrottled)
+            if (this.enableBarrierEarlyYieldOn429 && lastAttemptWasThrottled)
             {
                 DefaultTrace.TraceWarning("ConsistencyWriter: Write barrier failed after all retries due to consistent throttling (429). Throwing RequestTimeoutException (408).");
                 throw new RequestTimeoutException(RMResources.RequestTimeout, SubStatusCodes.Server_WriteBarrierThrottled);
@@ -635,8 +901,13 @@ Sequence of steps:
         private async Task<bool> WaitForWriteBarrierNewAsync(
             DocumentServiceRequest barrierRequest,
             long selectedGlobalCommittedLsn,
-            Func<StoreResult, long> lsnAttributeSelector)
+            Func<StoreResult, long> lsnAttributeSelector,
+            BarrierType barrierType)
         {
+            SubStatusCodes barrierSubStatus = barrierType == BarrierType.NRegionSynchronousCommit
+                ? SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet
+                : SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet;
+
             TimeSpan remainingDelay = totalAllowedBarrierRequestDelay;
 
             int writeBarrierRetryCount = 0;
@@ -645,7 +916,7 @@ Sequence of steps:
             while (writeBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero) // Retry loop
             {
                 this.ValidateGlobalStrongWriteEndpoint(barrierRequest);
-                barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed();
+                barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed(barrierSubStatus);
 
                 ValueStopwatch barrierRequestStopWatch = ValueStopwatch.StartNew();
                 IList<ReferenceCountedDisposable<StoreResult>> responses = await this.storeReader.ReadMultipleReplicaAsync(
@@ -681,7 +952,10 @@ Sequence of steps:
                                     responses[0].Target.StatusCode,
                                     responses[0].Target.SubStatusCode,
                                     responses[0].Target.PartitionKeyRangeId);
-                        lastAttemptWasThrottled = true;
+                        if (this.enableBarrierEarlyYieldOn429)
+                        {
+                            lastAttemptWasThrottled = true;
+                        }
                     }
 
                     foreach (ReferenceCountedDisposable<StoreResult> response in responses)
@@ -728,7 +1002,7 @@ Sequence of steps:
                     remainingDelay -= delay;
                 }
             }
-            if (lastAttemptWasThrottled)
+            if (this.enableBarrierEarlyYieldOn429 && lastAttemptWasThrottled)
             {
                 DefaultTrace.TraceWarning("ConsistencyWriter: Write barrier failed after all retries due to consistent throttling (429). Throwing RequestTimeoutException (408).");
                 throw new RequestTimeoutException(RMResources.RequestTimeout, SubStatusCodes.Server_WriteBarrierThrottled );
@@ -763,6 +1037,447 @@ Sequence of steps:
 
                 return (primaryResult.Target.GlobalCommittedLSN >= selectedGlobalCommittedLsn);
             }
+        }
+
+        /// <summary>
+        /// Exceptionless variant of <see cref="PerformBarriersForWritesAsync"/>.
+        /// Returns the exception as part of the <see cref="Res{T}"/> instead of throwing.
+        /// </summary>
+        private async Task<Res<bool>> TryPerformBarriersForWritesAsync(
+            ReferenceCountedDisposable<StoreResult> storeResult,
+            DocumentServiceRequest request,
+            BarrierType barrierType)
+        {
+            long lsn = storeResult.Target.LSN;
+            long globalCommitLsnToBeTracked = -1;
+            Func<StoreResult, long> lsnAttributeSelector = null;
+
+            if (barrierType == BarrierType.None)
+            {
+                return Res.Success(true);
+            }
+
+            string warningMessage = string.Empty;
+            switch (barrierType)
+            {
+                case BarrierType.GlobalStrongWrite:
+                    {
+                        request.RequestContext.GlobalStrongWriteEndpoint = request.RequestContext.LocationEndpointToRoute;
+                        globalCommitLsnToBeTracked = storeResult.Target.GlobalCommittedLSN;
+                        warningMessage = "ConsistencyWriter: LSN {0} or GlobalCommittedLsn {1} is not set for global strong request";
+
+                        DefaultTrace.TraceInformation("ConsistencyWriter: globalCommittedLsn {0}, lsn {1}", globalCommitLsnToBeTracked, lsn);
+                        lsnAttributeSelector = sr => sr.GlobalCommittedLSN;
+                        break;
+                    }
+
+                case BarrierType.NRegionSynchronousCommit:
+                    {
+                        globalCommitLsnToBeTracked = storeResult.Target.GlobalNRegionCommittedGLSN;
+                        warningMessage = "ConsistencyWriter: LSN {0} or globalNRegionCommittedLsn {1} is not set for less than strong request with EnableNRegionSynchronousCommit property enabled ";
+
+                        DefaultTrace.TraceInformation("ConsistencyWriter: globalNRegionCommittedLsn {0}, lsn {1}", globalCommitLsnToBeTracked, lsn);
+                        lsnAttributeSelector = sr => sr.GlobalNRegionCommittedGLSN;
+                        break;
+                    }
+
+                default:
+                    break;
+            }
+
+            if (lsn == -1 || globalCommitLsnToBeTracked == -1)
+            {
+                DefaultTrace.TraceWarning(warningMessage, lsn, globalCommitLsnToBeTracked);
+                return Res.FromException<bool>(new GoneException(RMResources.Gone, SubStatusCodes.ServerGenerated410));
+            }
+
+            request.RequestContext.CachedWriteStoreResult = storeResult;
+            request.RequestContext.GlobalCommittedSelectedLSN = lsn;
+            request.RequestContext.ForceRefreshAddressCache = false;
+
+            if (globalCommitLsnToBeTracked < lsn)
+            {
+                Res<bool> barrierResult = await this.TryCreateAndWaitForWriteBarrierAsync(request, barrierType, lsnAttributeSelector);
+                if (!barrierResult.IsSuccess)
+                {
+                    return barrierResult;
+                }
+            }
+
+            return Res.Success(true);
+        }
+
+        /// <summary>
+        /// Exceptionless variant of <see cref="CreateAndWaitForWriteBarrierAsync"/>.
+        /// Returns the exception as part of the <see cref="Res{T}"/> instead of throwing.
+        /// </summary>
+        private async Task<Res<bool>> TryCreateAndWaitForWriteBarrierAsync(
+            DocumentServiceRequest request,
+            BarrierType barrierType,
+            Func<StoreResult, long> lsnAttributeSelector = null)
+        {
+            if (barrierType == BarrierType.None)
+            {
+                return Res.Success(true);
+            }
+
+            Res<DocumentServiceRequest> barrierRequestResult = await Res.Wrap(BarrierRequestHelper.CreateAsync(
+                request: request,
+                authorizationTokenProvider: this.authorizationTokenProvider,
+                targetLsn: null,
+                targetGlobalCommittedLsn: request.RequestContext.GlobalCommittedSelectedLSN,
+                includeRegionContext: true));
+            if (!barrierRequestResult.IsSuccess)
+            {
+                return Res.FromException<bool>(barrierRequestResult.Exception);
+            }
+
+            using (DocumentServiceRequest barrierRequest = barrierRequestResult.Value)
+            {
+                Res<bool> waitResult = await this.TryWaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN, lsnAttributeSelector, barrierType);
+                if (!waitResult.IsSuccess)
+                {
+                    return waitResult;
+                }
+
+                if (!waitResult.Value)
+                {
+                    if (barrierType == BarrierType.GlobalStrongWrite)
+                    {
+                        DefaultTrace.TraceWarning("ConsistencyWriter: Write barrier has not been met for global strong request. SelectedGlobalCommittedLsn: {0}", request.RequestContext.GlobalCommittedSelectedLSN);
+                        return Res.FromException<bool>(new GoneException(RMResources.GlobalStrongWriteBarrierNotMet, SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet));
+                    }
+                    else
+                    {
+                        DefaultTrace.TraceWarning("ConsistencyWriter: Write barrier has not been met for n region synchronous commit request. SelectedGlobalCommittedLsn: {0}", request.RequestContext.GlobalCommittedSelectedLSN);
+                        return Res.FromException<bool>(new GoneException(RMResources.NRegionCommitWriteBarrierNotMet, SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet));
+                    }
+                }
+
+                return Res.Success(true);
+            }
+        }
+
+        /// <summary>
+        /// Exceptionless variant of write barrier waiting.
+        /// Delegates to the appropriate new or old implementation based on feature flag.
+        /// </summary>
+        private Task<Res<bool>> TryWaitForWriteBarrierAsync(
+            DocumentServiceRequest barrierRequest,
+            long selectedGlobalCommittedLsn,
+            Func<StoreResult, long> lsnAttributeSelector,
+            BarrierType barrierType)
+        {
+            if (BarrierRequestHelper.IsOldBarrierRequestHandlingEnabled)
+            {
+                return this.TryWaitForWriteBarrierOldAsync(barrierRequest, selectedGlobalCommittedLsn, lsnAttributeSelector, barrierType);
+            }
+
+            return this.TryWaitForWriteBarrierNewAsync(barrierRequest, selectedGlobalCommittedLsn, lsnAttributeSelector, barrierType);
+        }
+
+        private async Task<Res<bool>> TryWaitForWriteBarrierOldAsync(
+            DocumentServiceRequest barrierRequest,
+            long selectedGlobalCommittedLsn,
+            Func<StoreResult, long> lsnAttributeSelector,
+            BarrierType barrierType)
+        {
+            SubStatusCodes barrierSubStatus = barrierType == BarrierType.NRegionSynchronousCommit
+                ? SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet
+                : SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet;
+
+            int writeBarrierRetryCount = ConsistencyWriter.maxNumberOfWriteBarrierReadRetries;
+            bool lastAttemptWasThrottled = false;
+            long maxGlobalCommittedLsnReceived = 0;
+            while (writeBarrierRetryCount-- > 0)
+            {
+                Exception validateEx = this.TryValidateGlobalStrongWriteEndpoint(barrierRequest);
+                if (validateEx != null)
+                {
+                    return Res.FromException<bool>(validateEx);
+                }
+
+                if (barrierRequest.RequestContext.TimeoutHelper.TryGetTimeoutException(out Exception timeoutEx, barrierSubStatus))
+                {
+                    return Res.FromException<bool>(timeoutEx);
+                }
+
+                Res<IList<ReferenceCountedDisposable<StoreResult>>> readResult = await this.storeReader.TryReadMultipleReplicaAsync(
+                    barrierRequest,
+                    includePrimary: true,
+                    replicaCountToRead: 1,
+                    requiresValidLsn: false,
+                    useSessionToken: false,
+                    readMode: ReadMode.Strong,
+                    checkMinLSN: false,
+                    forceReadAll: false);
+                if (!readResult.IsSuccess)
+                {
+                    return Res.FromException<bool>(readResult.Exception);
+                }
+
+                IList<ReferenceCountedDisposable<StoreResult>> responses = readResult.Value;
+
+                if (BarrierRequestHelper.IsGoneLeaseNotFound(responses))
+                {
+                    Res<bool> primaryResult = await this.TryPrimaryOnlyWriteBarrierExceptionlessAsync(barrierRequest, selectedGlobalCommittedLsn);
+                    if (!primaryResult.IsSuccess)
+                    {
+                        return primaryResult;
+                    }
+
+                    if (primaryResult.Value)
+                    {
+                        return Res.Success(true);
+                    }
+                }
+
+                lastAttemptWasThrottled = false;
+                if (responses != null && responses.Any(response => lsnAttributeSelector(response.Target) >= selectedGlobalCommittedLsn))
+                {
+                    if (responses.Count > 0 && responses.All(response => response.Target.StatusCode == StatusCodes.TooManyRequests))
+                    {
+                        DefaultTrace.TraceInformation(
+                                    "TryWaitForWriteBarrierOldAsync: All replicas returned 429 Too Many Requests. Continuing retries. StatusCode: {0}, SubStatusCode: {1}, PkRangeId :{2}.",
+                                    responses[0].Target.StatusCode,
+                                    responses[0].Target.SubStatusCode,
+                                    responses[0].Target.PartitionKeyRangeId);
+                        if (this.enableBarrierEarlyYieldOn429)
+                        {
+                            lastAttemptWasThrottled = true;
+                        }
+                    }
+
+                    if (responses.Any(response => response.Target.GlobalCommittedLSN >= selectedGlobalCommittedLsn))
+                    {
+                        return Res.Success(true);
+                    }
+                }
+
+                long maxGlobalCommittedLsn = responses != null ? responses.Select(s => lsnAttributeSelector(s.Target)).DefaultIfEmpty(0).Max() : 0;
+                maxGlobalCommittedLsnReceived = Math.Max(maxGlobalCommittedLsnReceived, maxGlobalCommittedLsn);
+
+                barrierRequest.RequestContext.ForceRefreshAddressCache = false;
+
+                if (writeBarrierRetryCount == 0)
+                {
+                    DefaultTrace.TraceInformation("ConsistencyWriter: TryWaitForWriteBarrierOldAsync - Last barrier multi-region strong. Responses: {0}",
+                        string.Join("; ", responses.Select(r => r.Target)));
+                }
+                else
+                {
+                    if ((ConsistencyWriter.maxNumberOfWriteBarrierReadRetries - writeBarrierRetryCount) > ConsistencyWriter.maxShortBarrierRetriesForMultiRegion)
+                    {
+                        await Task.Delay(ConsistencyWriter.delayBetweenWriteBarrierCallsInMs);
+                    }
+                    else
+                    {
+                        await Task.Delay(ConsistencyWriter.shortbarrierRetryIntervalInMsForMultiRegion);
+                    }
+                }
+            }
+
+            if (this.enableBarrierEarlyYieldOn429 && lastAttemptWasThrottled)
+            {
+                DefaultTrace.TraceWarning("ConsistencyWriter: Write barrier failed after all retries due to consistent throttling (429). Throwing RequestTimeoutException (408).");
+                return Res.FromException<bool>(new RequestTimeoutException(RMResources.RequestTimeout, SubStatusCodes.Server_WriteBarrierThrottled));
+            }
+
+            DefaultTrace.TraceInformation("ConsistencyWriter: Highest global committed lsn received for write barrier call is {0}", maxGlobalCommittedLsnReceived);
+            return Res.Success(false);
+        }
+
+        private async Task<Res<bool>> TryWaitForWriteBarrierNewAsync(
+            DocumentServiceRequest barrierRequest,
+            long selectedGlobalCommittedLsn,
+            Func<StoreResult, long> lsnAttributeSelector,
+            BarrierType barrierType)
+        {
+            SubStatusCodes barrierSubStatus = barrierType == BarrierType.NRegionSynchronousCommit
+                ? SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet
+                : SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet;
+
+            TimeSpan remainingDelay = totalAllowedBarrierRequestDelay;
+
+            int writeBarrierRetryCount = 0;
+            long maxGlobalCommittedLsnReceived = 0;
+            bool lastAttemptWasThrottled = false;
+            while (writeBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero)
+            {
+                Exception validateEx = this.TryValidateGlobalStrongWriteEndpoint(barrierRequest);
+                if (validateEx != null)
+                {
+                    return Res.FromException<bool>(validateEx);
+                }
+
+                if (barrierRequest.RequestContext.TimeoutHelper.TryGetTimeoutException(out Exception timeoutEx, barrierSubStatus))
+                {
+                    return Res.FromException<bool>(timeoutEx);
+                }
+
+                ValueStopwatch barrierRequestStopWatch = ValueStopwatch.StartNew();
+                Res<IList<ReferenceCountedDisposable<StoreResult>>> readResult = await this.storeReader.TryReadMultipleReplicaAsync(
+                    barrierRequest,
+                    includePrimary: true,
+                    replicaCountToRead: 1,
+                    requiresValidLsn: false,
+                    useSessionToken: false,
+                    readMode: ReadMode.Strong,
+                    checkMinLSN: false,
+                    forceReadAll: false);
+                barrierRequestStopWatch.Stop();
+
+                if (!readResult.IsSuccess)
+                {
+                    return Res.FromException<bool>(readResult.Exception);
+                }
+
+                IList<ReferenceCountedDisposable<StoreResult>> responses = readResult.Value;
+
+                if (BarrierRequestHelper.IsGoneLeaseNotFound(responses))
+                {
+                    Res<bool> primaryResult = await this.TryPrimaryOnlyWriteBarrierExceptionlessAsync(barrierRequest, selectedGlobalCommittedLsn);
+                    if (!primaryResult.IsSuccess)
+                    {
+                        return primaryResult;
+                    }
+
+                    if (primaryResult.Value)
+                    {
+                        return Res.Success(true);
+                    }
+
+                    barrierRequest.RequestContext.ForceRefreshAddressCache = false;
+                }
+
+                TimeSpan previousBarrierRequestLatency = barrierRequestStopWatch.Elapsed;
+                long maxGlobalCommittedLsn = 0;
+                lastAttemptWasThrottled = false;
+                if (responses != null)
+                {
+                    if (responses.Count > 0 && responses.All(response => response.Target.StatusCode == StatusCodes.TooManyRequests))
+                    {
+                        DefaultTrace.TraceInformation(
+                                    "TryWaitForWriteBarrierNewAsync: All replicas returned 429 Too Many Requests. Continuing retries. StatusCode: {0}, SubStatusCode: {1}, PkRangeId :{2}.",
+                                    responses[0].Target.StatusCode,
+                                    responses[0].Target.SubStatusCode,
+                                    responses[0].Target.PartitionKeyRangeId);
+                        if (this.enableBarrierEarlyYieldOn429)
+                        {
+                            lastAttemptWasThrottled = true;
+                        }
+                    }
+
+                    foreach (ReferenceCountedDisposable<StoreResult> response in responses)
+                    {
+                        long selectedLsn = lsnAttributeSelector(response.Target);
+                        if (selectedLsn >= selectedGlobalCommittedLsn)
+                        {
+                            return Res.Success(true);
+                        }
+
+                        if (selectedLsn >= maxGlobalCommittedLsn)
+                        {
+                            maxGlobalCommittedLsn = selectedLsn;
+                        }
+                     }
+                }
+
+                maxGlobalCommittedLsnReceived = Math.Max(maxGlobalCommittedLsnReceived, maxGlobalCommittedLsn);
+
+                barrierRequest.RequestContext.ForceRefreshAddressCache = false;
+
+                bool shouldDelay = BarrierRequestHelper.ShouldDelayBetweenHeadRequests(
+                    previousBarrierRequestLatency,
+                    responses,
+                    defaultBarrierRequestDelays[writeBarrierRetryCount],
+                    out TimeSpan delay);
+
+                writeBarrierRetryCount++;
+                if (writeBarrierRetryCount >= defaultBarrierRequestDelays.Length || remainingDelay < delay)
+                {
+                    DefaultTrace.TraceInformation("ConsistencyWriter: TryWaitForWriteBarrierNewAsync - Last barrier multi-region strong. Target GCLSN: {0}, Max. GCLSN received: {1}, Responses: {2}",
+                        selectedGlobalCommittedLsn,
+                        maxGlobalCommittedLsn,
+                        string.Join("; ", responses.Select(r => r.Target)));
+
+                    break;
+                }
+                else if (shouldDelay)
+                {
+                    await Task.Delay(delay);
+                    remainingDelay -= delay;
+                }
+            }
+
+            if (this.enableBarrierEarlyYieldOn429 && lastAttemptWasThrottled)
+            {
+                DefaultTrace.TraceWarning("ConsistencyWriter: Write barrier failed after all retries due to consistent throttling (429). Throwing RequestTimeoutException (408).");
+                return Res.FromException<bool>(new RequestTimeoutException(RMResources.RequestTimeout, SubStatusCodes.Server_WriteBarrierThrottled));
+            }
+
+            DefaultTrace.TraceInformation("ConsistencyWriter: Highest global committed lsn received for write barrier call is {0}", maxGlobalCommittedLsnReceived);
+            return Res.Success(false);
+        }
+
+        /// <summary>
+        /// Exceptionless variant of <see cref="TryPrimaryOnlyWriteBarrierAsync"/>.
+        /// </summary>
+        private async Task<Res<bool>> TryPrimaryOnlyWriteBarrierExceptionlessAsync(
+            DocumentServiceRequest barrierRequest,
+            long selectedGlobalCommittedLsn)
+        {
+            Exception validateEx = this.TryValidateGlobalStrongWriteEndpoint(barrierRequest);
+            if (validateEx != null)
+            {
+                return Res.FromException<bool>(validateEx);
+            }
+
+            barrierRequest.RequestContext.ForceRefreshAddressCache = true;
+            Res<ReferenceCountedDisposable<StoreResult>> readResult = await this.storeReader.TryReadPrimaryAsync(
+                barrierRequest,
+                requiresValidLsn: false,
+                useSessionToken: false);
+            if (!readResult.IsSuccess)
+            {
+                return Res.FromException<bool>(readResult.Exception);
+            }
+
+            using (ReferenceCountedDisposable<StoreResult> primaryResult = readResult.Value)
+            {
+                if (!primaryResult.Target.IsValid || BarrierRequestHelper.IsGoneLeaseNotFound(primaryResult.Target))
+                {
+                    return Res.FromException<bool>(primaryResult.Target.GetException());
+                }
+
+                return Res.Success(primaryResult.Target.GlobalCommittedLSN >= selectedGlobalCommittedLsn);
+            }
+        }
+
+        /// <summary>
+        /// Exceptionless variant of <see cref="ValidateGlobalStrongWriteEndpoint"/>.
+        /// Returns the exception instead of throwing it.
+        /// </summary>
+        private Exception TryValidateGlobalStrongWriteEndpoint(DocumentServiceRequest barrierRequest)
+        {
+            Uri currentEndpoint = barrierRequest.RequestContext.LocationEndpointToRoute;
+            if (barrierRequest.RequestContext.GlobalStrongWriteEndpoint != null &&
+                barrierRequest.RequestContext.GlobalStrongWriteEndpoint != currentEndpoint)
+            {
+                DefaultTrace.TraceError(
+                    "ConsistencyWriter: Failover detected during strong consistency write. Original write was to endpoint '{0}', but retry is targeting endpoint '{1}'. Failing request.",
+                    barrierRequest.RequestContext.GlobalStrongWriteEndpoint,
+                    currentEndpoint);
+
+                return new RequestTimeoutException(
+                  string.Format(
+                      CultureInfo.CurrentUICulture,
+                      "The write operation was initiated in region with endpoint '{0}' but a regional failover occurred. The current attempt is to endpoint '{1}'. The state of the write is ambiguous.",
+                      barrierRequest.RequestContext.GlobalStrongWriteEndpoint,
+                      currentEndpoint), SubStatusCodes.WriteRegionBarrierChangedMidOperation);
+            }
+
+            return null;
         }
 
         /// <summary>

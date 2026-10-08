@@ -252,6 +252,24 @@ namespace Microsoft.Azure.Documents
         public bool UseStatusCodeFor4041002 { get; set; } = DefaultUseStatusCodeFor4041002;
 
         /// <summary>
+        /// Server account setting making the primary eligible for Strong or Bounded Staleness quorum reads.
+        /// Null preserves the quorum reader's existing default.
+        /// Preserved on request retries, but not copied to separately constructed barrier requests.
+        /// </summary>
+        public bool? AlwaysIncludePrimaryForQuorumReads { get; set; }
+
+        /// <summary>
+        /// Indicates whether address resolution for this request may use the
+        /// exceptionless (Res) implementations of the address, collection and
+        /// partition-key-range caches. When false, address resolution runs the
+        /// original throwing implementation and the failure is captured at the
+        /// address-selector boundary, leaving the transport path unchanged.
+        /// This is independent of the exceptionless store path itself so that the
+        /// two can be rolled out separately.
+        /// </summary>
+        public bool UseExceptionlessAddressResolution { get; set; }
+
+        /// <summary>
         /// This is a flag that indicates whether the DocumentClient internally
         /// throws exceptions for 429 status codes
         /// the status codes as part of the result for failures.
@@ -606,6 +624,8 @@ namespace Microsoft.Azure.Documents
 
 #if !COSMOSCLIENT
                 // Control operations
+                case OperationType.CommitDistributedTransaction:
+                case OperationType.AbortDistributedTransaction:
                 case OperationType.Pause:
                 case OperationType.Recycle:
                 case OperationType.Resume:
@@ -656,6 +676,8 @@ namespace Microsoft.Azure.Documents
                 case OperationType.CancelExternalBackupRestore:
                 case OperationType.GetAzureRbacAccessCheck:
                 case OperationType.CancelExternalBackup:
+                case OperationType.ExternalPreBackup:
+                case OperationType.CancelExternalPreBackup:
                     return HttpConstants.HttpMethods.Post;
 
                 case OperationType.EnsureSnapshotOperation:
@@ -666,9 +688,10 @@ namespace Microsoft.Azure.Documents
                 case OperationType.GetStorageAuthToken:
                 case OperationType.GetCustomerManagedKeyStatus:
                 case OperationType.GetGraphDatabaseAccountConfiguration:
-                case OperationType.ExternalPreBackup:
+                case OperationType.ExternalPreBackupSync:
                 case OperationType.CheckExternalBackupStatus:
                 case OperationType.CheckExternalBackupRestoreStatus:
+                case OperationType.CheckExternalPreBackupStatus:
                         return HttpConstants.HttpMethods.Get;
 #endif
 
@@ -801,6 +824,10 @@ namespace Microsoft.Azure.Documents
                         return true;
                     }
                     else if (this.ResourceType == ResourceType.AzureRbac)
+                    {
+                        return true;
+                    }
+                    else if (this.ResourceType == ResourceType.AbacPolicy)
                     {
                         return true;
                     }
@@ -1219,6 +1246,8 @@ namespace Microsoft.Azure.Documents
                DisableArchivalPartitionNotFoundRetry = this.DisableArchivalPartitionNotFoundRetry,
                UseStatusCodeFor403 = this.UseStatusCodeFor403,
                UseStatusCodeFor4041002 = this.UseStatusCodeFor4041002,
+               AlwaysIncludePrimaryForQuorumReads = this.AlwaysIncludePrimaryForQuorumReads,
+               UseExceptionlessAddressResolution = this.UseExceptionlessAddressResolution,
             };
         }
 
@@ -1266,7 +1295,8 @@ namespace Microsoft.Azure.Documents
                     !(this.ResourceType == ResourceType.RoleAssignment) &&
                     !(this.ResourceType == ResourceType.InteropUser) &&
                     !(this.ResourceType == ResourceType.AuthPolicyElement) &&
-                    !(this.ResourceType == ResourceType.AzureRbac)
+                    !(this.ResourceType == ResourceType.AzureRbac) &&
+                    !(this.ResourceType == ResourceType.AbacPolicy)
     #if !COSMOSCLIENT
                     && !(this.ResourceType == ResourceType.MasterPartition) &&
                     !(this.ResourceType == ResourceType.ServerPartition) &&

@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents.Rntbd
@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using Trace = Microsoft.Azure.Documents.Trace;
 #endif
 
-    internal sealed class TransportClient :
+    internal class TransportClient :
         Microsoft.Azure.Documents.TransportClient, IDisposable
     {
         private enum TransportResponseStatusCode
@@ -32,6 +32,13 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly TimerPool TimerPool;
         private readonly TimerPool IdleTimerPool;
         private readonly ChannelDictionary channelDictionary;
+
+        // Retained so the CMTransportClient parallel path can build its cloned
+        // CMChannelDictionary from the exact same ChannelProperties (timer pools,
+        // timeouts, port pool, TLS callbacks) the legacy path uses. Behavior-neutral
+        // for the legacy path: this is the same object already passed to
+        // channelDictionary above.
+        protected readonly ChannelProperties channelProperties;
         private bool disposed = false;
 
         private readonly DistributedTracingOptions DistributedTracingOptions;
@@ -51,6 +58,19 @@ namespace Microsoft.Azure.Documents.Rntbd
             if (clientOptions == null)
             {
                 throw new ArgumentNullException(nameof(clientOptions));
+            }
+
+            // The only permitted subclass is CMTransportClient (the RNTBD
+            // connection-manager parallel path). This class is unsealed solely
+            // to support that single fork; any other derivation is a bug. The
+            // check is behavior-neutral for the legacy path (this.GetType() is
+            // exactly TransportClient) and preserves the "flag-off is identical
+            // to pre-feature" guarantee.
+            if (this.GetType() != typeof(TransportClient) &&
+                this.GetType() != typeof(CMTransportClient))
+            {
+                throw new InvalidOperationException(
+                    "Rntbd.TransportClient may only be derived by Rntbd.CMTransportClient.");
             }
 
             TransportClient.LogClientOptions(clientOptions);
@@ -75,8 +95,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             this.DistributedTracingOptions = clientOptions.DistributedTracingOptions;
 
-            this.channelDictionary = new ChannelDictionary(
-                new ChannelProperties(
+            this.channelProperties = new ChannelProperties(
                     clientOptions.UserAgent,
                     clientOptions.CertificateHostNameOverride,
                     clientOptions.ConnectionStateListener,
@@ -100,8 +119,28 @@ namespace Microsoft.Azure.Documents.Rntbd
                     clientOptions.RemoteCertificateValidationCallback,
                     clientOptions.ClientCertificateFunction,
                     clientOptions.ClientCertificateFailureHandler,
-                    clientOptions.DnsResolutionFunction),
+                    clientOptions.DnsResolutionFunction);
+
+            this.channelDictionary = new ChannelDictionary(
+                this.channelProperties,
                 chaosInterceptor);
+        }
+
+        /// <summary>
+        /// Single seam through which all three request/prewarm paths obtain an
+        /// <see cref="IChannel"/>. The base implementation delegates to the
+        /// legacy per-endpoint <see cref="ChannelDictionary"/>; this is
+        /// behavior-identical to the previous inline
+        /// <c>channelDictionary.GetChannel(...)</c> call. <see cref="CMTransportClient"/>
+        /// overrides this method to fork to the connection-manager graph when
+        /// the feature flag is on. Keeping the fork here (rather than overriding
+        /// whole request methods) means both flag states still run the base
+        /// request-method body — protocol-downgrade, exception translation,
+        /// perf counters and OpenTelemetry are inherited identically.
+        /// </summary>
+        protected virtual IChannel GetChannel(Uri requestUri, bool localRegionRequest)
+        {
+            return this.channelDictionary.GetChannel(requestUri, localRegionRequest);
         }
 
         internal override Task<StoreResponse> InvokeStoreAsync( 
@@ -142,7 +181,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 operation = "GetChannel";
                 // Treat all retries as out of region request for open timeout. This is to prevent too many retries because of the shorter time duration.
                 bool localRegionRequest = request.RequestContext.IsRetry ? false : request.RequestContext.LocalRegionRequest;
-                IChannel channel = this.channelDictionary.GetChannel(physicalAddress.Uri, localRegionRequest);
+                IChannel channel = this.GetChannel(physicalAddress.Uri, localRegionRequest);
 
                 TransportClient.GetTransportPerformanceCounters().IncrementRntbdRequestCount(resourceOperation.resourceType, resourceOperation.operationType);
 
@@ -286,6 +325,136 @@ namespace Microsoft.Azure.Documents.Rntbd
             return storeResponse;
         }
 
+        /// <summary>
+        /// Exceptionless variant of <see cref="InvokeStoreAsync(TransportAddressUri, ResourceOperation, DocumentServiceRequest)"/>.
+        /// Calls <see cref="Channel.TryRequestAsync"/> and converts <see cref="TransportException"/>
+        /// to the same <see cref="DocumentClientException"/> wrappers as the throwing path, but
+        /// returns them inside <see cref="Result{T}"/> instead of throwing.
+        /// </summary>
+        internal override async Task<Res<StoreResponse>> TryInvokeStoreAsync(
+            TransportAddressUri physicalAddress,
+            ResourceOperation resourceOperation,
+            DocumentServiceRequest request)
+        {
+            this.ThrowIfDisposed();
+            Guid activityId = Trace.CorrelationManager.ActivityId;
+
+            if (!request.IsBodySeekableClonableAndCountable)
+            {
+                return Res.FromException<StoreResponse>(new InternalServerErrorException());
+            }
+
+            StoreResponse storeResponse = null;
+            TransportRequestStats transportRequestStats = new TransportRequestStats();
+            DateTime requestStartTime = DateTime.UtcNow;
+            int transportResponseStatusCode = (int)TransportResponseStatusCode.Success;
+
+            try
+            {
+                TransportClient.IncrementCounters();
+
+                // Treat all retries as out of region request for open timeout. This is to prevent too many retries because of the shorter time duration.
+                bool localRegionRequest = request.RequestContext.IsRetry ? false : request.RequestContext.LocalRegionRequest;
+                IChannel channel = this.GetChannel(physicalAddress.Uri, localRegionRequest);
+
+                TransportClient.GetTransportPerformanceCounters().IncrementRntbdRequestCount(resourceOperation.resourceType, resourceOperation.operationType);
+
+                Res<StoreResponse> result = await channel.TryRequestAsync(request, physicalAddress,
+                    resourceOperation, activityId, transportRequestStats);
+
+                if (!result.IsSuccess)
+                {
+                    Exception ex = result.Exception;
+                    if (ex is TransportException transportEx)
+                    {
+                        // App-compat shim: On transport failure, TransportClient callers
+                        // expect one of:
+                        // - GoneException - widely abused to mean "refresh the address
+                        //   cache and try again".
+                        // - RequestTimeoutException - means what it says, but it's a
+                        //   non-retriable error.
+                        // - ServiceUnavailableException - abused to mean "non-retriable
+                        //   error other than timeout". Endless source of customer
+                        //   confusion.
+                        //
+                        // Traditionally, the transport client has converted timeouts to
+                        // RequestTimeoutException or GoneException based on whether
+                        // the request was a write (non-retriable) or a read (retriable).
+                        // This design leads to a low-level piece of code driving a
+                        // component much higher in the stack (the retry loop)
+                        // based on high-level information (request types).
+                        // Low-level code should only return errors describing what went
+                        // wrong at its level and provide enough information that callers
+                        // can decide what to do.
+                        //
+                        // Until the retry loop can be fixed so that it handles
+                        // TransportException directly, don't allow TransportException
+                        // to escape, and wrap it in an expected DocumentClientException
+                        // instead. Tracked in backlog item 303368.
+
+                        transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
+                        transportResponseStatusCode = (int)transportEx.ErrorCode;
+                        transportEx.RequestStartTime = requestStartTime;
+                        transportEx.RequestEndTime = DateTime.UtcNow;
+                        transportEx.OperationType = resourceOperation.operationType;
+                        transportEx.ResourceType = resourceOperation.resourceType;
+                        TransportClient.GetTransportPerformanceCounters().IncrementRntbdResponseCount(resourceOperation.resourceType,
+                            resourceOperation.operationType, (int)transportEx.ErrorCode);
+
+                        DocumentClientException wrappedException;
+                        if (request.IsReadOnlyRequest || !transportEx.UserRequestSent)
+                        {
+                            wrappedException = TransportExceptions.GetGoneException(
+                                physicalAddress.Uri, activityId, transportEx, transportRequestStats);
+                        }
+                        else if (TransportException.IsTimeout(transportEx.ErrorCode))
+                        {
+                            wrappedException = TransportExceptions.GetRequestTimeoutException(
+                                physicalAddress.Uri, activityId, transportEx, transportRequestStats);
+                        }
+                        else
+                        {
+                            wrappedException = TransportExceptions.GetServiceUnavailableException(
+                                physicalAddress.Uri, activityId, transportEx, transportRequestStats);
+                        }
+
+                        return Res.FromException<StoreResponse>(wrappedException);
+                    }
+
+                    if (ex is DocumentClientException dce)
+                    {
+                        transportResponseStatusCode = (int)TransportResponseStatusCode.DocumentClientException;
+                        transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
+                        dce.TransportRequestStats = transportRequestStats;
+                    }
+
+                    return Res.FromException<StoreResponse>(ex);
+                }
+
+                storeResponse = result.Value;
+                transportRequestStats.RecordState(TransportRequestStats.RequestStage.Completed);
+                storeResponse.TransportRequestStats = transportRequestStats;
+            }
+            finally
+            {
+                TransportClient.DecrementCounters();
+                TransportClient.GetTransportPerformanceCounters().IncrementRntbdResponseCount(resourceOperation.resourceType,
+                    resourceOperation.operationType, transportResponseStatusCode);
+                this.RaiseProtocolDowngradeRequest(storeResponse);
+            }
+
+            try
+            {
+                TransportClient.ThrowServerException(request.ResourceAddress, storeResponse, physicalAddress.Uri, activityId, request);
+            }
+            catch (DocumentClientException ex)
+            {
+                return Res.FromException<StoreResponse>(ex);
+            }
+
+            return Res.Success(storeResponse);
+        }
+
         public override void Dispose()
         {
             this.ThrowIfDisposed();
@@ -345,7 +514,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         internal override Task OpenConnectionAsync(
             Uri physicalAddress)
         {
-            IChannel channel = this.channelDictionary.GetChannel(
+            IChannel channel = this.GetChannel(
                 requestUri: physicalAddress,
                 localRegionRequest: false);
 

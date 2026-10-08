@@ -768,22 +768,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             return this.Container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
         }
-
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(string processorName, ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate)
-        {
-            throw new NotImplementedException();
-        }
-#endif
-
-#if SDKPROJECTREF
-
-        public override Task<bool> IsFeedRangePartOfAsync(
-            Cosmos.FeedRange x,
-            Cosmos.FeedRange y,
-            CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
 #endif
 
 #if ENCRYPTIONPREVIEW || SDKPROJECTREF

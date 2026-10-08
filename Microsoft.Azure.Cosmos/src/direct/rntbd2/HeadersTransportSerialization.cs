@@ -21,14 +21,32 @@ namespace Microsoft.Azure.Documents.Rntbd
     /// </summary>
     internal static class HeadersTransportSerialization
     {
+        // Cached Guid.Empty.ToString() used as the activityId fallback when the
+        // caller passes null (e.g. coordinator envelope omitted x-ms-activity-id).
+        private static readonly string EmptyGuidString = Guid.Empty.ToString();
+
         public static StoreResponseNameValueCollection BuildStoreResponseNameValueCollection(
             Guid activityId,
+            string serverVersion,
+            ref BytesDeserializer rntbdHeaderReader)
+            => BuildStoreResponseNameValueCollection(activityId.ToString(), serverVersion, ref rntbdHeaderReader);
+
+        /// <summary>
+        /// String-overload variant that avoids a per-call <c>Guid.ToString()</c> allocation
+        /// when callers already have the activityId as a string (for example, when it is
+        /// being forwarded verbatim from an upstream HTTP/2 envelope).
+        /// When <paramref name="activityId"/> is <c>null</c> or empty, falls back to
+        /// <see cref="Guid.Empty"/> so that downstream consumers always see a valid
+        /// Guid-shaped activityId header.
+        /// </summary>
+        public static StoreResponseNameValueCollection BuildStoreResponseNameValueCollection(
+            string activityId,
             string serverVersion,
             ref BytesDeserializer rntbdHeaderReader)
         {
             StoreResponseNameValueCollection responseHeaders = new()
             {
-                ActivityId = activityId.ToString(),
+                ActivityId = string.IsNullOrEmpty(activityId) ? EmptyGuidString : activityId,
                 ServerVersion = serverVersion
             };
 
@@ -532,8 +550,114 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                     case ResponseIdentifiers.HighestTentativeWriteLLSN:
                     {
-                        responseHeaders.HighestTentativeWriteLLSN = HeadersTransportSerialization.ReadLongHeader(ref rntbdHeaderReader);
-                        break;
+                            responseHeaders.HighestTentativeWriteLLSN = HeadersTransportSerialization.ReadLongHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.PartitionThroughputInfo:
+                    {
+                            responseHeaders.PartitionThroughputInfo = HeadersTransportSerialization.ReadUIntHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.DocumentRecordCount:
+                    {
+                            responseHeaders.DocumentRecordCount = HeadersTransportSerialization.ReadUIntHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.CosmosGatewayTransactionId:
+                    {
+                            responseHeaders.CosmosGatewayTransactionId = HeadersTransportSerialization.ReadGuidHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.UserStrings:
+                    {
+                            responseHeaders.UserStrings = HeadersTransportSerialization.ReadStringHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.QueryAdvice:
+                    {
+                            responseHeaders.QueryAdvice = HeadersTransportSerialization.ReadStringHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.OfferScaleCorrelationId:
+                    {
+                            responseHeaders.OfferScaleCorrelationId = HeadersTransportSerialization.ReadStringHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.BinaryEncodingMigratorProgress:
+                    {
+                            responseHeaders.BinaryEncodingMigratorProgress = HeadersTransportSerialization.ReadUIntHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.GlobalNRegionCommittedGLSN:
+                    {
+                            responseHeaders.GlobalNRegionCommittedGLSN = HeadersTransportSerialization.ReadLongHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.CollectionVectorIndexProgress:
+                    {
+                            responseHeaders.CollectionVectorIndexProgress = HeadersTransportSerialization.ReadStringHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.ThroughputpoolMaxConsumableRUs:
+                    {
+                            responseHeaders.ThroughputpoolMaxConsumableRUs = HeadersTransportSerialization.ReadLongHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.ThroughputpoolDedicatedRUs:
+                    {
+                            responseHeaders.ThroughputpoolDedicatedRUs = HeadersTransportSerialization.ReadUIntHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.VectorIndexAggregateProgress:
+                    {
+                            responseHeaders.VectorIndexAggregateProgress = HeadersTransportSerialization.ReadUIntHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.ThroughputBucketApplied:
+                    {
+                            responseHeaders.ThroughputBucketApplied = HeadersTransportSerialization.ReadByteHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.MergeProgressBlockedReason:
+                    {
+                            responseHeaders.MergeProgressBlockedReason = HeadersTransportSerialization.ReadStringHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.ConflictResolvedTimestamp:
+                    {
+                            responseHeaders.ConflictResolvedTimestamp = HeadersTransportSerialization.ReadULongHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.PhysicalSplitCopyState:
+                    {
+                            responseHeaders.PhysicalSplitCopyState = HeadersTransportSerialization.ReadByteHeader(ref rntbdHeaderReader);
+                            break;
+                    }
+
+                    case ResponseIdentifiers.IsDtxAggregatedResponse:
+                    {
+                            // Read as a bool so the value matches what the HTTP transport stamps
+                            // ("true"), keeping the header identical across both transports. The
+                            // backend only emits the token when the opt-in was honoured, so absence
+                            // means not honoured.
+                            responseHeaders.IsDtxAggregatedResponse = HeadersTransportSerialization.ReadBoolHeader(ref rntbdHeaderReader);
+                            break;
                     }
 
                     default:
@@ -552,7 +676,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <summary>
         /// Reads PayloadPresent RNTBD header to tell if payload is present. Resets the Position back on <see cref="BytesDeserializer"/>
         /// if PayloadPresent was not the first header to make sure no other data is lost before the final headers processing
-        /// in TransportSerialization.MakeStoreResponse(StatusCodes, Guid, Stream, string, BytesDeserializer, out uint?)"/>.
+        /// in <see cref="TransportSerialization.MakeStoreResponse(StatusCodes, Guid, System.IO.Stream, string, ref BytesDeserializer)"/>.
         /// </summary>
         /// <remarks>
         /// TODO: https://msdata.visualstudio.com/CosmosDB/_workitems/edit/2105986 consider initializing 
@@ -763,6 +887,13 @@ namespace Microsoft.Azure.Documents.Rntbd
             RntbdTokenTypes type = (RntbdTokenTypes)rntbdHeaderReader.ReadByte();
             Debug.Assert(type == RntbdTokenTypes.ULongLong);
             return rntbdHeaderReader.ReadUInt64().ToString();
+        }
+
+        private static string ReadByteHeader(ref BytesDeserializer rntbdHeaderReader)
+        {
+            RntbdTokenTypes type = (RntbdTokenTypes)rntbdHeaderReader.ReadByte();
+            Debug.Assert(type == RntbdTokenTypes.Byte);
+            return rntbdHeaderReader.ReadByte().ToString();
         }
     }
 }

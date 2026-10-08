@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Documents
                 contentV2 = ((OfferV2)offer).Content;
             }
 
-            this.Content = new OfferContentV2(contentV2, autopilotSettings, throughputBuckets, hpkPolicy ?? contentV2.HotPartitionKeyRateLimitingPolicy);
+            this.Content = new OfferContentV2(contentV2, autopilotSettings, throughputBuckets, hpkPolicy);
         }
 
         /// <summary>
@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Documents
                 minimumThroughputParameters,
                 contentV2.ThroughputDistributionPolicy,
                 throughputBuckets,
-                hpkPolicy ?? contentV2.HotPartitionKeyRateLimitingPolicy);
+                hpkPolicy);
         }
 
         /// <summary>
@@ -240,7 +240,8 @@ namespace Microsoft.Azure.Documents
             Collection<ThroughputBucket> throughputBuckets,
             HotPartitionKeyRateLimitingPolicy hpkPolicy,
             int? offerTargetThroughput = null,
-            int? partitionCount = null)
+            int? partitionCount = null,
+            bool? isInfrequentAccessEnabled = null)
             : base(offer)
         {
             this.OfferType = string.Empty;
@@ -257,7 +258,8 @@ namespace Microsoft.Azure.Documents
                 throughputBuckets,
                 hpkPolicy,
                 offerTargetThroughput,
-                partitionCount);
+                partitionCount,
+                isInfrequentAccessEnabled);
         }
 #endif
 
@@ -318,6 +320,7 @@ namespace Microsoft.Azure.Documents
                        // Unset or false should be treated the same. In gateway, if offer replace request to store times out we wait a bit 
                        // and read again from master and compare it to see if it is what we expect. If they are equal we treat it as success.
                        (this.Content.OfferIsAutoScaleEnabled.GetValueOrDefault(false) == offer.Content.OfferIsAutoScaleEnabled.GetValueOrDefault(false)) &&
+                       (this.Content.IsInfrequentAccessEnabled.GetValueOrDefault(false) == offer.Content.IsInfrequentAccessEnabled.GetValueOrDefault(false)) &&
                        (this.Content.ThroughputDistributionPolicy == offer.Content.ThroughputDistributionPolicy) &&
                        (this.Content.BackgroundTaskMaxAllowedThroughputPercent.GetValueOrDefault(0.0) == offer.Content.BackgroundTaskMaxAllowedThroughputPercent.GetValueOrDefault(0.0) &&
                        (ThroughputBucket.Equals(this.Content.ThroughputBuckets, offer.Content.ThroughputBuckets)) &&
@@ -348,6 +351,7 @@ namespace Microsoft.Azure.Documents
                 (Constants.Properties.OfferThroughput, this.GetOfferThroughput(false) != offer.GetOfferThroughput(false)),
                 (Constants.Properties.OfferIsRUPerMinuteThroughputEnabled, thisContent.OfferIsRUPerMinuteThroughputEnabled != otherContent.OfferIsRUPerMinuteThroughputEnabled),
                 (Constants.Properties.OfferIsAutoScaleEnabled, thisContent.OfferIsAutoScaleEnabled.GetValueOrDefault(false) != otherContent.OfferIsAutoScaleEnabled.GetValueOrDefault(false)),
+                (Constants.Properties.IsInfrequentAccessEnabled, thisContent.IsInfrequentAccessEnabled.GetValueOrDefault(false) != otherContent.IsInfrequentAccessEnabled.GetValueOrDefault(false)),
                 (Constants.Properties.ThroughputDistributionPolicy, thisContent.ThroughputDistributionPolicy != otherContent.ThroughputDistributionPolicy),
                 (Constants.Properties.BackgroundTaskMaxAllowedThroughputPercent, thisContent.BackgroundTaskMaxAllowedThroughputPercent.GetValueOrDefault(0.0) != otherContent.BackgroundTaskMaxAllowedThroughputPercent.GetValueOrDefault(0.0)),
                 (Constants.Properties.ThroughputBuckets, !ThroughputBucket.Equals(thisContent.ThroughputBuckets, otherContent.ThroughputBuckets)),

@@ -214,6 +214,9 @@ namespace Microsoft.Azure.Documents
         // /dbs/{id}/colls/{id}/historicalpkranges
         public const string HistoricalPartitionKeyRangesPathSegment = "historicalpkranges";
 
+        // /dbs/{id}/colls/{id}/userstringdictionaries
+        public const string UserStringDictionariesPathSegment = "userstringdictionaries";
+
         // /dbs/{id}/colls/{id}/pkranges/{id}/presplitaction
         public const string PartitionKeyRangePreSplitSegment = "presplitaction";
         public const string PartitionKeyRangePreSplit_Root = PartitionKeyRange_Root + "/" + PartitionKeyRangePreSplitSegment + "/";
@@ -372,6 +375,14 @@ namespace Microsoft.Azure.Documents
         // /authpolicyelements/{id}
         public const string AuthPolicyElementId = "authpolicyelementId";
         public const string AuthPolicyElement_Root = AuthPolicyElements_Root + "{" + AuthPolicyElementId + "}";
+
+        // /abacpolicies
+        public const string AbacPoliciesPathSegment = "abacpolicies";
+        public const string AbacPolicies_Root = Root + "/" + AbacPoliciesPathSegment + "/";
+
+        // /abacpolicies/{id}
+        public const string AbacPolicyId = "abacpolicyId";
+        public const string AbacPolicy_Root = AbacPolicies_Root + "{" + AbacPolicyId + "}";
 
         // /interopUsers
         public const string InteropUsersPathSegment = "interopusers";

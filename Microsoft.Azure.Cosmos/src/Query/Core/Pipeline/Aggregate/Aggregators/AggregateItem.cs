@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 {
     using System;
-    using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
     internal readonly struct AggregateItem

@@ -165,5 +165,116 @@ namespace Microsoft.Azure.Documents
                 }
             }
         }
+
+        /// <summary>
+        /// Exceptionless retry loop with context-aware execute delegate.
+        /// Unwraps <paramref name="policy"/>.ExecuteContext and delegates to the
+        /// 2-type-param overload.
+        /// </summary>
+        public static Task<Res<IRetriableResponse>> TryProcessRequestAsync<TInitialArguments, TRequest, IRetriableResponse>(
+            Func<TInitialArguments, Task<Res<IRetriableResponse>>> executeAsync,
+            Func<TRequest> prepareRequest,
+            IRequestRetryPolicy<TInitialArguments, TRequest, IRetriableResponse> policy,
+            CancellationToken cancellationToken)
+        {
+            return RequestRetryUtility.TryProcessRequestAsync<TRequest, IRetriableResponse>(
+                executeAsync: () => executeAsync(policy.ExecuteContext),
+                prepareRequest: prepareRequest,
+                policy: policy,
+                cancellationToken: cancellationToken);
+        }
+
+        /// <summary>
+        /// Exceptionless retry loop. The <paramref name="executeAsync"/> returns
+        /// <see cref="Result{T}"/> instead of throwing. Exceptions carried inside the
+        /// result are passed to the <paramref name="policy"/> to decide whether to retry.
+        /// </summary>
+        public static async Task<Res<IRetriableResponse>> TryProcessRequestAsync<TRequest, IRetriableResponse>(
+            Func<Task<Res<IRetriableResponse>>> executeAsync,
+            Func<TRequest> prepareRequest,
+            IRequestRetryPolicy<TRequest, IRetriableResponse> policy,
+            CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Res.FromException<IRetriableResponse>(new OperationCanceledException(cancellationToken));
+                }
+
+                TRequest request = prepareRequest();
+                policy.OnBeforeSendRequest(request);
+
+                Res<IRetriableResponse> result;
+                Exception escapedException = null;
+                try
+                {
+                    result = await executeAsync();
+                }
+                catch (Exception ex)
+                {
+                    // Not every layer below this loop is exceptionless yet. Address resolution in
+                    // particular still throws (for example InvalidPartitionException when the
+                    // collection no longer exists). Capture those the same way the throwing loop
+                    // does so the retry policy still sees them; otherwise they escape unretried and
+                    // an intermediate status such as 410/NameCacheIsStale reaches the caller instead
+                    // of the terminal status the retry would have resolved to.
+                    //
+                    // The Yield resets the stack to avoid deep async continuation chains on retry.
+                    await Task.Yield();
+
+                    escapedException = ex;
+                    result = Res.FromException<IRetriableResponse>(ex);
+                }
+
+                IRetriableResponse response = result.IsSuccess ? result.Value : default;
+                Exception exception = result.Exception;
+
+                ShouldRetryResult shouldRetry;
+                if (!policy.TryHandleResponseSynchronously(request, response, exception, out shouldRetry))
+                {
+                    try
+                    {
+                        shouldRetry = await policy.ShouldRetryAsync(request, response, exception, cancellationToken);
+                    }
+                    catch (Exception retryPolicyException)
+                    {
+                        return Res.FromException<IRetriableResponse>(retryPolicyException);
+                    }
+                }
+
+                if (escapedException != null)
+                {
+                    // Reported after the policy resolves so retryable is the policy's real verdict
+                    // rather than a guess. A retryable escape is the dangerous kind: before this
+                    // loop caught it the policy never ran, so the client could receive an
+                    // intermediate status instead of the terminal one.
+                    ExceptionlessEscapeTrace.TraceEscape(
+                        ExceptionlessEscapeTrace.RequestRetryUtilityLoop,
+                        escapedException,
+                        shouldRetry.ShouldRetry);
+                }
+
+                if (!shouldRetry.ShouldRetry)
+                {
+                    if (exception != null || shouldRetry.ExceptionToThrow != null)
+                    {
+                        Exception exToReturn = shouldRetry.ExceptionToThrow ?? exception;
+                        return Res.FromException<IRetriableResponse>(exToReturn);
+                    }
+
+                    return result;
+                }
+
+                if (shouldRetry.BackoffTime != TimeSpan.Zero)
+                {
+                    Exception delayException = await Res.Wrap(Task.Delay(shouldRetry.BackoffTime, cancellationToken));
+                    if (delayException != null)
+                    {
+                        return Res.FromException<IRetriableResponse>(delayException);
+                    }
+                }
+            }
+        }
     }
 }

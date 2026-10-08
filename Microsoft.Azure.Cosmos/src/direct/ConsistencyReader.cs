@@ -147,14 +147,15 @@ namespace Microsoft.Azure.Documents
             IServiceConfigurationReader serviceConfigReader,
             IAuthorizationTokenProvider authorizationTokenProvider,
             bool enableReplicaValidation,
-            ISessionRetryOptions sessionRetryOptions = null)
+            ISessionRetryOptions sessionRetryOptions = null,
+            bool enableBarrierEarlyYieldOn429 = false)
         {
             this.addressSelector = addressSelector;
             this.serviceConfigReader = serviceConfigReader;
             this.authorizationTokenProvider = authorizationTokenProvider;
             this.sessionRetryOptions = sessionRetryOptions;
             this.storeReader = new StoreReader(transportClient, addressSelector, new AddressEnumerator(), sessionContainer, enableReplicaValidation);
-            this.quorumReader = new QuorumReader(transportClient, addressSelector, this.storeReader, serviceConfigReader, authorizationTokenProvider);
+            this.quorumReader = new QuorumReader(transportClient, addressSelector, this.storeReader, serviceConfigReader, authorizationTokenProvider, enableBarrierEarlyYieldOn429);
         }
 
         // Test Hook
@@ -263,6 +264,112 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// Exceptionless variant of <see cref="ReadAsync"/>.
+        /// Returns a <see cref="Result{T}"/> instead of throwing.
+        /// Paths that have not yet been converted to exceptionless are wrapped
+        /// with <see cref="Res.Wrap{T}(Task{T})"/>.
+        /// </summary>
+        public Task<Res<StoreResponse>> TryReadAsync(
+            DocumentServiceRequest entity,
+            TimeoutHelper timeout,
+            bool isInRetry,
+            bool forceRefresh,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (!isInRetry)
+            {
+                if (timeout.TryGetTimeoutException(out Exception timeoutException))
+                {
+                    return Res.TaskFromException<StoreResponse>(timeoutException);
+                }
+            }
+            else
+            {
+                if (timeout.TryGetGoneOrCancelledException(out Exception goneException))
+                {
+                    return Res.TaskFromException<StoreResponse>(goneException);
+                }
+            }
+
+            entity.RequestContext.TimeoutHelper = timeout;
+
+            if (entity.RequestContext.RequestChargeTracker == null)
+            {
+                entity.RequestContext.RequestChargeTracker = new RequestChargeTracker();
+            }
+
+            if (entity.RequestContext.ClientRequestStatistics == null)
+            {
+                entity.RequestContext.ClientRequestStatistics = new ClientSideRequestStatistics();
+            }
+
+            entity.RequestContext.ForceRefreshAddressCache = forceRefresh;
+
+            ReadConsistencyStrategy readConsistencyStrategy;
+            bool useSessionToken;
+            ReadMode desiredReadMode = this.DeduceReadMode(entity, out readConsistencyStrategy, out useSessionToken);
+
+            int maxReplicaCount = this.GetMaxReplicaSetSize(entity);
+            int readQuorumValue = maxReplicaCount - (maxReplicaCount / 2);
+
+            switch (desiredReadMode)
+            {
+                case ReadMode.Primary:
+                    return this.TryReadPrimaryAsync(entity, useSessionToken);
+
+                case ReadMode.Strong:
+                    entity.RequestContext.PerformLocalRefreshOnGoneException = true;
+                    return this.quorumReader.TryReadStrongAsync(entity, readQuorumValue, desiredReadMode);
+
+                case ReadMode.BoundedStaleness:
+                    entity.RequestContext.PerformLocalRefreshOnGoneException = true;
+
+                    // for bounded staleness, we are defaulting to read strong for local region reads.
+                    // this can be done since we are always running with majority quorum w = 3 (or 2 during quorum downshift).
+                    // This means that the primary will always be part of the write quorum, and
+                    // therefore can be included for barrier reads.
+
+                    // NOTE: this assumes that we are running with SYNC replication (i.e. majority quorum).
+                    // When we run on a minority write quorum(w=2), to ensure monotonic read guarantees
+                    // we always contact two secondary replicas and exclude primary.
+                    // However, this model significantly reduces availability and available throughput for serving reads for bounded staleness during reconfiguration.
+                    // Therefore, to ensure monotonic read guarantee from any replica set we will just use regular quorum read(R=2) since our write quorum is always majority(W=3)
+                    return this.quorumReader.TryReadStrongAsync(entity, readQuorumValue, desiredReadMode);
+
+                case ReadMode.Any:
+                    if (readConsistencyStrategy == ReadConsistencyStrategy.Session)
+                    {
+                        // RequestRetryUtility vs BackoffRetryUtility: is purely for safe flighting purpose only
+                        // Post flighting can be fully pivoted to RequestRetryUtility and remove BackoffRetryUtility below
+                        if (entity.UseStatusCodeFor4041002
+                            && entity.IsValidRequestFor4041002 ())
+                        {
+                            return RequestRetryUtility.TryProcessRequestAsync<DocumentServiceRequest, StoreResponse>(
+                                executeAsync: () => this.TryReadSessionAsync(entity, desiredReadMode),
+                                prepareRequest: () => entity,
+                                policy: new SessionTokenMismatchRetryPolicy(
+                                    sessionRetryOptions: this.sessionRetryOptions),
+                                cancellationToken: cancellationToken);
+                        }
+
+                        return BackoffRetryUtility<StoreResponse>.TryExecuteAsync(
+                            callbackMethod: () => this.TryReadSessionAsync(entity, desiredReadMode),
+                            retryPolicy: new SessionTokenMismatchRetryPolicy(
+                                sessionRetryOptions: this.sessionRetryOptions),
+                            cancellationToken: cancellationToken);
+                    }
+                    else
+                    {
+                        return this.TryReadAnyAsync(entity, desiredReadMode);
+                    }
+
+                default:
+                    return Res.TaskFromException<StoreResponse>(
+                        new InvalidOperationException($"Unsupported read mode: {desiredReadMode}"));
+            }
+        }
+
         async private Task<StoreResponse> ReadPrimaryAsync(
             DocumentServiceRequest entity,
             bool useSessionToken)
@@ -274,6 +381,24 @@ namespace Microsoft.Azure.Documents
                     requiresValidLsn: false,
                     useSessionToken: useSessionToken);
             return response.Target.ToResponse();
+        }
+
+        private async Task<Res<StoreResponse>> TryReadPrimaryAsync(
+            DocumentServiceRequest entity,
+            bool useSessionToken)
+        {
+            Res<ReferenceCountedDisposable<StoreResult>> readResult =
+                await this.storeReader.TryReadPrimaryAsync(
+                    entity,
+                    requiresValidLsn: false,
+                    useSessionToken: useSessionToken);
+
+            if (!readResult.IsSuccess)
+            {
+                return Res.FromException<StoreResponse>(readResult.Exception);
+            }
+
+            return readResult.Value.Target.TryToResponse();
         }
 
         async private Task<StoreResponse> ReadAnyAsync(
@@ -294,6 +419,35 @@ namespace Microsoft.Azure.Documents
             }
 
             return responses[0].Target.ToResponse();
+        }
+
+        private async Task<Res<StoreResponse>> TryReadAnyAsync(
+            DocumentServiceRequest entity,
+            ReadMode readMode)
+        {
+            Res<IList<ReferenceCountedDisposable<StoreResult>>> readResult =
+                await this.storeReader.TryReadMultipleReplicaAsync(
+                    entity: entity,
+                    includePrimary: true,
+                    replicaCountToRead: 1,
+                    requiresValidLsn: false,
+                    useSessionToken: false,
+                    checkMinLSN: false,
+                    readMode: readMode);
+
+            if (!readResult.IsSuccess)
+            {
+                return Res.FromException<StoreResponse>(readResult.Exception);
+            }
+
+            IList<ReferenceCountedDisposable<StoreResult>> responses = readResult.Value;
+
+            if (responses.Count == 0)
+            {
+                return Res.FromException<StoreResponse>(new GoneException(RMResources.Gone, SubStatusCodes.Server_NoValidStoreResponse));
+            }
+
+            return responses[0].Target.TryToResponse();
         }
 
         private async Task<StoreResponse> ReadSessionAsync(
@@ -350,6 +504,82 @@ namespace Microsoft.Azure.Documents
             ISessionToken requestSessionToken = entity.RequestContext.SessionToken;
             DefaultTrace.TraceInformation("Fail the session read {0}, request session token {1}", entity.ResourceAddress, requestSessionToken == null ? "<empty>" : requestSessionToken.ConvertToString());
             throw new NotFoundException(RMResources.ReadSessionNotAvailable, responseHeaders);
+        }
+
+        /// <summary>
+        /// Exceptionless variant of <see cref="ReadSessionAsync"/>.
+        /// Returns the exception as part of the <see cref="Result{T}"/> instead of throwing.
+        /// </summary>
+        private async Task<Res<StoreResponse>> TryReadSessionAsync(
+            DocumentServiceRequest entity,
+            ReadMode readMode)
+        {
+            if (entity.RequestContext.TimeoutHelper.TryGetGoneOrCancelledException(out Exception timeoutException))
+            {
+                return Res.FromException<StoreResponse>(timeoutException);
+            }
+
+            Res<IList<ReferenceCountedDisposable<StoreResult>>> readResult =
+                await this.storeReader.TryReadMultipleReplicaAsync(
+                    entity: entity,
+                    includePrimary: true,
+                    replicaCountToRead: 1,
+                    requiresValidLsn: true,
+                    useSessionToken: true,
+                    checkMinLSN: true,
+                    readMode: readMode);
+
+            if (!readResult.IsSuccess)
+            {
+                return Res.FromException<StoreResponse>(readResult.Exception);
+            }
+
+            IList<ReferenceCountedDisposable<StoreResult>> responses = readResult.Value;
+
+            if (responses.Count > 0)
+            {
+                Res<StoreResponse> responseResult = responses[0].Target.TryToResponse(entity.RequestContext.RequestChargeTracker);
+
+                if (!responseResult.IsSuccess)
+                {
+                    if (responseResult.Exception is NotFoundException notFoundException)
+                    {
+                        if (entity.RequestContext.SessionToken != null && responses[0].Target.SessionToken != null && !entity.RequestContext.SessionToken.IsValid(responses[0].Target.SessionToken))
+                        {
+                            DefaultTrace.TraceInformation("Convert to session read exception, request {0} Session Lsn {1}, responseLSN {2}", entity.ResourceAddress, entity.RequestContext.SessionToken.ConvertToString(), responses[0].Target.LSN);
+                            notFoundException.Headers.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString());
+                        }
+                    }
+
+                    return responseResult;
+                }
+
+                StoreResponse storeResponse = responseResult.Value;
+
+                // UseStatusCodeFor4041002: Check is for exceptionless optimization not a functional change
+                // Purely for flighiting the exception less for 404-1002 only
+                // Post flighting below exception throwing might not be necessary
+                if (!entity.IsValidRequestFor4041002()
+                    && (storeResponse.Status == (int)HttpStatusCode.NotFound && entity.IsValidStatusCodeForExceptionlessRetry(storeResponse.Status)))
+                {
+                    if (entity.RequestContext.SessionToken != null && responses[0].Target.SessionToken != null && !entity.RequestContext.SessionToken.IsValid(responses[0].Target.SessionToken))
+                    {
+                        DefaultTrace.TraceInformation("Convert to session read exception, request {0} Session Lsn {1}, responseLSN {2}", entity.ResourceAddress, entity.RequestContext.SessionToken.ConvertToString(), responses[0].Target.LSN);
+
+                        INameValueCollection headers = new DictionaryNameValueCollection();
+                        headers.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString());
+                        return Res.FromException<StoreResponse>(new NotFoundException(RMResources.ReadSessionNotAvailable, headers));
+                    }
+                }
+
+                return responseResult;
+            }
+
+            INameValueCollection responseHeaders2 = new DictionaryNameValueCollection();
+            responseHeaders2.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString());
+            ISessionToken requestSessionToken2 = entity.RequestContext.SessionToken;
+            DefaultTrace.TraceInformation("Fail the session read {0}, request session token {1}", entity.ResourceAddress, requestSessionToken2 == null ? "<empty>" : requestSessionToken2.ConvertToString());
+            return Res.FromException<StoreResponse>(new NotFoundException(RMResources.ReadSessionNotAvailable, responseHeaders2));
         }
 
         private ReadMode DeduceReadMode(

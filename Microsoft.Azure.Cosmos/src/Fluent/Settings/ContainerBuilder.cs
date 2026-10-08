@@ -144,6 +144,28 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 (fullTextPolicy) => this.AddFullTextSearchPolicy(fullTextPolicy));
         }
 
+#if PREVIEW
+        /// <summary>
+        /// Defines the full text policy for this Azure Cosmos container with package and default spec support.
+        /// </summary>
+        /// <param name="package">The package type: "legacy" or "standard".</param>
+        /// <param name="defaultSpec">The default specification for full-text paths.</param>
+        /// <param name="fullTextPaths">List of full text paths to include in the policy definition.</param>
+        /// <returns>An instance of <see cref="FullTextPolicyDefinition"/>.</returns>
+        public FullTextPolicyDefinition WithFullTextPolicy(
+            string package,
+            FullTextDefaultSpec defaultSpec,
+            Collection<FullTextPath> fullTextPaths)
+        {
+            return new FullTextPolicyDefinition(
+                this,
+                package,
+                defaultSpec,
+                fullTextPaths,
+                (fullTextPolicy) => this.AddFullTextSearchPolicy(fullTextPolicy));
+        }
+#endif
+
         /// <summary>
         /// Creates a container with the current fluent definition.
         /// </summary>

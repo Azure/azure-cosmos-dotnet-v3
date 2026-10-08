@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents.Rntbd
@@ -127,6 +127,42 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         /// <summary>
+        /// Exceptionless variant of <see cref="RequestAsync"/>.
+        /// Returns a <see cref="Result{T}"/> instead of throwing on transport errors.
+        /// </summary>
+        public Task<Res<StoreResponse>> TryRequestAsync(
+            DocumentServiceRequest request,
+            TransportAddressUri physicalAddress,
+            ResourceOperation resourceOperation,
+            Guid activityId,
+            TransportRequestStats transportRequestStats)
+        {
+            ObjectDisposedException ex = GetDisposedException();
+            if (ex != null)
+            {
+                return Res.TaskFromException<StoreResponse>(ex);
+            }
+
+            Debug.Assert(this.serverUri.IsBaseOf(physicalAddress.Uri),
+                string.Format("Expected: {0}.{1}Actual: {2}",
+                this.serverUri.GetLeftPart(UriPartial.Authority),
+                Environment.NewLine,
+                physicalAddress.Uri.GetLeftPart(UriPartial.Authority)));
+
+            if (this.singlePartition != null)
+            {
+                Debug.Assert(this.partitions == null);
+                return this.singlePartition.TryRequestAsync(
+                    request, physicalAddress, resourceOperation, activityId, transportRequestStats);
+            }
+
+            Debug.Assert(this.partitions != null);
+            LoadBalancingPartition partition = this.GetLoadBalancedPartition(activityId);
+            return partition.TryRequestAsync(
+                request, physicalAddress, resourceOperation, activityId, transportRequestStats);
+        }
+
+        /// <summary>
         /// Attempts to open the Rntbd channel to the backend replica nodes.
         /// </summary>
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
@@ -161,7 +197,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             int hash = activityId.GetHashCode();
             // Drop the sign bit. Operator % can return negative values in C#.
             return this.partitions[
-            (hash & 0x8FFFFFFF) % this.partitions.Length];
+            (hash & 0x7FFFFFFF) % this.partitions.Length];
         }
 
         public void Close()
@@ -190,14 +226,25 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private void ThrowIfDisposed()
         {
-            if (this.disposed)
+            ObjectDisposedException ex = GetDisposedException();
+            if (ex != null)
             {
-                Debug.Assert(this.serverUri != null);
-                throw new ObjectDisposedException(string.Format("{0}:{1}",
-                    nameof(LoadBalancingChannel), this.serverUri));
+                throw ex;
             }
         }
 
-#endregion
+        private ObjectDisposedException GetDisposedException()
+        {
+            if (this.disposed)
+            {
+                Debug.Assert(this.serverUri != null);
+                return new ObjectDisposedException(string.Format("{0}:{1}",
+                    nameof(LoadBalancingChannel), this.serverUri));
+            }
+
+            return null;
+        }
+
+        #endregion
     }
 }

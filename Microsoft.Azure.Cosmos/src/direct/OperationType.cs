@@ -116,8 +116,8 @@ namespace Microsoft.Azure.Documents
 
         RelocateLeakedTentativeWrites = 70,
 
-        // Operation type for checking if the backend is able to serve an external backup request.
-        ExternalPreBackup = 71,
+        // Operation type for checking if the backend is able to serve an external backup request (synchronous prebackup).
+        ExternalPreBackupSync = 71,
 
         // Operation type for uploading external backups
         ExternalBackup = 72,
@@ -147,8 +147,19 @@ namespace Microsoft.Azure.Documents
         CancelExternalBackupRestore = 80,
 #endif
 
+#if !COSMOSCLIENT
+        // Operation type for checking external (async) prebackup status
+        CheckExternalPreBackupStatus = 81,
+
+        // Operation type for cancelling external (async) prebackup
+        CancelExternalPreBackup = 82,
+
+        // Operation type for triggering async external prebackup (find phase)
+        ExternalPreBackup = 83,
+#endif
+
         // Add new operation types above this
-        Last = 81,
+        Last = 84,
 
         // These names make it unclear what they map to in RequestOperationType.
         ExecuteJavaScript = -2,
@@ -298,7 +309,9 @@ namespace Microsoft.Azure.Documents
                    type == OperationType.ExternalBackupRestore ||
                    type == OperationType.PrepareDistributedTransaction ||
                    type == OperationType.CancelExternalBackup ||
-                   type == OperationType.CancelExternalBackupRestore
+                   type == OperationType.CancelExternalBackupRestore ||
+                   type == OperationType.ExternalPreBackup ||
+                   type == OperationType.CancelExternalPreBackup
 #endif
                    ;
         }
@@ -326,9 +339,10 @@ namespace Microsoft.Azure.Documents
 #if !COSMOSCLIENT
                    ||
                    type == OperationType.GetStorageAuthToken ||
-                   type == OperationType.ExternalPreBackup ||
+                   type == OperationType.ExternalPreBackupSync ||
                    type == OperationType.CheckExternalBackupStatus ||
-                   type == OperationType.CheckExternalBackupRestoreStatus
+                   type == OperationType.CheckExternalBackupRestoreStatus ||
+                   type == OperationType.CheckExternalPreBackupStatus
 #endif
                    ;
         }

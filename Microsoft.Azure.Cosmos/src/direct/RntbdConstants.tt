@@ -1,0 +1,863 @@
+<#@ template language="C#" hostspecific="true" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Net" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Runtime.CompilerServices" #>
+<#@ include file="RntbdConstantsDefinition.ttinclude"#><##>
+<#@ include file="RntbdConstantsResponseTokens.ttinclude"#><##>
+<#@ output extension=".cs" #>
+<#
+// This is a list of all the known RntbdToken types per RntbdTokenStream type.
+// If you are adding a new RntbToken add it to this list for the RntbdTokenStream you want to assign it to.
+List<RntbdTokenDefinition> connectionContextRequestTokens = new List<RntbdTokenDefinition>() {
+    new RntbdTokenDefinition(true, "ProtocolVersion", 0x0000, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(true, "ClientVersion", 0x0001, "RntbdTokenTypes.SmallString"),
+    new RntbdTokenDefinition(true, "UserAgent", 0x0002, "RntbdTokenTypes.SmallString"),
+    new RntbdTokenDefinition(false, "CallerId", 0x0003, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "EnableChannelMultiplexing", 0x0004, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ThinProxySignature", 0x0005, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "ThinProxySignatureDate", 0x0006, "RntbdTokenTypes.SmallString"),
+    new RntbdTokenDefinition(false, "MutualTlsAuthMode", 0x0007, "RntbdTokenTypes.Byte"),
+};
+
+List<RntbdTokenDefinition> connectionContextResponseTokens = new List<RntbdTokenDefinition>() {
+    new RntbdTokenDefinition(false, "ProtocolVersion", 0x0000, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "ClientVersion", 0x0001, "RntbdTokenTypes.SmallString"),
+    new RntbdTokenDefinition(true, "ServerAgent", 0x0002, "RntbdTokenTypes.SmallString"),
+    new RntbdTokenDefinition(true, "ServerVersion", 0x0003, "RntbdTokenTypes.SmallString"),
+    new RntbdTokenDefinition(false, "IdleTimeoutInSeconds", 0x0004, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "UnauthenticatedTimeoutInSeconds", 0x0005, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "MutualTlsAuthThumbprint", 0x0006, "RntbdTokenTypes.SmallString"),
+};
+
+List<RntbdTokenDefinition> requestTokens = new List<RntbdTokenDefinition>() {
+    new RntbdTokenDefinition(false, "ResourceId", 0x0000, "RntbdTokenTypes.Bytes"),
+    new RntbdTokenDefinition(false, "AuthorizationToken", 0x0001, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(true, "PayloadPresent", 0x0002, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "Date", 0x0003, "RntbdTokenTypes.SmallString"),
+    new RntbdTokenDefinition(false, "PageSize", 0x0004, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "SessionToken", 0x0005, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "ContinuationToken", 0x0006, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "IndexingDirective", 0x0007, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "Match", 0x0008, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PreTriggerInclude", 0x0009, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PostTriggerInclude", 0x000A, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "IsFanout", 0x000B, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "CollectionPartitionIndex", 0x000C, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "CollectionServiceIndex", 0x000D, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "PreTriggerExclude", 0x000E, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PostTriggerExclude", 0x000F, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "ConsistencyLevel", 0x0010, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "EntityId", 0x0011, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "ResourceSchemaName", 0x0012, "RntbdTokenTypes.SmallString"),
+    new RntbdTokenDefinition(true, "ReplicaPath", 0x0013, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "ResourceTokenExpiry", 0x0014, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "DatabaseName", 0x0015, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "CollectionName", 0x0016, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "DocumentName", 0x0017, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "AttachmentName", 0x0018, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "UserName", 0x0019, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PermissionName", 0x001A, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "StoredProcedureName", 0x001B, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "UserDefinedFunctionName", 0x001C, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "TriggerName", 0x001D, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "EnableScanInQuery", 0x001E, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "EmitVerboseTracesInQuery", 0x001F, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ConflictName", 0x0020, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "BindReplicaDirective", 0x0021, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PrimaryMasterKey", 0x0022, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "SecondaryMasterKey", 0x0023, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PrimaryReadonlyKey", 0x0024, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "SecondaryReadonlyKey", 0x0025, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "ProfileRequest", 0x0026, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "EnableLowPrecisionOrderBy", 0x0027, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ClientVersion", 0x0028, "RntbdTokenTypes.SmallString"),
+    new RntbdTokenDefinition(false, "CanCharge", 0x0029, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "CanThrottle", 0x002A, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PartitionKey", 0x002B, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PartitionKeyRangeId", 0x002C, "RntbdTokenTypes.String"),
+    // NotUsed2D = 0x002D,
+    // NotUsed2E = 0x002E,
+    // NotUsed2F = 0x002F,
+    // not used 0x0030,
+    new RntbdTokenDefinition(false, "MigrateCollectionDirective", 0x0031, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "SupportSpatialLegacyCoordinates", 0x0033, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PartitionCount", 0x0034, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "CollectionRid", 0x0035, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PartitionKeyRangeName", 0x0036, "RntbdTokenTypes.String"),
+    // not used = 0x0037, RoundTripTimeInMsec
+    // not used = 0x0038, RequestMessageSentTime
+    // not used = 0x0039, RequestMessageTimeOffset
+    new RntbdTokenDefinition(false, "SchemaName", 0x003A, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "FilterBySchemaRid", 0x003B, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "UsePolygonsSmallerThanAHemisphere", 0x003C, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "GatewaySignature", 0x003D, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "EnableLogging", 0x003E, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "A_IM", 0x003F, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PopulateQuotaInfo", 0x0040, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "DisableRUPerMinuteUsage", 0x0041, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateQueryMetrics", 0x0042, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ResponseContinuationTokenLimitInKb", 0x0043, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "PopulatePartitionStatistics", 0x0044, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "RemoteStorageType", 0x0045, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "CollectionRemoteStorageSecurityIdentifier", 0x0046, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "IfModifiedSince", 0x0047, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PopulateCollectionThroughputInfo", 0x0048, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "RemainingTimeInMsOnClientRequest", 0x0049, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "ClientRetryAttemptCount", 0x004A, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "TargetLsn", 0x004B, "RntbdTokenTypes.LongLong"),
+    new RntbdTokenDefinition(false, "TargetGlobalCommittedLsn", 0x004C, "RntbdTokenTypes.LongLong"),
+    new RntbdTokenDefinition(false, "TransportRequestID", 0x004D, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "RestoreMetadataFilter", 0x004E, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "RestoreParams", 0x004F, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "ShareThroughput", 0x0050, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PartitionResourceFilter", 0x0051, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "IsReadOnlyScript", 0x0052, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsAutoScaleRequest", 0x0053, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ForceQueryScan", 0x0054, "RntbdTokenTypes.Byte"),
+    // not used = 0x0055, LeaseSeqNumber
+    new RntbdTokenDefinition(false, "CanOfferReplaceComplete", 0x0056, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ExcludeSystemProperties", 0x0057, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "BinaryId", 0x0058, "RntbdTokenTypes.Bytes"),
+    new RntbdTokenDefinition(false, "TimeToLiveInSeconds", 0x0059, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "EffectivePartitionKey", 0x005A, "RntbdTokenTypes.Bytes"),
+    new RntbdTokenDefinition(false, "BinaryPassthroughRequest", 0x005B, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "UserDefinedTypeName", 0x005C, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "EnableDynamicRidRangeAllocation", 0x005D, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "EnumerationDirection", 0x005E, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "StartId", 0x005F, "RntbdTokenTypes.Bytes"),
+    new RntbdTokenDefinition(false, "EndId", 0x0060, "RntbdTokenTypes.Bytes"),
+    new RntbdTokenDefinition(false, "FanoutOperationState", 0x0061, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "StartEpk", 0x0062, "RntbdTokenTypes.Bytes"),
+    new RntbdTokenDefinition(false, "EndEpk", 0x0063, "RntbdTokenTypes.Bytes"),
+    new RntbdTokenDefinition(false, "ReadFeedKeyType", 0x0064, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ContentSerializationFormat", 0x0065, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "AllowTentativeWrites", 0x0066, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsUserRequest", 0x0067, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PreserveFullContent", 0x0069, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IncludeTentativeWrites", 0x0070, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateResourceCount", 0x0071, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "MergeStaticId", 0x0072, "RntbdTokenTypes.Bytes"),
+    new RntbdTokenDefinition(false, "IsBatchAtomic", 0x0073, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ShouldBatchContinueOnError", 0x0074, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsBatchOrdered", 0x0075, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "SchemaOwnerRid", 0x0076, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "SchemaHash", 0x0077, "RntbdTokenTypes.Bytes"),
+    new RntbdTokenDefinition(false, "IsRUPerGBEnforcementRequest", 0x0078, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "MaxPollingIntervalMilliseconds", 0x0079, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "SnapshotName", 0x007A, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PopulateLogStoreInfo", 0x007B, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "GetAllPartitionKeyStatistics", 0x007C, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ForceSideBySideIndexMigration", 0x007D, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "CollectionChildResourceNameLimitInBytes", 0x007E, "RntbdTokenTypes.Bytes"),
+    new RntbdTokenDefinition(false, "CollectionChildResourceContentLengthLimitInKB", 0x007F, "RntbdTokenTypes.Bytes"),
+    new RntbdTokenDefinition(false, "ClientEncryptionKeyName", 0x0080, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "MergeCheckpointGLSNKeyName", 0x0081, "RntbdTokenTypes.LongLong"),
+    new RntbdTokenDefinition(false, "ReturnPreference", 0x0082, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "UniqueIndexNameEncodingMode", 0x0083, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateUnflushedMergeEntryCount", 0x0084, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "MigrateOfferToManualThroughput", 0x0085, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "MigrateOfferToAutopilot", 0x0086, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsClientEncrypted", 0x0087, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "SystemDocumentType", 0x0088, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsofferStorageRefreshRequest", 0x0089, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ResourceTypes", 0x008A, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "TransactionId", 0x008B, "RntbdTokenTypes.Bytes"),
+    new RntbdTokenDefinition(false, "TransactionFirstRequest", 0x008C, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "TransactionCommit", 0x008D, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "SystemDocumentName", 0x008E, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "UpdateMaxThroughputEverProvisioned", 0x008F, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "UniqueIndexReIndexingState", 0x0090, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "RoleDefinitionName", 0x0091, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "RoleAssignmentName", 0x0092, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "UseSystemBudget", 0x0093, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IgnoreSystemLoweringMaxThroughput", 0x0094, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "TruncateMergeLogRequest", 0x0095, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "RetriableWriteRequestId", 0x0096, "RntbdTokenTypes.Bytes"),
+    new RntbdTokenDefinition(false, "IsRetriedWriteRequest", 0x0097, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "RetriableWriteRequestStartTimestamp", 0x0098, "RntbdTokenTypes.ULongLong"),
+    new RntbdTokenDefinition(false, "AddResourcePropertiesToResponse", 0x0099, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ChangeFeedStartFullFidelityIfNoneMatch", 0x009A, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "SystemRestoreOperation", 0x009B, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "SkipRefreshDatabaseAccountConfigs", 0x009C, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IntendedCollectionRid", 0x009D, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "UseArchivalPartition", 0x009E, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateUniqueIndexReIndexProgress", 0x009F, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "CollectionSchemaId", 0x00A0, "RntbdTokenTypes.Long"),
+    new RntbdTokenDefinition(false, "CollectionTruncate", 0x00A1, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "SDKSupportedCapabilities", 0x00A2, "RntbdTokenTypes.ULong"),
+    new RntbdTokenDefinition(false, "IsMaterializedViewBuild", 0x00A3, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "BuilderClientIdentifier", 0x00A4, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "SourceCollectionIfMatch", 0x00A5, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "RequestedCollectionType", 0x00A6, "RntbdTokenTypes.Byte"),
+    // 0x00A7 is unused,
+    new RntbdTokenDefinition(false, "InteropUserName", 0x00A8, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PopulateIndexMetrics", 0x00A9, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateAnalyticalMigrationProgress", 0x00AA, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "AuthPolicyElementName", 0x00AB, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "ShouldReturnCurrentServerDateTime", 0x00AC, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "RbacUserId", 0x00AD, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "RbacAction", 0x00AE, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "RbacResource", 0x00AF, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "CorrelatedActivityId", 0x00B0, "RntbdTokenTypes.Guid"),
+    new RntbdTokenDefinition(false, "IsThroughputCapRequest", 0x00B1, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ChangeFeedWireFormatVersion", 0x00B2, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PopulateBYOKEncryptionProgress", 0x00B3, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "UseUserBackgroundBudget", 0x00B4, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IncludePhysicalPartitionThroughputInfo", 0x00B5, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "IsServerlessStorageRefreshRequest", 0x00B6, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "UpdateOfferStateToPendingForMerge", 0x00B7, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateOldestActiveSchemaId", 0x00B8, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsInternalServerlessRequest", 0x00B9, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "OfferReplaceRURedistribution", 0x00BA, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsCassandraAlterTypeRequest", 0x00BB, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsMaterializedViewSourceSchemaReplaceBatchRequest", 0x00BC, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ForceDatabaseAccountUpdate", 0x00BD, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "EncryptionScopeName", 0x00BE, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PriorityLevel", 0x00BF, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "AllowRestoreParamsUpdate", 0x00C0, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PruneCollectionSchemas", 0x00C1, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateIndexMetricsV2", 0x00C2, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsMigratedFixedCollection", 0x00C3, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "SupportedSerializationFormats", 0x00C4, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "UpdateOfferStateToRestorePending", 0x00C5, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "SetMasterResourcesDeletionPending", 0x00C6, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "HighPriorityForcedBackup", 0x00C7, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "OptimisticDirectExecute", 0x00C8, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateMinGLSNForDocumentOperations", 0x00C9, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateHighestTentativeWriteLLSN", 0x00CA, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateCapacityType", 0x00CB, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "TraceParent", 0x00CC, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "TraceState", 0x00CD, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "GlobalDatabaseAccountName", 0x00CE, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "EnableConflictResolutionPolicyUpdate", 0x00CF, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ClientIpAddress", 0x00D0, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "IsRequestFromComputeNotAuthorized", 0x00D1, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "StartEpkHash", 0x00D2, "RntbdTokenTypes.Bytes"),
+    new RntbdTokenDefinition(false, "EndEpkHash", 0x00D3, "RntbdTokenTypes.Bytes"),
+    new RntbdTokenDefinition(false, "AllowDocumentReadsInOfflineRegion", 0x00D4, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateCurrentPartitionThroughputInfo", 0x00D5, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateDocumentRecordCount", 0x00D6, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "CosmosGatewayTransactionId", 0x00D7, "RntbdTokenTypes.Guid"),
+    new RntbdTokenDefinition(false, "PopulateUserStrings", 0x00D8, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "SkipThroughputCapValidation", 0x00D9, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateQueryAdvice", 0x00DA, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ThroughputBucket", 0x00DB, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "UpdateOfferStateToPendingForThroughputSplit", 0x00DC, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateBinaryEncodingMigratorProgress", 0x00DD, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "AllowUpdatingIsPhysicalMigrationInProgress", 0x00DE, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IncludeColdTier", 0x00DF, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateVectorIndexProgress", 0x00E0, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateThroughputPoolInfo", 0x00E1, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "RetrieveUserStrings", 0x00E2, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateVectorIndexAggregateProgress", 0x00E3, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "AllowTopologyUpsertWithoutIntent", 0x00E4, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ReadGlobalCommittedData", 0x00E5, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsSoftDeletionOrRecoveryOperation", 0x00E6, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "WorkloadId", 0x00E7, "RntbdTokenTypes.UShort"),
+    new RntbdTokenDefinition(false, "RegionalDatabaseAccountName", 0x00E8, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "OriginalAuthTokenType", 0x00E9, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "AllowBarrierRequestWhenRWStatusRevoked", 0x00EA, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateGlobalEpochRecordCount", 0x00EB, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateCanFailoverManagerAccessDocumentStore", 0x00EC, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsEmbeddingGeneratorRequest", 0x00ED, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateGloballyAcceptedFailoverPolicy", 0x00EE, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ShouldProcessOnlyInHubRegion", 0x00EF, "RntbdTokenTypes.Byte"),
+    // Skipping a few hex because they are used in RntbdMessageMetadataDefinitions.h but not added here yet
+    new RntbdTokenDefinition(false, "BypassSoftDeletionBlocking", 0x00F0, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsStrongConsistencyStoreClient", 0x00F1, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "AzureRbacName", 0x00F2, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "PopulateGlobalStateWriteQuorumRegionsSet", 0x00F3, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsRequestIgnoredForAutoscaleReporting", 0x00F4, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "DtcVersion", 0x00F5, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "UserAgent", 0x00F6, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "ContentType", 0x00F7, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "IdempotencyToken", 0x00F8, "RntbdTokenTypes.Guid"),
+    new RntbdTokenDefinition(false, "AllowInternalServerlessOfferRead", 0x00F9, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "HybridLogicalClockTimestamp", 0x00FA, "RntbdTokenTypes.LongLong"),
+    new RntbdTokenDefinition(false, "DistributedTransactionId", 0x00FB, "RntbdTokenTypes.Guid"),
+    new RntbdTokenDefinition(false, "CreatePKRangesWithStatusOffline", 0x00FC, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsSoftDeletePurgeOperation", 0x00FD, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ReadConsistencyStrategy", 0x00FE, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "SupportedQueryFeatures", 0x00FF, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "QueryVersion", 0x0100, "RntbdTokenTypes.SmallString"),
+    new RntbdTokenDefinition(false, "SupportedSerializationFeatures", 0x0101, "RntbdTokenTypes.UShort"),
+    new RntbdTokenDefinition(false, "RefreshOnlyFabricServiceLevelConfigs", 0x0102, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "RetriggerDTX", 0x0103, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ShouldCheckInflightDtx", 0x0104, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateCachedWriteRegion", 0x0105, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulateEsanMigrationStatus", 0x0106, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "ResolveDistributedTransactionBatch", 0x0107, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PartialPartitionKey", 0x0108, "RntbdTokenTypes.String"),
+    new RntbdTokenDefinition(false, "MutualTlsAuthIntent", 0x0109, "RntbdTokenTypes.UShort"),
+    new RntbdTokenDefinition(false, "NoRetryOn449StatusCode", 0x010A, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PopulatePhysicalSplitCopyState", 0x010B, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsDtxAggregatedResponse", 0x010C, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "PersistDistributedTransactionPrepareFailure", 0x010D, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsChangeFeedFalseProgressPreventionEnabled", 0x010E, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsDtxRetry", 0x010F, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "IsDtxCrossRegionRedirect", 0x0110, "RntbdTokenTypes.Byte"),
+    new RntbdTokenDefinition(false, "AbacPolicyName", 0x0111, "RntbdTokenTypes.String"),
+};
+#>
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+// THIS IS AN AUTOGENERATED FILE. ALL UPDATES SHOULD BE DONE VIA RntbdConstants.tt
+// This allows the RntbdTokenStreams to be correctly ordered and optimized.
+// If you need to add a new RntbdToken to any of the existing types, please do it on the RntbdConstants.tt file
+
+namespace Microsoft.Azure.Documents
+{
+    using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+
+    /// <summary>
+    /// THIS IS AN AUTOGENERATED FILE. ALL UPDATES SHOULD BE DONE VIA RntbdConstants.tt
+    /// This allows the RntbdTokenStreams to be correctly ordered and optimized.
+    /// If you need to add a new RntbdToken to any of the existing types, do it on the RntbdConstants.tt file
+    /// </summary>
+    internal static class RntbdConstants
+    {
+        public const UInt32 CurrentProtocolVersion = 0x00000001;
+
+        public enum RntbdResourceType : ushort
+        {
+            Connection = 0x0000,
+            Database = 0x0001,
+            Collection = 0x0002,
+            Document = 0x0003,
+            Attachment = 0x0004,
+            User = 0x0005,
+            Permission = 0x0006,
+            StoredProcedure = 0x0007,
+            Conflict = 0x0008,
+            Trigger = 0x0009,
+            UserDefinedFunction = 0x000A,
+            Module = 0x000B,
+            Replica = 0x000C,
+            ModuleCommand = 0x000D,
+            Record = 0x000E,
+            Offer = 0x000F,
+            PartitionSetInformation = 0x0010,
+            XPReplicatorAddress = 0x0011,
+            MasterPartition = 0x0012,
+            ServerPartition = 0x0013,
+            DatabaseAccount = 0x0014,
+            Topology = 0x0015,
+            PartitionKeyRange = 0x0016,
+            // not used = 0x0017, timestamp
+            Schema = 0x0018,
+            BatchApply = 0x0019,
+            RestoreMetadata = 0x001A,
+            ComputeGatewayCharges = 0x001B,
+            RidRange = 0x001C,
+            UserDefinedType = 0x001D,
+            VectorClock = 0x001F,
+            PartitionKey = 0x0020,
+            Snapshot = 0x0021,
+            ClientEncryptionKey = 0x0023,
+            Transaction = 0x0025,
+            PartitionedSystemDocument = 0x0026,
+            RoleDefinition = 0x0027,
+            RoleAssignment = 0x0028,
+            SystemDocument = 0x0029,
+            InteropUser = 0x002A,
+            TransportControlCommand = 0x002B,
+            AuthPolicyElement = 0x002C,
+            StorageAuthToken = 0x002D,
+            RetriableWriteCachedResponse = 0x002E,
+            EncryptionScope = 0x0030,
+            AzureRbac = 0x0034,
+            DistributedTransactionBatch = 0x0035,
+            HistoricalPartitionKeyRange = 0x0037,
+            UserStringDictionary = 0x0038,
+            AbacPolicy = 0x0039,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public enum RntbdOperationType : ushort
+        {
+            Connection = 0x0000,
+            Create = 0x0001,
+            Patch = 0x0002,
+            Read = 0x0003,
+            ReadFeed = 0x0004,
+            Delete = 0x0005,
+            Replace = 0x0006,
+            // Deprecated and should not be used JPathQuery = 0x0007,
+            ExecuteJavaScript = 0x0008,
+            SQLQuery = 0x0009,
+            Pause = 0x000A,
+            Resume = 0x000B,
+            Stop = 0x000C,
+            Recycle = 0x000D,
+            Crash = 0x000E,
+            Query = 0x000F,
+            ForceConfigRefresh = 0x0010,
+            Head = 0x0011,
+            HeadFeed = 0x0012,
+            Upsert = 0x0013,
+            Recreate = 0x0014,
+            Throttle = 0x0015,
+            GetSplitPoint = 0x0016,
+            PreCreateValidation = 0x0017,
+            BatchApply = 0x0018,
+            AbortSplit = 0x0019,
+            CompleteSplit = 0x001A,
+            OfferUpdateOperation = 0x001B,
+            OfferPreGrowValidation = 0x001C,
+            BatchReportThroughputUtilization = 0x001D,
+            CompletePartitionMigration = 0x001E,
+            AbortPartitionMigration = 0x001F,
+            PreReplaceValidation = 0x0020,
+            AddComputeGatewayRequestCharges = 0x0021,
+            MigratePartition = 0x0022,
+            MasterReplaceOfferOperation = 0x023,
+            ProvisionedCollectionOfferUpdateOperation = 0x024,
+            Batch = 0x025,
+            InitiateDatabaseOfferPartitionShrink = 0x026,
+            CompleteDatabaseOfferPartitionShrink = 0x027,
+            EnsureSnapshotOperation = 0x028,
+            GetSplitPoints = 0x0029,
+            CompleteMergeOnTarget = 0x002A,
+            CompleteMergeOnMaster = 0x002C,
+            ForcePartitionBackup = 0x002E,
+            CompleteUserTransaction = 0x002F,
+            MasterInitiatedProgressCoordination = 0x0030,
+            MetadataCheckAccess = 0x0031,
+            CreateSystemSnapshot = 0x0032,
+            UpdateFailoverPriorityList = 0x0033,
+            GetStorageAuthToken = 0x0034,
+            UpdatePartitionThroughput = 0x0035,
+            CreateRidRangeResources = 0x0036,
+            Truncate = 0x0037,
+            RelocateLeakedTentativeWrites = 0x0039,
+            ExternalPreBackupSync = 0x003A,
+            ExternalBackup = 0x003B,
+            CheckExternalBackupStatus = 0x003C,
+            ExternalBackupRestore = 0x003D,
+            CheckExternalBackupRestoreStatus = 0x003E,
+            PrepareDistributedTransaction = 0x003F,
+            CommitDistributedTransaction = 0x0040,
+            AbortDistributedTransaction = 0x0041,
+            QueryPlan = 0x0042,
+            CancelExternalBackup = 0x0043,
+            CancelExternalBackupRestore = 0x0044,
+            CheckExternalPreBackupStatus = 0x0045,
+            CancelExternalPreBackup = 0x0046,
+            ExternalPreBackup = 0x0047,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public enum ConnectionContextRequestTokenIdentifiers : ushort
+        {
+<#  foreach(RntbdTokenDefinition token in connectionContextRequestTokens) { #>
+            <#= token.Name #> = 0x<#= token.Identifier.ToString("X4") #>,
+<# } #>
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public sealed class ConnectionContextRequest : RntbdTokenStream<ConnectionContextRequestTokenIdentifiers>
+        {
+            public override int RequiredTokenCount => <#= connectionContextRequestTokens.Where(t => t.IsRequired).Count() #>;
+
+<#   foreach(RntbdTokenDefinition token in connectionContextRequestTokens) { #>
+            public RntbdToken <#= token.NameInCamelCase #>;
+<# } #>
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+
+            public ConnectionContextRequest()
+            {
+<#   foreach(RntbdTokenDefinition token in connectionContextRequestTokens) { #>
+                this.<#= token.NameInCamelCase #> = new RntbdToken(<#= token.IsRequired.ToString().ToLower() #>, <#= token.TokenType #>, (ushort)ConnectionContextRequestTokenIdentifiers.<#= token.Name #>);
+<# } #>
+
+                this.tokens = new RntbdToken[]
+                {
+<#
+foreach(RntbdTokenDefinition token in OrderedAndFilled(connectionContextRequestTokens)) {
+    if (!token.IsEmpty) {
+#>
+                    this.<#= token.NameInCamelCase #>,
+<#
+    } else {
+#>
+                    null, // 0x<#= token.Identifier.ToString("X4") #>
+<# } } #>
+                };
+            }
+        }
+
+        public enum ConnectionContextResponseTokenIdentifiers : ushort
+        {
+<#  foreach(RntbdTokenDefinition token in connectionContextResponseTokens) { #>
+            <#= token.Name #> = 0x<#= token.Identifier.ToString("X4") #>,
+<# } #>
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public sealed class ConnectionContextResponse : RntbdTokenStream<ConnectionContextResponseTokenIdentifiers>
+        {
+            public override int RequiredTokenCount => <#= connectionContextResponseTokens.Where(t => t.IsRequired).Count() #>;
+
+<#   foreach(RntbdTokenDefinition token in connectionContextResponseTokens) { #>
+            public RntbdToken <#= token.NameInCamelCase #>;
+<# } #>
+
+            public ConnectionContextResponse()
+            {
+<#   foreach(RntbdTokenDefinition token in connectionContextResponseTokens) { #>
+                this.<#= token.NameInCamelCase #> = new RntbdToken(<#= token.IsRequired.ToString().ToLower() #>, <#= token.TokenType #>, (ushort)ConnectionContextResponseTokenIdentifiers.<#= token.Name #>);
+<# } #>
+
+                this.tokens = new RntbdToken[]
+                {
+<#
+foreach(RntbdTokenDefinition token in OrderedAndFilled(connectionContextResponseTokens)) {
+    if (!token.IsEmpty) {
+#>
+                    this.<#= token.NameInCamelCase #>,
+<#
+    } else {
+#>
+                    null, // 0x<#= token.Identifier.ToString("X4") #>
+<# } } #>
+                };
+            }
+        }
+
+        public enum RntbdIndexingDirective : byte
+        {
+            Default = 0x00,
+            Include = 0x01,
+            Exclude = 0x02,
+
+            Invalid = 0xFF,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public enum RntbdMigrateCollectionDirective : byte
+        {
+            Thaw = 0x00,
+            Freeze = 0x01,
+
+            Invalid = 0xFF,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public enum RntbdRemoteStorageType : byte
+        {
+            Invalid = 0x00,
+            NotSpecified = 0x01,
+            Standard = 0x02,
+            Premium = 0x03,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public enum RntbdConsistencyLevel : byte
+        {
+            Strong = 0x00,
+            BoundedStaleness = 0x01,
+            Session = 0x02,
+            Eventual = 0x03,
+            ConsistentPrefix = 0x04,
+
+            Invalid = 0xFF,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public enum RntdbEnumerationDirection : byte
+        {
+            Invalid = 0x00,
+            Forward = 0x01,
+            Reverse = 0x02,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public enum RntbdFanoutOperationState : byte
+        {
+            Started = 0x01,
+            Completed = 0x02,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public enum RntdbReadFeedKeyType : byte
+        {
+            Invalid = 0x00,
+            ResourceId = 0x01,
+            EffectivePartitionKey = 0x02,
+            EffectivePartitionKeyRange = 0x03,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public enum RntbdContentSerializationFormat : byte
+        {
+            JsonText = 0x00,
+            CosmosBinary = 0x01,
+            HybridRow = 0x02,
+
+            Invalid = 0xFF,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        [Flags]
+        public enum RntbdSupportedSerializationFormats : byte
+        {
+            None = 0x00,
+            JsonText = 0x01,
+            CosmosBinary = 0x02,
+            HybridRow = 0x04,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        [Flags]
+        public enum RntbdSupportedSerializationFeatures : ushort
+        {
+            None = 0x00,
+            Base64Strings = 0x01,
+            NumberArrays = 0x02,
+            UInt64 = 0x04,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public enum RntbdSystemDocumentType : byte
+        {
+            PartitionKey = 0x00,
+            MaterializedViewLeaseDocument = 0x01,
+            MaterializedViewBuilderOwnershipDocument = 0x02,
+            MaterializedViewLeaseStoreInitDocument = 0x03,
+            EmbeddingGeneratorLeaseDocument = 0x04,
+            EmbeddingGeneratorOwnershipDocument = 0x05,
+            EmbeddingGeneratorLeaseStoreInitDocument = 0x06,
+            // 0x07 (EmbeddingGeneratorOwnershipDocument) and 0x08
+            // (EmbeddingGeneratorLeaseStoreInitDocument) are reserved on the
+            // backend wire enum; ContainerBuilderHeartbeatDocument keeps the
+            // 0x09 value that the native RntbdSystemDocumentType decoder expects.
+            ContainerBuilderHeartbeatDocument = 0x09,
+
+            Invalid = 0xFF,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public enum RntbdRequestedCollectionType : byte
+        {
+            All = 0x00,
+            Standard = 0x01,
+            MaterializedView = 0x02,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public enum RntbdPriorityLevel : byte
+        {
+            High = 0x01,
+            Low = 0x02,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public enum RntbdMutualTlsAuthMode : byte
+        {
+            System = 0x00,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        /// <summary>
+        /// Backend response-field selection. Transmitted on the wire as a single
+        /// byte via the <see cref="RequestIdentifiers.ReturnPreference"/> token.
+        /// The backend RNTBD parser maps this byte to its internal
+        /// SkipResponseFields enum (Backend/native/common/Transport.h) so it can
+        /// elide selected response fields:
+        ///   None    - return the full response (default).
+        ///   Content - skip the document body; return everything else.
+        ///   All     - skip every optional field; return only the status.
+        /// Currently consumed by the read-tx Phase 2 path (LSN-only validation
+        /// uses Content to skip bodies on the wire).
+        /// </summary>
+        public enum RntbdSkipResponseFields : byte
+        {
+            None = 0x00,
+            Content = 0x01,
+            All = 0xFF,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public enum RequestIdentifiers : ushort
+        {
+<#  foreach(RntbdTokenDefinition token in requestTokens) { #>
+            <#= token.Name #> = 0x<#= token.Identifier.ToString("X4") #>,
+<# } #>
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        public sealed class Request : RntbdTokenStream<RequestIdentifiers>
+        {
+            public override int RequiredTokenCount => <#= requestTokens.Where(t => t.IsRequired).Count() #>;
+
+<#   foreach(RntbdTokenDefinition token in requestTokens) { #>
+            public RntbdToken <#= token.NameInCamelCase #>;
+<# } #>
+
+            public Request()
+            {
+<#   foreach(RntbdTokenDefinition token in requestTokens) { #>
+                this.<#= token.NameInCamelCase #> = new RntbdToken(<#= token.IsRequired.ToString().ToLower() #>, <#= token.TokenType #>, (ushort)RequestIdentifiers.<#= token.Name #>);
+<# } #>
+
+                this.tokens = new RntbdToken[]
+                {
+<#
+foreach(RntbdTokenDefinition token in OrderedAndFilled(requestTokens)) {
+    if (!token.IsEmpty) {
+#>
+                    this.<#= token.NameInCamelCase #>,
+<#
+    } else {
+#>
+                    null, // 0x<#= token.Identifier.ToString("X4") #>
+<# } } #>
+                };
+            }
+        }
+
+        // Values are generated from the common source where response headers ordered by the chance headers could apper on response.
+        // This order helps in constracting more performant switch statements in the loop(s) processing response headers.
+        public enum ResponseIdentifiers : ushort
+        {
+<#  foreach(RntbdTokenDefinition token in responseTokens) { #>
+            <#= token.Name #> = 0x<#= token.Identifier.ToString("X4") #>,
+<# } #>
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        //
+        // DEVNOTE: This enumeration is used only for the logging purpose.  Do not use it for any other purpose.
+        //
+        public enum CallerId : byte
+        {
+            /// <summary>
+            /// The default caller Id
+            /// </summary>
+            Anonymous = 0x00,
+
+            /// <summary>
+            /// The connection request is made by Gateway
+            /// </summary>
+            Gateway = 0x01,
+
+            /// <summary>
+            /// The connection request is made by BackgroundTask
+            /// </summary>
+            BackgroundTask = 0x02,
+
+            /// <summary>
+            /// The connection request is made by ManagementWorkerRuntime
+            /// </summary>
+            ManagementWorker = 0x03,
+
+            /// <summary>
+            /// Invalid caller Id
+            /// </summary>
+            Invalid = 0x04,
+
+            // Please update RntbdConstants.tt T4 template and generate
+            // Also get sign-off from cdbcosdk
+        }
+
+        internal sealed class RntbdEntityPool<T, TU>
+        where T : RntbdTokenStream<TU>, new()
+        where TU : Enum
+        {
+            public static readonly RntbdEntityPool<T, TU> Instance = new RntbdEntityPool<T, TU>();
+
+            private readonly ConcurrentQueue<T> entities = new ConcurrentQueue<T>();
+
+            private RntbdEntityPool()
+            {
+            }
+
+            public EntityOwner Get()
+            {
+                if (this.entities.TryDequeue(out T entity))
+                {
+                    return new EntityOwner(entity);
+                }
+
+                return new EntityOwner(new T());
+            }
+
+            private void Return(T entity)
+            {
+                entity.Reset();
+                this.entities.Enqueue(entity);
+            }
+
+            public readonly struct EntityOwner : IDisposable
+            {
+                public EntityOwner(T entity)
+                {
+                    this.Entity = entity;
+                }
+
+                public T Entity { get; }
+
+                public void Dispose()
+                {
+                    if (this.Entity != null)
+                    {
+                        RntbdEntityPool<T, TU>.Instance.Return(this.Entity);
+                    }
+                }
+            }
+        }
+    }
+}

@@ -62,8 +62,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             // Prepare mocked caches.
-            Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false);
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false, false);
+            Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false, null);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false, false, null);
 
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("test");
             containerProperties.PartitionKey = partitionKeyDefinition;
@@ -109,6 +109,25 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ?? throw new InvalidOperationException("Could not find 'locationCache' field on GlobalEndpointManager");
             LocationCache locationCache = (LocationCache)locationCacheField.GetValue(endpointManager);
             locationCache.OnDatabaseAccountRead(accountProperties);
+        }
+
+        /// <summary>
+        /// Marks every advertised thin-client regional endpoint as probe-healthy by wiring a probe
+        /// client whose HTTP/2 connectivity probes all succeed and running one probe cycle. Required
+        /// because thin-client routing fails closed: without a probe-confirmed endpoint the dispatch
+        /// path falls back to Gateway V1.
+        /// </summary>
+        public static void MarkThinClientEndpointsHealthyForTest(GlobalEndpointManager endpointManager)
+        {
+            CosmosHttpClient probeHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
+                request => Task.FromResult(new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new System.Net.Http.ByteArrayContent(Array.Empty<byte>()),
+                    RequestMessage = request,
+                }));
+
+            endpointManager.SetThinClientHttpClient(probeHttpClient);
+            endpointManager.RunThinClientProbeCycleAsync().GetAwaiter().GetResult();
         }
 
         /// <summary>

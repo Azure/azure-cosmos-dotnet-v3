@@ -1,0 +1,57 @@
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#+
+public class RntbdTokenDefinition {
+    private RntbdTokenDefinition(ushort identifier) {
+        this.Identifier = identifier;
+        this.IsEmpty = true;
+    }
+
+    public RntbdTokenDefinition (
+        bool isRequired,
+        string name,
+        ushort identifier,
+        string tokenType) {
+        this.IsEmpty = false;
+        this.IsRequired = isRequired;
+        this.Name = name;
+        this.TokenType = tokenType;
+        this.Identifier = identifier;
+        this.NameInCamelCase = Char.ToLowerInvariant(this.Name[0]) + this.Name.Substring(1);
+    }
+
+    public static RntbdTokenDefinition Empty(ushort identifier) => new RntbdTokenDefinition(identifier);
+
+    public bool IsEmpty { get; }
+
+    public bool IsRequired { get; }
+
+    public string Name { get; }
+
+    public string TokenType { get; }
+
+    public ushort Identifier { get; }
+
+    public string NameInCamelCase { get; }
+}
+
+// Order the tokens by identifier and fill gaps
+public static RntbdTokenDefinition[] OrderedAndFilled(List<RntbdTokenDefinition> tokens){
+    List<RntbdTokenDefinition> orderedTokens = tokens.OrderBy(x => x.Identifier).ToList();
+    var max = orderedTokens[orderedTokens.Count - 1].Identifier;
+    RntbdTokenDefinition[] filledList = new RntbdTokenDefinition[max + 1];
+    for (var i = 0; i < filledList.Length; i++)
+    {
+        filledList[i] = RntbdTokenDefinition.Empty((ushort)i);
+    }
+
+    for (var i = 0; i < orderedTokens.Count; i++)
+    {
+        filledList[orderedTokens[i].Identifier] = orderedTokens[i];
+    }
+
+    return filledList;
+}
+#>

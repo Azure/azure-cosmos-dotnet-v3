@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Documents
         private readonly Protocol protocol;
         private readonly RetryWithConfiguration retryWithConfiguration;
         private readonly bool disableRetryWithRetryPolicy;
+        private readonly bool enableBarrierEarlyYieldOn429;
         private TransportClient transportClient;
         private TransportClient fallbackTransportClient;
         private IConnectionStateListener connectionStateListener;
@@ -42,7 +43,8 @@ namespace Microsoft.Azure.Documents
             int rntbdPortPoolBindAttempts = 5,  // RNTBD
             int receiveHangDetectionTimeSeconds = 65,  // RNTBD
             int sendHangDetectionTimeSeconds = 10,  // RNTBD
-            bool disableRetryWithRetryPolicy = false, 
+            bool disableRetryWithRetryPolicy = false,
+            bool enableBarrierEarlyYieldOn429 = false,
             RetryWithConfiguration retryWithConfiguration = null,
             RntbdConstants.CallerId callerId = RntbdConstants.CallerId.Anonymous, // replicatedResourceClient
             bool enableTcpConnectionEndpointRediscovery = false,
@@ -55,7 +57,10 @@ namespace Microsoft.Azure.Documents
             Action<string, Exception> clientCertificateFailureHandler = null,
             Func<string, Task<System.Net.IPAddress>> dnsResolutionFunction = null,  // optional override
             DistributedTracingOptions distributedTracingOptions = null, // Distributed Tracing Configuration
-            IChaosInterceptor chaosInterceptor = null) // Fault Injection
+            IChaosInterceptor chaosInterceptor = null, // Fault Injection
+            Func<bool> useRntbdConnectionManagerResolver = null, // Federation-gated RNTBD connection-manager parallel path
+            Func<bool> rntbdConnectionManagerDebugLogsResolver = null, // Federation-gated verbose per-acquire telemetry for the connection manager
+            Func<int> rntbdConnectionManagerPoolSnapshotIntervalSecondsResolver = null) // PoolSnapshot heartbeat emit interval in seconds (<= 0 disables)
         {
             // <=0 means idle timeout is disabled.
             // valid value: >= 10 minutes
@@ -204,7 +209,7 @@ namespace Microsoft.Azure.Documents
 
                 StoreClientFactory.ValidateRntbdMaxConcurrentOpeningConnectionCount(ref rntbdMaxConcurrentOpeningConnectionCount);
 
-                this.transportClient = new Rntbd.TransportClient(
+                Rntbd.TransportClient.Options primaryRntbdOptions =
                     new Rntbd.TransportClient.Options(TimeSpan.FromSeconds(requestTimeoutInSeconds))
                     {
                         MaxChannels = maxRntbdChannels,
@@ -231,10 +236,32 @@ namespace Microsoft.Azure.Documents
                         ClientCertificateFailureHandler = clientCertificateFailureHandler,
                         DnsResolutionFunction = dnsResolutionFunction,
                         DistributedTracingOptions = distributedTracingOptions
-                    },
-                    chaosInterceptor);
+                    };
 
-                this.fallbackTransportClient = new Rntbd.TransportClient(
+                // Single fork point for the RNTBD connection-manager feature.
+                // Only callers that have wired the resolver (Compute Host today)
+                // get the parallel CMTransportClient; every other caller keeps the
+                // pristine Rntbd.TransportClient, so their code path is unchanged.
+                // CMTransportClient itself only diverges from the legacy path when
+                // the resolver returns true at request time
+                // (see CMTransportClient.GetChannel).
+                if (useRntbdConnectionManagerResolver != null)
+                {
+                    this.transportClient = new Rntbd.CMTransportClient(
+                        primaryRntbdOptions,
+                        useRntbdConnectionManagerResolver,
+                        rntbdConnectionManagerDebugLogsResolver,
+                        rntbdConnectionManagerPoolSnapshotIntervalSecondsResolver,
+                        chaosInterceptor);
+                }
+                else
+                {
+                    this.transportClient = new Rntbd.TransportClient(
+                        primaryRntbdOptions,
+                        chaosInterceptor);
+                }
+
+                Rntbd.TransportClient.Options fallbackRntbdOptions =
                     new Rntbd.TransportClient.Options(TimeSpan.FromSeconds(requestTimeoutInSeconds))
                     {
                         MaxChannels = maxRntbdChannels,
@@ -261,8 +288,23 @@ namespace Microsoft.Azure.Documents
                         ClientCertificateFailureHandler = clientCertificateFailureHandler,
                         DnsResolutionFunction = dnsResolutionFunction,
                         DistributedTracingOptions = distributedTracingOptions
-                    },
-                    chaosInterceptor);
+                    };
+
+                if (useRntbdConnectionManagerResolver != null)
+                {
+                    this.fallbackTransportClient = new Rntbd.CMTransportClient(
+                        fallbackRntbdOptions,
+                        useRntbdConnectionManagerResolver,
+                        rntbdConnectionManagerDebugLogsResolver,
+                        rntbdConnectionManagerPoolSnapshotIntervalSecondsResolver,
+                        chaosInterceptor);
+                }
+                else
+                {
+                    this.fallbackTransportClient = new Rntbd.TransportClient(
+                        fallbackRntbdOptions,
+                        chaosInterceptor);
+                }
             }
             else
             {
@@ -272,12 +314,14 @@ namespace Microsoft.Azure.Documents
             this.protocol = protocol;
             this.retryWithConfiguration = retryWithConfiguration;
             this.disableRetryWithRetryPolicy = disableRetryWithRetryPolicy;
+            this.enableBarrierEarlyYieldOn429 = enableBarrierEarlyYieldOn429;
         }
 
         private StoreClientFactory(
             Protocol protocol,
             RetryWithConfiguration retryWithConfiguration,
             bool disableRetryWithRetryPolicy,
+            bool enableBarrierEarlyYieldOn429,
             TransportClient transportClient,
             TransportClient fallbackTransportClient,
             IConnectionStateListener connectionStateListener)
@@ -285,6 +329,7 @@ namespace Microsoft.Azure.Documents
             this.protocol = protocol;
             this.retryWithConfiguration = retryWithConfiguration;
             this.disableRetryWithRetryPolicy = disableRetryWithRetryPolicy;
+            this.enableBarrierEarlyYieldOn429 = enableBarrierEarlyYieldOn429;
             this.transportClient = transportClient;
             this.fallbackTransportClient = fallbackTransportClient;
             this.connectionStateListener = connectionStateListener;
@@ -318,7 +363,8 @@ namespace Microsoft.Azure.Documents
         internal StoreClientFactory Clone(
             RetryWithConfiguration retryWithConfigurationOverride,
             bool? disableRetryWithOverride = null,
-            string accountIdentifier = null)
+            string accountIdentifier = null,
+            bool enableBarrierEarlyYieldOn429 = false)
         {
             // Fast-path: no overrides at all — reuse parent config
             // reference directly to avoid unnecessary allocation.
@@ -349,6 +395,7 @@ namespace Microsoft.Azure.Documents
                     this.protocol,
                     this.retryWithConfiguration,
                     disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
+                    enableBarrierEarlyYieldOn429: enableBarrierEarlyYieldOn429,
                     transportClient: this.transportClient,
                     fallbackTransportClient: this.fallbackTransportClient,
                     connectionStateListener: this.connectionStateListener);
@@ -386,6 +433,7 @@ namespace Microsoft.Azure.Documents
                 this.protocol,
                 merged,
                 disableRetryWithRetryPolicy: effectiveDisableRetryWith,
+                enableBarrierEarlyYieldOn429: enableBarrierEarlyYieldOn429,
                 transportClient: this.transportClient,
                 fallbackTransportClient: this.fallbackTransportClient,
                 connectionStateListener: this.connectionStateListener);
@@ -419,7 +467,8 @@ namespace Microsoft.Azure.Documents
             bool useMultipleWriteLocations = false,
             bool detectClientConnectivityIssues = false,
             bool enableReplicaValidation = false,
-            ISessionRetryOptions sessionRetryOptions = null)
+            ISessionRetryOptions sessionRetryOptions = null,
+            bool enableBarrierEarlyYieldOn429 = false)
         {
             this.ThrowIfDisposed();
             if (useFallbackClient && this.fallbackTransportClient != null)
@@ -439,7 +488,8 @@ namespace Microsoft.Azure.Documents
                 disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
                 retryWithConfiguration: this.retryWithConfiguration,
                 enableReplicaValidation: enableReplicaValidation,
-                sessionRetryOptions: sessionRetryOptions);
+                sessionRetryOptions: sessionRetryOptions,
+                enableBarrierEarlyYieldOn429: this.enableBarrierEarlyYieldOn429);
             }
 
             return new StoreClient(
@@ -456,7 +506,8 @@ namespace Microsoft.Azure.Documents
                 disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
                 retryWithConfiguration: this.retryWithConfiguration,
                 enableReplicaValidation: enableReplicaValidation,
-                sessionRetryOptions: sessionRetryOptions);
+                sessionRetryOptions: sessionRetryOptions,
+                enableBarrierEarlyYieldOn429: this.enableBarrierEarlyYieldOn429);
         }
 
         #region IDisposable

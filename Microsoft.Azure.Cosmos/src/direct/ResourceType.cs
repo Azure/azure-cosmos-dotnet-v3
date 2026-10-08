@@ -88,6 +88,8 @@ namespace Microsoft.Azure.Documents
         DistributedTransactionBatch = 168,
 
         HistoricalPartitionKeyRange = 173,
+        UserStringDictionary = 175,
+        AbacPolicy = 176,
 
         // These names make it unclear what they map to in ResourceType.
         Key = -2,

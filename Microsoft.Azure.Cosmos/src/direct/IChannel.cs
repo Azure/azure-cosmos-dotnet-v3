@@ -16,6 +16,17 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportRequestStats transportRequestStats);
 
         /// <summary>
+        /// Exceptionless variant of <see cref="RequestAsync"/>.
+        /// Returns a <see cref="Result{T}"/> instead of throwing on transport errors.
+        /// </summary>
+        Task<Res<StoreResponse>> TryRequestAsync(
+            DocumentServiceRequest request,
+            TransportAddressUri physicalAddress,
+            ResourceOperation resourceOperation,
+            Guid activityId,
+            TransportRequestStats transportRequestStats);
+
+        /// <summary>
         /// Opens the Rntbd context negotiation channel to
         /// the backend replica node.
         /// </summary>

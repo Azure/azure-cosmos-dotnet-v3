@@ -27,6 +27,19 @@ namespace Microsoft.Azure.Documents
             CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Invokes the replicated resource client and returns either the document service response
+        /// or the exception produced while processing the request.
+        /// </summary>
+        /// <param name="request">An instance of <see cref="DocumentServiceRequest"/> holding the request payload.</param>
+        /// <param name="retryPolicy">An instance of <see cref="IRetryPolicy"/> defining the retry policy.</param>
+        /// <param name="cancellationToken">An instance of the <see cref="CancellationToken"/>.</param>
+        /// <returns>A task containing the response or processing exception.</returns>
+        Task<Res<DocumentServiceResponse>> TryProcessMessageAsync(
+            DocumentServiceRequest request,
+            IRetryPolicy retryPolicy = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Establishes and Initializes the Rntbd Direct connection to the backend replica nodes for the given database name and container.
         /// </summary>
         /// <param name="databaseName">A string containing the name of the database.</param>

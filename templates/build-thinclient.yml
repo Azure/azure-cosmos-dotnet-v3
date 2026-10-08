@@ -6,7 +6,7 @@ parameters:
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
   EmulatorPipeline5Arguments: ' --filter "TestCategory=ThinClient" --verbosity normal '
-  EmulatorPipeline5CategoryListName: ' ThinClient '
+  EmulatorPipeline5CategoryListName: 'ThinClient'
   ThinClientStrongConsistencyString: ''
   ThinClientConnectionString: ''
   MultiRegionConnectionString : ''

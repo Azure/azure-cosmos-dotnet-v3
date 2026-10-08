@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System.Net;
     using System.Net.Http.Headers;
     using System.Text;
+    using System.Threading;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -22,9 +23,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly int times;
         private readonly TimeSpan delay;
         private readonly bool suppressServiceRequest;
-        private readonly double injectionRate;
         private readonly FaultInjectionApplicationContext applicationContext;
         private readonly GlobalEndpointManager globalEndpointManager;
+
+        private double injectionRate;
 
         /// <summary>
         /// Constructor for FaultInjectionServerErrorResultInternal
@@ -96,7 +98,17 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns></returns>
         public double GetInjectionRate()
         {
-            return this.injectionRate;
+            return Volatile.Read(ref this.injectionRate);
+        }
+
+        /// <summary>
+        /// Updates the percentage of how many times the rule will be applied. The new rate takes
+        /// effect on the next request evaluated by the rule.
+        /// </summary>
+        /// <param name="injectionRate">the new injection rate, in the range (0, 1].</param>
+        public void SetInjectionRate(double injectionRate)
+        {
+            Volatile.Write(ref this.injectionRate, injectionRate);
         }
 
         /// <summary>
@@ -283,7 +295,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 case FaultInjectionServerErrorType.AadTokenRevoked:
                     INameValueCollection aadTokenRevokedHeaders = args.RequestHeaders;
                     aadTokenRevokedHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
-                    aadTokenRevokedHeaders.Set(WFConstants.BackendHeaders.SubStatus, "5013");
+                    aadTokenRevokedHeaders.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.AadTokenRevoked).ToString());
+                    aadTokenRevokedHeaders.Set(
+                        HttpConstants.HttpHeaders.WwwAuthenticate,
+                        this.GenerateWwwAuthenticateForRevocation());
                     storeResponse = new StoreResponse()
                     {
                         Status = 401,
@@ -335,6 +350,31 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         WFConstants.BackendHeaders.SubStatus,
                         ((int)SubStatusCodes.ServerGenerated410).ToString(CultureInfo.InvariantCulture));
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+                    return httpResponse;
+
+                case FaultInjectionServerErrorType.RetryWith:
+
+                    httpResponse = new HttpResponseMessage
+                    {
+                        Version = isProxyCall
+                            ? new Version(2, 0)
+                            : new Version(1, 1),
+                        StatusCode = (HttpStatusCode)StatusCodes.RetryWith,
+                        Content = new FaultInjectionHttpContent(
+                            new MemoryStream(
+                                isProxyCall
+                                    ? FaultInjectionResponseEncoding.GetBytes(
+                                        GetProxyResponseMessageString((int)StatusCodes.RetryWith, (int)SubStatusCodes.Unknown, "RetryWith", ruleId))
+                                    : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: RetryWith, rule: {ruleId}"))),
+                    };
+
+                    this.SetHttpHeaders(httpResponse, headers, isProxyCall);
+
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.Unknown).ToString(CultureInfo.InvariantCulture));
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+
                     return httpResponse;
 
                 case FaultInjectionServerErrorType.TooManyRequests:
@@ -592,14 +632,17 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             new MemoryStream(
                                 isProxyCall
                                     ? FaultInjectionResponseEncoding.GetBytes(
-                                        GetProxyResponseMessageString((int)StatusCodes.Unauthorized, 5013, "AadTokenRevoked", ruleId))
+                                        GetProxyResponseMessageString((int)StatusCodes.Unauthorized, (int)SubStatusCodes.AadTokenRevoked, "AadTokenRevoked", ruleId))
                                     : FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: AadTokenRevoked, rule: {ruleId}"))),
                     };
                     this.SetHttpHeaders(httpResponse, headers, isProxyCall);
                     httpResponse.Headers.Add(
                         WFConstants.BackendHeaders.SubStatus,
-                        "5013");
+                        ((int)SubStatusCodes.AadTokenRevoked).ToString());
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+                    httpResponse.Headers.TryAddWithoutValidation(
+                        HttpConstants.HttpHeaders.WwwAuthenticate,
+                        this.GenerateWwwAuthenticateForRevocation());
                     return httpResponse;
                 default:
                     throw new ArgumentException($"Server error type {this.serverErrorType} is not supported");
@@ -639,6 +682,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             string faultInjectionRuleId)
         {
             return $"{{\"code\": \"{statusCode}:{subStatusCode}\",\"message\":\"Fault Injection Server Error: {message}, rule: {faultInjectionRuleId}\"}}";
+        }
+
+        private string GenerateWwwAuthenticateForRevocation()
+        {
+            long currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            string claimsJson = "{\"access_token\":{\"nbf\":{\"essential\":false,\"value\":\"" + currentTimestamp.ToString() + "\"}}}";
+            string base64Claims = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(claimsJson));
+
+            return "Bearer realm=\"\", authorization_uri=\"\", error=\"insufficient_claims\", claims=\"" + base64Claims + "\"";
         }
 
         internal class FaultInjectionHttpContent : HttpContent

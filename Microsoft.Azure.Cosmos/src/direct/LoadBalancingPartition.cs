@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents.Rntbd
@@ -198,6 +198,175 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                             while (this.openChannels.Count < targetChannels)
                             {                              
+                                this.OpenChannelAndIncrementCapacity(
+                                    activityId: activityId,
+                                    onChannelOpen: onChannelOpen);
+                            }
+                            Debug.Assert(
+                                this.capacity ==
+                                this.openChannels.Count *
+                                this.channelProperties.MaxRequestsPerChannel);
+                        }
+                        finally
+                        {
+                            this.capacityLock.ExitWriteLock();
+                        }
+                        if (channelsCreated > 0)
+                        {
+                            DefaultTrace.TraceInformation(
+                                "Opened {0} channels to server {1}",
+                                channelsCreated, this.serverUri);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                currentPending = Interlocked.Decrement(
+                    ref this.requestsPending);
+                Debug.Assert(currentPending >= 0);
+            }
+        }
+
+        /// <summary>
+        /// Exceptionless variant of <see cref="RequestAsync"/>.
+        /// Returns a <see cref="Result{T}"/> instead of throwing on transport errors.
+        /// </summary>
+        public async Task<Res<StoreResponse>> TryRequestAsync(
+            DocumentServiceRequest request,
+            TransportAddressUri physicalAddress,
+            ResourceOperation resourceOperation,
+            Guid activityId,
+            TransportRequestStats transportRequestStats)
+        {
+            int currentPending = Interlocked.Increment(
+                ref this.requestsPending);
+            transportRequestStats.NumberOfInflightRequestsToEndpoint = currentPending;
+            try
+            {
+                if (currentPending > this.maxCapacity)
+                {
+                    return Res.FromException<StoreResponse>(
+                        new RequestRateTooLargeException(
+                            string.Format(
+                                "All connections to {0} are fully utilized. Increase " +
+                                "the maximum number of connections or the maximum number " +
+                                "of requests per connection", this.serverUri),
+                            SubStatusCodes.ClientTcpChannelFull));
+                }
+
+                transportRequestStats.RecordState(TransportRequestStats.RequestStage.ChannelAcquisitionStarted);
+
+                while (true)
+                {
+                    LbChannelState channelState = null;
+                    bool addCapacity = false;
+
+                    uint sequenceNumber = this.sequenceGenerator.Next();
+
+                    this.capacityLock.EnterReadLock();
+                    try
+                    {
+                        transportRequestStats.NumberOfOpenConnectionsToEndpoint = this.openChannels.Count; // Lock has already been acquired for openChannels
+                        if (currentPending <= this.capacity)
+                        {
+                            // Enough capacity is available, pick a channel.
+                            int channelIndex = (int) (sequenceNumber % this.openChannels.Count);
+                            LbChannelState candidateChannel = this.openChannels[channelIndex];
+                            if (candidateChannel.Enter())
+                            {
+                                // Do not check the health status yet. Do it
+                                // without holding the capacity lock.
+                                channelState = candidateChannel;
+                            }
+                        }
+                        else
+                        {
+                            addCapacity = true;
+                        }
+                    }
+                    finally
+                    {
+                        this.capacityLock.ExitReadLock();
+                    }
+
+                    if (channelState != null)
+                    {
+                        bool healthy = false;
+                        try
+                        {
+                            healthy = channelState.DeepHealthy;
+                            if (healthy)
+                            {
+                                return await channelState.Channel.TryRequestAsync(
+                                    request,
+                                    physicalAddress,
+                                    resourceOperation,
+                                    activityId,
+                                    transportRequestStats);
+                            }
+
+                            // Unhealthy channel
+                            this.capacityLock.EnterWriteLock();
+                            try
+                            {
+                                // Other callers might have noticed the channel
+                                // fail at the same time. Do not assume that
+                                // this caller is the only one trying to remove
+                                // it.
+                                if (this.openChannels.Remove(channelState))
+                                {
+                                    this.capacity -= this.channelProperties.MaxRequestsPerChannel;
+                                }
+                                Debug.Assert(
+                                    this.capacity ==
+                                    this.openChannels.Count *
+                                    this.channelProperties.MaxRequestsPerChannel);
+                            }
+                            finally
+                            {
+                                this.capacityLock.ExitWriteLock();
+                            }
+                        }
+                        finally
+                        {
+                            bool lastCaller = channelState.Exit();
+                            if (lastCaller && !channelState.ShallowHealthy)
+                            {
+                                channelState.Dispose();
+                                DefaultTrace.TraceInformation(
+                                    "Closed unhealthy channel {0}",
+                                    channelState.Channel);
+                            }
+                        }
+                    }
+                    else if (addCapacity)
+                    {
+                        int targetCapacity = MathUtils.CeilingMultiple(
+                            currentPending,
+                            this.channelProperties.MaxRequestsPerChannel);
+                        Debug.Assert(targetCapacity % this.channelProperties.MaxRequestsPerChannel == 0);
+                        int targetChannels = targetCapacity / this.channelProperties.MaxRequestsPerChannel;
+                        int channelsCreated = 0;
+
+                        this.capacityLock.EnterWriteLock();
+                        try
+                        {
+                            if (this.openChannels.Count < targetChannels)
+                            {
+                                channelsCreated = targetChannels - this.openChannels.Count;
+                            }
+
+                            Func<Guid, Guid, Uri, Channel, Task> onChannelOpen = async (Guid createId, Guid connectionCorrelationId, Uri serverUri, Channel createdChannel) =>
+                            {
+                                if (this.chaosInterceptor != null)
+                                {
+                                    await this.chaosInterceptor.OnChannelOpenAsync(createId, connectionCorrelationId, serverUri, request, createdChannel);
+                                }
+                            };
+
+                            while (this.openChannels.Count < targetChannels)
+                            {
                                 this.OpenChannelAndIncrementCapacity(
                                     activityId: activityId,
                                     onChannelOpen: onChannelOpen);

@@ -72,6 +72,88 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// Exceptionless variant of <see cref="ResolveAllTransportAddressUriAsync"/>.
+        /// </summary>
+        internal async Task<Res<(IReadOnlyList<TransportAddressUri>, IReadOnlyList<string>)>> NonThrowingResolveAllTransportAddressUriAsync(
+            DocumentServiceRequest request,
+            bool includePrimary,
+            bool forceRefresh)
+        {
+            Res<PerProtocolPartitionAddressInformation> addressResult = await this.NonThrowingResolveAddressesAsync(request, forceRefresh);
+            if (!addressResult.IsSuccess)
+            {
+                return Res.FromException<(IReadOnlyList<TransportAddressUri>, IReadOnlyList<string>)>(addressResult.Exception);
+            }
+
+            PerProtocolPartitionAddressInformation partitionPerProtocolAddress = addressResult.Value;
+            return includePrimary
+                ? Res.Success<(IReadOnlyList<TransportAddressUri>, IReadOnlyList<string>)>((partitionPerProtocolAddress.ReplicaTransportAddressUris, partitionPerProtocolAddress.ReplicaTransportAddressUrisHealthState))
+                : Res.Success<(IReadOnlyList<TransportAddressUri>, IReadOnlyList<string>)>((partitionPerProtocolAddress.NonPrimaryReplicaTransportAddressUris, partitionPerProtocolAddress.ReplicaTransportAddressUrisHealthState));
+        }
+
+        /// <summary>
+        /// Exceptionless variant of <see cref="ResolvePrimaryTransportAddressUriAsync"/>.
+        /// </summary>
+        internal async Task<Res<TransportAddressUri>> NonThrowingResolvePrimaryTransportAddressUriAsync(
+            DocumentServiceRequest request,
+            bool forceAddressRefresh)
+        {
+            Res<PerProtocolPartitionAddressInformation> addressResult = await this.NonThrowingResolveAddressesAsync(request, forceAddressRefresh);
+            if (!addressResult.IsSuccess)
+            {
+                return Res.FromException<TransportAddressUri>(addressResult.Exception);
+            }
+
+            return addressResult.Value.TryGetPrimaryAddressUri(request);
+        }
+
+        /// <summary>
+        /// Exceptionless variant of <see cref="ResolveAddressesAsync"/>.
+        /// Routes through the opt-in <see cref="INonThrowingAddressResolver"/> when the
+        /// configured resolver implements it and
+        /// <see cref="DocumentServiceRequest.UseExceptionlessAddressResolution"/> is set,
+        /// otherwise wraps the throwing <see cref="IAddressResolver.ResolveAsync"/>.
+        /// </summary>
+        /// <remarks>
+        /// This is the single entry point into the exceptionless address-resolution
+        /// subtree: the address caches, collection cache and partition-key-range cache
+        /// are reached only through <see cref="INonThrowingAddressResolver.NonThrowingResolveAsync"/>.
+        /// Gating here therefore disables that whole subtree, which lets the
+        /// address-resolution work roll out independently of the exceptionless
+        /// transport path. When the flag is off the original throwing resolver runs and
+        /// its failure is captured here, so behaviour matches the pre-existing
+        /// exceptionless transport path exactly.
+        /// </remarks>
+        internal async Task<Res<PerProtocolPartitionAddressInformation>> NonThrowingResolveAddressesAsync(
+            DocumentServiceRequest request,
+            bool forceAddressRefresh)
+        {
+            Res<PartitionAddressInformation> partitionAddressResult =
+                request.UseExceptionlessAddressResolution
+                    && this.addressResolver is INonThrowingAddressResolver nonThrowingResolver
+                    ? await nonThrowingResolver.NonThrowingResolveAsync(request, forceAddressRefresh, CancellationToken.None)
+                    : await Res.Wrap(this.addressResolver.ResolveAsync(request, forceAddressRefresh, CancellationToken.None));
+
+            if (!partitionAddressResult.IsSuccess)
+            {
+                return Res.FromException<PerProtocolPartitionAddressInformation>(partitionAddressResult.Exception);
+            }
+
+            PartitionAddressInformation partitionAddressInformation = partitionAddressResult.Value;
+            request.RequestContext.ResolvedPartitionTargetReplicaSetSize = partitionAddressInformation.PartitionTargetReplicaSetSize;
+
+            PerProtocolPartitionAddressInformation perProtocolAddresses = partitionAddressInformation.Get(this.protocol);
+
+            // Use the per-protocol replica count rather than AllAddresses.Count.
+            // AllAddresses includes addresses for ALL protocols (e.g. TCP + HTTPS),
+            // which inflates the count on the gateway and prevents the CRSS gate
+            // from detecting scale-up events.
+            request.RequestContext.ResolvedReplicaAddressCountPerProtocol = perProtocolAddresses.ReplicaTransportAddressUris.Count;
+
+            return Res.Success(perProtocolAddresses);
+        }
+
+        /// <summary>
         /// Triggers a background address refresh if the backend-reported
         /// CurrentReplicaSetSize exceeds both the resolved address count
         /// and the per-partition target, indicating a scale-up from a

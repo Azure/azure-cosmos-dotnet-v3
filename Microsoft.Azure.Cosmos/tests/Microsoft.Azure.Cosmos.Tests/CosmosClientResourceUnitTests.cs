@@ -182,6 +182,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 mockClient.Object,
                 new MockDocumentClient(),
                 new CosmosClientOptions() { AllowBulkExecution = allowBulkExecution });
-        } 
+        }
     }
 }

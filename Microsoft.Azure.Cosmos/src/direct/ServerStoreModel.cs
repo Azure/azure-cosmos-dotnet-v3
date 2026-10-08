@@ -120,6 +120,67 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        public Task<Res<DocumentServiceResponse>> TryProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (this.DefaultReplicaIndex.HasValue)
+            {
+                request.DefaultReplicaIndex = this.DefaultReplicaIndex;
+            }
+
+            string requestConsistencyLevelHeaderValue = request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel];
+            string requestReadConsistencyStrategyHeaderValue = request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy];
+
+            request.RequestContext.OriginalRequestConsistencyLevel = null;
+            request.RequestContext.ReadConsistencyStrategy = null;
+
+            if (!string.IsNullOrEmpty(requestReadConsistencyStrategyHeaderValue)
+                && !string.Equals(requestReadConsistencyStrategyHeaderValue, "Default", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!Enum.TryParse<ReadConsistencyStrategy>(requestReadConsistencyStrategyHeaderValue, ignoreCase: true, out ReadConsistencyStrategy requestReadConsistencyStrategy)
+                    || !Enum.IsDefined(typeof(ReadConsistencyStrategy), requestReadConsistencyStrategy))
+                {
+                    return Res.TaskFromException<DocumentServiceResponse>(
+                        new BadRequestException(
+                            string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.InvalidHeaderValue,
+                            requestReadConsistencyStrategyHeaderValue,
+                            HttpConstants.HttpHeaders.ReadConsistencyStrategy)));
+                }
+
+                request.RequestContext.ReadConsistencyStrategy = requestReadConsistencyStrategy;
+                requestConsistencyLevelHeaderValue = null;
+            }
+
+            if (!string.IsNullOrEmpty(requestConsistencyLevelHeaderValue))
+            {
+                if (!Enum.TryParse<ConsistencyLevel>(requestConsistencyLevelHeaderValue, out ConsistencyLevel requestConsistencyLevel))
+                {
+                    return Res.TaskFromException<DocumentServiceResponse>(
+                        new BadRequestException(
+                            string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.InvalidHeaderValue,
+                            requestConsistencyLevelHeaderValue,
+                            HttpConstants.HttpHeaders.ConsistencyLevel)));
+                }
+
+                request.RequestContext.OriginalRequestConsistencyLevel = requestConsistencyLevel;
+            }
+
+            if (ReplicatedResourceClient.IsMasterResource(request.ResourceType))
+            {
+                request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel] = ConsistencyLevel.Strong.ToString();
+            }
+
+            this.sendingRequest?.Invoke(this, new SendingRequestEventArgs(request));
+
+            if (this.receivedResponse != null)
+            {
+                return this.TryProcessMessageWithReceivedResponseDelegateAsync(request, cancellationToken);
+            }
+
+            return this.storeClient.TryProcessMessageAsync(request, cancellationToken: cancellationToken);
+        }
+
         /// <inheritdoc/>>
         public async Task OpenConnectionsToAllReplicasAsync(
             string databaseName,
@@ -139,6 +200,19 @@ namespace Microsoft.Azure.Documents
             DocumentServiceResponse response = await this.storeClient.ProcessMessageAsync(request, cancellationToken);
             this.receivedResponse?.Invoke(this, new ReceivedResponseEventArgs(request, response));
             return response;
+        }
+
+        private async Task<Res<DocumentServiceResponse>> TryProcessMessageWithReceivedResponseDelegateAsync(
+            DocumentServiceRequest request,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Res<DocumentServiceResponse> result = await this.storeClient.TryProcessMessageAsync(request, cancellationToken: cancellationToken);
+            if (result.IsSuccess)
+            {
+                this.receivedResponse?.Invoke(this, new ReceivedResponseEventArgs(request, result.Value));
+            }
+
+            return result;
         }
 
         public void Dispose()

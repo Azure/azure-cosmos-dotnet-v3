@@ -53,5 +53,11 @@ namespace Microsoft.Azure.Documents
         /// Partitioned SystemDocument
         /// </summary>
         EmbeddingGeneratorLeaseStoreInitDocument,
+
+        /// <summary>
+        /// Set the SystemDocumentType as ContainerBuilderHeartbeatDocument
+        /// Partitioned SystemDocument
+        /// </summary>
+        ContainerBuilderHeartbeatDocument,
     }
 }

@@ -292,6 +292,13 @@ namespace Microsoft.Azure.Documents
                         isNameBased = true;
                     }
                 }
+                else if (firstSegment.Equals(Paths.AbacPoliciesPathSegment, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!ResourceId.TryParse(segments[1], out rid) || !rid.IsAbacPolicyId)
+                    {
+                        isNameBased = true;
+                    }
+                }
 
                 if (isNameBased)
                 {
@@ -603,6 +610,9 @@ namespace Microsoft.Azure.Documents
                 case Paths.HistoricalPartitionKeyRangesPathSegment:
                     return ResourceType.HistoricalPartitionKeyRange;
 
+                case Paths.UserStringDictionariesPathSegment:
+                    return ResourceType.UserStringDictionary;
+
                 case Paths.MediaPathSegment:
                     return ResourceType.Media;
 
@@ -632,6 +642,9 @@ namespace Microsoft.Azure.Documents
 
                 case Paths.AzureRbacPathSegment:
                     return ResourceType.AzureRbac;
+
+                case Paths.AbacPoliciesPathSegment:
+                    return ResourceType.AbacPolicy;
             }
 
             string errorMessage = string.Format(CultureInfo.CurrentUICulture, RMResources.UnknownResourceType, resourcePathSegment);
@@ -692,6 +705,9 @@ namespace Microsoft.Azure.Documents
                 case ResourceType.HistoricalPartitionKeyRange:
                     return Paths.HistoricalPartitionKeyRangesPathSegment;
 
+                case ResourceType.UserStringDictionary:
+                    return Paths.UserStringDictionariesPathSegment;
+
                 case ResourceType.Media:
                     return Paths.Medias_Root;
 
@@ -727,6 +743,9 @@ namespace Microsoft.Azure.Documents
 
                 case ResourceType.AzureRbac:
                     return Paths.AzureRbacPathSegment;
+
+                case ResourceType.AbacPolicy:
+                    return Paths.AbacPoliciesPathSegment;
                 
                 case ResourceType.DistributedTransactionBatch:
                     return Paths.DistributedTransactionBatchSegment;
@@ -925,6 +944,8 @@ namespace Microsoft.Azure.Documents
                 ResourceType.EncryptionScope => Paths.EncryptionScopesPathSegment + "/" + resourceName,
                 ResourceType.AzureRbac => Paths.AzureRbacPathSegment + "/" + resourceName,
                 ResourceType.HistoricalPartitionKeyRange => Paths.HistoricalPartitionKeyRangesPathSegment + "/" + resourceName,
+                ResourceType.AbacPolicy => Paths.AbacPoliciesPathSegment + "/" + resourceName,
+                ResourceType.UserStringDictionary => Paths.UserStringDictionariesPathSegment + "/" + resourceName,
                 _ => null
             };
         }
@@ -948,7 +969,8 @@ namespace Microsoft.Azure.Documents
                 resourceType != ResourceType.RoleAssignment &&
                 resourceType != ResourceType.InteropUser &&
                 resourceType != ResourceType.AuthPolicyElement &&
-                resourceType != ResourceType.AzureRbac)
+                resourceType != ResourceType.AzureRbac &&
+                resourceType != ResourceType.AbacPolicy)
             {
                 string errorMessage = string.Format(CultureInfo.InvariantCulture, RMResources.UnexpectedResourceType, resourceType);
                 throw new BadRequestException(errorMessage);
@@ -1049,6 +1071,10 @@ namespace Microsoft.Azure.Documents
             {
                 return resourceFullName + "/" + Paths.HistoricalPartitionKeyRangesPathSegment;
             }
+            else if (resourceType == ResourceType.UserStringDictionary)
+            {
+                return resourceFullName + "/" + Paths.UserStringDictionariesPathSegment;
+            }
             else if (resourceType == ResourceType.Schema)
             {
                 resourceTypeToValidate = ResourceType.Collection;
@@ -1088,6 +1114,10 @@ namespace Microsoft.Azure.Documents
             {
                 return Paths.AzureRbacPathSegment;
             }
+            else if (resourceType == ResourceType.AbacPolicy)
+            {
+                return Paths.AbacPoliciesPathSegment;
+            }
             else
             {
                 string errorMessage = string.Format(CultureInfo.CurrentUICulture, RMResources.UnknownResourceType, resourceType.ToString());
@@ -1119,7 +1149,8 @@ namespace Microsoft.Azure.Documents
                 resourceType != ResourceType.RoleDefinition &&
                 resourceType != ResourceType.InteropUser &&
                 resourceType != ResourceType.AuthPolicyElement &&
-                resourceType != ResourceType.AzureRbac
+                resourceType != ResourceType.AzureRbac &&
+                resourceType != ResourceType.AbacPolicy
 #if !COSMOSCLIENT
                 && resourceType != ResourceType.MasterPartition &&
                 resourceType != ResourceType.ServerPartition &&
@@ -1273,6 +1304,23 @@ namespace Microsoft.Azure.Documents
                 return Paths.DatabasesPathSegment + "/" + historicalPartitionKeyRangeId.DatabaseId.ToString() + "/" +
                     Paths.CollectionsPathSegment + "/" + historicalPartitionKeyRangeId.DocumentCollectionId.ToString() + "/" +
                     Paths.HistoricalPartitionKeyRangesPathSegment + "/" + historicalPartitionKeyRangeId.ToString();
+            }
+            else if (isFeed && resourceType == ResourceType.UserStringDictionary)
+            {
+                ResourceId documentCollectionId = ResourceId.Parse(ownerOrResourceId);
+
+                return
+                    Paths.DatabasesPathSegment + "/" + documentCollectionId.DatabaseId.ToString() + "/" +
+                    Paths.CollectionsPathSegment + "/" + documentCollectionId.DocumentCollectionId.ToString() + "/" +
+                    Paths.UserStringDictionariesPathSegment;
+            }
+            else if (resourceType == ResourceType.UserStringDictionary)
+            {
+                ResourceId userStringDictionaryId = ResourceId.Parse(ownerOrResourceId);
+
+                return Paths.DatabasesPathSegment + "/" + userStringDictionaryId.DatabaseId.ToString() + "/" +
+                    Paths.CollectionsPathSegment + "/" + userStringDictionaryId.DocumentCollectionId.ToString() + "/" +
+                    Paths.UserStringDictionariesPathSegment + "/" + userStringDictionaryId.ToString();
             }
             else if (isFeed && resourceType == ResourceType.Attachment)
             {
@@ -1483,6 +1531,14 @@ namespace Microsoft.Azure.Documents
             {
                 return Paths.AzureRbacPathSegment + "/" + ownerOrResourceId.ToString();
             }
+            else if (isFeed && resourceType == ResourceType.AbacPolicy)
+            {
+                return Paths.AbacPoliciesPathSegment;
+            }
+            else if (resourceType == ResourceType.AbacPolicy)
+            {
+                return Paths.AbacPoliciesPathSegment + "/" + ownerOrResourceId.ToString();
+            }
             else if (resourceType == ResourceType.DistributedTransactionBatch)
             {
                 return Paths.OperationsPathSegment + "/" + Paths.Operations_Dtc;
@@ -1643,6 +1699,7 @@ namespace Microsoft.Azure.Documents
                    resourcePathSegment.Equals(Paths.TopologyPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.PartitionKeyRangesPathSegment, StringComparison.OrdinalIgnoreCase) ||
                     resourcePathSegment.Equals(Paths.HistoricalPartitionKeyRangesPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                    resourcePathSegment.Equals(Paths.UserStringDictionariesPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.PartitionKeyRangePreSplitSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.PartitionKeyRangePostSplitSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.SchemasPathSegment, StringComparison.OrdinalIgnoreCase) ||
@@ -1661,6 +1718,7 @@ namespace Microsoft.Azure.Documents
                    resourcePathSegment.Equals(Paths.EncryptionScopesPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.RetriableWriteCachedResponsePathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.AzureRbacPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.AbacPoliciesPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.DistributedTransactionBatchSegment, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -1854,6 +1912,12 @@ namespace Microsoft.Azure.Documents
                 return segments.ToArray();
             }
 
+            if (resourceType == ResourceType.AbacPolicy)
+            {
+                segments.Add(Paths.AbacPoliciesPathSegment);
+                return segments.ToArray();
+            }
+
             segments.Add(Paths.DatabasesPathSegment);
 
             if (resourceType == ResourceType.Permission ||
@@ -1881,6 +1945,7 @@ namespace Microsoft.Azure.Documents
                 resourceType == ResourceType.Document ||
                 resourceType == ResourceType.PartitionKeyRange ||
                 resourceType == ResourceType.HistoricalPartitionKeyRange ||
+                resourceType == ResourceType.UserStringDictionary ||
                 resourceType == ResourceType.Schema ||
                 resourceType == ResourceType.PartitionedSystemDocument ||
                 resourceType == ResourceType.SystemDocument)
@@ -1909,6 +1974,10 @@ namespace Microsoft.Azure.Documents
                 else if (resourceType == ResourceType.HistoricalPartitionKeyRange)
                 {
                     segments.Add(Paths.HistoricalPartitionKeyRangesPathSegment);
+                }
+                else if (resourceType == ResourceType.UserStringDictionary)
+                {
+                    segments.Add(Paths.UserStringDictionariesPathSegment);
                 }
                 else if(resourceType == ResourceType.PartitionedSystemDocument)
                 {
@@ -2022,6 +2091,10 @@ namespace Microsoft.Azure.Documents
             if (resourceType == ResourceType.AzureRbac)
             {
                 return PathsHelper.ValidateAzureRbacId(resourceId);
+            }
+            if (resourceType == ResourceType.AbacPolicy)
+            {
+                return PathsHelper.ValidateAbacPolicyId(resourceId);
             }
             else
             {
@@ -2162,6 +2235,12 @@ namespace Microsoft.Azure.Documents
         {
             ResourceId resourceId = null;
             return ResourceId.TryParse(resourceIdString, out resourceId) && resourceId.AzureRbac > 0;
+        }
+
+        internal static bool ValidateAbacPolicyId(string resourceIdString)
+        {
+            ResourceId resourceId = null;
+            return ResourceId.TryParse(resourceIdString, out resourceId) && resourceId.AbacPolicy > 0;
         }
 
         internal static bool IsPublicResource(Type resourceType)

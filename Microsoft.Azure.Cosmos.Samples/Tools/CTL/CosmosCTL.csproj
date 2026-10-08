@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" ExcludeAssets="compile" />
     <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" />
   </ItemGroup>
 	

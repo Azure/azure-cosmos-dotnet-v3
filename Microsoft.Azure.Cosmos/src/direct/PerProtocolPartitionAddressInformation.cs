@@ -105,6 +105,40 @@ namespace Microsoft.Azure.Documents
             return primaryReplicaAddress;
         }
 
+        /// <summary>
+        /// Exceptionless variant of <see cref="GetPrimaryAddressUri"/>. Returns the
+        /// <see cref="GoneException"/> as a <see cref="Res{T}"/> failure instead of throwing, so
+        /// exceptionless callers do not pay for a throw on a path that is hit whenever the
+        /// resolved addresses are stale.
+        /// </summary>
+        public Res<TransportAddressUri> TryGetPrimaryAddressUri(DocumentServiceRequest request)
+        {
+            TransportAddressUri primaryReplicaAddress = null;
+            // if replicaIndex is not set, or if replicaIndex is 0, we return primary address.
+            if (!request.DefaultReplicaIndex.HasValue || request.DefaultReplicaIndex.Value == 0)
+            {
+                primaryReplicaAddress = this.PrimaryReplicaTransportAddressUri;
+            }
+            else
+            {
+                if (request.DefaultReplicaIndex.Value > 0 && request.DefaultReplicaIndex.Value < this.ReplicaUris.Count)
+                {
+                    primaryReplicaAddress = this.ReplicaTransportAddressUris[(int)request.DefaultReplicaIndex.Value];
+                }
+            }
+
+            if (primaryReplicaAddress == null)
+            {
+                // Primary endpoint (of the desired protocol) was not found.
+                return Res.FromException<TransportAddressUri>(
+                    new GoneException(string.Format(CultureInfo.CurrentUICulture, "The requested resource is no longer available at the server. Returned addresses are {0}",
+                                                    string.Join(",", this.ReplicaAddresses.Select(address => address.PhysicalUri).ToList())),
+                                      SubStatusCodes.ServerGenerated410));
+            }
+
+            return Res.Success(primaryReplicaAddress);
+        }
+
         public Protocol Protocol { get; }
 
         public IReadOnlyList<TransportAddressUri> NonPrimaryReplicaTransportAddressUris { get; }

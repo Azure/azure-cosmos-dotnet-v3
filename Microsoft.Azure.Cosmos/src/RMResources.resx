@@ -666,6 +666,9 @@
   <data name="UnsupportedV1OfferVersion" xml:space="preserve">
     <value>The Offer Version 'V1' is not supported since the associated collection is already a partitioned collection. Please use offer version 'V2'.</value>
   </data>
+  <data name="V1OfferCreationBlocked" xml:space="preserve">
+    <value>Creation of V1 offers is no longer supported. Please specify offer throughput using the 'x-ms-offer-throughput' header or autopilot settings to create a V2 offer.</value>
+  </data>
   <data name="UnSupportedOfferThroughputWithTwoRanges" xml:space="preserve">
     <value>The value of offer throughput specified is invalid. Please specify a value between {0} and {1}, or between {2} and {3} inclusive in increments of {4}. Please contact https://azure.microsoft.com/support to request limit increases beyond {3} RU/s.</value>
   </data>
@@ -898,6 +901,24 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="InvalidOfferIsAutoScaleEnabled" xml:space="preserve">
     <value>The value of offer IsAutoScaleEnabled specified is invalid. Please specify a boolean value.</value>
   </data>
+  <data name="InvalidOfferInfrequentAccess" xml:space="preserve">
+    <value>The value of the x-ms-cosmos-offer-infrequent-access header is invalid. Please specify a boolean value.</value>
+  </data>
+  <data name="InfrequentAccessNotSupportedForApi" xml:space="preserve">
+    <value>Infrequent Access is only supported for the Core (SQL) API.</value>
+  </data>
+  <data name="InfrequentAccessNotSupportedForServerless" xml:space="preserve">
+    <value>Infrequent Access is not supported on serverless accounts.</value>
+  </data>
+  <data name="InfrequentAccessCapabilityRequired" xml:space="preserve">
+    <value>Infrequent Access requires the EnableInfrequentAccess capability on account {0}.</value>
+  </data>
+  <data name="InfrequentAccessNotSupportedOnGlobalSecondaryIndex" xml:space="preserve">
+    <value>Infrequent Access cannot be set directly on a global secondary index. Set it on the source container.</value>
+  </data>
+  <data name="InfrequentAccessNotSupportedOnSharedThroughputDatabase" xml:space="preserve">
+    <value>Infrequent Access is not supported on shared-throughput database offers.</value>
+  </data>
   <data name="InvalidOfferAutoScaleMode" xml:space="preserve">
     <value>The value of OfferAutoScaleMode specified is invalid. Please specify a valid auto scale mode.</value>
   </data>
@@ -1081,6 +1102,9 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="EnableMultipleWriteLocationsNotModified" xml:space="preserve">
     <value>This account already has EnableMultipleWriteLocations flag set to {0}".</value>
   </data>
+  <data name="EnableAllVersionsAndDeletesChangeFeedNotModified" xml:space="preserve">
+    <value>This account already has EnableAllVersionsAndDeletesChangeFeed flag set to {0}.</value>
+  </data>
   <data name="InvalidGremlinPartitionKey" xml:space="preserve">
     <value>Partition key path {0} is invalid for Gremlin API. The path cannot be '/id', '/label' or a nested path such as '/key/path'.</value>
   </data>
@@ -1095,6 +1119,9 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="CollectionCreateInProgress" xml:space="preserve">
     <value>Collection is not yet available for read. Please retry in some time.</value>
+  </data>
+  <data name="CollectionReplaceTransactionInProgress" xml:space="preserve">
+    <value>A previous collection replace transaction is still in progress for this collection. Please retry after the previous transaction completes. More info: https://aka.ms/cosmosdb-collectionreplaceracewithAppendingID</value>
   </data>
   <data name="FreeTierAppliedBefore" xml:space="preserve">
     <value>Free tier has already been applied to another Azure Cosmos DB account in this subscription. To apply free tier to this account, you can select another subscription for this account or delete the existing free tier account. You can have up to one free tier account per subscription.</value>
@@ -1420,16 +1447,16 @@ If you would like to serve this query through continuation tokens, then please r
     <value>Enable OnlyColdStorageContainersInAccount V1 and EnableMaterializedViews are not supported together on GlobalDatabaseAccount.</value>
   </data>
   <data name="EnableOnlyColdStorageContainersInAccountV1AndEnableEmbeddingGeneratorNotSupported" xml:space="preserve">
-    <value>Embedding Generator cannot be enabled on this account. Embedding Generator requires continuous backups with point-in-time restore (PITR) and full fidelity change feed, and is not compatible with GSI.</value>
+    <value>Enable OnlyColdStorageContainersInAccount V1 and Integrated Embeddings are not supported together on GlobalDatabaseAccount.</value>
   </data>
-  <data name="EnablingEmbeddingGeneratorOnNonPITRNonFullFidelityChangeFeedEnabledAccountNotAllowed" xml:space="preserve">
-    <value>Embedding Generator cannot be enabled. This feature requires continuous backups with point-in-time restore (PITR) and full fidelity change feed to be enabled on your account. Additionally, Embedding Generator is not compatible with GSI. Please enable PITR and FullFidelityChangeFeed features and try again.</value>
+  <data name="EnablingEmbeddingGeneratorOnNonPITRAccountNotAllowed" xml:space="preserve">
+    <value>Integrated Embeddings cannot be enabled. This feature requires Continuous Backups (and All Versions and Deletes Change Feed) features to be enabled on your account. Please enable both features and try again.</value>
   </data>
-  <data name="EnablingBothEmbeddingGeneratorAndMaterializedViewsNotSupported" xml:space="preserve">
-    <value>Embedding Generator cannot be enabled together with GSI. Embedding Generator requires continuous backups with point-in-time restore (PITR) and full fidelity change feed, and is not compatible with GSI.</value>
+  <data name="EnablingEmbeddingGeneratorOnNonFFCFWithPITRAccountNotAllowed" xml:space="preserve">
+    <value>Integrated Embeddings cannot be enabled. This feature requires All Versions and Deletes Change Feed (and Continuous Backups) features to be enabled on your account. Please enable both features and try again.</value>
   </data>
   <data name="DisableEmbeddingGeneratorNotAllowed" xml:space="preserve">
-    <value>Embedding Generator cannot be disabled once it is enabled on an account.</value>
+    <value>Integrated Embeddings cannot be disabled once it is enabled on an account.</value>
   </data>
   <data name="InvalidFederationCapUncapMetadataSource" xml:space="preserve">
     <value>The CapUncapMetadata source '{0}' is invalid.</value>

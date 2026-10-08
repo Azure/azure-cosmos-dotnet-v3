@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Documents
     using System.Net.Http;
     using System.Text;
 
-    internal sealed class ClientSideRequestStatistics : IClientSideRequestStatistics
+    internal sealed class ClientSideRequestStatistics : IClientSideRequestStatisticsExtension
     {
         private static readonly SystemUsageMonitor systemUsageMonitor;
         private static readonly SystemUsageRecorder systemRecorder;
@@ -20,6 +20,15 @@ namespace Microsoft.Azure.Documents
         private const string EnableCpuMonitorConfig = "CosmosDbEnableCpuMonitor";
         private const int MaxSupplementalRequestsForToString = 10;
         private static bool enableCpuMonitorFlag;
+
+        // These collections are read (e.g. during diagnostics serialization) on a different thread than the
+        // store-reader paths that mutate them under cross-region request hedging. All access is guarded by
+        // replicaAndRegionStatsLock; the getters return a defensive snapshot taken under the lock so concurrent
+        // readers never enumerate a collection that a writer is mutating.
+        private readonly object replicaAndRegionStatsLock = new object();
+        private readonly List<TransportAddressUri> contactedReplicas = new List<TransportAddressUri>();
+        private readonly HashSet<TransportAddressUri> failedReplicas = new HashSet<TransportAddressUri>();
+        private readonly HashSet<(string, Uri)> regionsContacted = new HashSet<(string, Uri)>();
 
         private DateTime requestStartTime;
         private DateTime? requestEndTime;
@@ -71,17 +80,51 @@ namespace Microsoft.Azure.Documents
             this.responseStatisticsList = new List<StoreResponseStatistics>();
             this.supplementalResponseStatisticsList = new List<StoreResponseStatistics>();
             this.addressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
-            this.ContactedReplicas = new List<TransportAddressUri>();
-            this.FailedReplicas = new HashSet<TransportAddressUri>();
-            this.RegionsContacted = new HashSet<(string, Uri)>();
             this.httpResponseStatisticsList = new Lazy<List<HttpResponseStatistics>>();
         }
 
-        public List<TransportAddressUri> ContactedReplicas { get; set; }
+        // The interface exposes the concrete collection types (kept unchanged so alternate implementations,
+        // e.g. the V3 diagnostics datum, are not forced to change). The getters return a defensive snapshot
+        // taken under replicaAndRegionStatsLock so concurrent readers never enumerate a collection that a
+        // writer (via the Append*/Record* methods below) is mutating. Callers that need to mutate must use
+        // those methods rather than the returned snapshot.
+        public List<TransportAddressUri> ContactedReplicas
+        {
+            get
+            {
+                lock (this.replicaAndRegionStatsLock)
+                {
+                    return new List<TransportAddressUri>(this.contactedReplicas);
+                }
+            }
 
-        public HashSet<TransportAddressUri> FailedReplicas { get; private set; }
+            set
+            {
+                this.RecordContactedReplicas(value);
+            }
+        }
 
-        public HashSet<(string, Uri)> RegionsContacted { get; private set; }
+        public HashSet<TransportAddressUri> FailedReplicas
+        {
+            get
+            {
+                lock (this.replicaAndRegionStatsLock)
+                {
+                    return new HashSet<TransportAddressUri>(this.failedReplicas);
+                }
+            }
+        }
+
+        public HashSet<(string, Uri)> RegionsContacted
+        {
+            get
+            {
+                lock (this.replicaAndRegionStatsLock)
+                {
+                    return new HashSet<(string, Uri)>(this.regionsContacted);
+                }
+            }
+        }
 
 
         public TimeSpan? RequestLatency
@@ -155,7 +198,7 @@ namespace Microsoft.Azure.Documents
             {
                 if (locationEndpoint != null)
                 {
-                    this.RegionsContacted.Add((regionName, locationEndpoint));
+                    this.AppendRegionContacted(regionName, locationEndpoint);
                 }
 
                 if (responseStatistics.RequestOperationType == OperationType.Head || responseStatistics.RequestOperationType == OperationType.HeadFeed)
@@ -176,6 +219,62 @@ namespace Microsoft.Azure.Documents
             DateTime endTimeUtc)
         {
             this.UpdateRequestEndTime(endTimeUtc);
+        }
+
+        // Null/default arguments are intentionally accepted by the single-item Append* methods below to
+        // preserve the prior behavior of the raw collections (which allowed Add(default)); callers are
+        // responsible for any null filtering they require.
+        public void AppendContactedReplica(TransportAddressUri contactedReplica)
+        {
+            lock (this.replicaAndRegionStatsLock)
+            {
+                this.contactedReplicas.Add(contactedReplica);
+            }
+        }
+
+        public void AppendContactedReplicas(IReadOnlyList<TransportAddressUri> contactedReplicas)
+        {
+            if (contactedReplicas == null)
+            {
+                return;
+            }
+
+            // Append the whole batch under a single lock acquisition (one potential list resize).
+            lock (this.replicaAndRegionStatsLock)
+            {
+                this.contactedReplicas.AddRange(contactedReplicas);
+            }
+        }
+
+        public void RecordContactedReplicas(IReadOnlyList<TransportAddressUri> contactedReplicas)
+        {
+            if (contactedReplicas == null)
+            {
+                return;
+            }
+
+            // The write path replaces the full replica list before the request is issued.
+            lock (this.replicaAndRegionStatsLock)
+            {
+                this.contactedReplicas.Clear();
+                this.contactedReplicas.AddRange(contactedReplicas);
+            }
+        }
+
+        public void AppendFailedReplica(TransportAddressUri failedReplica)
+        {
+            lock (this.replicaAndRegionStatsLock)
+            {
+                this.failedReplicas.Add(failedReplica);
+            }
+        }
+
+        public void AppendRegionContacted(string regionName, Uri locationEndpoint)
+        {
+            lock (this.replicaAndRegionStatsLock)
+            {
+                this.regionsContacted.Add((regionName, locationEndpoint));
+            }
         }
 
         public string RecordAddressResolutionStart(Uri targetEndpoint)
@@ -534,4 +633,3 @@ namespace Microsoft.Azure.Documents
         }
     }
 }
-

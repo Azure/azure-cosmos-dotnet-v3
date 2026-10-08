@@ -19,7 +19,8 @@ namespace Microsoft.Azure.Documents
             bool useMultipleWriteLocations = false,
             bool detectClientConnectivityIssues = false,
             bool enableReplicaValidation = false,
-            ISessionRetryOptions sessionRetryOptions = null);
+            ISessionRetryOptions sessionRetryOptions = null,
+            bool enableBarrierEarlyYieldOn429 = false);
 
         IConnectionStateListener GetConnectionStateListener();
     }

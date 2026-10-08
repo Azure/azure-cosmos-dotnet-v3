@@ -2,6 +2,11 @@
 
 steps:
   - pwsh: |
+      if ([string]::IsNullOrWhiteSpace($env:EMULATORMSIURL)) {
+        Write-Host "##vso[task.logissue type=error]EMULATORMSIURL is not defined for this pipeline, so the Cosmos DB Emulator MSI cannot be downloaded. It is set per-pipeline in the Azure DevOps UI (Variables), not in this repo. Either define it on this pipeline definition, or stop including an emulator-dependent job in this pipeline."
+        throw "EMULATORMSIURL is not defined for this pipeline. See the error above."
+      }
+
       Write-Host "Downloading Cosmos Emulator - $env:EMULATORMSIURL" -ForegroundColor green 
       Invoke-WebRequest "$env:EMULATORMSIURL" -OutFile "$env:temp\azure-cosmosdb-emulator.msi"
       Write-Host "Finished Downloading Cosmos Emulator - $env:temp\azure-cosmosdb-emulator.msi" -ForegroundColor green 

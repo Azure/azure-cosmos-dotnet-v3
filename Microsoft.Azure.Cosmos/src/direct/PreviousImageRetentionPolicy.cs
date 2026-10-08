@@ -79,6 +79,9 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Gets or sets the included paths for the previous image retention policy.
         /// </summary>
+        // TODO/BUG: we will end up populating the getter's collection without updating the property bag.
+        // Add ObjectCreationHandling.Replace and nested JSON round-trip coverage in a follow-up fix.
+        // TODO/BUG: Add ShouldSerializeIncludedPaths to distinguish absent paths from an explicit empty array.
         [JsonProperty(PropertyName = Constants.Properties.IncludedPaths, NullValueHandling = NullValueHandling.Ignore)]
         public Collection<string> IncludedPaths
         {
@@ -135,6 +138,8 @@ namespace Microsoft.Azure.Documents
                 Mode = this.Mode,
             };
 
+            // TODO/BUG: Clone skips unloaded paths and does not populate the clone's property bag.
+            // Load paths through the getter, preserve absent/empty state, and assign through the setter in a follow-up fix.
             if (this.includedPaths != null)
             {
                 cloned.includedPaths = new Collection<string>();
@@ -209,6 +214,23 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// Gets or sets the previous image retention policy for the embedding generator service.
+        /// An empty policy is distinct from an absent or null policy.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.EmbeddingGeneratorService, NullValueHandling = NullValueHandling.Ignore)]
+        public PreviousImageRetentionPolicyPerFeature EmbeddingGeneratorService
+        {
+            get
+            {
+                return base.GetValue<PreviousImageRetentionPolicyPerFeature>(Constants.Properties.EmbeddingGeneratorService);
+            }
+            set
+            {
+                base.SetObject(Constants.Properties.EmbeddingGeneratorService, value);
+            }
+        }
+
+        /// <summary>
         /// Performs a deep copy of the supported features.
         /// </summary>
         /// <returns>
@@ -231,6 +253,11 @@ namespace Microsoft.Azure.Documents
             if (this.AllVersionsAndDeletes != null)
             {
                 cloned.AllVersionsAndDeletes = (PreviousImageRetentionPolicyPerFeature)this.AllVersionsAndDeletes.Clone();
+            }
+
+            if (this.EmbeddingGeneratorService != null)
+            {
+                cloned.EmbeddingGeneratorService = (PreviousImageRetentionPolicyPerFeature)this.EmbeddingGeneratorService.Clone();
             }
 
             return cloned;

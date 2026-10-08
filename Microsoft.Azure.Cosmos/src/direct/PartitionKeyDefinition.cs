@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Documents
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
-    /// <summary> 
+    /// <summary>
     /// Specifies a partition key definition for a particular path in the Azure Cosmos DB service.
     /// </summary>
 #if COSMOSCLIENT
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Documents
         /// Gets or sets version of the partitioning scheme to be applied on the partition key
         /// </summary>
         /// <value>
-        /// One of the values of the <see cref="T:Microsoft.Azure.Documents.PartitionKeyDefinitionVersion"/> enumeration. 
+        /// One of the values of the <see cref="T:Microsoft.Azure.Documents.PartitionKeyDefinitionVersion"/> enumeration.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.PartitionKeyDefinitionVersion, DefaultValueHandling = DefaultValueHandling.Ignore )]
         public PartitionKeyDefinitionVersion? Version
@@ -125,6 +125,25 @@ namespace Microsoft.Azure.Documents
             {
                 base.SetValue(Constants.Properties.PartitionKind, this.kind.ToString());
             }
+
+            // Emit V1 explicitly whenever the underlying value is null so that every
+            // response body is deterministic. This matches the backend's own default
+            // for a stored container document without a version field — see
+            // Product/Backend/native/common/PartitionKey/PartitionKeyDefinitionLoader.cpp
+            // (GetValueOrDefault(V1)) — as well as the SDK read-path convention in
+            // _get_partition_key_from_partition_key_definition (V1). Normalizing to V1
+            // makes the wire format explicit without changing any container's actual
+            // hashing behavior. (V2 would be wrong here: normalizing to V2 while the
+            // backend continues to hash a version-less container as V1 would cause
+            // client-side V2 hashing to route writes to different physical partitions
+            // than the backend expects for the same partition-key value — silent data
+            // corruption on multi-partition containers.)
+            if (base.GetValue<int?>(Constants.Properties.PartitionKeyDefinitionVersion) == null)
+            {
+                base.SetValue(
+                    Constants.Properties.PartitionKeyDefinitionVersion,
+                    (int)PartitionKeyDefinitionVersion.V1);
+            }
         }
 
         internal override void Validate()
@@ -160,5 +179,80 @@ namespace Microsoft.Azure.Documents
 
             return true;
         }
+
+#if !COSMOSCLIENT
+        // ---- HPK /id-as-last-path 2PC commit state (Backend-only) -------------------------
+        //
+        // Nested + #if-gated so the public-SDK csprojs (Microsoft.Azure.Cosmos.Direct,
+        // Microsoft.Azure.Documents.Client) compile this file without seeing the enum or
+        // the state property. Consumers (PR2+) live in the Backend (Common.csproj) which
+        // does NOT define COSMOSCLIENT.
+
+        internal enum MultiHashIdLastPathState
+        {
+            None = 0,
+
+            NotCommitted = 1,
+
+            Committed = 2,
+        }
+
+        [JsonProperty(PropertyName = Constants.Properties.MultiHashIdLastPathState, NullValueHandling = NullValueHandling.Ignore)]
+        internal MultiHashIdLastPathState? MultiHashIdLastPathStateValue
+        {
+            get
+            {
+                int? raw = base.GetValue<int?>(Constants.Properties.MultiHashIdLastPathState);
+                if (!raw.HasValue)
+                {
+                    return null;
+                }
+                if (raw.Value < (int)MultiHashIdLastPathState.None ||
+                    raw.Value > (int)MultiHashIdLastPathState.Committed)
+                {
+                    return null;
+                }
+                return (MultiHashIdLastPathState)raw.Value;
+            }
+            set
+            {
+                base.SetValue(Constants.Properties.MultiHashIdLastPathState, value.HasValue ? (int?)value.Value : null);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the Unix timestamp when the /id-last append intent was persisted in master.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.MultiHashIdLastPathAddedTimestamp, NullValueHandling = NullValueHandling.Ignore)]
+        internal long? MultiHashIdLastPathAddedTimestamp
+        {
+            get
+            {
+                return base.GetValue<long?>(Constants.Properties.MultiHashIdLastPathAddedTimestamp);
+            }
+            set
+            {
+                base.SetValue(Constants.Properties.MultiHashIdLastPathAddedTimestamp, value);
+            }
+        }
+
+        internal MultiHashIdLastPathState GetEffectiveMultiHashIdLastPathState()
+        {
+            return this.MultiHashIdLastPathStateValue ?? MultiHashIdLastPathState.None;
+        }
+
+        /// <summary>
+        /// Returns the partition key path count, excluding pending /id-last commits.
+        /// </summary>
+        internal int GetEffectivePathCount()
+        {
+            if (this.GetEffectiveMultiHashIdLastPathState() == MultiHashIdLastPathState.NotCommitted)
+            {
+                return this.Paths.Count - 1;
+            }
+
+            return this.Paths.Count;
+        }
+#endif
     }
 }

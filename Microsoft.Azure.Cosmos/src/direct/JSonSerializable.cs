@@ -48,6 +48,61 @@ namespace Microsoft.Azure.Documents
             this.propertyBag = new JObject();
         }
 
+        /// <summary>
+        /// Returns the in-memory property bag (parsed JSON) backing this object.
+        /// Used by Table entity deserialization to avoid re-serializing and re-parsing
+        /// the document on the read path.
+        /// </summary>
+        internal JObject GetPropertyBag()
+        {
+            return this.propertyBag;
+        }
+
+        /// <summary>
+        /// Creates a copy of <paramref name="source"/> whose property bag is detached from any
+        /// containing document.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="SetObject{TSerializable}(string, TSerializable)"/> assigns a child's property bag into the
+        /// parent bag by reference the first time that bag is inserted anywhere, which causes Newtonsoft to stamp
+        /// the child's <c>JToken._parent</c> back-reference. The binding is permanent: a later insert into a
+        /// different document silently clones instead of re-parenting, so the bag stays welded to whichever
+        /// document captured it first - which is not necessarily the one it was read from. From that point on,
+        /// holding the child keeps that entire document reachable.
+        /// </para>
+        /// <para>
+        /// Use this whenever a <see cref="JsonSerializable"/> is stored somewhere that outlives the request
+        /// that produced it - most importantly long-lived caches - so that the cached object retains only its
+        /// own state rather than the document it was read from.
+        /// </para>
+        /// <para>
+        /// This does not flush pending in-memory state: the clone is taken from <paramref name="source"/>'s
+        /// property bag exactly as it stands. That is complete for leaf types whose setters write straight
+        /// through to the bag, which is every type this helper is currently used on. Do not add an
+        /// <see cref="OnSave"/> call here to support composite types - a composite's <see cref="OnSave"/>
+        /// override flushes memoized children via
+        /// <see cref="SetObject{TSerializable}(string, TSerializable)"/>, which parents them to its own bag
+        /// and recreates the very binding described above. Detach the leaf you want to cache rather than the
+        /// enclosing document.
+        /// </para>
+        /// </remarks>
+        /// <typeparam name="TSerializable">The type to clone.</typeparam>
+        /// <param name="source">The object to clone. May be null. Not modified.</param>
+        /// <returns>A detached copy, or null when <paramref name="source"/> is null.</returns>
+        internal static TSerializable CloneDetached<TSerializable>(TSerializable source) where TSerializable : JsonSerializable, new()
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            TSerializable clone = new TSerializable();
+            clone.SerializerSettings = source.SerializerSettings;
+            clone.propertyBag = source.propertyBag == null ? new JObject() : (JObject)source.propertyBag.DeepClone();
+            return clone;
+        }
+
         internal JsonSerializerSettings SerializerSettings { get; set; }
 
         //Public Serialization Helpers.

@@ -71,7 +71,8 @@ namespace Microsoft.Azure.Documents
             bool disableRetryWithRetryPolicy,
             bool enableReplicaValidation,
             RetryWithConfiguration retryWithConfiguration = null,
-            ISessionRetryOptions sessionRetryOptions = null)
+            ISessionRetryOptions sessionRetryOptions = null,
+            bool enableBarrierEarlyYieldOn429 = false)
         {
             this.addressResolver = addressResolver;
             this.addressSelector = new AddressSelector(addressResolver, protocol);
@@ -92,7 +93,8 @@ namespace Microsoft.Azure.Documents
                 serviceConfigReader,
                 authorizationTokenProvider,
                 enableReplicaValidation,
-                sessionRetryOptions);
+                sessionRetryOptions,
+                enableBarrierEarlyYieldOn429);
             this.consistencyWriter = new ConsistencyWriter(
                 this.addressSelector,
                 sessionContainer,
@@ -101,7 +103,8 @@ namespace Microsoft.Azure.Documents
                 authorizationTokenProvider,
                 useMultipleWriteLocations,
                 enableReplicaValidation,
-                sessionRetryOptions);
+                sessionRetryOptions,
+                enableBarrierEarlyYieldOn429);
             this.enableReadRequestsFallback = enableReadRequestsFallback;
             this.useMultipleWriteLocations = useMultipleWriteLocations;
             this.detectClientConnectivityIssues = detectClientConnectivityIssues;
@@ -333,6 +336,109 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        private Task<Res<StoreResponse>> TryInvokeAsync(
+            DocumentServiceRequest request,
+            TimeoutHelper timeout,
+            bool isInRetry,
+            bool forceRefresh,
+            CancellationToken cancellationToken)
+        {
+            if (request.OperationType == OperationType.ExecuteJavaScript)
+            {
+                if (request.IsReadOnlyScript)
+                {
+                    return this.consistencyReader.TryReadAsync(request, timeout, isInRetry, forceRefresh, cancellationToken);
+                }
+                else
+                {
+                    return this.consistencyWriter.TryWriteAsync(request, timeout, forceRefresh, cancellationToken);
+                }
+            }
+            else if (request.OperationType.IsWriteOperation())
+            {
+                return this.consistencyWriter.TryWriteAsync(request, timeout, forceRefresh, cancellationToken);
+            }
+            else if (request.OperationType.IsReadOperation())
+            {
+                return this.consistencyReader.TryReadAsync(request, timeout, isInRetry, forceRefresh, cancellationToken);
+            }
+            else
+            {
+                return Res.TaskFromException<StoreResponse>(
+                    new InvalidOperationException(
+                        string.Format(CultureInfo.InvariantCulture, "Unexpected operation type {0}", request.OperationType)));
+            }
+        }
+
+        // Note: This method omits inBackoffAlternateCallbackMethod (cross-region
+        // read fallback) because Compute explicitly sets EnableReadRequestsFallback=false,
+        // making that code path unreachable. If Compute ever enables cross-region fallback,
+        // a Try-compatible inBackoff delegate and TryProcessRequestAsync overload would
+        // need to be added here.
+        public Task<Res<StoreResponse>> TryInvokeAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Func<GoneAndRetryRequestRetryPolicyContext, Task<Res<StoreResponse>>> funcDelegate = async (GoneAndRetryRequestRetryPolicyContext contextArguments) =>
+            {
+                request.Headers[HttpConstants.HttpHeaders.ClientRetryAttemptCount] = contextArguments.ClientRetryCount.ToString(CultureInfo.InvariantCulture);
+                request.Headers[HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest] = contextArguments.RemainingTimeInMsOnClientRequest.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+
+                // Reset per-attempt state for scale-up detection
+                request.RequestContext.MaxCurrentReplicaSetSizeFromResponse = -1;
+                request.RequestContext.PerformedBackgroundAddressRefresh = false;
+
+                Res<StoreResponse> result = await this.TryInvokeAsync(
+                    request,
+                    new TimeoutHelper(contextArguments.RemainingTimeInMsOnClientRequest, cancellationToken),
+                    contextArguments.IsInRetry,
+                    contextArguments.ForceRefresh || this.ForceAddressRefresh,
+                    cancellationToken);
+
+                // Centralized scale-up detection: fires on both success
+                // and exception paths so CRSS check runs even when
+                // retrying after GoneException.
+                this.addressSelector.RefreshAddressesIfReplicaSetSizeChanged(
+                    request,
+                    request.RequestContext.MaxCurrentReplicaSetSizeFromResponse);
+
+                return result;
+            };
+
+            int retryTimeout = this.serviceConfigReader.DefaultConsistencyLevel == ConsistencyLevel.Strong ?
+                ReplicatedResourceClient.StrongGoneAndRetryWithRetryTimeoutInSeconds :
+                ReplicatedResourceClient.GoneAndRetryWithRetryTimeoutInSeconds;
+
+            if (this.serviceConfigurationReaderExtension != null)
+            {
+                IServiceRetryParams serviceRetryParams = this.serviceConfigurationReaderExtension.TryGetServiceRetryParams(request);
+                if (serviceRetryParams != null &&
+                    serviceRetryParams.TryGetRetryTimeoutInSeconds(out int retryTimeoutOverride) &&
+                    retryTimeoutOverride > 0 &&
+                    retryTimeoutOverride <= ReplicatedResourceClient.StrongGoneAndRetryWithRetryTimeoutInSeconds)
+                {
+                    retryTimeout = retryTimeoutOverride;
+                }
+            }
+
+            if (this.GoneAndRetryWithRetryTimeoutInSecondsOverride.HasValue)
+            {
+                retryTimeout = this.GoneAndRetryWithRetryTimeoutInSecondsOverride.Value;
+            }
+
+            return RequestRetryUtility.TryProcessRequestAsync<GoneAndRetryRequestRetryPolicyContext, DocumentServiceRequest, StoreResponse>(
+                funcDelegate,
+                prepareRequest: () => {
+                    request.RequestContext.ClientRequestStatistics?.RecordRequest(request);
+                    return request;
+                },
+                policy: new GoneAndRetryWithRequestRetryPolicy<StoreResponse>(
+                    disableRetryWithPolicy: this.disableRetryWithRetryPolicy || request.DisableRetryWithPolicy,
+                    waitTimeInSecondsOverride: retryTimeout,
+                    minBackoffForRegionReroute: this.minBackoffForFallingBackToOtherRegions,
+                    detectConnectivityIssues: this.detectClientConnectivityIssues,
+                    retryWithConfiguration: this.retryWithConfiguration),
+                cancellationToken: cancellationToken);
+        }
+
         private async Task<StoreResponse> HandleGetStorageAuthTokenAsync(DocumentServiceRequest request, bool forceRefresh)
         {
             PartitionAddressInformation addressInfo = await this.addressResolver.ResolveAsync(request, forceRefresh, CancellationToken.None);
@@ -397,6 +503,7 @@ namespace Microsoft.Azure.Documents
                 resourceType == ResourceType.AuthPolicyElement ||
                 resourceType == ResourceType.InteropUser ||
                 resourceType == ResourceType.AzureRbac ||
+                resourceType == ResourceType.AbacPolicy ||
 #if !COSMOSCLIENT
                 resourceType == ResourceType.Topology ||
                 operationType == OperationType.GetStorageAuthToken ||
@@ -452,7 +559,8 @@ namespace Microsoft.Azure.Documents
                 resourceType == ResourceType.EncryptionScope ||
                 resourceType == ResourceType.Trigger ||
                 resourceType == ResourceType.UserDefinedFunction ||
-                resourceType == ResourceType.AzureRbac)
+                resourceType == ResourceType.AzureRbac ||
+                resourceType == ResourceType.AbacPolicy)
             {
                 return true;
             }

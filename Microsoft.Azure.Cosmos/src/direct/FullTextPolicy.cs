@@ -15,12 +15,29 @@ namespace Microsoft.Azure.Documents
     internal sealed class FullTextPolicy : JsonSerializable
     {
         private Collection<FullTextPath> fullTextPaths;
+        private FullTextSpec defaultSpec;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FullTextPolicy"/> class.
         /// </summary>
         public FullTextPolicy()
         {
+        }
+
+        /// <summary>
+        /// Gets or sets a string containing the full text package type (e.g. "legacy" or "standard").
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.FullTextPackage, NullValueHandling = NullValueHandling.Ignore)]
+        public string Package
+        {
+            get
+            {
+                return base.GetValue<string>(Constants.Properties.FullTextPackage);
+            }
+            set
+            {
+                base.SetValue(Constants.Properties.FullTextPackage, value);
+            }
         }
 
         /// <summary>
@@ -36,6 +53,28 @@ namespace Microsoft.Azure.Documents
             set
             {
                 base.SetValue(Constants.Properties.DefaultLanguage, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the default full text analysis specification inherited by fullTextPaths that omit fields.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.FullTextDefaultSpec, NullValueHandling = NullValueHandling.Ignore)]
+        public FullTextSpec DefaultSpec
+        {
+            get
+            {
+                if (this.defaultSpec == null)
+                {
+                    this.defaultSpec = base.GetObject<FullTextSpec>(Constants.Properties.FullTextDefaultSpec);
+                }
+
+                return this.defaultSpec;
+            }
+            set
+            {
+                this.defaultSpec = value;
+                base.SetObject(Constants.Properties.FullTextDefaultSpec, value);
             }
         }
 
@@ -73,6 +112,13 @@ namespace Microsoft.Azure.Documents
         internal override void OnSave()
         {
             this.SetValue(Constants.Properties.DefaultLanguage, this.DefaultLanguage);
+            this.SetValue(Constants.Properties.FullTextPackage, this.Package);
+
+            if (this.defaultSpec != null)
+            {
+                this.defaultSpec.OnSave();
+                base.SetObject(Constants.Properties.FullTextDefaultSpec, this.defaultSpec);
+            }
 
             if (this.fullTextPaths != null)
             {

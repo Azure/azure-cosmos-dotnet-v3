@@ -59,5 +59,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             mgr.Dispose();
             mgr.Dispose();
         }
+
+        [TestMethod]
+        public void RentScratch_ReusesSameBufferUntilLargerLengthRequested()
+        {
+            using ArrayPoolManager mgr = new ();
+
+            byte[] first = mgr.RentScratch(16);
+            Assert.IsNotNull(first);
+            Assert.AreSame(first, mgr.RentScratch(16), "Same length should reuse the scratch buffer.");
+            Assert.AreSame(first, mgr.RentScratch(8), "Smaller length should reuse the scratch buffer.");
+            Assert.AreSame(first, mgr.RentScratch(first.Length), "Exact-capacity length should reuse the scratch buffer.");
+
+            byte[] grown = mgr.RentScratch(first.Length + 1);
+            Assert.AreNotSame(first, grown, "A larger length should grow the scratch buffer.");
+            Assert.IsTrue(grown.Length >= first.Length + 1);
+            Assert.AreSame(grown, mgr.RentScratch(1), "After growth, subsequent smaller requests reuse the grown buffer.");
+        }
+
+        [TestMethod]
+        public void RentScratch_ManySameSizeRequests_RentsUnderlyingBufferOnce()
+        {
+            using ArrayPoolManager mgr = new ();
+
+            for (int i = 0; i < 100; i++)
+            {
+                _ = mgr.RentScratch(16);
+            }
+
+            Assert.AreEqual(1, mgr.RentedBufferCount, "Repeated same-size scratch requests must rent exactly one pool buffer.");
+        }
     }
 }

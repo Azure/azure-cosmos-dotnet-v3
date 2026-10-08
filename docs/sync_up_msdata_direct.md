@@ -75,6 +75,37 @@ This is the last part for the sync-up process. Please follow the below steps to 
 
 - Note: There may be instances where some of the files could be missing in the v3 `msdata/direct` repo and the copy may fail with the following error: `Write-Error: SystemSynchronizationScope.cs False`. If that happens, please copy the file manually from the `msdata/CosmosDB` repo and continue running the script all over again. 
 
+### Direct source snapshot
+
+The Direct and shared sources were refreshed from the local CosmosDB `master`
+commit `3951e52bb6ee632d815ab870773e4d9b6eaf39fb`. The public V3 SDK sources were
+then synchronized with `main` commit `f579ecd269f8a424e745b33e70471596772e248a`,
+including its version metadata (SDK 3.63.0, preview 3.64.0, Direct dependency
+3.44.1). The Direct NuGet dependency supplies native/runtime assets; its compile
+assets remain excluded because this branch compiles the refreshed Direct source
+into the Client assembly.
+
+Projects referencing the local SDK must likewise exclude the Direct NuGet compile
+assets to avoid duplicate types. Fault Injection retains its package-reference
+build mode and uses the combined assembly's signing keys only in local-SDK mode.
+`RMResources.resx` is embedded as `Microsoft.Azure.Documents.RMResources.resources`
+so the imported Direct resource accessor resolves localized error messages.
+
+Use `Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\src\Microsoft.Azure.Cosmos.Direct.csproj`
+as the source inventory, including its `CompileSharedFile` entries. The existing
+`msdata_sync.ps1` only refreshes existing names; it does not discover newly required
+files or reliably refresh nested folders. Include the new connection-manager,
+exceptionless-result, shared model, and transport template dependencies as well.
+The connection manager requires `System.Threading.Channels` 8.0.0.
+
+Preserve this branch's combined-assembly adaptations: `AssemblyKeys.cs`, the
+single `QueryRequestPerformanceActivity` definition in `PerformanceActivities.cs`,
+and the `Snapshot.UnixStartTime` hiding modifier. Imported sources also require
+XML documentation and analyzer compatibility adjustments. Do not copy the Direct
+project's assembly metadata or replace this branch's project file. Transport T4
+includes use the flattened `direct` directory rather than the service repository's
+`Rntbd\rntbdtokens` layout.
+
 ## Validating the sync-up
 
 One of the most important part in the whole `msdata/direct` sync up process is to validate whether the code merges, conflict resolutions and file updates went successfully. To comply with this, please make sure to follow the below steps:

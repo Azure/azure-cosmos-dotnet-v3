@@ -83,11 +83,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// </summary>
         /// <param name="injectionRate">The injection rate, in the range (0, 1].</param>
         /// <returns>The current <see cref="FaultInjectionServerErrorResultBuilder"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when injectionRate is not within the valid range, or is not a number.</exception>
         public FaultInjectionServerErrorResultBuilder WithInjectionRate(double injectionRate)
         {
-            if (injectionRate <= 0 || injectionRate > 1)
+            // Negated so that double.NaN, which compares false against every bound, is rejected.
+            if (!(injectionRate > 0 && injectionRate <= 1))
             {
-                throw new ArgumentOutOfRangeException($"Argument '{nameof(injectionRate)}' must be within the range (0, 1].");
+                throw new ArgumentOutOfRangeException(
+                    nameof(injectionRate),
+                    $"Argument '{nameof(injectionRate)}' must be within the range (0, 1].");
             }
 
             this.injectionRate = injectionRate;

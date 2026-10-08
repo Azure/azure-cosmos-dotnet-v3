@@ -9,6 +9,9 @@ namespace Microsoft.Azure.Documents
     using System.Globalization;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+#if !DOCDBCLIENT
+    using Microsoft.Azure.Cosmos.ServiceFramework.Security.Authentication;
+#endif
     using Microsoft.Azure.Documents.Collections;
 
     internal static class BarrierRequestHelper
@@ -52,6 +55,34 @@ namespace Microsoft.Azure.Documents
             }
 
             AuthorizationTokenType originalRequestTokenType = request.RequestAuthorizationTokenType;
+            bool copiedAuthorization = false;
+
+            // A barrier has a new verb, resource address, date, and therefore a different
+            // authorization payload from its parent request. Replace an mTLS-authorized token
+            // blocked as Invalid with a fresh target-federation SystemReadOnly credential instead
+            // of copying it. The system-key provider also owns auth-intent marker emission and
+            // well-known-key replacement. Compute SDK requests do not enter this path because
+            // IsMutualTlsAuthorized is receiving-side state populated by Routing Gateway.
+            bool shouldUseTargetSystemKey =
+                originalRequestTokenType == AuthorizationTokenType.Invalid &&
+                request.RequestContext.IsMutualTlsAuthorized &&
+                request.RequestContext.TargetIdentity != null;
+            AuthorizationTokenType barrierRequestTokenType = shouldUseTargetSystemKey
+                ? AuthorizationTokenType.SystemReadOnly
+                : originalRequestTokenType;
+
+            if (barrierRequestTokenType != originalRequestTokenType)
+            {
+                string serviceType = "Unknown";
+#if !DOCDBCLIENT
+                serviceType = request.RequestContext.ClaimsPrincipal?
+                    .FindFirst(CosmosDbClaimType.ServiceType.ToString())?
+                    .Value ?? serviceType;
+#endif
+                DefaultTrace.TraceInformation(
+                    "BarrierRequestHelper substituted SystemReadOnly authorization for an mTLS-authorized barrier request. ServiceType={0}",
+                    serviceType);
+            }
 
             DocumentServiceRequest barrierLsnRequest = null;
             if (!isCollectionHeadRequest)
@@ -62,7 +93,7 @@ namespace Microsoft.Azure.Documents
                         resourceId: null,
                         resourceType: ResourceType.Database,
                         headers: null,
-                        authorizationTokenType: originalRequestTokenType);
+                        authorizationTokenType: barrierRequestTokenType);
             }
             else if (request.IsNameBased) // Name based server request
             {
@@ -73,7 +104,7 @@ namespace Microsoft.Azure.Documents
                     OperationType.Head,
                     collectionLink,
                     ResourceType.Collection,
-                    originalRequestTokenType,
+                    barrierRequestTokenType,
                     null);
             }
             else // RID based Server request
@@ -81,7 +112,7 @@ namespace Microsoft.Azure.Documents
                 barrierLsnRequest = DocumentServiceRequest.Create(
                     OperationType.Head,
                     ResourceId.Parse(request.ResourceId).DocumentCollectionId.ToString(),
-                    ResourceType.Collection, null, originalRequestTokenType);
+                    ResourceType.Collection, null, barrierRequestTokenType);
             }
 
             if (ShouldAllowBarrierRequestWithRwStatusRevoked(request))
@@ -95,6 +126,7 @@ namespace Microsoft.Azure.Documents
             barrierLsnRequest.UseStatusCodeFor403 = request.UseStatusCodeFor403;
             barrierLsnRequest.UseStatusCodeFor4041002 = request.UseStatusCodeFor4041002;
             barrierLsnRequest.UseStatusCodeForBadRequest = request.UseStatusCodeForBadRequest;
+            barrierLsnRequest.UseExceptionlessAddressResolution = request.UseExceptionlessAddressResolution;
 
             if (targetLsn.HasValue && targetLsn.Value > 0)
             {
@@ -106,7 +138,7 @@ namespace Microsoft.Azure.Documents
                 barrierLsnRequest.Headers[HttpConstants.HttpHeaders.TargetGlobalCommittedLsn] = targetGlobalCommittedLsn.Value.ToString(CultureInfo.InvariantCulture);
             }
 
-            switch (originalRequestTokenType)
+            switch (barrierRequestTokenType)
             {
                 case AuthorizationTokenType.PrimaryMasterKey:
                 case AuthorizationTokenType.PrimaryReadonlyMasterKey:
@@ -117,7 +149,7 @@ namespace Microsoft.Azure.Documents
                         isCollectionHeadRequest ? PathsHelper.GetResourcePath(ResourceType.Collection) : PathsHelper.GetResourcePath(ResourceType.Database),
                         HttpConstants.HttpMethods.Head,
                         barrierLsnRequest.Headers,
-                        originalRequestTokenType)).token;
+                        barrierRequestTokenType)).token;
                     break;
 
                 case AuthorizationTokenType.SystemAll:
@@ -140,13 +172,26 @@ namespace Microsoft.Azure.Documents
                 case AuthorizationTokenType.AadToken:
                 case AuthorizationTokenType.ResourceToken:
                     barrierLsnRequest.Headers[HttpConstants.HttpHeaders.Authorization] = request.Headers[HttpConstants.HttpHeaders.Authorization];
+                    copiedAuthorization = true;
                     break;
 
                 default:
-                    string unknownAuthToken = $"Unknown authorization token kind [{originalRequestTokenType}] for read request";
+                    string unknownAuthToken = $"Unknown authorization token kind [{barrierRequestTokenType}] for read request";
                     Debug.Assert(false, unknownAuthToken);
                     DefaultTrace.TraceCritical(unknownAuthToken);
                     throw new InternalServerErrorException(RMResources.InternalServerError);
+            }
+
+            // Keep the S2S marker inseparable from a copied Authorization credential. OBO is intentionally not
+            // copied because this barrier does not copy the parent's gateway signature.
+            if (copiedAuthorization &&
+                string.Equals(
+                    request.Headers[HttpConstants.HttpHeaders.MutualTlsAuthIntent],
+                    HttpConstants.MutualTlsAuthIntent.S2S,
+                    StringComparison.Ordinal))
+            {
+                barrierLsnRequest.Headers[HttpConstants.HttpHeaders.MutualTlsAuthIntent] =
+                    HttpConstants.MutualTlsAuthIntent.S2S;
             }
 
             barrierLsnRequest.RequestContext = request.RequestContext.Clone();
@@ -193,6 +238,8 @@ namespace Microsoft.Azure.Documents
 
                 barrierLsnRequest.Properties[WFConstants.BackendHeaders.EffectivePartitionKeyString] = request.Properties[WFConstants.BackendHeaders.EffectivePartitionKeyString];
             }
+
+            request.RequestContext.BarrierRequestSigner?.Invoke(barrierLsnRequest);
 
             return barrierLsnRequest;
         }

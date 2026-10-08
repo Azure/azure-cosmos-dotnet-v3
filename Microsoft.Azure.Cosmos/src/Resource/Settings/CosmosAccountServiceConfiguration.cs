@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
     internal class CosmosAccountServiceConfiguration : IServiceConfigurationReaderVnext
@@ -60,6 +61,26 @@ namespace Microsoft.Azure.Cosmos
             if (this.AccountProperties == null)
             {
                 this.AccountProperties = await this.accountPropertiesTaskFunc();
+
+                // Defensive guard (issue #4671): the account read is expected to either return account
+                // properties or throw. If it completes with a null result, consuming AccountProperties
+                // downstream (for example DocumentClient.InitializeGatewayConfigurationReaderAsync reading
+                // accountProperties.EnableMultipleWriteLocations) would throw a bare, undiagnosable
+                // NullReferenceException during client initialization. Fail with an actionable exception
+                // instead. This stays a non-terminal initialization failure, so the initialization cache
+                // re-initializes on the next request (the client self-heals).
+                if (this.AccountProperties == null)
+                {
+                    DefaultTrace.TraceCritical(
+                        "CosmosAccountServiceConfiguration: gateway account initialization returned null AccountProperties.");
+
+                    throw new InvalidOperationException(
+                        "Azure Cosmos DB client initialization failed: reading the database account from the " +
+                        "gateway returned no account properties (AccountProperties was null). This is unexpected " +
+                        "and most commonly indicates a version mismatch between the Microsoft.Azure.Cosmos and " +
+                        "Microsoft.Azure.Cosmos.Direct packages loaded at runtime; ensure both resolve to matching, " +
+                        "compatible versions. Initialization will be retried on the next request.");
+                }
             }
         }
     }

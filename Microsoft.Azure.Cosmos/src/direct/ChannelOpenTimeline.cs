@@ -67,6 +67,37 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public static ConnectionTimerDelegate TraceFunc { get; set; }
 
+        // Per-stage accessors used by RntbdConnectionManager when emitting
+        // OpenCompleted / OpenFailed events. These mirror the values
+        // already captured during InitializeAsync — they are read-only and
+        // safe to call after the open has completed (success or failure).
+        public DateTimeOffset CreationTime => this.creationTime;
+
+        public DateTimeOffset? ConnectTime =>
+            this.connectTime == DateTimeOffset.MinValue ? null : this.connectTime;
+
+        public DateTimeOffset? SslHandshakeTime =>
+            this.sslHandshakeTime == DateTimeOffset.MinValue ? null : this.sslHandshakeTime;
+
+        public DateTimeOffset? RntbdHandshakeTime =>
+            this.rntbdHandshakeTime == DateTimeOffset.MinValue ? null : this.rntbdHandshakeTime;
+
+        /// <summary>Duration of the TCP connect phase; null if it never completed.</summary>
+        public TimeSpan? TcpConnectDuration =>
+            this.ConnectTime is DateTimeOffset c ? c - this.creationTime : null;
+
+        /// <summary>Duration of the SSL/TLS handshake phase; null if it never completed.</summary>
+        public TimeSpan? SslHandshakeDuration =>
+            this.SslHandshakeTime is DateTimeOffset s && this.ConnectTime is DateTimeOffset c2
+                ? s - c2
+                : null;
+
+        /// <summary>Duration of the RNTBD context negotiation phase; null if it never completed.</summary>
+        public TimeSpan? RntbdHandshakeDuration =>
+            this.RntbdHandshakeTime is DateTimeOffset r && this.SslHandshakeTime is DateTimeOffset s2
+                ? r - s2
+                : null;
+
         private static string InvariantString(DateTimeOffset t)
         {
             return t.ToString("o", CultureInfo.InvariantCulture);

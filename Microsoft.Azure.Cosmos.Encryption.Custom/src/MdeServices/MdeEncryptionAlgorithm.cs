@@ -50,6 +50,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (!withRawKey)
             {
+                // Decides only whether to cache: TimeSpan.Zero builds a fresh key. The cache lifetime for non-zero and
+                // null values is owned by EncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive and applied per
+                // provider instance by MDE (GetOrCreateAsync takes no time-to-live argument). cacheTimeToLive is
+                // captured at provider construction, so this choice is fixed for the provider's lifetime.
                 ProtectedDataEncryptionKey protectedDataEncryptionKey = cacheTimeToLive.HasValue && cacheTimeToLive.Value == TimeSpan.Zero
                     ? await ProtectedDataEncryptionKey.CreateAsync(
                         dekProperties.Id,
@@ -69,6 +73,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             else
             {
                 rawKey = await keyEncryptionKey.DecryptEncryptionKeyAsync(dekProperties.WrappedDataEncryptionKey, cancellationToken).ConfigureAwait(false);
+
+                // TimeSpan.Zero keeps the raw key out of the MDE plaintext key cache by constructing it directly.
+                // Otherwise PlaintextDataEncryptionKey caches it under its own fixed lifetime rather than
+                // DataEncryptionKeyCacheTimeToLive, so here the configured value selects caching on or off, not its duration.
                 PlaintextDataEncryptionKey plaintextDataEncryptionKey = cacheTimeToLive.HasValue && (cacheTimeToLive.Value == TimeSpan.Zero)
                     ? new PlaintextDataEncryptionKey(
                             dekProperties.Id,

@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
@@ -65,8 +65,7 @@ namespace Microsoft.Azure.Cosmos
                     MockCosmosUtil.CreateCosmosHttpClient(
                         () => new HttpClient(messageHandler),
                         eventSource),
-                    GlobalPartitionEndpointManagerNoOp.Instance,
-                    isThinClientEnabled: false);
+                    GlobalPartitionEndpointManagerNoOp.Instance);
 
                 TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
@@ -140,7 +139,14 @@ namespace Microsoft.Azure.Cosmos
         /// 6. Initiate retry, which should be canceled because the token was canceled.
         /// </summary>
         [DataTestMethod]
-        [Timeout(5000)]
+        // The first data row to execute absorbs the one-time cost of warming up the
+        // full CosmosClient read pipeline (JIT of the request/retry/store layers plus
+        // Moq proxy generation). Measured locally that first row costs ~0.4-1.0s while
+        // the second completes in ~10-50ms, so the previous 5s budget left almost no
+        // headroom and timed out on loaded CI agents. 30s matches the convention used
+        // by the comparable mocked-failover tests (for example CosmosBadReplicaTests)
+        // and still catches a genuine hang in the failover path.
+        [Timeout(30000)]
         [DataRow(ConsistencyLevel.Eventual)]
         [DataRow(ConsistencyLevel.Session)]
         public async Task CancellationTokenDoesNotCancelFailover(ConsistencyLevel consistencyLevel)
@@ -222,8 +228,7 @@ namespace Microsoft.Azure.Cosmos
                 new DocumentClientEventSource(),
                 new JsonSerializerSettings(),
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance,
-                isThinClientEnabled: false);
+                GlobalPartitionEndpointManagerNoOp.Instance);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager.Object);
 

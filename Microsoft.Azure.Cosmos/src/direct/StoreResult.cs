@@ -508,6 +508,52 @@ namespace Microsoft.Azure.Documents
             return this.storeResponse;
         }
 
+        public Res<StoreResponse> TryToResponse(RequestChargeTracker requestChargeTracker = null)
+        {
+            if (!this.IsValid)
+            {
+                if (this.Exception == null)
+                {
+                    DefaultTrace.TraceCritical("Exception not set for invalid response");
+                    return Res.FromException<StoreResponse>(new InternalServerErrorException(RMResources.InternalServerError));
+                }
+
+                if (!string.IsNullOrWhiteSpace(this.StorePhysicalAddress?.AbsoluteUri))
+                {
+                    (string partitionId, string replicaId) = GetPartitionIdReplicaIdFromAddress(StorePhysicalAddress.AbsoluteUri);
+                    this.Exception.Headers[HttpConstants.HttpHeaders.PartitionId] = partitionId;
+                }
+
+                return Res.FromException<StoreResponse>(this.Exception);
+            }
+
+            if (requestChargeTracker != null)
+            {
+                StoreResult.SetRequestCharge(this.storeResponse, this.Exception, requestChargeTracker.TotalRequestCharge);
+            }
+
+            if (!string.IsNullOrWhiteSpace(this.StorePhysicalAddress?.AbsoluteUri))
+            {
+                (string partitionId, string replicaId) = GetPartitionIdReplicaIdFromAddress(StorePhysicalAddress.AbsoluteUri);
+                System.Diagnostics.Debug.Assert(string.IsNullOrWhiteSpace(partitionId) || Guid.TryParse(partitionId, out _), $"partitionId is invalid. value:{partitionId}");
+                if (this.Exception != null)
+                {
+                    this.Exception.Headers[HttpConstants.HttpHeaders.PartitionId] = partitionId;
+                }
+                else
+                {
+                    this.storeResponse.Headers[HttpConstants.HttpHeaders.PartitionId] = partitionId;
+                }
+            }
+
+            if (this.Exception != null)
+            {
+                return Res.FromException<StoreResponse>(this.Exception);
+            }
+
+            return Res.Success(this.storeResponse);
+        }
+
         public override string ToString()
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -602,6 +648,35 @@ namespace Microsoft.Azure.Documents
             {
                 ExceptionDispatchInfo.Capture(ex).Throw();
             }
+        }
+
+        /// <summary>
+        /// Returns true if the exception is non-fatal and processing can continue.
+        /// Returns false if the exception must be propagated (partition-level or
+        /// request validation failure).
+        /// </summary>
+        internal static bool CanContinueOnException(DocumentClientException ex)
+        {
+            if ((ex is PartitionKeyRangeGoneException) ||
+                (ex is PartitionKeyRangeIsSplittingException) ||
+                (ex is PartitionIsMigratingException))
+            {
+                return false;
+            }
+
+            string value = ex.Headers[HttpConstants.HttpHeaders.RequestValidationFailure];
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return true;
+            }
+
+            int result;
+            if (int.TryParse(ex.Headers.GetValues(HttpConstants.HttpHeaders.RequestValidationFailure)[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out result) && result == 1)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         public static (string PartitionId, string ReplicaId) GetPartitionIdReplicaIdFromAddress(string storePhysicalAddress)

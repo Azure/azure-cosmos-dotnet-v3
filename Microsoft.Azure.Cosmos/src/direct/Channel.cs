@@ -1,14 +1,15 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents.Rntbd
 {
+    using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents.FaultInjection;
     using System;
+    using System.ComponentModel;
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Documents.FaultInjection;
 
 #if NETSTANDARD15 || NETSTANDARD16
     using Trace = Microsoft.Azure.Documents.Trace;
@@ -270,6 +271,124 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         /// <summary>
+        /// Exceptionless request path. Returns a <see cref="Result{T}"/>
+        /// carrying either a <see cref="StoreResponse"/> or the exception
+        /// that would have been thrown by <see cref="RequestAsync"/>.
+        /// </summary>
+        public async Task<Res<StoreResponse>> TryRequestAsync(
+            DocumentServiceRequest request, TransportAddressUri physicalAddress,
+            ResourceOperation resourceOperation, Guid activityId, TransportRequestStats transportRequestStats)
+        {
+            if (this.disposed)
+            {
+                return Res.FromException<StoreResponse>(new ObjectDisposedException(nameof(Channel)));
+            }
+
+            if (!this.isInitializationComplete)
+            {
+                transportRequestStats.RequestWaitingForConnectionInitialization = true;
+                DefaultTrace.TraceInformation(
+                    "[RNTBD Channel {0}] Awaiting RNTBD channel initialization. Request URI: {1}",
+                    this.ConnectionCorrelationId, physicalAddress);
+
+                Exception initEx = await Res.Wrap(this.initializationTask);
+                if (initEx != null)
+                {
+                    return Res.FromException<StoreResponse>(initEx);
+                }
+            }
+            else
+            {
+                transportRequestStats.RequestWaitingForConnectionInitialization = false;
+            }
+
+            // Waiting for channel initialization to move to Pipelined stage
+            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Pipelined);
+
+            // Ideally, we would set up a timer here, and then hand off the rest of the work
+            // to the dispatcher. In practice, additional constraints force the interaction to
+            // be chattier:
+            // - Serialization errors are handled differently from channel errors.
+            // - Timeouts only apply to the call (send+recv), not to everything preceding it.
+            using ChannelCallArguments callArguments = this.chaosInterceptor == null
+                ? new ChannelCallArguments(activityId)
+                : new ChannelCallArguments(
+                    activityId,
+                    request.OperationType,
+                    request.ResourceType,
+                    request.RequestContext.ResolvedCollectionRid,
+                    request.Headers,
+                    request.RequestContext.LocationEndpointToRoute);
+            try
+            {
+                callArguments.PreparedCall = this.dispatcher.PrepareCall(
+                    request, physicalAddress, resourceOperation, activityId, transportRequestStats);
+            }
+            catch (DocumentClientException e)
+            {
+                e.Headers.Add(HttpConstants.HttpHeaders.RequestValidationFailure, "1");
+                return Res.FromException<StoreResponse>(e);
+            }
+            catch (Exception e)
+            {
+                DefaultTrace.TraceError(
+                    "[RNTBD Channel {0}] Failed to serialize request. Assuming malformed request payload: {1}", this.ConnectionCorrelationId, e.Message);
+                DocumentClientException clientException = new BadRequestException(e);
+                clientException.Headers.Add(
+                    HttpConstants.HttpHeaders.RequestValidationFailure, "1");
+                return Res.FromException<StoreResponse>(clientException);
+            }
+
+            PooledTimer timer = this.timerPool.GetPooledTimer(this.requestTimeoutSeconds);
+            Task[] tasks = new Task[2];
+            tasks[0] = timer.StartTimerAsync();
+            Task<StoreResponse> dispatcherCall = this.dispatcher.CallAsync(callArguments, transportRequestStats);
+            TransportClient.GetTransportPerformanceCounters().LogRntbdBytesSentCount(resourceOperation.resourceType, resourceOperation.operationType, callArguments.PreparedCall?.SerializedRequest.RequestSize);
+            tasks[1] = dispatcherCall;
+            Task completedTask = await Task.WhenAny(tasks);
+            if (object.ReferenceEquals(completedTask, tasks[0]))
+            {
+                // Timed out.
+                TransportErrorCode timeoutCode;
+                bool payloadSent;
+                callArguments.CommonArguments.SnapshotCallState(
+                    out timeoutCode, out payloadSent);
+                Debug.Assert(TransportException.IsTimeout(timeoutCode));
+                this.dispatcher.CancelCallAndNotifyConnectionOnTimeoutEvent(callArguments.PreparedCall, request.IsReadOnlyRequest);
+                Channel.HandleTaskTimeout(tasks[1], activityId, this.ConnectionCorrelationId);
+                Exception ex = completedTask.Exception?.InnerException;
+                DefaultTrace.TraceWarning("[RNTBD Channel {0}] RNTBD call timed out on channel {1}. Error: {2}",
+                    this.ConnectionCorrelationId, this, timeoutCode);
+                Debug.Assert(callArguments.CommonArguments.UserPayload);
+                return Res.FromException<StoreResponse>(new TransportException(
+                    timeoutCode, ex, activityId, physicalAddress.Uri, this.ToString(),
+                    callArguments.CommonArguments.UserPayload, payloadSent));
+            }
+            else
+            {
+                // Request completed.
+                Debug.Assert(object.ReferenceEquals(completedTask, tasks[1]));
+                timer.CancelTimer();
+
+                this.dispatcher.NotifyConnectionOnSuccessEvent();
+                if (completedTask.IsFaulted)
+                {
+                    return Res.FromException<StoreResponse>(completedTask.Exception);
+                }
+
+                if (completedTask.IsCanceled)
+                {
+                    return Res.FromException<StoreResponse>(new OperationCanceledException());
+                }
+            }
+
+            physicalAddress.SetConnected();
+            StoreResponse storeResponse = dispatcherCall.Result;
+            TransportClient.GetTransportPerformanceCounters().LogRntbdBytesReceivedCount(resourceOperation.resourceType, resourceOperation.operationType, storeResponse?.ResponseBody?.Length);
+            return Res.Success(storeResponse);
+        }
+
+        /// <summary>
         /// Returns the background channel initialization task.
         /// </summary>
         /// <returns>The initialization task.</returns>
@@ -295,8 +414,14 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         void IDisposable.Dispose()
         {
+            // Dispose must be idempotent and never throw on a second call
+            // (hierarchical shutdown can race an explicit Close). Guard-and-
+            // return rather than throwing ObjectDisposedException.
+            if (this.disposed)
+            {
+                return;
+            }
             this.chaosInterceptor?.OnChannelDispose(this.ConnectionCorrelationId);
-            this.ThrowIfDisposed();
             this.disposed = true;
             DefaultTrace.TraceInformation("[RNTBD Channel {0}] Disposing RNTBD Channel {1}", this.ConnectionCorrelationId, this);
 

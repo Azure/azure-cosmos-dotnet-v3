@@ -152,7 +152,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode && (clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway),
                 fullTextScoreScope: queryRequestOptions.FullTextScoreScope,
-                testInjections: queryRequestOptions.TestSettings);
+                testInjections: queryRequestOptions.TestSettings,
+                excludeRegions: queryRequestOptions.ExcludeRegions);
 
             return new QueryIterator(
                 cosmosQueryContext,

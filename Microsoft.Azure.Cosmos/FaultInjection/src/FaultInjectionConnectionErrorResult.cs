@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
+    using System.Globalization;
 
     /// <summary>
     /// Fault Injection Connection Error Result.
@@ -25,6 +26,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             TimeSpan interval,
             double thresholdPercentage)
         {
+            // Negated so that double.NaN, which compares false against every bound, is rejected.
+            if (!(thresholdPercentage > 0 && thresholdPercentage <= 1))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(thresholdPercentage),
+                    $"Argument '{nameof(thresholdPercentage)}' must be within the range (0, 1].");
+            }
+
             this.connectionErrorType = connectionErrorType;
             this.interval = interval;
             this.thresholdPercentage = thresholdPercentage;

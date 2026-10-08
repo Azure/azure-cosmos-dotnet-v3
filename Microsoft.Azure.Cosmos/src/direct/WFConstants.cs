@@ -10,6 +10,21 @@ namespace Microsoft.Azure.Documents
             public const string NamedEndpoint = "App=";
         }
 
+        // Internal headers only Cosmos components may set toward the backend; an inbound occurrence from an
+        // external caller is a spoof. Scrubbed at every external ingress.
+        // DEVNOTE: this is the mandatory baseline and the default for Compute, whose tenant configuration
+        // has no static file surface. RoutingGateway ships an explicit copy in
+        // GatewayApplication/Settings.xml, so a new entry added here must be added there too, or the
+        // gateway will keep scrubbing only the configured list.
+        public static readonly System.Collections.Generic.IReadOnlyList<string> InternalHeadersToScrub =
+            new System.Collections.ObjectModel.ReadOnlyCollection<string>(
+                new string[]
+                {
+                    BackendHeaders.ClientIpAddress,
+                    BackendHeaders.IsRequestFromComputeNotAuthorized,
+                    HttpConstants.HttpHeaders.MutualTlsAuthIntent,
+                });
+
         public static class BackendHeaders
         {
             public const string ResourceId = "x-docdb-resource-id";
@@ -101,6 +116,10 @@ namespace Microsoft.Azure.Documents
             public const string SchemaId = "x-ms-schema-id";
             public const string PopulateLogStoreInfo = "x-ms-cosmos-populate-logstoreinfo";
             public const string PopulateEsanMigrationStatus = "x-ms-cosmos-populate-esan-migration-status";
+            // Opt-in request header: asks the backend to populate the PhysicalSplitCopyState
+            // response header while a physical-copy split is in progress on the replica.
+            // Backend-internal; carried over RNTBD only.
+            public const string PopulatePhysicalSplitCopyState = "x-ms-cosmos-populate-physical-split-copy-state";
             public const string ForceSideBySideIndexMigration = "x-ms-cosmos-force-sidebyside-indexmigration";
             public const string CollectionChildResourceNameLimitInBytes = "x-ms-cosmos-collection-child-resourcename-limit";
             public const string CollectionChildResourceContentLimitInKB = "x-ms-cosmos-collection-child-contentlength-resourcelimit";
@@ -170,7 +189,25 @@ namespace Microsoft.Azure.Documents
             public const string ThroughputpoolDedicatedRUs = "x-ms-throughputpool-dedicated-rus";
             public const string RetrieveUserStrings = "x-ms-cosmos-internal-retrieve-user-strings";
             public const string VectorIndexAggregateProgress = "x-ms-cosmos-vector-index-aggregate-progress";
+
+            // Physical-copy split per-replica completion state (admin GET-replica response).
+            // Distinct from the logical-copy split's LSN/document-count catch-up
+            // progress. An optional response header, present only while a
+            // physical-copy split is in progress on the partition/replica, so
+            // consumers must tolerate its absence. Intended for physical-copy
+            // split progress reporting; the backend emit side and that consumer
+            // are delivered separately.
+            public const string PhysicalSplitCopyState = "x-ms-cosmos-internal-physical-split-copy-state";
             public const string AllowTopologyUpsertWithoutIntent = "x-ms-cosmos-internal-allow-topology-upsert-without-intent";
+
+            // Optional internal request header that overrides false-progress prevention for change-feed reads:
+            // - true:
+            //   - strong account: use GCLSN.
+            //   - less-than-strong account or strong account with less-than-strong request: use GCLSN when PPAF is enabled.
+            //   - less-than-strong account or strong account with less-than-strong request: use NGLSN for non-PPAF single writer.
+            // - false: do not apply the watermark. The read may return changes beyond the committed watermark.
+            // - absent: use the default account configuration.
+            public const string IsChangeFeedFalseProgressPreventionEnabled = "x-ms-cosmos-internal-is-change-feed-false-progress-prevention-enabled";
             public const string ThroughputBucketApplied = "x-ms-cosmos-throughputbucket-applied";
             public const string IsSoftDeletionOrRecoveryOperation = "x-ms-cosmos-internal-is-softdeletion-or-recovery-operation";
             public const string OriginalAuthTokenType = "x-ms-cosmos-key-type";

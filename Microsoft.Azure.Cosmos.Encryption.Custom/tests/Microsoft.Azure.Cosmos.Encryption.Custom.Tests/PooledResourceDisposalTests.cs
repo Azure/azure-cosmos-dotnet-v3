@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System;
     using System.Buffers;
     using System.IO;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
@@ -99,6 +100,52 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             {
                 Assert.AreEqual(0, capturedBuffer[i], $"Buffer not cleared at index {i} - security risk!");
             }
+        }
+
+        [TestMethod]
+        [TestCategory("Disposal")]
+        [TestCategory("Security")]
+        public void PooledMemoryStream_Finalizer_ReturnsAndClearsBufferWhenNotDisposed()
+        {
+            // A consumer that forgets to dispose (e.g. abandons a streaming page) must not permanently lose
+            // the rented buffer or leave plaintext in it. The finalizer is the safety net: we capture the
+            // buffer, drop the stream undisposed, force finalization, and assert it was zeroed.
+            byte[] capturedBuffer = WriteSensitiveAndCaptureBufferWithoutDisposing(out byte[] sensitive);
+
+            bool anyNonZeroBefore = false;
+            for (int i = 0; i < sensitive.Length; i++)
+            {
+                if (capturedBuffer[i] != 0)
+                {
+                    anyNonZeroBefore = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(anyNonZeroBefore, "Precondition: the buffer should still hold the written plaintext before finalization.");
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
+            for (int i = 0; i < sensitive.Length; i++)
+            {
+                Assert.AreEqual(0, capturedBuffer[i], $"Finalizer must clear the rented buffer when the stream was never disposed (residue at index {i}).");
+            }
+        }
+
+        // Separate non-inlined method so the PooledMemoryStream local is not kept rooted on the
+        // caller's stack frame, allowing it to become unreachable and be finalized after return.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static byte[] WriteSensitiveAndCaptureBufferWithoutDisposing(out byte[] sensitive)
+        {
+            sensitive = Encoding.UTF8.GetBytes("Sensitive plaintext residue check 0xDEADBEEF");
+            PooledMemoryStream stream = new (capacity: 1024, clearOnReturn: true);
+            stream.Write(sensitive, 0, sensitive.Length);
+            byte[] buffer = stream.GetBuffer();
+
+            // Intentionally do NOT dispose: let the stream become unreachable so its finalizer runs.
+            return buffer;
         }
 
         [TestMethod]

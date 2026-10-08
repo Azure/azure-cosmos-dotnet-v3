@@ -71,6 +71,8 @@ namespace Microsoft.Azure.Documents
             AzureRbac = 0x0034,
             DistributedTransactionBatch = 0x0035,
             HistoricalPartitionKeyRange = 0x0037,
+            UserStringDictionary = 0x0038,
+            AbacPolicy = 0x0039,
 
             // Please update RntbdConstants.tt T4 template and generate
             // Also get sign-off from cdbcosdk
@@ -133,7 +135,7 @@ namespace Microsoft.Azure.Documents
             CreateRidRangeResources = 0x0036,
             Truncate = 0x0037,
             RelocateLeakedTentativeWrites = 0x0039,
-            ExternalPreBackup = 0x003A,
+            ExternalPreBackupSync = 0x003A,
             ExternalBackup = 0x003B,
             CheckExternalBackupStatus = 0x003C,
             ExternalBackupRestore = 0x003D,
@@ -144,6 +146,9 @@ namespace Microsoft.Azure.Documents
             QueryPlan = 0x0042,
             CancelExternalBackup = 0x0043,
             CancelExternalBackupRestore = 0x0044,
+            CheckExternalPreBackupStatus = 0x0045,
+            CancelExternalPreBackup = 0x0046,
+            ExternalPreBackup = 0x0047,
 
             // Please update RntbdConstants.tt T4 template and generate
             // Also get sign-off from cdbcosdk
@@ -377,6 +382,11 @@ namespace Microsoft.Azure.Documents
             EmbeddingGeneratorLeaseDocument = 0x04,
             EmbeddingGeneratorOwnershipDocument = 0x05,
             EmbeddingGeneratorLeaseStoreInitDocument = 0x06,
+            // 0x07 (EmbeddingGeneratorOwnershipDocument) and 0x08
+            // (EmbeddingGeneratorLeaseStoreInitDocument) are reserved on the
+            // backend wire enum; ContainerBuilderHeartbeatDocument keeps the
+            // 0x09 value that the native RntbdSystemDocumentType decoder expects.
+            ContainerBuilderHeartbeatDocument = 0x09,
 
             Invalid = 0xFF,
 
@@ -681,6 +691,17 @@ namespace Microsoft.Azure.Documents
             ShouldCheckInflightDtx = 0x0104,
             PopulateCachedWriteRegion = 0x0105,
             PopulateEsanMigrationStatus = 0x0106,
+            ResolveDistributedTransactionBatch = 0x0107,
+            PartialPartitionKey = 0x0108,
+            MutualTlsAuthIntent = 0x0109,
+            NoRetryOn449StatusCode = 0x010A,
+            PopulatePhysicalSplitCopyState = 0x010B,
+            IsDtxAggregatedResponse = 0x010C,
+            PersistDistributedTransactionPrepareFailure = 0x010D,
+            IsChangeFeedFalseProgressPreventionEnabled = 0x010E,
+            IsDtxRetry = 0x010F,
+            IsDtxCrossRegionRedirect = 0x0110,
+            AbacPolicyName = 0x0111,
 
             // Please update RntbdConstants.tt T4 template and generate
             // Also get sign-off from cdbcosdk
@@ -936,6 +957,17 @@ namespace Microsoft.Azure.Documents
             public RntbdToken shouldCheckInflightDtx;
             public RntbdToken populateCachedWriteRegion;
             public RntbdToken populateEsanMigrationStatus;
+            public RntbdToken resolveDistributedTransactionBatch;
+            public RntbdToken partialPartitionKey;
+            public RntbdToken mutualTlsAuthIntent;
+            public RntbdToken noRetryOn449StatusCode;
+            public RntbdToken populatePhysicalSplitCopyState;
+            public RntbdToken isDtxAggregatedResponse;
+            public RntbdToken persistDistributedTransactionPrepareFailure;
+            public RntbdToken isChangeFeedFalseProgressPreventionEnabled;
+            public RntbdToken isDtxRetry;
+            public RntbdToken isDtxCrossRegionRedirect;
+            public RntbdToken abacPolicyName;
 
             public Request()
             {
@@ -1185,6 +1217,17 @@ namespace Microsoft.Azure.Documents
                 this.shouldCheckInflightDtx = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.ShouldCheckInflightDtx);
                 this.populateCachedWriteRegion = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateCachedWriteRegion);
                 this.populateEsanMigrationStatus = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateEsanMigrationStatus);
+                this.resolveDistributedTransactionBatch = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.ResolveDistributedTransactionBatch);
+                this.partialPartitionKey = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.PartialPartitionKey);
+                this.mutualTlsAuthIntent = new RntbdToken(false, RntbdTokenTypes.UShort, (ushort)RequestIdentifiers.MutualTlsAuthIntent);
+                this.noRetryOn449StatusCode = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.NoRetryOn449StatusCode);
+                this.populatePhysicalSplitCopyState = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulatePhysicalSplitCopyState);
+                this.isDtxAggregatedResponse = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsDtxAggregatedResponse);
+                this.persistDistributedTransactionPrepareFailure = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PersistDistributedTransactionPrepareFailure);
+                this.isChangeFeedFalseProgressPreventionEnabled = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsChangeFeedFalseProgressPreventionEnabled);
+                this.isDtxRetry = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsDtxRetry);
+                this.isDtxCrossRegionRedirect = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsDtxCrossRegionRedirect);
+                this.abacPolicyName = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.AbacPolicyName);
 
                 this.tokens = new RntbdToken[]
                 {
@@ -1451,6 +1494,17 @@ namespace Microsoft.Azure.Documents
                     this.shouldCheckInflightDtx,
                     this.populateCachedWriteRegion,
                     this.populateEsanMigrationStatus,
+                    this.resolveDistributedTransactionBatch,
+                    this.partialPartitionKey,
+                    this.mutualTlsAuthIntent,
+                    this.noRetryOn449StatusCode,
+                    this.populatePhysicalSplitCopyState,
+                    this.isDtxAggregatedResponse,
+                    this.persistDistributedTransactionPrepareFailure,
+                    this.isChangeFeedFalseProgressPreventionEnabled,
+                    this.isDtxRetry,
+                    this.isDtxCrossRegionRedirect,
+                    this.abacPolicyName,
                 };
             }
         }
@@ -1557,6 +1611,8 @@ namespace Microsoft.Azure.Documents
             ThroughputBucketApplied = 0x0085,
             HybridLogicalClockTimestamp = 0x0086,
             ConflictResolvedTimestamp = 0x0087,
+            PhysicalSplitCopyState = 0x0089,
+            IsDtxAggregatedResponse = 0x008A,
 
             // Please update RntbdConstants.tt T4 template and generate
             // Also get sign-off from cdbcosdk

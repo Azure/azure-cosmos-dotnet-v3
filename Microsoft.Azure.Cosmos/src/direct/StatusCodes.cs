@@ -75,6 +75,7 @@ namespace Microsoft.Azure.Documents
         // 400: Bad Request Substatus
         PartitionKeyMismatch = 1001,
         CrossPartitionQueryNotServable = 1004,
+        InvalidLastLevelKey = 1038,
         ScriptCompileError = 0xFFFF,    // From ExecuteStoredProcedure.
         AnotherOfferReplaceOperationIsInProgress = 3205,
         HttpListenerException = 1101,
@@ -117,6 +118,7 @@ namespace Microsoft.Azure.Documents
         ComputeInternalError = 1021,
         ThroughputCapQuotaExceeded = 1028,
         InvalidThroughputCapValue = 1029,
+        SubscriptionDisabled = 1044,
 
         // 409: Conflict exception
         ConflictWithControlPlane = 1006,
@@ -148,22 +150,33 @@ namespace Microsoft.Azure.Documents
         RequestNotSupportedOnPeriodicBackupModeCosmosDBAccountUserError = 3515,
         RequestNotSupportedOnPPAFEnabledCosmosDBAccountUserError = 3516,
         CrossRegionLongTermProtectionNotAllowedUserError = 3517,
-        RestoreNotSupportedOnServerlessCosmosDBAccountUserError = 3518,
         IncrementalBackupNotEnabledServerError = 3519,
         IncrementalBackupRestoreNotEnabledServerError = 3520,
         WriteRegionChangedSinceLastBackupUserError = 3521,
         BackupTooOldForIncrementalBackupUserError = 3522,
-        InvalidPreviousRecoveryPointInBackupUserError = 3523,
+        InvalidPreviousRecoveryPointInBackupClientError = 3523,
         InvalidFullBackupCountClientError = 3524,
         InvalidRecoveryPointsClientError = 3525,
         RequestNotSupportedOnEmptyCosmosDBAccountUserError = 3526,
-        RequestNotSupportedOnHPKCollectionUserError = 3527,
+        AnotherBackupInProgressOnCosmosDBAccountUserError = 3528,
+        InvalidRestoreScopeUserError = 3529,
+        RequestNotSupportedOnNspEnabledCosmosDBAccountUserError = 3530,
+        AccountThroughputLimitExceededUserError = 3531,
+        ExternalBackupBlobIntegrityCheckFailedServerError = 3532,
 
         // 503: Service Unavailable due to region being out of capacity for bindable partitions
         InsufficientBindablePartitions = 1007,
         NoCandidateFederationsFound = 1008,
         AccountDoesntHaveAllocationAccessInTheRegion = 1009,
         ComputeFederationNotFound = 1012,
+
+        // 412: Service Allocation precondition failures (policy/access blocks)
+        BlockedByServiceAllocationPolicy = 1039,
+        RegionAccessDeniedByPolicy = 1040,
+        CustomerResourceRequirementNotAllowed = 1041,
+        TargetFederationNotAvailable = 1042,
+        AllCandidateFederationsAvoided = 1043,
+
         OperationPaused = 9001,
         InsufficientCapacity = 9003,
 
@@ -265,7 +278,6 @@ namespace Microsoft.Azure.Documents
         PartitionMigrationFailureMitigationInvalidResumeStep = 2074,
         PartitionMigrationResetConfigsAfterWaitForFullSyncTookTooLong = 2075,
         PartitionMigrationResetConfigsAfterWaitForFullSyncReceivedException = 2076,
-        PartitionMigrationAccountConsistencyLevelIsBoundedStaleness = 2077,
         PartitionMigrationWaitForVectorIndexCatchupTimedOut = 2078,
         PartitionMigrationWaitForVectorIndexingCatchupGotCancelledBeforeTimeout = 2079,
         PartitionMigrationWaitForCatchupFailedWithException = 2080,
@@ -290,6 +302,13 @@ namespace Microsoft.Azure.Documents
         ServerPartitionMigrationIsDisabledInTheRegion = 2099,
         PartitionMigrationIsDisabledOnTheSubscription = 2106,
         PartitionMigrationCannotProceedAsHeartbeatManagementIsOutOfSync = 2107,
+        PartitionMigrationSourceOrTargetPartitionUnhealthy = 2108,
+        PartitionMigrationSourceFederationUndergoingUpgrade = 2109,
+        MasterPartitionMigrationIsDisabledOnTheRegionalAccount = 2110,
+        ServerPartitionMigrationIsDisabledOnTheRegionalAccount = 2111,
+        PartitionMigrationCanNotProceedForEsanEligibleAccountAndFederation = 2112,
+        PartitionMigrationRollbackWaitForFullSyncRegrantsFailed = 2113,
+        PartitionMigrationIsPhysicalMigrationInProgressNotSetOnAllWriteRegionReplicas = 2114,
 
         // 412: PreconditionFailed codes for PartitionMigration from backend
         MismatchingCollectionRidsOnMigratePartitionDuringMigration = 5325,
@@ -297,6 +316,7 @@ namespace Microsoft.Azure.Documents
 
         // 412: PreConditionFailed Cross SubRegion Migration SubStatus Codes
         CrossSubRegionMigrationIsDisabledOnTheRegionalAccount = 2200,
+        CrossSubRegionMigrationServerPartitionsNotMigrated = 2201,
 
         // 412: PreConditionFailed SoftDelete substatus codes
         AccountIsSoftDeleted = 1300,
@@ -336,6 +356,7 @@ namespace Microsoft.Azure.Documents
         ThrottleDueToTransportBufferUsage = 3103,
         TooManyThroughputBucketUpdates = 3213,
         TooManyHotPartitionKeyRateLimitingPolicyUpdates = 3215,
+        TooManyInfrequentAccessUpdates = 3216,
         MicrosoftFabricCUBudgetExceeded = 3300,
 
         // Key Vault Access Client Error Code
@@ -433,6 +454,10 @@ namespace Microsoft.Azure.Documents
         DtcDispatchFailure = 5413, // 500: Backend dispatch infrastructure error
         DtcHlcClockSkewAborted = 5421, // 452: Transaction aborted because backend HLC physical timestamp exceeded configured skew from coordinator wall clock
         DtcRetryOperationsMismatch = 5422, // 400: Retry request operations do not match stored transaction participants
+        DtcBackendResponseDuplicateOperation = 5423, // 500: Backend phase response contained the same operation index in more than one per-op entry (wire-format defect — coordinator cannot demultiplex per-op results)
+        DtcBackendResponseMissingOperations = 5424, // 500: Backend phase response did not include a per-op entry for every dispatched operation index (wire-format defect or partial response)
+        DtcNotModifiedWithBody = 5425, // 200: All read-tx ops were NotModified (aggregated envelope 304). The per-op body (statuses, eTags, session tokens) is delivered under HTTP 200 so RFC-compliant clients (e.g. .NET SocketsHttpHandler) do not strip it; the DTx SDK remaps (200 + this sub-status) back to 304 NotModified.
+        DtcInternalError = 5427, // 500: Non-ledger coordinator failure without a more specific DTC sub-status
 
         // DTx per-operation sub-status codes (on 453 DtcOperationRolledBack)
         DtcOperationRolledBack = 5415, // 453: Was prepared, then rolled back
@@ -442,6 +467,13 @@ namespace Microsoft.Azure.Documents
         DtcTransactionAlreadyAborted = 5418, // 409: Prepare rejected, abort tombstone exists
         DtcTransactionAlreadyCommitted = 5419, // 409: Prepare rejected, commit record exists
         DtcCommitAlreadyApplied = 5420, // 2xx: Duplicate commit, idempotent success
+
+        // Mirrors the backend's SubstatusCodeType_DTxPreparePersisted, which the backend defines
+        // in its 112x DTx batch-response diagnostics range rather than the 54xx range. The value
+        // is fixed by the backend wire contract, so it must stay 1126: renumbering it into the
+        // 54xx block silently breaks every coordinator predicate that compares this constant
+        // against the parent sub-status the backend actually emits on a Prepare.
+        DtcPreparePersisted = 1126, // Prepare only: the outcome came from the DTxLog rather than from work done in this request — either a result was replayed for an already-prepared operation (parent 200 when every replayed operation succeeded) or a failed Prepare outcome was durably recorded (parent 207)
 
         // 200 OK. List feed throttled response.
         ListResourceFeedThrottled = 5500,
@@ -460,6 +492,11 @@ namespace Microsoft.Azure.Documents
 
         // 412: PreConditionFailed AZ Migration substatus codes
         AZMigrationCancelledForPendingUserOperation = 7001,
+        AZMigrationGlobalDatabaseAccountLoadFailed = 7002,
+        AZMigrationMasterPartitionsNotMigrated = 7003,
+        AZMigrationServerPartitionsNotMigrated = 7004,
+        AZMigrationServiceReservationCountMismatch = 7005,
+        AZMigrationDedicatedStorageAccountsNotFound = 7006,
 
         // 412: PreconditionFailed TopologyClient SubStatusCodes
         RevokeGlobalWritesTopologyUpsertIntentNotApplied = 8001,
@@ -511,6 +548,7 @@ namespace Microsoft.Azure.Documents
         Server_BarrierThrottled = 21011, // indicates the primary operation succeeded, but barrier failed due to 429 throttling
         Server_NRegionCommitWriteBarrierNotMet = 21012,
         Server_WriteBarrierThrottled = 21013,
+        Server_ReadBarrierFailed = 21014,
 
         // Data Transfer Application related
         MissingPartitionKeyInDataTransfer = 22001,
@@ -543,6 +581,14 @@ namespace Microsoft.Azure.Documents
         ThinProxy_DtcHierarchicalPartitionKeyNotSupported = 13018,
         ThinProxy_DtcResponseBodyTooLargeWithFailedOutcome = 13019,
         ThinProxy_DtcResponseBodyTooLargeWithSuccessfulOutcome = 13020,
+        ThinProxy_RequestMetadataTooLarge = 13022,
+        ThinProxy_RequestBodyTooLarge = 13023,
+        ThinProxy_PartitionConcurrencyThrottled = 13024,
+        #endregion
+
+        #region TopologyValidation (14xxx)
+        TopologyValidationWarning = 14001,
+        TopologyValidationError = 14002,
         #endregion
     }
 

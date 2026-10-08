@@ -8,6 +8,9 @@ namespace Microsoft.Azure.Documents
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Net;
+#if !DOCDBCLIENT
+    using System.Security.Claims;
+#endif
     using Microsoft.Azure.Documents.Routing;
 
     internal sealed class DocumentServiceRequestContext
@@ -84,6 +87,26 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         public bool IsMutualTlsAuthorized { get; set; }
 
+#if !DOCDBCLIENT
+        /// <summary>
+        /// Gets or sets the authenticated caller identity propagated from the HTTP request.
+        /// </summary>
+        public ClaimsPrincipal ClaimsPrincipal { get; set; }
+#endif
+
+        /// <summary>
+        /// Applies request-specific signing to an SDK-generated barrier after its authorization header is populated.
+        /// </summary>
+        public Action<DocumentServiceRequest> BarrierRequestSigner { get; set; }
+
+        /// <summary>
+        /// Indicates whether the original Routing Gateway request was mTLS-authorized by a service configured as
+        /// a non-proxy holder of the federation system key. Carried onto the request so downstream processing
+        /// (e.g. OfferResolver autoscale validation) can let mutual TLS substitute for a system key without
+        /// trusting customer-facing proxy services.
+        /// </summary>
+        public bool IsMutualTlsAuthorizedBySystemKeyService { get; set; }
+
         /// <summary>
         /// Per-request override for <c>FederationConfiguration.EnablePreserveObsoleteRoutingMapOnRefreshFailure</c>
         /// consumed by <c>CollectionRoutingMapCacheV2</c>. Same semantics as the federation flag
@@ -91,6 +114,28 @@ namespace Microsoft.Azure.Documents
         /// federation flag.
         /// </summary>
         public bool? EnablePreserveObsoleteRoutingMapOnRefreshFailureOverride { get; set; }
+
+        /// <summary>
+        /// Per-request override for <c>FederationConfiguration.EnableCollectionRoutingMapZeroDeltaCarryForward</c>,
+        /// consumed by <c>CollectionRoutingMapCacheV2</c> when a partition key range change feed reports
+        /// no changes. When <c>true</c> the refresh carries the cached routing structures and LSN index
+        /// forward instead of rebuilding them. When null, the federation flag applies.
+        /// </summary>
+        public bool? EnableCollectionRoutingMapZeroDeltaCarryForwardOverride { get; set; }
+
+        /// <summary>
+        /// Per-request override for <c>FederationConfiguration.EnableCollectionRoutingMapThrottleRetry</c>,
+        /// consumed when selecting the retry policy for the master-bound change-feed reads that
+        /// back the CollectionRoutingMap refresh. When null, the federation flag applies.
+        /// </summary>
+        public bool? EnableCollectionRoutingMapThrottleRetryOverride { get; set; }
+
+        /// <summary>
+        /// Per-request override for
+        /// <c>FederationConfiguration.CollectionRoutingMapThrottleMaxRetryWaitTimeInSeconds</c>, the total
+        /// wall-clock retry budget for those same reads. When null, the federation value applies.
+        /// </summary>
+        public int? CollectionRoutingMapThrottleMaxRetryWaitTimeInSecondsOverride { get; set; }
 
         /// <summary>
         /// Cache the write storeResult in context during global strong or less than strong consistency writes
@@ -304,7 +349,15 @@ namespace Microsoft.Azure.Documents
             requestContext.GlobalStrongWriteEndpoint = this.GlobalStrongWriteEndpoint;
             requestContext.ApplyNRegionSynchronousCommit = this.ApplyNRegionSynchronousCommit;
             requestContext.IsMutualTlsAuthorized = this.IsMutualTlsAuthorized;
+#if !DOCDBCLIENT
+            requestContext.ClaimsPrincipal = this.ClaimsPrincipal;
+#endif
+            requestContext.BarrierRequestSigner = this.BarrierRequestSigner;
+            requestContext.IsMutualTlsAuthorizedBySystemKeyService = this.IsMutualTlsAuthorizedBySystemKeyService;
             requestContext.EnablePreserveObsoleteRoutingMapOnRefreshFailureOverride = this.EnablePreserveObsoleteRoutingMapOnRefreshFailureOverride;
+            requestContext.EnableCollectionRoutingMapZeroDeltaCarryForwardOverride = this.EnableCollectionRoutingMapZeroDeltaCarryForwardOverride;
+            requestContext.EnableCollectionRoutingMapThrottleRetryOverride = this.EnableCollectionRoutingMapThrottleRetryOverride;
+            requestContext.CollectionRoutingMapThrottleMaxRetryWaitTimeInSecondsOverride = this.CollectionRoutingMapThrottleMaxRetryWaitTimeInSecondsOverride;
             requestContext.ReadConsistencyStrategy = this.ReadConsistencyStrategy;
 
             return requestContext;

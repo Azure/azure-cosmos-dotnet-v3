@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
@@ -99,6 +99,70 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// Exceptionless variant of <see cref="ReadMultipleReplicaAsync"/>.
+        /// Returns the exception as part of the <see cref="Res{T}"/> instead of throwing.
+        /// </summary>
+        internal async Task<Res<IList<ReferenceCountedDisposable<StoreResult>>>> TryReadMultipleReplicaAsync(
+            DocumentServiceRequest entity,
+            bool includePrimary,
+            int replicaCountToRead,
+            bool requiresValidLsn,
+            bool useSessionToken,
+            ReadMode readMode,
+            bool checkMinLSN = false,
+            bool forceReadAll = false)
+        {
+            if (entity.RequestContext.TimeoutHelper.TryGetGoneOrCancelledException(out Exception timeoutException))
+            {
+                return Res.FromException<IList<ReferenceCountedDisposable<StoreResult>>>(timeoutException);
+            }
+
+            string originalSessionToken = entity.Headers[HttpConstants.HttpHeaders.SessionToken];
+            try
+            {
+                using ReadReplicaResult readQuorumResult = await this.TryReadMultipleReplicasInternalAsync(
+                    entity, includePrimary, replicaCountToRead, requiresValidLsn, useSessionToken, readMode, checkMinLSN, forceReadAll);
+                if (readQuorumResult.Exception != null)
+                {
+                    return Res.FromException<IList<ReferenceCountedDisposable<StoreResult>>>(readQuorumResult.Exception);
+                }
+
+                if (entity.RequestContext.PerformLocalRefreshOnGoneException &&
+                    readQuorumResult.RetryWithForceRefresh &&
+                    !entity.RequestContext.ForceRefreshAddressCache)
+                {
+                    if (entity.RequestContext.TimeoutHelper.TryGetGoneOrCancelledException(out Exception elapsed))
+                    {
+                        return Res.FromException<IList<ReferenceCountedDisposable<StoreResult>>>(elapsed);
+                    }
+
+                    entity.RequestContext.ForceRefreshAddressCache = true;
+                    using ReadReplicaResult readQuorumResultSecondCall = await this.TryReadMultipleReplicasInternalAsync(
+                        entity,
+                        includePrimary: includePrimary,
+                        replicaCountToRead: replicaCountToRead,
+                        requiresValidLsn: requiresValidLsn,
+                        useSessionToken: useSessionToken,
+                        readMode: readMode,
+                        checkMinLSN: false,
+                        forceReadAll: forceReadAll);
+                    if (readQuorumResultSecondCall.Exception != null)
+                    {
+                        return Res.FromException<IList<ReferenceCountedDisposable<StoreResult>>>(readQuorumResultSecondCall.Exception);
+                    }
+
+                    return Res.Success(readQuorumResultSecondCall.StoreResultList.GetValueAndDereference());
+                }
+
+                return Res.Success(readQuorumResult.StoreResultList.GetValueAndDereference());
+            }
+            finally
+            {
+                SessionTokenHelper.SetOriginalSessionToken(entity, originalSessionToken);
+            }
+        }
+
         public async Task<ReferenceCountedDisposable<StoreResult>> ReadPrimaryAsync(
             DocumentServiceRequest entity,
             bool requiresValidLsn,
@@ -136,6 +200,64 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// Exceptionless variant of <see cref="ReadPrimaryAsync"/>.
+        /// Returns the exception as part of the <see cref="Res{T}"/> instead of throwing.
+        /// </summary>
+        internal async Task<Res<ReferenceCountedDisposable<StoreResult>>> TryReadPrimaryAsync(
+            DocumentServiceRequest entity,
+            bool requiresValidLsn,
+            bool useSessionToken)
+        {
+            if (entity.RequestContext.TimeoutHelper.TryGetGoneOrCancelledException(out Exception timeoutException))
+            {
+                return Res.FromException<ReferenceCountedDisposable<StoreResult>>(timeoutException);
+            }
+
+            string originalSessionToken = entity.Headers[HttpConstants.HttpHeaders.SessionToken];
+            try
+            {
+                using ReadReplicaResult readQuorumResult = await this.TryReadPrimaryInternalAsync(
+                        entity,
+                        requiresValidLsn,
+                        useSessionToken,
+                        isRetryAfterRefresh: false);
+                if (readQuorumResult.Exception != null)
+                {
+                    return Res.FromException<ReferenceCountedDisposable<StoreResult>>(readQuorumResult.Exception);
+                }
+
+                if (entity.RequestContext.PerformLocalRefreshOnGoneException &&
+                    readQuorumResult.RetryWithForceRefresh &&
+                    !entity.RequestContext.ForceRefreshAddressCache)
+                {
+                    if (entity.RequestContext.TimeoutHelper.TryGetGoneOrCancelledException(out Exception elapsed))
+                    {
+                        return Res.FromException<ReferenceCountedDisposable<StoreResult>>(elapsed);
+                    }
+
+                    entity.RequestContext.ForceRefreshAddressCache = true;
+                    using ReadReplicaResult readQuorumResultSecondCall = await this.TryReadPrimaryInternalAsync(
+                            entity,
+                            requiresValidLsn,
+                            useSessionToken,
+                            isRetryAfterRefresh: true);
+                    if (readQuorumResultSecondCall.Exception != null)
+                    {
+                        return Res.FromException<ReferenceCountedDisposable<StoreResult>>(readQuorumResultSecondCall.Exception);
+                    }
+
+                    return StoreReader.TryGetStoreResult(readQuorumResultSecondCall);
+                }
+
+                return StoreReader.TryGetStoreResult(readQuorumResult);
+            }
+            finally
+            {
+                SessionTokenHelper.SetOriginalSessionToken(entity, originalSessionToken);
+            }
+        }
+
         private static ReferenceCountedDisposable<StoreResult> GetStoreResultOrThrowGoneException(ReadReplicaResult readReplicaResult)
         {
             StoreResultList storeResultList = readReplicaResult.StoreResultList;
@@ -145,6 +267,18 @@ namespace Microsoft.Azure.Documents
             }
 
             return storeResultList.GetFirstStoreResultAndDereference();
+        }
+
+        private static Res<ReferenceCountedDisposable<StoreResult>> TryGetStoreResult(ReadReplicaResult readReplicaResult)
+        {
+            StoreResultList storeResultList = readReplicaResult.StoreResultList;
+            if (storeResultList.Count == 0)
+            {
+                return Res.FromException<ReferenceCountedDisposable<StoreResult>>(
+                    new GoneException(RMResources.Gone, SubStatusCodes.Server_NoValidStoreResponse));
+            }
+
+            return Res.Success(storeResultList.GetFirstStoreResultAndDereference());
         }
 
         /// <summary>
@@ -316,12 +450,12 @@ namespace Microsoft.Azure.Documents
 
                         if (storeResponse != null)
                         {
-                            entity.RequestContext.ClientRequestStatistics.ContactedReplicas.Add(targetUri);
+                            entity.RequestContext.ClientRequestStatistics.AppendContactedReplica(targetUri);
                         }
 
                         if (storeException != null && storeException.InnerException is TransportException)
                         {
-                            entity.RequestContext.ClientRequestStatistics.FailedReplicas.Add(targetUri);
+                            entity.RequestContext.ClientRequestStatistics.AppendFailedReplica(targetUri);
                         }
 
                         entity.RequestContext.ClientRequestStatistics.RecordResponse(
@@ -416,6 +550,258 @@ namespace Microsoft.Azure.Documents
             return new ReadReplicaResult(false, storeResultList.GetValueAndDereference());
         }
 
+        /// <summary>
+        /// Exceptionless variant of <see cref="ReadMultipleReplicasInternalAsync"/>.
+        /// Returns errors via <see cref="ReadReplicaResult.Exception"/> instead of throwing.
+        /// </summary>
+        private async Task<ReadReplicaResult> TryReadMultipleReplicasInternalAsync(
+            DocumentServiceRequest entity,
+            bool includePrimary,
+            int replicaCountToRead,
+            bool requiresValidLsn,
+            bool useSessionToken,
+            ReadMode readMode,
+            bool checkMinLSN = false,
+            bool forceReadAll = false)
+        {
+            if (entity.RequestContext.TimeoutHelper.TryGetGoneOrCancelledException(out Exception timeoutEx))
+            {
+                return new ReadReplicaResult(timeoutEx);
+            }
+
+            using StoreResultList storeResultList = new(new List<ReferenceCountedDisposable<StoreResult>>(replicaCountToRead));
+            ReferenceCountedDisposable<StoreResult> sessionNotFoundStoreResult = null;
+
+            string requestedCollectionRid = entity.RequestContext.ResolvedCollectionRid;
+
+            Res<(IReadOnlyList<TransportAddressUri>, IReadOnlyList<string>)> addressRes =
+                await this.addressSelector.NonThrowingResolveAllTransportAddressUriAsync(
+                     entity,
+                     includePrimary,
+                     entity.RequestContext.ForceRefreshAddressCache);
+            if (!addressRes.IsSuccess)
+            {
+                return new ReadReplicaResult(addressRes.Exception);
+            }
+
+            (IReadOnlyList<TransportAddressUri> resolveApiResults, IReadOnlyList<string> replicaHealthStatuses) = addressRes.Value;
+
+            ISessionToken requestSessionToken = null;
+            Res<bool> sessionTokenResult = this.TryApplySessionToken(entity, useSessionToken);
+            if (!sessionTokenResult.IsSuccess)
+            {
+                return new ReadReplicaResult(sessionTokenResult.Exception);
+            }
+
+            if (useSessionToken && checkMinLSN)
+            {
+                requestSessionToken = entity.RequestContext.SessionToken;
+            }
+
+            if (resolveApiResults.Count < replicaCountToRead)
+            {
+                if (!entity.RequestContext.ForceRefreshAddressCache)
+                {
+                    return new ReadReplicaResult(retryWithForceRefresh: true, responses: storeResultList.GetValueAndDereference());
+                }
+
+                return new ReadReplicaResult(retryWithForceRefresh: false, responses: storeResultList.GetValueAndDereference());
+            }
+
+            int replicasToRead = replicaCountToRead;
+
+            string clientVersion = entity.Headers[HttpConstants.HttpHeaders.Version];
+            bool enforceSessionCheck = !string.IsNullOrEmpty(clientVersion) && VersionUtility.IsLaterThan(clientVersion, HttpConstants.VersionDates.v2016_05_30);
+
+            Res<bool> continuationResult = this.TryUpdateContinuationTokenIfReadFeedOrQuery(entity);
+            if (!continuationResult.IsSuccess)
+            {
+                return new ReadReplicaResult(continuationResult.Exception);
+            }
+
+            bool hasGoneException = false;
+            bool hasCancellationException = false;
+            Exception cancellationException = null;
+            Exception exceptionToThrow = null;
+            SubStatusCodes subStatusCodeForException = SubStatusCodes.Unknown;
+            IEnumerator<TransportAddressUri> uriEnumerator = this.addressEnumerator
+                                                            .GetTransportAddresses(transportAddressUris: resolveApiResults,
+                                                                                   failedEndpoints: entity.RequestContext.FailedEndpoints,
+                                                                                   replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled)
+                                                            .GetEnumerator();
+
+            while (replicasToRead > 0 && uriEnumerator.MoveNext())
+            {
+                if (entity.RequestContext.TimeoutHelper.TryGetGoneOrCancelledException(out Exception elapsed))
+                {
+                    return new ReadReplicaResult(elapsed);
+                }
+
+                Dictionary<Task<(Res<StoreResponse> result, DateTime endTime)>, (TransportAddressUri, DateTime startTime)> readStoreTasks =
+                    new Dictionary<Task<(Res<StoreResponse> result, DateTime endTime)>, (TransportAddressUri, DateTime startTime)>();
+
+                do
+                {
+                    readStoreTasks.Add(this.TryReadFromStoreAsync(
+                            physicalAddress: uriEnumerator.Current,
+                            request: entity),
+                        (uriEnumerator.Current, DateTime.UtcNow));
+
+                    if (!forceReadAll && readStoreTasks.Count == replicasToRead)
+                    {
+                        break;
+                    }
+                } while (uriEnumerator.MoveNext());
+
+                await Task.WhenAll(readStoreTasks.Keys);
+
+                foreach (KeyValuePair<Task<(Res<StoreResponse> result, DateTime endTime)>, (TransportAddressUri uri, DateTime startTime)> readTaskValuePair in readStoreTasks)
+                {
+                    Task<(Res<StoreResponse> result, DateTime endTime)> readTask = readTaskValuePair.Key;
+                    (Res<StoreResponse> storeResponseResult, DateTime endTime) = readTask.Result;
+                    StoreResponse storeResponse = storeResponseResult.IsSuccess ? storeResponseResult.Value : null;
+                    Exception storeException = storeResponseResult.IsSuccess ? null : storeResponseResult.Exception;
+                    TransportAddressUri targetUri = readTaskValuePair.Value.uri;
+
+                    if (storeException != null)
+                    {
+                        entity.RequestContext.AddToFailedEndpoints(storeException, targetUri);
+
+                        exceptionToThrow = storeException;
+                        if (storeException is DocumentClientException documentClientException)
+                        {
+                            subStatusCodeForException = documentClientException.GetSubStatus();
+                        }
+                    }
+
+                    if (storeException is OperationCanceledException)
+                    {
+                        hasCancellationException = true;
+                        cancellationException ??= storeException;
+                        continue;
+                    }
+
+                    using (ReferenceCountedDisposable<StoreResult> disposableStoreResult = StoreResult.CreateStoreResult(
+                        storeResponse,
+                        storeException,
+                        requiresValidLsn,
+                        this.canUseLocalLSNBasedHeaders && readMode != ReadMode.Strong,
+                        replicaHealthStatuses,
+                        targetUri.Uri))
+                    {
+                        StoreResult storeResult = disposableStoreResult.Target;
+                        entity.RequestContext.RequestChargeTracker.AddCharge(storeResult.RequestCharge);
+
+                        if (storeResult.CurrentReplicaSetSize
+                            > entity.RequestContext.MaxCurrentReplicaSetSizeFromResponse)
+                        {
+                            entity.RequestContext.MaxCurrentReplicaSetSizeFromResponse =
+                                storeResult.CurrentReplicaSetSize;
+                        }
+
+                        if (storeResponse != null)
+                        {
+                            entity.RequestContext.ClientRequestStatistics.AppendContactedReplica(targetUri);
+                        }
+
+                        if (storeException != null && storeException.InnerException is TransportException)
+                        {
+                            entity.RequestContext.ClientRequestStatistics.AppendFailedReplica(targetUri);
+                        }
+
+                        entity.RequestContext.ClientRequestStatistics.RecordResponse(
+                            entity,
+                            storeResult,
+                            readTaskValuePair.Value.startTime,
+                            endTime);
+
+                        if (storeResult.Exception != null && !StoreResult.CanContinueOnException(storeResult.Exception))
+                        {
+                            return new ReadReplicaResult(storeResult.Exception);
+                        }
+
+                        if (storeResult.IsValid
+                            && (!entity.IsValidStatusCodeForExceptionlessRetry((int)storeResult.StatusCode, storeResult.SubStatusCode) || !requiresValidLsn || storeResult.LSN > 0))
+                        {
+                            bool requestSessionTokenIsValid = false;
+                            if (requestSessionToken != null && storeResult.SessionToken != null)
+                            {
+                                Res<bool> sessionTokenValidRes = StoreReader.TryIsSessionTokenValid(requestSessionToken, storeResult.SessionToken);
+                                if (!sessionTokenValidRes.IsSuccess)
+                                {
+                                    return new ReadReplicaResult(sessionTokenValidRes.Exception);
+                                }
+
+                                requestSessionTokenIsValid = sessionTokenValidRes.Value;
+                            }
+
+                            if (requestSessionToken == null
+                                 || (storeResult.SessionToken != null && requestSessionTokenIsValid)
+                                 || (!enforceSessionCheck && storeResult.StatusCode != StatusCodes.NotFound))
+                            {
+                                storeResultList.Add(disposableStoreResult.TryAddReference());
+                            }
+
+                            if (storeResultList.Count == 0
+                                && sessionNotFoundStoreResult == null
+                                && entity.IsValidRequestFor4041002()
+                                && storeResult.StatusCode == StatusCodes.NotFound && storeResult.SubStatusCode == SubStatusCodes.ReadSessionNotAvailable)
+                            {
+                                sessionNotFoundStoreResult = disposableStoreResult.TryAddReference();
+                            }
+                        }
+
+                        hasGoneException |= storeResult.StatusCode == StatusCodes.Gone && storeResult.SubStatusCode != SubStatusCodes.NameCacheIsStale;
+                    }
+
+                    if (hasGoneException && !entity.RequestContext.PerformedBackgroundAddressRefresh)
+                    {
+                        this.addressSelector.StartBackgroundAddressRefresh(entity);
+                        entity.RequestContext.PerformedBackgroundAddressRefresh = true;
+                    }
+                }
+
+                if (storeResultList.Count >= replicaCountToRead)
+                {
+                    return new ReadReplicaResult(false, storeResultList.GetValueAndDereference());
+                }
+
+                replicasToRead = replicaCountToRead - storeResultList.Count;
+            }
+
+            if (storeResultList.Count < replicaCountToRead)
+            {
+                DefaultTrace.TraceInformation("Could not get quorum number of responses. " +
+                    "ValidResponsesReceived: {0} ResponsesExpected: {1}, ResolvedAddressCount: {2}, ResponsesString: {3}",
+                    storeResultList.Count, replicaCountToRead, resolveApiResults.Count, String.Join(";", storeResultList.GetValue()));
+
+                if (hasGoneException)
+                {
+                    if (!entity.RequestContext.PerformLocalRefreshOnGoneException)
+                    {
+                        return new ReadReplicaResult(new GoneException(exceptionToThrow, subStatusCodeForException));
+                    }
+                    else if (!entity.RequestContext.ForceRefreshAddressCache)
+                    {
+                        return new ReadReplicaResult(retryWithForceRefresh: true, responses: storeResultList.GetValueAndDereference());
+                    }
+                }
+                else if (hasCancellationException)
+                {
+                    return new ReadReplicaResult(cancellationException ?? new OperationCanceledException());
+                }
+                else if (sessionNotFoundStoreResult != null)
+                {
+                    using (sessionNotFoundStoreResult)
+                    {
+                        storeResultList.Add(sessionNotFoundStoreResult.TryAddReference());
+                    }
+                }
+            }
+
+            return new ReadReplicaResult(false, storeResultList.GetValueAndDereference());
+        }
+
         private async Task<ReadReplicaResult> ReadPrimaryInternalAsync(
             DocumentServiceRequest entity,
             bool requiresValidLsn,
@@ -472,6 +858,68 @@ namespace Microsoft.Azure.Documents
             return new ReadReplicaResult(false, new ReferenceCountedDisposable<StoreResult>[] { storeResult.TryAddReference() });
         }
 
+        /// <summary>
+        /// Exceptionless variant of <see cref="ReadPrimaryInternalAsync"/>.
+        /// Returns errors via <see cref="ReadReplicaResult.Exception"/> instead of throwing.
+        /// </summary>
+        private async Task<ReadReplicaResult> TryReadPrimaryInternalAsync(
+            DocumentServiceRequest entity,
+            bool requiresValidLsn,
+            bool useSessionToken,
+            bool isRetryAfterRefresh)
+        {
+            if (entity.RequestContext.TimeoutHelper.TryGetGoneOrCancelledException(out Exception timeoutEx))
+            {
+                return new ReadReplicaResult(timeoutEx);
+            }
+
+            Res<TransportAddressUri> primaryUriRes = await this.addressSelector.NonThrowingResolvePrimaryTransportAddressUriAsync(
+                          entity,
+                          entity.RequestContext.ForceRefreshAddressCache);
+            if (!primaryUriRes.IsSuccess)
+            {
+                return new ReadReplicaResult(primaryUriRes.Exception);
+            }
+
+            TransportAddressUri primaryUri = primaryUriRes.Value;
+
+            Res<bool> sessionTokenResult = this.TryApplySessionToken(entity, useSessionToken);
+            if (!sessionTokenResult.IsSuccess)
+            {
+                return new ReadReplicaResult(sessionTokenResult.Exception);
+            }
+
+            DateTime startTimeUtc = DateTime.UtcNow;
+            StrongBox<DateTime?> endTimeUtc = new ();
+            using ReferenceCountedDisposable<StoreResult> storeResult = await TryGetResult(entity, requiresValidLsn, primaryUri, endTimeUtc);
+            entity.RequestContext.ClientRequestStatistics.RecordResponse(
+                entity,
+                storeResult.Target,
+                startTimeUtc,
+                endTimeUtc.Value ?? DateTime.UtcNow);
+
+            entity.RequestContext.RequestChargeTracker.AddCharge(storeResult.Target.RequestCharge);
+
+            if (storeResult.Target.Exception != null && !StoreResult.CanContinueOnException(storeResult.Target.Exception))
+            {
+                return new ReadReplicaResult(storeResult.Target.Exception);
+            }
+
+            if (storeResult.Target.StatusCode == StatusCodes.Gone && storeResult.Target.SubStatusCode != SubStatusCodes.NameCacheIsStale)
+            {
+                if (isRetryAfterRefresh ||
+                    !entity.RequestContext.PerformLocalRefreshOnGoneException ||
+                    entity.RequestContext.ForceRefreshAddressCache)
+                {
+                    return new ReadReplicaResult(new GoneException(RMResources.Gone, storeResult.Target.SubStatusCode));
+                }
+
+                return new ReadReplicaResult(true, new List<ReferenceCountedDisposable<StoreResult>>());
+            }
+
+            return new ReadReplicaResult(false, new ReferenceCountedDisposable<StoreResult>[] { storeResult.TryAddReference() });
+        }
+
         private async Task<ReferenceCountedDisposable<StoreResult>> GetResult(DocumentServiceRequest entity, bool requiresValidLsn, TransportAddressUri primaryUri, StrongBox<DateTime?> endTimeUtc)
         {
             ReferenceCountedDisposable<StoreResult> storeResult;
@@ -514,6 +962,76 @@ namespace Microsoft.Azure.Documents
             return storeResult;
         }
 
+        /// <summary>
+        /// Exceptionless variant of <see cref="GetResult"/>. Uses <see cref="TryReadFromStoreAsync"/>.
+        /// </summary>
+        private async Task<ReferenceCountedDisposable<StoreResult>> TryGetResult(DocumentServiceRequest entity, bool requiresValidLsn, TransportAddressUri primaryUri, StrongBox<DateTime?> endTimeUtc)
+        {
+            List<string> primaryReplicaHealthStatus = new ()
+            {
+                primaryUri
+                .GetCurrentHealthState()
+                .GetHealthStatusDiagnosticString(),
+            };
+
+            Res<bool> continuationResult = this.TryUpdateContinuationTokenIfReadFeedOrQuery(entity);
+            if (!continuationResult.IsSuccess)
+            {
+                DefaultTrace.TraceInformation("Exception {0} is thrown while doing Read Primary", continuationResult.Exception.Message);
+                return StoreResult.CreateStoreResult(
+                    null,
+                    continuationResult.Exception,
+                    requiresValidLsn,
+                    this.canUseLocalLSNBasedHeaders,
+                    replicaHealthStatuses: primaryReplicaHealthStatus,
+                    primaryUri.Uri);
+            }
+
+            (Res<StoreResponse> storeResponseResult, DateTime endTime) = await this.TryReadFromStoreAsync(
+                primaryUri,
+                entity);
+
+            endTimeUtc.Value = endTime;
+
+            StoreResponse storeResponse = storeResponseResult.IsSuccess ? storeResponseResult.Value : null;
+            Exception storeException = storeResponseResult.IsSuccess ? null : storeResponseResult.Exception;
+
+            if (storeException != null)
+            {
+                DefaultTrace.TraceInformation("Exception {0} is thrown while doing Read Primary", storeException.Message);
+            }
+
+            try
+            {
+                return StoreResult.CreateStoreResult(
+                    storeResponse,
+                    storeException,
+                    requiresValidLsn,
+                    this.canUseLocalLSNBasedHeaders,
+                    replicaHealthStatuses: primaryReplicaHealthStatus,
+                    primaryUri.Uri);
+            }
+            catch (Exception exception)
+            {
+                // Mirrors the throwing GetResult, which converts any failure while building the
+                // store result (for example a malformed backend header failing to parse) into a
+                // store result carrying the exception, rather than letting it abort the read.
+                ExceptionlessEscapeTrace.TraceEscape(
+                    ExceptionlessEscapeTrace.StoreReaderPrimaryResult,
+                    exception,
+                    retryable: null);
+
+                DefaultTrace.TraceInformation("Exception {0} is thrown while doing Read Primary", exception.Message);
+                return StoreResult.CreateStoreResult(
+                    null,
+                    exception,
+                    requiresValidLsn,
+                    this.canUseLocalLSNBasedHeaders,
+                    replicaHealthStatuses: primaryReplicaHealthStatus,
+                    primaryUri.Uri);
+            }
+        }
+
         private async Task<(StoreResponse, DateTime endTime)> ReadFromStoreAsync(
             TransportAddressUri physicalAddress,
             DocumentServiceRequest request)
@@ -530,9 +1048,10 @@ namespace Microsoft.Azure.Documents
                 case OperationType.ExecuteJavaScript:
 #if !COSMOSCLIENT
                 case OperationType.MetadataCheckAccess:
-                case OperationType.ExternalPreBackup:
+                case OperationType.ExternalPreBackupSync:
                 case OperationType.CheckExternalBackupStatus:
                 case OperationType.CheckExternalBackupRestoreStatus:
+                case OperationType.CheckExternalPreBackupStatus:
                 case OperationType.GetStorageAuthToken:
 #endif
                     {
@@ -554,6 +1073,76 @@ namespace Microsoft.Azure.Documents
                     }
                 default:
                     throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, "Unexpected operation type {0}", request.OperationType));
+            }
+        }
+
+        /// <summary>
+        /// Exceptionless variant of <see cref="ReadFromStoreAsync"/>.
+        /// Returns a <see cref="Result{T}"/> instead of throwing on transport errors.
+        /// This method must never fault its Task.
+        /// </summary>
+        private async Task<(Res<StoreResponse> result, DateTime endTime)> TryReadFromStoreAsync(
+            TransportAddressUri physicalAddress,
+            DocumentServiceRequest request)
+        {
+            try
+            {
+                if (request.RequestContext.TimeoutHelper.TryGetGoneOrCancelledException(out Exception timeoutException))
+                {
+                    return (Res.FromException<StoreResponse>(timeoutException), DateTime.UtcNow);
+                }
+
+                this.LastReadAddress = physicalAddress.ToString();
+
+                Res<StoreResponse> result;
+                switch (request.OperationType)
+                {
+                    case OperationType.Read:
+                    case OperationType.Head:
+                    case OperationType.HeadFeed:
+                    case OperationType.SqlQuery:
+                    case OperationType.ExecuteJavaScript:
+#if !COSMOSCLIENT
+                    case OperationType.MetadataCheckAccess:
+                    case OperationType.ExternalPreBackupSync:
+                    case OperationType.CheckExternalBackupStatus:
+                    case OperationType.CheckExternalBackupRestoreStatus:
+                    case OperationType.CheckExternalPreBackupStatus:
+                    case OperationType.GetStorageAuthToken:
+#endif
+                        {
+                            result = await this.transportClient.TryInvokeResourceOperationAsync(
+                                physicalAddress,
+                                request);
+                            break;
+                        }
+
+                    case OperationType.ReadFeed:
+                    case OperationType.Query:
+                        {
+                            QueryRequestPerformanceActivity activity = CustomTypeExtensions.StartActivity(request);
+                            result = await this.transportClient.TryInvokeResourceOperationAsync(
+                                physicalAddress,
+                                request);
+                            if (activity != null)
+                            {
+                                activity.ActivityComplete(result.IsSuccess);
+                            }
+
+                            break;
+                        }
+                    default:
+                        return (Res.FromException<StoreResponse>(
+                            new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, "Unexpected operation type {0}", request.OperationType))),
+                            DateTime.UtcNow);
+                }
+
+                return (result, DateTime.UtcNow);
+            }
+            catch (Exception ex)
+            {
+                // Hard boundary: this method must never fault its Task.
+                return (Res.FromException<StoreResponse>(ex), DateTime.UtcNow);
             }
         }
 
@@ -601,6 +1190,120 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// Exceptionless wrapper around <see cref="ISessionToken.IsValid"/>.
+        /// </summary>
+        /// <remarks>
+        /// Both <c>SimpleSessionToken.IsValid</c> and <c>VectorSessionToken.IsValid</c> throw
+        /// <c>ArgumentNullException</c> when the two tokens are different implementations. The
+        /// argument is not actually null in that case, it is the wrong type, and a client can
+        /// reach it: a request session token parsed from a client supplied header can be a
+        /// SimpleSessionToken while the replica responds with a VectorSessionToken. This was
+        /// observed escaping to RequestRetryUtility.TryProcessRequestAsync in a test environment.
+        ///
+        /// Only the exceptionless read loop routes through here, so the resulting status is
+        /// unchanged; the throwing loop still calls IsValid directly. Note that the underlying
+        /// mismatch surfacing as a 500 rather than a 400 is a separate pre-existing issue on both
+        /// paths and is deliberately not changed here.
+        /// </remarks>
+        private static Res<bool> TryIsSessionTokenValid(ISessionToken requestSessionToken, ISessionToken responseSessionToken)
+        {
+            try
+            {
+                return Res.Success(requestSessionToken.IsValid(responseSessionToken));
+            }
+            catch (Exception exception)
+            {
+                return Res.FromException<bool>(exception);
+            }
+        }
+
+        /// <summary>
+        /// Applies the session token handling that the throwing read paths perform inline,
+        /// returning any failure as a <see cref="Res{T}"/> failure instead of throwing.
+        /// </summary>
+        /// <remarks>
+        /// <c>SetPartitionLocalSessionToken</c> reaches <c>GetLocalSessionToken</c>, which throws
+        /// <c>BadRequestException</c> for a malformed client supplied session token, so a client
+        /// can otherwise drive throw volume on the exceptionless read path. It is a shared helper
+        /// with many callers elsewhere, so rather than duplicating it the call is contained here
+        /// and converted at the boundary, matching ConsistencyWriter.TryApplySessionToken on the
+        /// write path.
+        /// </remarks>
+        private Res<bool> TryApplySessionToken(DocumentServiceRequest entity, bool useSessionToken)
+        {
+            try
+            {
+                if (useSessionToken)
+                {
+                    SessionTokenHelper.SetPartitionLocalSessionToken(entity, this.sessionContainer);
+                }
+                else
+                {
+                    entity.Headers.Remove(HttpConstants.HttpHeaders.SessionToken);
+                }
+
+                return Res.Success(true);
+            }
+            catch (Exception exception)
+            {
+                return Res.FromException<bool>(exception);
+            }
+        }
+
+        /// <summary>
+        /// Exceptionless variant of <see cref="UpdateContinuationTokenIfReadFeedOrQuery"/>.
+        /// Returns the <see cref="BadRequestException"/> as a <see cref="Res{T}"/> failure instead
+        /// of throwing. The continuation token is client supplied, so a malformed value is
+        /// client-triggerable and would otherwise let a caller drive throw volume on the
+        /// exceptionless path.
+        /// </summary>
+        private Res<bool> TryUpdateContinuationTokenIfReadFeedOrQuery(DocumentServiceRequest request)
+        {
+            if (request.OperationType != OperationType.ReadFeed &&
+                request.OperationType != OperationType.Query)
+            {
+                return Res.Success(true);
+            }
+
+            string continuation = request.Continuation;
+            if (continuation != null)
+            {
+                int firstSemicolonPosition = continuation.IndexOf(';');
+                // IndexOf returns -1 if ';' is not found
+                if (firstSemicolonPosition < 0)
+                {
+                    return Res.Success(true);
+                }
+
+                int semicolonCount = 1;
+                for (int i = firstSemicolonPosition + 1; i < continuation.Length; i++)
+                {
+                    if (continuation[i] == ';')
+                    {
+                        semicolonCount++;
+                        if (semicolonCount >= 3)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                if (semicolonCount < 3)
+                {
+                    return Res.FromException<bool>(new BadRequestException(string.Format(
+                        CultureInfo.CurrentUICulture,
+                        RMResources.InvalidHeaderValue,
+                        continuation,
+                        HttpConstants.HttpHeaders.Continuation)));
+                }
+
+                request.Continuation = continuation.Substring(0, firstSemicolonPosition);
+            }
+
+            return Res.Success(true);
+        }
+
         private static async Task<StoreResponse> CompleteActivity(Task<StoreResponse> task, QueryRequestPerformanceActivity activity)
         {
             if (activity == null)
@@ -634,7 +1337,15 @@ namespace Microsoft.Azure.Documents
                 this.StoreResultList = new(responses);
             }
 
+            public ReadReplicaResult(Exception exception)
+            {
+                this.Exception = exception;
+                this.StoreResultList = new(new ReferenceCountedDisposable<StoreResult>[0]);
+            }
+
             public bool RetryWithForceRefresh { get; private set; }
+
+            public Exception Exception { get; private set; }
 
             public StoreResultList StoreResultList { get; private set; }
 

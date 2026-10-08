@@ -108,6 +108,12 @@ namespace Microsoft.Azure.Documents
                     this.OfferTargetThroughput = offerTargetThroughput.Value;
                 }
 
+                bool? isInfrequentAccessEnabled = content.IsInfrequentAccessEnabled;
+                if (isInfrequentAccessEnabled.HasValue)
+                {
+                    this.IsInfrequentAccessEnabled = isInfrequentAccessEnabled.Value;
+                }
+
                 int? partitionCount = content.PartitionCount;
                 if (partitionCount.HasValue)
                 {
@@ -164,6 +170,12 @@ namespace Microsoft.Azure.Documents
                     this.OfferTargetThroughput = offerTargetThroughput.Value;
                 }
 
+                bool? isInfrequentAccessEnabled = content.IsInfrequentAccessEnabled;
+                if (isInfrequentAccessEnabled.HasValue)
+                {
+                    this.IsInfrequentAccessEnabled = isInfrequentAccessEnabled.Value;
+                }
+
                 int? partitionCount = content.PartitionCount;
                 if (partitionCount.HasValue)
                 {
@@ -205,6 +217,12 @@ namespace Microsoft.Azure.Documents
                 {
                     this.HotPartitionKeyRateLimitingPolicy = hpkPolicy;
                 }
+
+                bool? isInfrequentAccessEnabled = content.IsInfrequentAccessEnabled;
+                if (isInfrequentAccessEnabled.HasValue)
+                {
+                    this.IsInfrequentAccessEnabled = isInfrequentAccessEnabled.Value;
+                }
             }
 
             if (offerAutopilotSettings != null)
@@ -220,6 +238,15 @@ namespace Microsoft.Azure.Documents
         /// <param name="throughputBuckets">offer autopilot settings</param>
         internal OfferContentV2(OfferContentV2 content, AutopilotSettings offerAutopilotSettings, Collection<ThroughputBucket> throughputBuckets, HotPartitionKeyRateLimitingPolicy hpkPolicy)
         {
+            if (content != null)
+            {
+                bool? isInfrequentAccessEnabled = content.IsInfrequentAccessEnabled;
+                if (isInfrequentAccessEnabled.HasValue)
+                {
+                    this.IsInfrequentAccessEnabled = isInfrequentAccessEnabled.Value;
+                }
+            }
+
             if (offerAutopilotSettings != null)
             {
                 this.OfferAutopilotSettings = new AutopilotSettings(offerAutopilotSettings);
@@ -339,6 +366,12 @@ namespace Microsoft.Azure.Documents
                 this.OfferTargetThroughput = offerTargetThroughput.Value;
             }
 
+            bool? isInfrequentAccessEnabled = contentV2.IsInfrequentAccessEnabled;
+            if (isInfrequentAccessEnabled.HasValue)
+            {
+                this.IsInfrequentAccessEnabled = isInfrequentAccessEnabled.Value;
+            }
+
             int? partitionCount = contentV2.PartitionCount;
             if (partitionCount.HasValue)
             {
@@ -361,7 +394,8 @@ namespace Microsoft.Azure.Documents
             HotPartitionKeyRateLimitingPolicy hpkPolicy = null,
             Collection<PhysicalPartitionThroughputInfo> physicalPartitionThroughputInfo = null,
             int? offerTargetThroughput = null,
-            int? partitionCount = null)
+            int? partitionCount = null,
+            bool? isInfrequentAccessEnabled = null)
         {
             if (source == null)
             {
@@ -373,6 +407,7 @@ namespace Microsoft.Azure.Documents
 
             this.OfferIsRUPerMinuteThroughputEnabled = offerIsRUPerMinuteThroughputEnabled ?? source.OfferIsRUPerMinuteThroughputEnabled;
             this.OfferIsAutoScaleEnabled = offerIsAutoScaleEnabled ?? source.OfferIsAutoScaleEnabled;
+            this.IsInfrequentAccessEnabled = isInfrequentAccessEnabled ?? source.IsInfrequentAccessEnabled;
 
             if (offerAutopilotSettings != null)
             {
@@ -412,11 +447,17 @@ namespace Microsoft.Azure.Documents
             Collection<ThroughputBucket> throughputBuckets,
             HotPartitionKeyRateLimitingPolicy hpkPolicy = null,
             int? offerTargetThroughput = null,
-            int? partitionCount = null)
+            int? partitionCount = null,
+            bool? isInfrequentAccessEnabled = null)
         {
             this.OfferThroughput = offerThroughput;
             this.OfferIsRUPerMinuteThroughputEnabled = offerEnableRUPerMinuteThroughput;
             this.OfferIsAutoScaleEnabled = offerIsAutoScaleV1Enabled;
+
+            if (isInfrequentAccessEnabled.HasValue)
+            {
+                this.IsInfrequentAccessEnabled = isInfrequentAccessEnabled.Value;
+            }
 
             if (autopilotSettings != null)
             {
@@ -493,6 +534,12 @@ namespace Microsoft.Azure.Documents
                     this.OfferTargetThroughput = offerTargetThroughput.Value;
                 }
                 
+                bool? isInfrequentAccessEnabled = content.IsInfrequentAccessEnabled;
+                if (isInfrequentAccessEnabled.HasValue)
+                {
+                    this.IsInfrequentAccessEnabled = isInfrequentAccessEnabled.Value;
+                }
+
                 int? partitionCount = content.PartitionCount;
                 if (partitionCount.HasValue)
                 {
@@ -587,6 +634,22 @@ namespace Microsoft.Azure.Documents
             set
             {
                 base.SetValue(Constants.Properties.OfferIsAutoScaleEnabled, value);
+            }
+        }
+
+        /// <summary>
+        /// Represents whether infrequent access is enabled for the container in the Azure Cosmos DB service.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.IsInfrequentAccessEnabled, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        internal bool? IsInfrequentAccessEnabled
+        {
+            get
+            {
+                return base.GetValue<bool?>(Constants.Properties.IsInfrequentAccessEnabled);
+            }
+            set
+            {
+                base.SetValue(Constants.Properties.IsInfrequentAccessEnabled, value);
             }
         }
 

@@ -35,6 +35,15 @@ namespace Microsoft.Azure.Documents
             return this.InvokeStoreAsync(physicalAddress, new ResourceOperation(request.OperationType, request.ResourceType), request);
         }
 
+        /// <summary>
+        /// Exceptionless variant of <see cref="InvokeResourceOperationAsync(TransportAddressUri, DocumentServiceRequest)"/>.
+        /// Returns a <see cref="Result{T}"/> instead of throwing on transport errors.
+        /// </summary>
+        public virtual Task<Res<StoreResponse>> TryInvokeResourceOperationAsync(TransportAddressUri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.TryInvokeStoreAsync(physicalAddress, new ResourceOperation(request.OperationType, request.ResourceType), request);
+        }
+
         #region Offer Operations
 
         public Task<StoreResponse> CreateOfferAsync(Uri physicalAddress, DocumentServiceRequest request)
@@ -1164,6 +1173,18 @@ namespace Microsoft.Azure.Documents
             Uri physicalAddress,
             ResourceOperation resourceOperation,
             DocumentServiceRequest request);
+
+        /// <summary>
+        /// Exceptionless variant of <see cref="InvokeStoreAsync(TransportAddressUri, ResourceOperation, DocumentServiceRequest)"/>.
+        /// Default implementation wraps the throwing path; RNTBD overrides with a native exceptionless implementation.
+        /// </summary>
+        internal virtual Task<Res<StoreResponse>> TryInvokeStoreAsync(
+            TransportAddressUri physicalAddress,
+            ResourceOperation resourceOperation,
+            DocumentServiceRequest request)
+        {
+            return Res.Wrap(this.InvokeStoreAsync(physicalAddress, resourceOperation, request));
+        }
 
         /// <summary>
         /// Uses the rntbd context negotiation and opens the connection to the backend replica nodes.
