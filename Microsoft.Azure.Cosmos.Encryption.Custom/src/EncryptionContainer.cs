@@ -292,8 +292,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     this.Encryptor,
+                    requestOptions.GetJsonProcessor(this.DefaultJsonProcessor),
+                    legacyFallback: true,
                     diagnosticsContext,
-                    requestOptions,
                     cancellationToken);
             }
 
@@ -1085,6 +1086,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 items,
                 readManyRequestOptions,
                 cancellationToken);
+
+            if (!responseMessage.IsSuccessStatusCode)
+            {
+                return responseMessage;
+            }
 
             Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                 responseMessage.Content,

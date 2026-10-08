@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Newtonsoft.Json;
@@ -23,7 +24,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             EncryptionOptions encryptionOptions,
             CancellationToken cancellationToken)
         {
-            JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
+            JObject itemJObj;
+            using (StreamReader streamReader = new (input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+            using (JsonTextReader jsonTextReader = new (streamReader))
+            {
+                jsonTextReader.ArrayPool = JsonArrayPool.Instance;
+                itemJObj = JsonSerializer.Create(EncryptionProcessor.JsonSerializerSettings).Deserialize<JObject>(jsonTextReader);
+            }
+
             List<string> pathsEncrypted = new ();
             EncryptionProperties encryptionProperties = null;
             byte[] plainText = null;
@@ -68,8 +76,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
 
+            Stream output = EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
             input.Dispose();
-            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+            return output;
         }
 
         internal static async Task<DecryptionContext> DecryptContentAsync(
@@ -97,6 +106,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             using (JsonTextReader jsonTextReader = new (streamReader))
             {
                 jsonTextReader.ArrayPool = JsonArrayPool.Instance;
+                jsonTextReader.DateParseHandling = DateParseHandling.None;
                 plainTextJObj = JObject.Load(jsonTextReader);
             }
 

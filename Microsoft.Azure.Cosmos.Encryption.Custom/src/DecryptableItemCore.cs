@@ -52,7 +52,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 if (document.TryGetValue(Constants.EncryptedInfo, out JToken encryptedInfo) &&
                     encryptedInfo is JObject encryptedInfoObject)
                 {
-                    dataEncryptionKeyId = (string)encryptedInfoObject.GetValue(Constants.EncryptionDekId);
+                    if (encryptedInfoObject.TryGetValue(Constants.EncryptionDekId, out JToken keyId) &&
+                        keyId.Type == JTokenType.String)
+                    {
+                        dataEncryptionKeyId = keyId.Value<string>();
+                    }
+
                     if (encryptedInfoObject.TryGetValue(Constants.EncryptionAlgorithm, out JToken algorithm) &&
                         algorithm.Type != JTokenType.Null)
                     {
