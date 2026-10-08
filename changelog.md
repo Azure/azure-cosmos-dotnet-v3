@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
-- Query: Updates the bundled Windows native query-planning library to Microsoft.Azure.Cosmos.QueryPlanInterop.Windows 1.0.5.
+- Query: Updates the bundled Windows native query planning library to Microsoft.Azure.Cosmos.QueryPlanInterop.Windows 1.0.5.
 
 ### <a name="3.64.0-preview.2"/> [3.64.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.2) - 2026-9-29
 
