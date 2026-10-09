@@ -27,7 +27,7 @@
     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
+  <ItemGroup Condition=" '$(ProjectRef)' != 'True' and '$(OSSProjectRef)' != 'True' ">
     <!-- Enables easier integration into main -->
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
   </ItemGroup>
@@ -44,7 +44,12 @@
 	
   <ItemGroup Condition=" '$(OSSProjectRef)' == 'True' ">
     <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" />
     <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(OSSProjectRef)' == 'True' and '$(ProjectRef)' != 'True'">
+    <IsRidAgnostic>false</IsRidAgnostic>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(OSSProjectRef)' == 'True' and '$(ProjectRef)' != 'True'">
+    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" PrivateAssets="All" />
   </ItemGroup>
 </Project>

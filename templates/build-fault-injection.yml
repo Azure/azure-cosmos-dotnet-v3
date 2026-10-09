@@ -4,10 +4,9 @@
 #
 # Why this exists as a PR gate:
 #   FaultInjection compiles directly against Microsoft.Azure.Cosmos.Direct
-#   (PackageReference "[$(DirectVersion)]" in both FaultInjection.csproj and
-#   FaultInjectionTests.csproj) and consumes Microsoft.Azure.Documents internals
-#   such as IChaosInterceptor, Rntbd.Channel and Rntbd.Dispatcher. A bump to
-#   $(DirectVersion) in Directory.Build.props can therefore break this package
+#   (selected by conditional project/package references) and consumes Microsoft.Azure.Documents
+#   internals such as IChaosInterceptor, Rntbd.Channel and Rntbd.Dispatcher.
+#   Changes to the local Direct source or its temporary package fallback can break this package
 #   even when the main SDK builds cleanly. Without this job the break is only
 #   discovered when the manually-triggered release pipeline is run.
 #

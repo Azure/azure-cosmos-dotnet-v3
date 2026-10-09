@@ -29,6 +29,10 @@
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Encryption.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(SdkProjectRef)' == 'True' and '$(ProjectRef)' != 'True'">
+    <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="Contracts\DotNetSDKEncryptionAPI*.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

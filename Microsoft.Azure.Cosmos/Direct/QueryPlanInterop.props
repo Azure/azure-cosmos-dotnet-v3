@@ -1,0 +1,9 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.Cosmos.QueryPlanInterop.Windows" Version="1.0.5"
+                      PrivateAssets="All" ExcludeAssets="All" GeneratePathProperty="true" />
+  </ItemGroup>
+  <PropertyGroup>
+    <QueryPlanInteropNativePath>$(PkgMicrosoft_Azure_Cosmos_QueryPlanInterop_Windows)\runtimes\win-x64\native\Cosmos.QueryPlanInterop.dll</QueryPlanInteropNativePath>
+  </PropertyGroup>
+</Project>

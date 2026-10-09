@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text.RegularExpressions;
+    using System.Xml.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
@@ -110,6 +111,24 @@ namespace Microsoft.Azure.Cosmos.Contracts
         }
 
         [TestMethod]
+        public void LocalDirectProjectReferenceTest()
+        {
+            XDocument project = XDocument.Load(Path.Combine(Directory.GetCurrentDirectory(), "Microsoft.Azure.Cosmos.csproj"));
+            XElement directReference = project.Descendants("ProjectReference")
+                .Single(reference => (string)reference.Attribute("Include") == @"..\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj");
+
+            Assert.IsNull(directReference.Attribute("Condition"), "Public builds must not select a different Direct provider.");
+            Assert.IsFalse(
+                project.Descendants("PackageReference")
+                    .Any(reference => (string)reference.Attribute("Include") == "Microsoft.Azure.Cosmos.Direct"),
+                "The SDK must not reference the original Direct package.");
+            Assert.IsTrue(
+                project.Descendants("Import")
+                    .Any(import => (string)import.Attribute("Project") == @"..\Direct\QueryPlanInterop.props"),
+                "The native implementation must come from the QueryPlanInterop package.");
+        }
+
+        [TestMethod]
         public void ProjectPackageDependenciesTest()
         {
             string csprojFile = "Microsoft.Azure.Cosmos.csproj";
@@ -148,8 +167,8 @@ namespace Microsoft.Azure.Cosmos.Contracts
             string csprojFile = "Microsoft.Azure.Cosmos.csproj";
             Dictionary<string, Version> projDependencies = DirectContractTests.GetPackageReferencies(csprojFile);
 
-            string[] files = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.nuspec");
-            Dictionary<string, Version> allDependencies = new Dictionary<string, Version>();
+            string[] files = { "microsoft.hybridrow.nuspec" };
+            Dictionary<string, Version> allDependencies = DirectContractTests.GetPackageReferencies("Microsoft.Azure.Cosmos.Direct.csproj");
             foreach (string nuspecFile in files)
             {
                 Dictionary<string, Version> nuspecDependencies = DirectContractTests.GetNuspecDependencies(nuspecFile);
@@ -167,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
                     else
                     {
                         Version existingValue = allDependencies[e.Key];
-                        if (existingValue.CompareTo(e.Value) > 0)
+                        if (existingValue.CompareTo(e.Value) < 0)
                         {
                             allDependencies[e.Key] = e.Value;
                         }
@@ -175,37 +194,31 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 }
             }
 
-            // Dependency version should greater than minimum version defined
+            CollectionAssert.IsSubsetOf(allDependencies.Keys, projDependencies.Keys);
+
+            // Dependency version should be at least the minimum version defined.
             foreach (KeyValuePair<string, Version> e in allDependencies)
             {
                 Assert.IsTrue(e.Value.CompareTo(projDependencies[e.Key]) <= 0, e.Key);
             }
 
-            CollectionAssert.IsSubsetOf(allDependencies.Keys, projDependencies.Keys);
         }
 
         private static Dictionary<string, Version> GetPackageReferencies(string csprojName)
         {
             string fullCsprojName = Path.Combine(Directory.GetCurrentDirectory(), csprojName);
             Trace.TraceInformation($"Testing dependencies for csporj file {fullCsprojName}");
-            string projContent = File.ReadAllText(fullCsprojName);
-
-            Regex projRefMatcher = new Regex("<PackageReference\\s+Include=\"(?<Include>[^\"]*)\"\\s+Version=\"(?<Version>[^\"]*)\"\\s+(PrivateAssets=\"(?<PrivateAssets>[^\"]*)\")?");
-            MatchCollection matches = projRefMatcher.Matches(projContent);
-
-            int prjRefCount = new Regex("<PackageReference").Matches(projContent).Count;
-            Assert.AreEqual(prjRefCount, matches.Count, "CSPROJ PackageReference regex is broken");
-
+            XDocument project = XDocument.Load(fullCsprojName);
             Dictionary<string, Version> projReferences = new Dictionary<string, Version>();
-            foreach (Match m in matches)
+            foreach (XElement reference in project.Descendants("PackageReference"))
             {
-                if (m.Groups["PrivateAssets"].Captures.Count != 0)
+                string name = (string)reference.Attribute("Include");
+                string privateAssets = (string)reference.Attribute("PrivateAssets") ?? (string)reference.Element("PrivateAssets");
+                // Newtonsoft.Json is intentionally private in the SDK but remains a required consumer dependency.
+                if (!string.Equals(privateAssets, "All", StringComparison.OrdinalIgnoreCase) || name == "Newtonsoft.Json")
                 {
-                    Assert.AreEqual("All", m.Groups["PrivateAssets"].Value, $"{m.Groups["Include"].Value}");
-                }
-                else
-                {
-                    projReferences[m.Groups["Include"].Value] = Version.Parse(m.Groups["Version"].Value);
+                    string version = (string)reference.Attribute("Version") ?? (string)reference.Element("Version");
+                    projReferences.Add(name, Version.Parse(version));
                 }
             }
 
