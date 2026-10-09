@@ -2393,22 +2393,10 @@
           ],
           "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] get_Latency();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.Generic.Dictionary`2[System.String,System.Object] get_TokenUseage()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] get_TokenUseage();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "System.Collections.Generic.Dictionary`2[System.String,System.Object] Latency": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] Latency;CanRead:True;CanWrite:False;System.Collections.Generic.Dictionary`2[System.String,System.Object] get_Latency();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Collections.Generic.Dictionary`2[System.String,System.Object] TokenUseage": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] TokenUseage;CanRead:True;CanWrite:False;System.Collections.Generic.Dictionary`2[System.String,System.Object] get_TokenUseage();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.RerankScore] get_RerankScores()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -2433,6 +2421,30 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "System.Net.Http.Headers.HttpResponseHeaders Headers;CanRead:True;CanWrite:False;System.Net.Http.Headers.HttpResponseHeaders get_Headers();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.Dictionary`2[System.String,System.Object] get_TokenUsage()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] get_TokenUsage();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.Dictionary`2[System.String,System.Object] TokenUsage": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] TokenUsage;CanRead:True;CanWrite:False;System.Collections.Generic.Dictionary`2[System.String,System.Object] get_TokenUsage();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.Dictionary`2[System.String,System.Object] get_TokenUseage()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] get_TokenUseage();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.Dictionary`2[System.String,System.Object] TokenUseage[System.ObsoleteAttribute(\"Use TokenUsage instead.\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "ObsoleteAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.Object] TokenUseage;CanRead:True;CanWrite:False;System.Collections.Generic.Dictionary`2[System.String,System.Object] get_TokenUseage();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
