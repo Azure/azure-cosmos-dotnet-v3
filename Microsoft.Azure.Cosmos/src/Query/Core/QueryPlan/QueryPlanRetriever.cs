@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             | QueryFeatures.CountIf
             | QueryFeatures.HybridSearch
             | QueryFeatures.WeightedRankFusion
+            | QueryFeatures.CombinedScore
             | QueryFeatures.HybridSearchSkipOrderByRewrite;
 
         private static readonly QueryFeatures SupportedQueryFeaturesWithHybridSearchQueryPlanOptimizationDisabled =

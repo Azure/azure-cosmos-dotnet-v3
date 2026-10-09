@@ -782,7 +782,285 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
         }
 
-        private static async Task RunHybridSearchTest(HybridSearchTest testCase)
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task CombinedScorePipelineTests(bool skipOrderByRewrite)
+        {
+            foreach (FullTextScoreScope scope in new[] { FullTextScoreScope.Local, FullTextScoreScope.Global })
+            {
+                foreach (double[] weights in new[] { null, new[] { 2.0, 1.0 }, new[] { -2.0, -1.0 } })
+                {
+                    HybridSearchTest test = skipOrderByRewrite
+                        ? MakeHybridSearchSkipOrderByRewriteTest(
+                            leafPageCount: 3, backendPageSize: 4, pageSize: 2, requiresGlobalStatistics: true,
+                            skip: 2, take: 5, weights: weights, fullTextScoreScope: scope, targetRangeCount: 2)
+                        : MakeHybridSearchTest(
+                            leafPageCount: 3, backendPageSize: 4, pageSize: 2, requiresGlobalStatistics: true,
+                            skip: 2, take: 5, weights: weights, fullTextScoreScope: scope, targetRangeCount: 2);
+                    await RunHybridSearchTest(test, ScoreCombinationKind.CombinedScore);
+                }
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task CombinedScoreUsesMagnitudesAndDeduplicatesCandidates(bool optimized)
+        {
+            double[][] scores = { new[] { 100.0, 0.0 }, new[] { 2.0, 3.0 }, new[] { 1.0, 2.0 } };
+            foreach (ScoreCombinationKind? kind in new ScoreCombinationKind?[] { null, ScoreCombinationKind.Rrf, ScoreCombinationKind.CombinedScore })
+            {
+                HybridSearchQueryInfo info = optimized
+                    ? Create2ItemHybridSearchSkipOrderByRewriteQueryInfo(false, null, null, null)
+                    : Create2ItemHybridSearchQueryInfo(false, null, null, null);
+                info.ScoreCombinationKind = kind;
+                IReadOnlyList<CosmosElement>[] components = Enumerable.Range(0, 2)
+                    .Select(component => (IReadOnlyList<CosmosElement>)new[] { component, component + 1 }
+                        .Select(index => CreateHybridSearchDocument(2, index, component, optimized, (_, i) => scores[i])).ToList())
+                    .ToArray();
+                MockDocumentContainer container = MockDocumentContainer.CreateHybridSearchContainer(components);
+                TryCatch<IQueryPipelineStage> pipeline = CreateHybridSearchPipeline(container, info);
+                Assert.IsTrue(pipeline.Succeeded);
+                (IReadOnlyList<CosmosElement> results, double charge) = await RunPipelineStage(pipeline.Result, 1);
+                int[] expected = kind == ScoreCombinationKind.CombinedScore ? new[] { 0, 1, 2 } : new[] { 1, 0, 2 };
+                CollectionAssert.AreEqual(expected, results.Select(result => (int)Number64.ToLong(((CosmosNumber)((CosmosObject)result)[Index]).Value)).ToArray());
+                Assert.AreEqual(container.TotalRequestCharge, charge);
+                await pipeline.Result.DisposeAsync();
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task CombinedScoreDirectionSentinelsAndZeroWeights(bool optimized)
+        {
+            (double[][] Scores, double[] Weights, int[] Expected)[] cases =
+            {
+                (new[] { new[] { 3.0, 10.0 }, new[] { 2.0, 1.0 } }, new[] { 2.0, -1.0 }, new[] { 1, 0 }),
+                (new[] { new[] { 3.0, 1.79769e308 }, new[] { 2.0, 1.0 } }, new[] { 1.0, -1.0 }, new[] { 1, 0 }),
+                (new[] { new[] { 3.0, -1.0 }, new[] { 2.0, 1.0 } }, null, new[] { 1, 0 }),
+                (new[] { new[] { 3.0, double.PositiveInfinity }, new[] { 2.0, double.NaN } }, new[] { 1.0, 0.0 }, new[] { 0, 1 }),
+                (new[] { new[] { 3.0, 10.0 }, new[] { 2.0, 1.0 } }, new[] { 0.0, 0.0 }, new[] { 0, 1 }),
+            };
+
+            foreach ((double[][] scores, double[] weights, int[] expected) in cases)
+            {
+                double[] planWeights = weights?.ToArray();
+                HybridSearchQueryInfo info = optimized
+                    ? Create2ItemHybridSearchSkipOrderByRewriteQueryInfo(false, null, null, planWeights)
+                    : Create2ItemHybridSearchQueryInfo(false, null, null, planWeights);
+                info.ScoreCombinationKind = ScoreCombinationKind.CombinedScore;
+                IReadOnlyList<CosmosElement>[] components = Enumerable.Range(0, 2)
+                    .Select(component => (IReadOnlyList<CosmosElement>)Enumerable.Range(0, scores.Length).Reverse()
+                        .Select(index => CreateHybridSearchDocument(2, index, component, optimized,
+                            (_, i) => scores[i].Select((score, j) => optimized && weights != null && weights[j] < 0 ? -score : score).ToArray()))
+                        .ToList()).ToArray();
+                MockDocumentContainer container = MockDocumentContainer.CreateHybridSearchContainer(components);
+                TryCatch<IQueryPipelineStage> pipeline = CreateHybridSearchPipeline(container, info);
+                Assert.IsTrue(pipeline.Succeeded);
+                (IReadOnlyList<CosmosElement> results, _) = await RunPipelineStage(pipeline.Result, 1);
+                int[] expectedOrder = expected;
+                if (weights != null && weights.All(weight => weight == 0))
+                {
+                    expectedOrder = expected.OrderBy(index => Documents.ResourceId.NewCollectionChildResourceId(
+                        CollectionRid, (ulong)index, Documents.ResourceType.Document).ToString(), StringComparer.Ordinal).ToArray();
+                }
+
+                CollectionAssert.AreEqual(expectedOrder, results.Select(result => (int)Number64.ToLong(((CosmosNumber)((CosmosObject)result)[Index]).Value)).ToArray());
+                await pipeline.Result.DisposeAsync();
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(2)]
+        public async Task CombinedScoreEmptySingletonAndRepeatedComponents(int documentCount)
+        {
+            HybridSearchQueryInfo info = Create2ItemHybridSearchSkipOrderByRewriteQueryInfo(false, null, null, null);
+            info.ScoreCombinationKind = ScoreCombinationKind.CombinedScore;
+            info.ComponentQueryInfos.Add(info.ComponentQueryInfos[0]);
+            info.ComponentWeights = new List<double>();
+            double[][] scores = { new[] { 4.0, 0.0, 4.0 }, new[] { 0.0, 7.0, 0.0 } };
+            IReadOnlyList<CosmosElement>[] components = Enumerable.Range(0, 3)
+                .Select(component => (IReadOnlyList<CosmosElement>)Enumerable.Range(0, documentCount)
+                    .Select(index => CreateHybridSearchDocument(3, index, component, true, (_, i) => scores[i])).ToList())
+                .ToArray();
+            MockDocumentContainer container = MockDocumentContainer.CreateHybridSearchContainer(components);
+            TryCatch<IQueryPipelineStage> pipeline = CreateHybridSearchPipeline(container, info);
+            Assert.IsTrue(pipeline.Succeeded);
+            (IReadOnlyList<CosmosElement> results, _) = await RunPipelineStage(pipeline.Result, 1);
+            CollectionAssert.AreEqual(Enumerable.Range(0, documentCount).ToArray(),
+                results.Select(result => (int)Number64.ToLong(((CosmosNumber)((CosmosObject)result)[Index]).Value)).ToArray());
+            await pipeline.Result.DisposeAsync();
+        }
+
+        [TestMethod]
+        public void CombinedScoreRejectsMalformedPlans()
+        {
+            Action<HybridSearchQueryInfo>[] invalidPlans =
+            {
+                info => info.ScoreCombinationKind = (ScoreCombinationKind)99,
+                info => info.ComponentQueryInfos = null,
+                info => info.ComponentQueryInfos.Clear(),
+                info => info.ComponentQueryInfos.RemoveAt(1),
+                info => info.ComponentQueryInfos[0] = null,
+                info => info.ComponentWeights = new List<double> { 1 },
+                info => info.ComponentWeights = new List<double> { 1, 1, 1 },
+                info => info.ComponentWeights = new List<double> { -1, 1 },
+                info => info.ComponentWeights = new List<double> { double.NaN, 1 },
+                info => info.ComponentWeights = new List<double> { double.PositiveInfinity, 1 },
+                info => info.ComponentQueryInfos[0].OrderBy = new[] { (SortOrder)99 },
+                info => info.ComponentQueryInfos[0].Top = uint.MaxValue,
+                info => info.ComponentQueryInfos[0].Limit = uint.MaxValue,
+                info => info.ComponentQueryInfos[0].Offset = uint.MaxValue,
+                info => info.Skip = uint.MaxValue,
+                info => info.Take = uint.MaxValue,
+            };
+            foreach (Action<HybridSearchQueryInfo> invalidate in invalidPlans)
+            {
+                HybridSearchQueryInfo info = Create2ItemHybridSearchSkipOrderByRewriteQueryInfo(false, null, null, null);
+                info.ScoreCombinationKind = ScoreCombinationKind.CombinedScore;
+                invalidate(info);
+                MockDocumentContainer container = MockDocumentContainer.CreateHybridSearchContainer(
+                    new IReadOnlyList<CosmosElement>[] { Array.Empty<CosmosElement>(), Array.Empty<CosmosElement>() });
+                TryCatch<IQueryPipelineStage> pipeline = CreateHybridSearchPipeline(container, info);
+                Assert.IsTrue(pipeline.Failed);
+                Assert.AreEqual(0, container.TotalRequestCharge);
+            }
+        }
+
+        [TestMethod]
+        public async Task CombinedScoreRejectsMalformedResultsAndOverflow()
+        {
+            CosmosElement[] scoreArrays =
+            {
+                CosmosArray.Create(Array.Empty<CosmosElement>()),
+                CosmosArray.Create(new[] { CosmosNumber64.Create(1) }),
+                CosmosArray.Create(new[] { CosmosNumber64.Create(1), CosmosNumber64.Create(2), CosmosNumber64.Create(3) }),
+                CosmosArray.Create(new CosmosElement[] { CosmosString.Create("1"), CosmosNumber64.Create(2) }),
+                CosmosArray.Create(new[] { CosmosNumber64.Create(double.NaN), CosmosNumber64.Create(1) }),
+                CosmosArray.Create(new[] { CosmosNumber64.Create(double.PositiveInfinity), CosmosNumber64.Create(1) }),
+                CosmosArray.Create(new[] { CosmosNumber64.Create(1.79769e308), CosmosNumber64.Create(1) }),
+                CosmosArray.Create(new[] { CosmosNumber64.Create(5e307), CosmosNumber64.Create(1e308) }),
+                CosmosNull.Create(),
+            };
+            foreach (CosmosElement scores in scoreArrays)
+            {
+                HybridSearchQueryInfo info = Create2ItemHybridSearchSkipOrderByRewriteQueryInfo(false, null, null, new[] { 2.0, 1.0 });
+                info.ScoreCombinationKind = ScoreCombinationKind.CombinedScore;
+                CosmosElement document = CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    [RId] = CosmosString.Create("rid"),
+                    [ComponentScores] = scores,
+                    [Payload] = CosmosString.Create("projection"),
+                });
+                // Only one candidate, to exercise validation before any cardinality fast path.
+                MockDocumentContainer container = MockDocumentContainer.CreateHybridSearchContainer(
+                    new IReadOnlyList<CosmosElement>[] { new[] { document }, Array.Empty<CosmosElement>() });
+                TryCatch<IQueryPipelineStage> pipeline = CreateHybridSearchPipeline(container, info);
+                Assert.IsTrue(pipeline.Succeeded);
+                Assert.IsTrue(await pipeline.Result.MoveNextAsync(NoOpTrace.Singleton, default));
+                Assert.IsTrue(pipeline.Result.Current.Failed, scores.ToString());
+                Assert.IsFalse(await pipeline.Result.MoveNextAsync(NoOpTrace.Singleton, default));
+                await pipeline.Result.DisposeAsync();
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task CombinedScorePreservesPlannedCandidateBreadthAndParameters(bool optimized)
+        {
+            HybridSearchQueryInfo info = optimized
+                ? Create2ItemHybridSearchSkipOrderByRewriteQueryInfo(false, 1, 2, null)
+                : Create2ItemHybridSearchQueryInfo(false, 1, 2, null);
+            info.ScoreCombinationKind = ScoreCombinationKind.CombinedScore;
+            foreach (QueryInfo component in info.ComponentQueryInfos)
+            {
+                component.RewrittenQuery = component.RewrittenQuery.Replace("TOP 200", "TOP 120");
+                component.Top = optimized ? null : 120U;
+            }
+
+            SqlQuerySpec originalQuery = new SqlQuerySpec(
+                "SELECT c.text FROM c ORDER BY RANK COMBINEDSCORE(FullTextScore(c.text, 'swim'), " +
+                "FullTextScore(c.abstract, 'energy'), @weights, @multiplier) OFFSET 1 LIMIT 2",
+                new SqlParameterCollection
+                {
+                    new SqlParameter("@weights", new[] { 1, 1 }),
+                    new SqlParameter("@multiplier", 7),
+                });
+            IReadOnlyList<CosmosElement>[] components = Enumerable.Range(0, 2)
+                .Select(component => (IReadOnlyList<CosmosElement>)Enumerable.Range(0, 5)
+                    .Select(index => CreateHybridSearchDocument(2, index, component, optimized, CalculateDefaultScores)).ToList())
+                .ToArray();
+            MockDocumentContainer container = MockDocumentContainer.CreateHybridSearchContainer(components);
+            TryCatch<IQueryPipelineStage> pipeline = CreateHybridSearchPipeline(container, info, originalQuery);
+            Assert.IsTrue(pipeline.Succeeded);
+            (IReadOnlyList<CosmosElement> results, _) = await RunPipelineStage(pipeline.Result, 1);
+            CollectionAssert.AreEqual(new[] { 3, 2 },
+                results.Select(result => (int)Number64.ToLong(((CosmosNumber)((CosmosObject)result)[Index]).Value)).ToArray());
+            foreach (SqlQuerySpec executed in container.ExecutedQueries)
+            {
+                StringAssert.Contains(executed.QueryText, "TOP 120");
+                Assert.IsFalse(executed.QueryText.Contains("COMBINEDSCORE"));
+                Assert.AreSame(originalQuery.Parameters, executed.Parameters);
+            }
+
+            await pipeline.Result.DisposeAsync();
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task CombinedScorePreservesScalarPayloadAndCancellation(bool nested)
+        {
+            HybridSearchQueryInfo info = Create2ItemHybridSearchSkipOrderByRewriteQueryInfo(false, null, null, null);
+            info.ScoreCombinationKind = ScoreCombinationKind.CombinedScore;
+            CosmosObject payload = CosmosObject.Create(new Dictionary<string, CosmosElement>
+            {
+                [Payload] = CosmosString.Create("selected value"),
+                [ComponentScores] = CosmosArray.Create(new[] { CosmosNumber64.Create(1), CosmosNumber64.Create(2) }),
+            });
+            CosmosElement document = CosmosObject.Create(nested
+                ? new Dictionary<string, CosmosElement> { [RId] = CosmosString.Create("rid"), [Payload] = payload }
+                : new Dictionary<string, CosmosElement>
+                {
+                    [RId] = CosmosString.Create("rid"),
+                    [Payload] = payload[Payload],
+                    [ComponentScores] = payload[ComponentScores],
+                });
+            MockDocumentContainer container = MockDocumentContainer.CreateHybridSearchContainer(
+                new IReadOnlyList<CosmosElement>[] { new[] { document }, Array.Empty<CosmosElement>() });
+            TryCatch<IQueryPipelineStage> pipeline = CreateHybridSearchPipeline(container, info);
+            Assert.IsTrue(pipeline.Succeeded);
+            using CancellationTokenSource cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => pipeline.Result.MoveNextAsync(NoOpTrace.Singleton, cancellation.Token).AsTask());
+            await pipeline.Result.DisposeAsync();
+
+            pipeline = CreateHybridSearchPipeline(container, info);
+            (IReadOnlyList<CosmosElement> results, _) = await RunPipelineStage(pipeline.Result, 1);
+            Assert.AreEqual("selected value", ((CosmosString)results.Single()).Value);
+            await pipeline.Result.DisposeAsync();
+        }
+
+        private static TryCatch<IQueryPipelineStage> CreateHybridSearchPipeline(
+            MockDocumentContainer container,
+            HybridSearchQueryInfo info,
+            SqlQuerySpec query = null)
+        {
+            IReadOnlyList<FeedRangeEpk> ranges = new[] { FeedRangeEpk.FullRange };
+            return PipelineFactory.MonadicCreate(
+                container, query ?? Create2ItemSqlQuerySpec(), ranges, partitionKey: null, queryInfo: null,
+                hybridSearchQueryInfo: info, maxItemCount: 1, new ContainerQueryProperties(), ranges,
+                isContinuationExpected: true, maxConcurrency: MaxConcurrency,
+                fullTextScoreScope: FullTextScoreScope.Global, requestContinuationToken: null);
+        }
+
+        private static async Task RunHybridSearchTest(HybridSearchTest testCase, ScoreCombinationKind? scoreCombinationKind = null)
         {
             IReadOnlyList<FeedRangeEpk> allRanges = new List<FeedRangeEpk>
             {
@@ -880,7 +1158,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 take: (uint?)testCase.Take,
                 weights: testCase.Weights,
                 skipOrderByRewrite: testCase.SkipOrderByRewrite,
-                fullTextScoreScope: testCase.FullTextScoreScope);
+                fullTextScoreScope: testCase.FullTextScoreScope,
+                scoreCombinationKind: scoreCombinationKind);
 
             Assert.AreEqual(expectedIndices.Count(), results.Count);
 
@@ -989,11 +1268,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             uint? take,
             double[] weights,
             bool skipOrderByRewrite,
-            FullTextScoreScope fullTextScoreScope)
+            FullTextScoreScope fullTextScoreScope,
+            ScoreCombinationKind? scoreCombinationKind = null)
         {
             HybridSearchQueryInfo hybridSearchQueryInfo = skipOrderByRewrite ?
                 Create2ItemHybridSearchSkipOrderByRewriteQueryInfo(requiresGlobalStatistics, skip, take, weights) :
                 Create2ItemHybridSearchQueryInfo(requiresGlobalStatistics, skip, take, weights);
+
+            hybridSearchQueryInfo.ScoreCombinationKind = scoreCombinationKind;
 
             TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
                 documentContainer,
@@ -1701,11 +1983,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             private readonly List<FeedRange> statisticsQueryRanges = new List<FeedRange>();
 
+            private readonly List<SqlQuerySpec> executedQueries = new List<SqlQuerySpec>();
+
             private int statisticsQueryCount;
 
             private int queryCount;
 
             public IReadOnlyList<FeedRange> StatisticsQueryRanges => this.statisticsQueryRanges;
+
+            public IReadOnlyList<SqlQuerySpec> ExecutedQueries => this.executedQueries;
 
             public double TotalRequestCharge
             {
@@ -1751,6 +2037,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     isGlobalStatisticsQuery: IsGlobalStatisticsQuery,
                     totalRequestCharge: 0,
                     returnEmptyGlobalStatistics: returnEmptyGlobalStatistics);
+            }
+
+            public static MockDocumentContainer CreateHybridSearchContainer(IReadOnlyList<IReadOnlyList<CosmosElement>> componentDocuments)
+            {
+                List<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> pages =
+                    componentDocuments.Select(documents =>
+                        (IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>)new Dictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>
+                        {
+                            [FeedRangeEpk.FullRange] = new[] { documents },
+                        }).ToList();
+                return new MockDocumentContainer(pages, streaming: false, componentSelector: GetOrderByScoreKind,
+                    isGlobalStatisticsQuery: IsGlobalStatisticsQuery, totalRequestCharge: 0, returnEmptyGlobalStatistics: false);
             }
 
             public static MockDocumentContainer Create(IReadOnlyList<FeedRangeEpk> feedRanges, PartitionedFeedMode feedMode, DocumentCreationMode documentCreationMode)
@@ -1850,6 +2148,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             public Task<TryCatch<QueryPage>> MonadicQueryAsync(SqlQuerySpec sqlQuerySpec, FeedRangeState<QueryState> feedRangeState, QueryExecutionOptions queryPaginationOptions, ITrace trace, CancellationToken cancellationToken)
             {
+                lock (this.executedQueries)
+                {
+                    this.executedQueries.Add(sqlQuerySpec);
+                }
+
                 if (this.isGlobalStatisticsQuery(sqlQuerySpec))
                 {
                     lock (this.statisticsQueryRanges)

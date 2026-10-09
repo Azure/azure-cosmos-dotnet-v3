@@ -2,6 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -20,6 +22,70 @@
             },
             Kind = PartitionKind.Hash,
         };
+
+        [DataTestMethod]
+        [DataRow(null)]
+        [DataRow("Rrf")]
+        [DataRow("CombinedScore")]
+        public void ScoreCombinationKindRoundTripsThroughPlanningRoutes(string kind)
+        {
+            string discriminator = kind == null ? "" : $@"""scoreCombinationKind"":""{kind}"",";
+            string json = $@"{{""hybridSearchQueryInfo"":{{{discriminator}""componentQueryInfos"":[{{}},{{}}]}},
+                ""queryRanges"":[{{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}}]}}";
+            ScoreCombinationKind? expected = kind == null ? null : Enum.Parse<ScoreCombinationKind>(kind);
+            using QueryPartitionProvider provider = new QueryPartitionProvider(
+                new Dictionary<string, object> { ["maxSqlQueryInputLength"] = 30720 });
+            PartitionedQueryExecutionInfoInternal native = JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(json);
+            PartitionedQueryExecutionInfo converted = provider.ConvertPartitionedQueryExecutionInfo(native, PartitionKeyDefinition);
+            Assert.AreEqual(expected, converted.HybridSearchQueryInfo.ScoreCombinationKind);
+
+            using MemoryStream thinClientStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            PartitionedQueryExecutionInfo thinClient = ThinClientQueryPlanHelper.DeserializeQueryPlanResponse(thinClientStream, PartitionKeyDefinition);
+            Assert.AreEqual(expected, thinClient.HybridSearchQueryInfo.ScoreCombinationKind);
+
+            using MemoryStream gatewayStream = new MemoryStream(Encoding.UTF8.GetBytes(converted.ToString()));
+            PartitionedQueryExecutionInfo gateway = new CosmosSerializerCore().FromStream<PartitionedQueryExecutionInfo>(gatewayStream);
+            Assert.AreEqual(expected, gateway.HybridSearchQueryInfo.ScoreCombinationKind);
+            foreach (PartitionedQueryExecutionInfo plan in new[] { converted, thinClient, gateway })
+            {
+                Assert.IsTrue(PartitionedQueryExecutionInfo.TryParse(plan.ToString(), out PartitionedQueryExecutionInfo roundTrip));
+                Assert.AreEqual(expected, roundTrip.HybridSearchQueryInfo.ScoreCombinationKind);
+                Assert.AreEqual(kind != null, roundTrip.ToString().Contains("scoreCombinationKind"));
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(@"""Unknown""")]
+        [DataRow(@"""1""")]
+        [DataRow("1")]
+        [DataRow("[]")]
+        [DataRow("null")]
+        [DataRow(@"""Rrf, CombinedScore""")]
+        public void InvalidScoreCombinationKindIsRejected(string kind)
+        {
+            string json = $@"{{""hybridSearchQueryInfo"":{{""scoreCombinationKind"":{kind}}},
+                ""queryRanges"":[{{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}}]}}";
+            Assert.ThrowsException<JsonSerializationException>(() => JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(json));
+            Assert.ThrowsException<JsonSerializationException>(() => JsonConvert.DeserializeObject<PartitionedQueryExecutionInfo>(json));
+            using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            Assert.ThrowsException<JsonSerializationException>(() => ThinClientQueryPlanHelper.DeserializeQueryPlanResponse(stream, PartitionKeyDefinition));
+            Assert.IsFalse(PartitionedQueryExecutionInfo.TryParse(json, out _));
+        }
+
+        [DataTestMethod]
+        [DataRow("top")]
+        [DataRow("offset")]
+        [DataRow("limit")]
+        public void CombinedScoreRejectsUnrepresentableCandidateCounts(string property)
+        {
+            string json = $@"{{""hybridSearchQueryInfo"":{{""scoreCombinationKind"":""CombinedScore"",
+                ""componentQueryInfos"":[{{""{property}"":18446744073709551615}},{{}}]}},
+                ""queryRanges"":[{{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}}]}}";
+            Assert.ThrowsException<JsonSerializationException>(() => JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(json));
+            Assert.IsFalse(PartitionedQueryExecutionInfo.TryParse(json, out _));
+            using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            Assert.ThrowsException<JsonSerializationException>(() => ThinClientQueryPlanHelper.DeserializeQueryPlanResponse(stream, PartitionKeyDefinition));
+        }
 
         [TestMethod]
         public void TestQueryPartitionProviderUpdate()

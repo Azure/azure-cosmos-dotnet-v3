@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- Adds client-side execution of `COMBINEDSCORE` query plans, ranking full-text search candidates by a weighted sum of scores. Requires a query planner and service that support `COMBINEDSCORE`. See [PR 6150](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6150).
+
 #### Breaking Changes
 
 #### Bugs Fixed
