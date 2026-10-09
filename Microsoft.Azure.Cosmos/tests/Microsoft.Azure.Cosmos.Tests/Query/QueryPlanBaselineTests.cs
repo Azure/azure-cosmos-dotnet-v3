@@ -23,6 +23,36 @@
     [TestClass]
     public class QueryPlanBaselineTests : BaselineTests<QueryPlanBaselineTestInput, QueryPlanBaselineTestOutput>
     {
+        [DataTestMethod]
+        [DataRow(null)]
+        [DataRow("Rrf")]
+        [DataRow("CombinedScore")]
+        public void ScoreCombinationKindIsIncludedInBaseline(string kind)
+        {
+            QueryPlanBaselineTestPositiveOutput output = new QueryPlanBaselineTestPositiveOutput(
+                new PartitionedQueryExecutionInfoInternal
+                {
+                    HybridSearchQueryInfo = new HybridSearchQueryInfo
+                    {
+                        ScoreCombinationKind = kind == null ? null : Enum.Parse<ScoreCombinationKind>(kind),
+                    },
+                });
+            StringBuilder buffer = new StringBuilder();
+            using (XmlWriter writer = XmlWriter.Create(buffer))
+            {
+                output.SerializeAsXml(writer);
+            }
+
+            if (kind == null)
+            {
+                Assert.IsFalse(buffer.ToString().Contains("ScoreCombinationKind"));
+            }
+            else
+            {
+                StringAssert.Contains(buffer.ToString(), $"<ScoreCombinationKind>{kind}</ScoreCombinationKind>");
+            }
+        }
+
         [TestMethod]
         [Owner("brchon")]
         public void Aggregates()
@@ -1979,6 +2009,11 @@
         private static void WriteHybridQueryInfoAsXML(HybridSearchQueryInfo hybridsearchQueryInfo, XmlWriter writer)
         {
             writer.WriteStartElement(nameof(HybridSearchQueryInfo));
+
+            if (hybridsearchQueryInfo.ScoreCombinationKind.HasValue)
+            {
+                writer.WriteElementString(nameof(hybridsearchQueryInfo.ScoreCombinationKind), hybridsearchQueryInfo.ScoreCombinationKind.ToString());
+            }
 
             if (hybridsearchQueryInfo.GlobalStatisticsQuery != null)
             {

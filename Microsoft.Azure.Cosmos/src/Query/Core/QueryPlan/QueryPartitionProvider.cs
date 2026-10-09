@@ -313,14 +313,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     queryPartitionProviderException);
             }
 
-            PartitionedQueryExecutionInfoInternal queryInfoInternal =
-               JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(
-                   serializedQueryExecutionInfo,
-                   new JsonSerializerSettings
-                   {
-                       DateParseHandling = DateParseHandling.None,
-                       MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
-                   });
+            PartitionedQueryExecutionInfoInternal queryInfoInternal;
+            try
+            {
+                queryInfoInternal = JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(
+                    serializedQueryExecutionInfo,
+                    new JsonSerializerSettings
+                    {
+                        DateParseHandling = DateParseHandling.None,
+                        MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+                    });
+            }
+            catch (JsonException jsonException)
+            {
+                return TryCatch<PartitionedQueryExecutionInfoInternal>.FromException(
+                    new UnexpectedQueryPartitionProviderException("Unable to deserialize the query plan.", jsonException));
+            }
 
             if (!this.ValidateQueryExecutionInfo(queryInfoInternal, out ArgumentException innerException))
             {

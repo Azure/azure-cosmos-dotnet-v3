@@ -335,6 +335,93 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             await this.RunTests(testCases);
         }
 
+        [TestMethod]
+        [Ignore("Requires a COMBINEDSCORE-capable ServiceInterop dependency and emulator. Direct 3.44.1 cannot plan this function.")]
+        public async Task CombinedScoreTests()
+        {
+            CosmosArray documents = await LoadDocuments();
+            await this.CreateIngestQueryDeleteAsync(
+                connectionModes: ConnectionModes.Direct | ConnectionModes.Gateway,
+                collectionTypes: CollectionTypes.MultiPartition,
+                documents: documents.Select(document => document.ToString()),
+                query: async (container, _) =>
+                {
+                    AccountProperties account = await this.Client.ReadAccountAsync();
+                    QueryPartitionProvider provider = await this.Client.DocumentClient.QueryPartitionProvider;
+                    provider.Update(new Dictionary<string, object>(account.QueryEngineConfiguration)
+                    {
+                        ["queryEnableFullTextPreviewFeatures"] = true,
+                    });
+
+                    const string title = "FullTextScore(c.title, 'John')";
+                    const string text = "FullTextScore(c.text, 'United States')";
+                    const string projection = "c._rid AS Rid, c.index AS Index, " +
+                        "(FullTextScore(c.title, 'John') ?? -1) AS TitleScore, " +
+                        "(FullTextScore(c.text, 'United States') ?? -1) AS TextScore";
+                    const string filter = " FROM c WHERE (FullTextContains(c.title, 'John') OR " +
+                        "FullTextContains(c.text, 'United States')) AND c.index >= 0 ORDER BY RANK ";
+                    (string Suffix, double TitleWeight, double TextWeight)[] cases =
+                    {
+                        ("", 1, 1),
+                        (", [2, 1]", 2, 1),
+                        (", 3", 1, 1),
+                        (", [2, -1], 3", 2, -1),
+                        (", [0, 1]", 0, 1),
+                        (", @weights, @multiplier", 2, -1),
+                    };
+
+                    foreach (FullTextScoreScope scope in new[] { FullTextScoreScope.Local, FullTextScoreScope.Global })
+                    {
+                        foreach (bool disableOptimization in new[] { false, true })
+                        {
+                            QueryRequestOptions options = new QueryRequestOptions
+                            {
+                                FullTextScoreScope = scope,
+                                IsHybridSearchQueryPlanOptimizationDisabled = disableOptimization,
+                                MaxItemCount = 2,
+                            };
+                            List<CosmosElement> oracle = await RunQueryCombinationsAsync(
+                                container, "SELECT " + projection + filter + title,
+                                options, QueryDrainingMode.HoldState);
+                            Assert.IsTrue(oracle.Count > 2);
+
+                            foreach ((string suffix, double titleWeight, double textWeight) in cases)
+                            {
+                                foreach (bool offsetLimit in new[] { false, true })
+                                {
+                                    QueryDefinition query = new QueryDefinition(
+                                        (offsetLimit ? "SELECT " : "SELECT TOP 5 ") + projection + filter +
+                                        $"COMBINEDSCORE({title}, {text}{suffix})" +
+                                        (offsetLimit ? " OFFSET 1 LIMIT 5" : ""))
+                                        .WithParameter("@weights", new[] { 2, -1 })
+                                        .WithParameter("@multiplier", 3);
+                                    List<CosmosElement> actual = new List<CosmosElement>();
+                                    using FeedIterator<CosmosElement> iterator = container.GetItemQueryIterator<CosmosElement>(query, requestOptions: options);
+                                    while (iterator.HasMoreResults)
+                                    {
+                                        actual.AddRange(await iterator.ReadNextAsync());
+                                    }
+
+                                    double Contribution(double weight, CosmosElement projectedScore)
+                                    {
+                                        double score = Number64.ToDouble(((CosmosNumber)projectedScore).Value);
+                                        return weight == 0 ? 0 : weight * (weight < 0 && score == -1 ? 1.79769e308 : score);
+                                    }
+
+                                    string[] expected = oracle.Cast<CosmosObject>()
+                                        .OrderByDescending(row => Contribution(titleWeight, row["TitleScore"]) + Contribution(textWeight, row["TextScore"]))
+                                        .ThenBy(row => ((CosmosString)row["Rid"]).Value.ToString(), StringComparer.Ordinal)
+                                        .Skip(offsetLimit ? 1 : 0).Take(5).Select(row => row.ToString()).ToArray();
+                                    CollectionAssert.AreEqual(expected, actual.Select(row => row.ToString()).ToArray());
+                                }
+                            }
+                        }
+                    }
+                },
+                partitionKey: "/index",
+                indexingPolicy: CompositeIndexPolicy);
+        }
+
         private async Task RunTests(IEnumerable<SanityTestCase> testCases, bool enableFullTextPreviewFeatures = false)
         {
             CosmosArray documentsArray = await LoadDocuments();
