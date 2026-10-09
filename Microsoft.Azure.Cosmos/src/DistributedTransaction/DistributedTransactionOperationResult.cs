@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Text;
     using System.Text.Json;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -165,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a <see cref="DistributedTransactionOperationResult"/> from a JSON element.
         /// </summary>
         /// <param name="json">The JSON element containing the operation result.</param>
-        /// <returns>The deserialized operation result with a canonical session token.</returns>
+        /// <returns>The deserialized operation result with the session token returned by the server.</returns>
         internal static DistributedTransactionOperationResult FromJson(JsonElement json)
         {
             if (json.ValueKind != JsonValueKind.Object)
@@ -228,29 +227,10 @@ namespace Microsoft.Azure.Cosmos
                 result.ResourceStream = new MemoryStream(bytes, 0, bytes.Length, writable: false, publiclyVisible: true);
             }
 
-            if (!string.IsNullOrWhiteSpace(result.SessionToken))
+            if (string.IsNullOrWhiteSpace(result.SessionToken))
             {
-                int colonIndex = result.SessionToken.IndexOf(':');
-                if (colonIndex > 0 && colonIndex < result.SessionToken.Length - 1)
-                {
-                    // Already in canonical SDK session-token format — leave as-is.
-                }
-                else if (!string.IsNullOrWhiteSpace(result.PartitionKeyRangeId))
-                {
-                    result.SessionToken = result.PartitionKeyRangeId + ":" + result.SessionToken;
-                }
-                else
-                {
-                    DefaultTrace.TraceWarning(
-                        "DTC operation index {0} returned session token without a valid partitionKeyRangeId (value: '{1}'); session token will not be merged into the session container.",
-                        result.Index,
-                        result.PartitionKeyRangeId ?? "<absent>");
-                    result.SessionToken = null;
-                }
-            }
-            else if (result.SessionToken != null)
-            {
-                // Normalize whitespace-only to null so downstream guards don't need to recheck.
+                // Collapse "absent" and "whitespace-only" into a single null so capture-side guards
+                // need only one check.
                 result.SessionToken = null;
             }
 
