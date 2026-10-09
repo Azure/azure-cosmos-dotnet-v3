@@ -84,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             partitionKey.Value,
                             requestOptions,
                             decryptResponse: false,
+                            replacePlaintextEncryptionMetadata: true,
                             diagnosticsContext,
                             cancellationToken);
                     }
@@ -106,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             partitionKey.Value,
                             requestOptions,
                             decryptResponse: true,
+                            replacePlaintextEncryptionMetadata: true,
                             diagnosticsContext,
                             cancellationToken);
                     }
@@ -131,6 +133,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     partitionKey,
                     requestOptions,
                     decryptResponse: true,
+                    replacePlaintextEncryptionMetadata: false,
                     diagnosticsContext,
                     cancellationToken);
             }
@@ -141,6 +144,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions,
             bool decryptResponse,
+            bool replacePlaintextEncryptionMetadata,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -159,7 +163,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.Encryptor,
                 encryptionItemRequestOptions,
                 diagnosticsContext,
-                cancellationToken);
+                cancellationToken,
+                replacePlaintextEncryptionMetadata);
 
             ResponseMessage responseMessage = await this.container.CreateItemStreamAsync(
                 streamPayload,
@@ -287,8 +292,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     this.Encryptor,
+                    requestOptions.GetJsonProcessor(this.DefaultJsonProcessor),
+                    legacyFallback: true,
                     diagnosticsContext,
-                    requestOptions,
                     cancellationToken);
             }
 
@@ -336,6 +342,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             partitionKey.Value,
                             requestOptions,
                             decryptResponse: false,
+                            replacePlaintextEncryptionMetadata: true,
                             diagnosticsContext,
                             cancellationToken);
                     }
@@ -359,6 +366,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             partitionKey.Value,
                             requestOptions,
                             decryptResponse: true,
+                            replacePlaintextEncryptionMetadata: true,
                             diagnosticsContext,
                             cancellationToken);
                     }
@@ -387,6 +395,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     partitionKey,
                     requestOptions,
                     decryptResponse: true,
+                    replacePlaintextEncryptionMetadata: false,
                     diagnosticsContext,
                     cancellationToken);
             }
@@ -398,6 +407,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions,
             bool decryptResponse,
+            bool replacePlaintextEncryptionMetadata,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -417,7 +427,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.Encryptor,
                 encryptionItemRequestOptions,
                 diagnosticsContext,
-                cancellationToken);
+                cancellationToken,
+                replacePlaintextEncryptionMetadata);
 
             ResponseMessage responseMessage = await this.container.ReplaceItemStreamAsync(
                 streamPayload,
@@ -476,6 +487,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             partitionKey.Value,
                             requestOptions,
                             decryptResponse: false,
+                            replacePlaintextEncryptionMetadata: true,
                             diagnosticsContext,
                             cancellationToken);
                     }
@@ -498,6 +510,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             partitionKey.Value,
                             requestOptions,
                             decryptResponse: true,
+                            replacePlaintextEncryptionMetadata: true,
                             diagnosticsContext,
                             cancellationToken);
                     }
@@ -523,6 +536,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     partitionKey,
                     requestOptions,
                     decryptResponse: true,
+                    replacePlaintextEncryptionMetadata: false,
                     diagnosticsContext,
                     cancellationToken);
             }
@@ -533,6 +547,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions,
             bool decryptResponse,
+            bool replacePlaintextEncryptionMetadata,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -551,7 +566,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 this.Encryptor,
                 encryptionItemRequestOptions,
                 diagnosticsContext,
-                cancellationToken);
+                cancellationToken,
+                replacePlaintextEncryptionMetadata);
 
             ResponseMessage responseMessage = await this.container.UpsertItemStreamAsync(
                 streamPayload,
@@ -1070,6 +1086,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 items,
                 readManyRequestOptions,
                 cancellationToken);
+
+            if (!responseMessage.IsSuccessStatusCode)
+            {
+                return responseMessage;
+            }
 
             Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                 responseMessage.Content,

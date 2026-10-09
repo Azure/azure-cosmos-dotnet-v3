@@ -194,8 +194,21 @@ jobs:
       configuration: $(parameters.BuildConfiguration)
       nugetConfigPath: NuGet.config
       projects: Microsoft.Azure.Cosmos.sln 
-      arguments: -p:Optimize=true -p:IsPreview=true;SdkProjectRef=true
+      arguments: -p:Optimize=true -p:IsPreview=true;SdkProjectRef=true --configuration ${{ parameters.BuildConfiguration }}
       versioningScheme: OFF
+
+  # The solution build compiles both test frameworks. Avoid another multi-target
+  # outer Build, which has no TargetDir for the compatibility-fixture Copy target.
+  - task: DotNetCoreCLI@2
+    displayName: PREVIEW Microsoft.Azure.Cosmos.Encryption.Custom.Tests
+    condition: succeeded()
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj'
+      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} --no-build /p:IsPreview=true /p:SdkProjectRef=true /p:OS=${{ parameters.OS }}
+      nugetConfigPath: NuGet.config
+      publishTestResults: true
+      testRunTitle: PREVIEW Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
   # Parity check: build Microsoft.Azure.Cosmos.Encryption.Custom against main
   # SDK source WITHOUT defining SDKPROJECTREF. This matches the exact

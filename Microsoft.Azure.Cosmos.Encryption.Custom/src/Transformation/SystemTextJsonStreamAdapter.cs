@@ -20,12 +20,37 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         this.streamProcessor = streamProcessor;
     }
 
-    public async Task<Stream> EncryptAsync(Stream input, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken)
+    public Task<Stream> EncryptAsync(
+        Stream input,
+        Encryptor encryptor,
+        EncryptionOptions options,
+        CancellationToken cancellationToken)
+    {
+        return this.EncryptAsync(
+            input,
+            encryptor,
+            options,
+            cancellationToken,
+            replacePlaintextEncryptionMetadata: false);
+    }
+
+    public async Task<Stream> EncryptAsync(
+        Stream input,
+        Encryptor encryptor,
+        EncryptionOptions options,
+        CancellationToken cancellationToken,
+        bool replacePlaintextEncryptionMetadata)
     {
         PooledMemoryStream ms = new ();
         try
         {
-            await this.streamProcessor.EncryptStreamAsync(input, ms, encryptor, options, cancellationToken);
+            await this.streamProcessor.EncryptStreamAsync(
+                input,
+                ms,
+                encryptor,
+                options,
+                cancellationToken,
+                replacePlaintextEncryptionMetadata);
             return ms;  // Ownership transfers successfully
         }
         catch
@@ -43,7 +68,13 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
             throw new NotSupportedException("This overload is only supported for Stream JsonProcessor");
         }
 
-        return this.streamProcessor.EncryptStreamAsync(input, output, encryptor, options, cancellationToken);
+        return this.streamProcessor.EncryptStreamAsync(
+            input,
+            output,
+            encryptor,
+            options,
+            cancellationToken,
+            replacePlaintextEncryptionMetadata: false);
     }
 
     public async Task<(Stream, DecryptionContext)> DecryptAsync(Stream input, Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, CancellationToken cancellationToken)
@@ -78,11 +109,6 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         EncryptionProperties properties = await ReadMdeEncryptionPropertiesStreamingAsync(input, cancellationToken);
         if (properties == null)
         {
-            if (input.CanSeek)
-            {
-                input.Position = 0;
-            }
-
             return null;
         }
 
@@ -98,21 +124,27 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
     /// </summary>
     private static async Task<EncryptionProperties> ReadMdeEncryptionPropertiesStreamingAsync(Stream input, CancellationToken cancellationToken)
     {
-        EncryptionProperties encryptionProperties = await EncryptionPropertiesStreamReader.ReadAsync(input, PooledJsonSerializer.SerializerOptions, cancellationToken).ConfigureAwait(false);
+        EncryptionPropertiesStreamReader.EncryptionMetadataReadResult result =
+            await EncryptionPropertiesStreamReader.ReadResultAsync(
+                input,
+                PooledJsonSerializer.SerializerOptions,
+                cancellationToken).ConfigureAwait(false);
+        EncryptionMetadataClassifier.ThrowIfInvalid(result.Disposition);
 
-        if (encryptionProperties == null)
+        if (result.Disposition == EncryptionMetadataDisposition.None ||
+            result.Disposition == EncryptionMetadataDisposition.Plaintext)
         {
             return null;
         }
 
 #pragma warning disable CS0618
-        if (encryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+        if (result.Disposition != EncryptionMetadataDisposition.Mde)
         {
-            throw new NotSupportedException($"JsonProcessor.Stream is not supported for encryption algorithm '{encryptionProperties.EncryptionAlgorithm}'. Only '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' is supported with the Stream processor.");
+            throw new NotSupportedException($"JsonProcessor.Stream is not supported for encryption algorithm '{result.Properties.EncryptionAlgorithm}'. Only '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' is supported with the Stream processor.");
         }
 #pragma warning restore CS0618
 
-        return encryptionProperties;
+        return result.Properties;
     }
 }
 #endif
