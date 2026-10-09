@@ -29,6 +29,11 @@
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Encryption.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition=" '$(SdkProjectRef)' == 'True' AND '$(ProjectRef)' != 'True' ">
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="Contracts\DotNetSDKEncryptionAPI*.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -48,6 +53,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <PlatformTarget>x64</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(SdkProjectRef)' == 'True' AND '$(DefineSdkProjectRefSymbol)' != 'false' ">
+    <DefineConstants>$(DefineConstants);SDKPROJECTREF</DefineConstants>
   </PropertyGroup>
 
 </Project>
