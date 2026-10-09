@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- [6130](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6130) Hybrid search RRF now assigns a unique ordinal rank to every component result, including tied scores. Ties in component scores and final RRF scores are broken by the decoded document ID portion of `_rid` descending, rather than by the encoded string. Set `AZURE_COSMOS_HYBRID_SEARCH_USE_COMPETITION_RANKING=true` to restore the previous competition-ranking behavior.
+
 #### Bugs Fixed
 
 - [6139](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6139) Query: Fixes an issue where a query whose `OFFSET`, `LIMIT`, or `TOP` value was fractional or too large for a 64-bit integer threw an unexpected `ArgumentOutOfRangeException` during client-side query parsing. These queries are now treated as parse failures.
