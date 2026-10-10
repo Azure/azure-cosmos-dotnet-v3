@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="1.0.0-beta.2"/> [1.0.0-beta.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.FaultInjection/1.0.0-beta.2) - 2026-09-10
 
 #### Features Added
+- [#5913](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5913) FaultInjection: Adds `FaultInjectionServerErrorType.LeaseNotFound` (410/1022), `FaultInjectionServerErrorType.ResponseHeaderOverride`, and `FaultInjectionOperationType.MetadataHeadCollection` for targeting `Head/Collection` metadata requests (including the consistency-barrier `Head/Collection` poll the SDK issues under Strong / Bounded-Staleness reads)
 - [#6004](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6004) RetryWith: Adds `RetryWith` (HTTP 449) server error injection support for Gateway mode
 - [#6103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6103) FaultInjectionRule: Adds `GetInjectionRate` and `SetInjectionRate` so the injection rate of a server error rule can be changed at runtime, without recreating the rule or the client
 

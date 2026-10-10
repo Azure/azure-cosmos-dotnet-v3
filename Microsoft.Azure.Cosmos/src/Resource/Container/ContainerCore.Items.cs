@@ -1384,12 +1384,14 @@ namespace Microsoft.Azure.Cosmos
                         routingMapProvider: routingMapProvider,
                         containerRid: containerRId,
                         partitionKeyDefinition: partitionKeyDefinition,
-                        trace: trace);
+                        trace: trace,
+                        cancellationToken: cancellationToken);
                     List<Documents.Routing.Range<string>> yEffectiveRanges = await yFeedRangeInternal.GetEffectiveRangesAsync(
                         routingMapProvider: routingMapProvider,
                         containerRid: containerRId,
                         partitionKeyDefinition: partitionKeyDefinition,
-                        trace: trace);
+                        trace: trace,
+                        cancellationToken: cancellationToken);
 
                     ContainerCore.EnsureConsistentInclusivity(xEffectiveRanges);
                     ContainerCore.EnsureConsistentInclusivity(yEffectiveRanges);
