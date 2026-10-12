@@ -34,14 +34,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             DocumentServiceLease lease = cachedLease;
             for (int retryCount = RetryCountOnConflict; retryCount >= 0; retryCount--)
             {
-                // Do not let update delegates mutate a lease shared by the processor's tasks.
-                lease = updateLease(lease.Clone());
+                lease = updateLease(lease);
                 if (lease == null)
                 {
                     return null;
                 }
 
-                // Delegates can reattach caller-owned state (for example, lease.Properties).
+                // Delegates can return caller-owned state (for example, lease.Properties).
                 // Detach it before serialization and never apply a response ETag to shared state.
                 lease = lease.Clone();
                 lease.Timestamp = DateTime.UtcNow;

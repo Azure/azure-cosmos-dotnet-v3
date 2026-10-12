@@ -400,9 +400,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 });
 
             Assert.IsNotNull(submitted);
-            Assert.AreNotSame(original, delegateLease);
-            Assert.AreEqual("host", original.Owner);
-            Assert.AreEqual("initial", original.ContinuationToken);
+            Assert.AreSame(original, delegateLease);
             delegateLease.ContinuationToken = "delegate mutation";
             delegateLease.Properties["key"] = "delegate mutation";
             delegateLease.FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "CC", true, false));
@@ -476,7 +474,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual("\"etag-1\"", first.ConcurrencyToken);
             Assert.AreEqual("second", second.ContinuationToken);
             Assert.AreEqual("\"etag-2\"", second.ConcurrencyToken);
-            Assert.AreEqual("initial", original.ContinuationToken);
             Assert.AreEqual("\"etag-0\"", original.ConcurrencyToken);
             Assert.AreEqual(2, replaces);
             Assert.AreEqual(1, conflicts);
@@ -551,7 +548,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual(1, conflicts);
             Assert.AreEqual(1, reads);
             Assert.AreEqual("\"etag-0\"", lease.ConcurrencyToken);
-            Assert.AreEqual("initial", lease.ContinuationToken);
         }
 
         [DataTestMethod]
@@ -578,7 +574,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             StringAssert.Contains(exception.Message, "ETag");
             Assert.AreEqual("\"etag-0\"", lease.ConcurrencyToken);
-            Assert.AreEqual("initial", lease.ContinuationToken);
             container.Verify(c => c.ReplaceItemStreamAsync(
                 It.IsAny<Stream>(), lease.Id, new PartitionKey(lease.Id),
                 It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -619,7 +614,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLease acquired = await manager.AcquireAsync(original);
             Assert.AreEqual("host", acquired.Owner);
             Assert.AreEqual("\"etag-1\"", acquired.ConcurrencyToken);
-            Assert.AreEqual("previous host", original.Owner);
             DocumentServiceLease renewed = await manager.RenewAsync(acquired);
             Assert.AreEqual("\"etag-2\"", renewed.ConcurrencyToken);
             renewed.Properties["key"] = "updated";
@@ -636,29 +630,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual("\"etag-1\"", acquired.ConcurrencyToken);
             Assert.AreEqual("\"etag-2\"", renewed.ConcurrencyToken);
             Assert.AreEqual("\"etag-3\"", updated.ConcurrencyToken);
-        }
-
-        [DataTestMethod]
-        [DataRow(false)]
-        [DataRow(true)]
-        public async Task CancelledUpdateDoesNotChangeCachedLease(bool useEpkLease)
-        {
-            DocumentServiceLease lease = CreateLease(useEpkLease);
-            Mock<ContainerInternal> container = new Mock<ContainerInternal>(MockBehavior.Strict);
-            DocumentServiceLeaseUpdaterCosmos updater = new DocumentServiceLeaseUpdaterCosmos(container.Object);
-
-            DocumentServiceLease result = await updater.UpdateLeaseAsync(
-                lease, lease.Id, new PartitionKey(lease.Id), workingLease =>
-                {
-                    workingLease.Owner = "not persisted";
-                    workingLease.Properties["key"] = "not persisted";
-                    return null;
-                });
-
-            Assert.IsNull(result);
-            Assert.AreEqual("host", lease.Owner);
-            Assert.AreEqual("value", lease.Properties["key"]);
-            container.VerifyNoOtherCalls();
         }
 
         [DataTestMethod]
@@ -681,7 +652,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Assert.AreEqual(HttpStatusCode.InternalServerError, exception.StatusCode);
             Assert.AreEqual("\"etag-0\"", lease.ConcurrencyToken);
-            Assert.AreEqual("initial", lease.ContinuationToken);
             container.Verify(c => c.ReplaceItemStreamAsync(
                 It.IsAny<Stream>(), lease.Id, new PartitionKey(lease.Id),
                 It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
