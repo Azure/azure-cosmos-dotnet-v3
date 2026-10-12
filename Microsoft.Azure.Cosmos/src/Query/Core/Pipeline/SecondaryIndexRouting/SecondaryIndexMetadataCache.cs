@@ -23,16 +23,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         }
 
         public Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
-            string sourceCollectionRid,
+            ContainerProperties source,
             ITrace trace,
             bool forceRefresh = false,
             CancellationToken cancellationToken = default)
         {
-            if (sourceCollectionRid == null)
+            if (source == null)
             {
-                throw new ArgumentNullException(nameof(sourceCollectionRid));
+                throw new ArgumentNullException(nameof(source));
             }
 
+            string sourceCollectionRid = source.ResourceId ?? throw new ArgumentException("The source container must have a resource identifier.", nameof(source));
             cancellationToken.ThrowIfCancellationRequested();
             return this.cache.GetAsync(
                 sourceCollectionRid,
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 async () =>
                 {
                     IEnumerable<ISecondaryIndexMetadata> metadata = 
-                        await this.provider.GetSecondaryIndexMetadataAsync(sourceCollectionRid, trace, cancellationToken);
+                        await this.provider.GetSecondaryIndexMetadataAsync(source, trace, cancellationToken);
                     if (metadata == null)
                     {
                         throw new InvalidOperationException("Secondary index metadata providers must return an empty list when no candidates exist.");

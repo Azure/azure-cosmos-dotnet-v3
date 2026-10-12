@@ -54,7 +54,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             Dictionary<string, ContainerProperties> collections = new Dictionary<string, ContainerProperties>
                 {
-                    [SourceRid] = source,
                     [GsiARid] = CreateMaterializedView(
                         GsiARid,
                         "SELECT c.id AS _id, c.region AS region FROM c",
@@ -67,9 +66,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             using ProviderTestContext context = new ProviderTestContext(collections);
 
-            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton, CancellationToken.None);
+            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, CancellationToken.None);
 
-            Assert.AreEqual(3, context.ResolveCount);
+            Assert.AreEqual(2, context.ResolveCount);
             Assert.AreEqual(3, metadata.Count());
             CollectionAssert.AreEqual(
                 new[] { GsiBRid, GsiARid, GsiARid },
@@ -93,15 +92,51 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [TestMethod]
         public async Task ProviderReturnsEmptyForSourceWithoutReferences()
         {
-            Dictionary<string, ContainerProperties> collections = new Dictionary<string, ContainerProperties>
-                {
-                    [SourceRid] = CreateSource(),
-                };
+            ContainerProperties source = CreateSource();
+            Dictionary<string, ContainerProperties> collections = new Dictionary<string, ContainerProperties>();
             using ProviderTestContext context = new ProviderTestContext(collections);
 
-            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton);
+            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton);
 
             Assert.AreEqual(0, metadata.Count());
+            Assert.AreEqual(0, context.ResolveCount);
+        }
+
+        [TestMethod]
+        public async Task ProviderRejectsNullSource()
+        {
+            using ProviderTestContext context = new ProviderTestContext(new Dictionary<string, ContainerProperties>());
+
+            ArgumentNullException exception = await Assert.ThrowsExceptionAsync<ArgumentNullException>(() =>
+                context.Provider.GetSecondaryIndexMetadataAsync(null, NoOpTrace.Singleton));
+
+            Assert.AreEqual("source", exception.ParamName);
+            Assert.AreEqual(0, context.ResolveCount);
+        }
+
+        [TestMethod]
+        public async Task ProviderRejectsSourceWithoutResourceId()
+        {
+            using ProviderTestContext context = new ProviderTestContext(new Dictionary<string, ContainerProperties>());
+
+            ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                context.Provider.GetSecondaryIndexMetadataAsync(new ContainerProperties("source", "/pk"), NoOpTrace.Singleton));
+
+            Assert.AreEqual("source", exception.ParamName);
+            Assert.AreEqual(0, context.ResolveCount);
+        }
+
+        [TestMethod]
+        public async Task ProviderHonorsCancellationForSourceWithoutReferences()
+        {
+            using ProviderTestContext context = new ProviderTestContext(new Dictionary<string, ContainerProperties>());
+            using CancellationTokenSource cancellationSource = new CancellationTokenSource();
+            cancellationSource.Cancel();
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(() =>
+                context.Provider.GetSecondaryIndexMetadataAsync(CreateSource(), NoOpTrace.Singleton, cancellationSource.Token));
+
+            Assert.AreEqual(0, context.ResolveCount);
         }
 
         [TestMethod]
@@ -121,14 +156,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             Dictionary<string, ContainerProperties> collections = new Dictionary<string, ContainerProperties>
                 {
-                    [SourceRid] = source,
                     [OtherRid] = unrelated,
                 };
             using ProviderTestContext context = new ProviderTestContext(collections);
 
-            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton);
+            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton);
 
             Assert.AreEqual(0, metadata.Count());
+            Assert.AreEqual(1, context.ResolveCount);
         }
 
         [TestMethod]
@@ -170,16 +205,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             Dictionary<string, ContainerProperties> collections = new Dictionary<string, ContainerProperties>
                 {
-                    [SourceRid] = source,
                     [FilteredRid] = filtered,
                     [OtherTypeRid] = otherType,
                     [EligibleRid] = eligible,
                 };
             using ProviderTestContext context = new ProviderTestContext(collections);
 
-            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton);
+            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton);
 
-            Assert.AreEqual(4, context.ResolveCount);
+            Assert.AreEqual(3, context.ResolveCount);
             Assert.AreEqual(2, metadata.Count());
             CollectionAssert.AreEqual(
                 new[] { OtherTypeRid, EligibleRid },
@@ -337,12 +371,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             Dictionary<string, ContainerProperties> collections = new Dictionary<string, ContainerProperties>
             {
-                [SourceRid] = source,
                 [EligibleRid] = CreateMaterializedView(EligibleRid, query, partitionKeyPath),
             };
 
             using ProviderTestContext context = new ProviderTestContext(collections);
-            return await context.Provider.GetSecondaryIndexMetadataAsync(SourceRid, NoOpTrace.Singleton);
+            return await context.Provider.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton);
         }
 
         private static ContainerProperties CreateSource(string partitionKeyPath = "/tenantId")

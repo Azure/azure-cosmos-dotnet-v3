@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ISecondaryIndexMetadataProvider provider = new ContainerMetadataSecondaryIndexMetadataProvider(
                 discoveryClient.DocumentClient);
             IEnumerable<ISecondaryIndexMetadata> metadata = await provider.GetSecondaryIndexMetadataAsync(
-                sourceCreateResponse.Resource.ResourceId,
+                sourceReadResponse.Resource,
                 NoOpTrace.Singleton);
 
             Assert.AreEqual(1, metadata.Count());

@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     globalSecondaryIndexes = 
                         await this.clientContext.SecondaryIndexMetadataCache.GetSecondaryIndexMetadataAsync(
-                            containerProperties.ResourceId, 
+                            containerProperties,
                             trace, 
                             cancellationToken: cancellationToken);
                 }

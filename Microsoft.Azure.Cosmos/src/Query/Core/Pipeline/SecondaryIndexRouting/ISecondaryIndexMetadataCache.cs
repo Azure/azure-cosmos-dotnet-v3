@@ -15,11 +15,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
     internal interface ISecondaryIndexMetadataCache
     {
         /// <summary>
-        /// Gets cached secondary index metadata or discovers it when no cached snapshot exists.
+        /// Gets secondary index metadata cached by the source resource identifier or discovers it using
+        /// the supplied source container properties when no cached snapshot exists or a refresh is requested.
         /// </summary>
         /// <returns>The cached or newly discovered secondary index metadata.</returns>
         Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
-            string sourceCollectionRid,
+            ContainerProperties source,
             ITrace trace,
             bool forceRefresh = false,
             CancellationToken cancellationToken = default);

@@ -32,24 +32,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         }
 
         public async Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
-            string sourceCollectionRid,
+            ContainerProperties source,
             ITrace trace,
             CancellationToken cancellationToken = default)
         {
-            if (sourceCollectionRid == null)
+            if (source == null)
             {
-                throw new ArgumentNullException(nameof(sourceCollectionRid));
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (source.ResourceId == null)
+            {
+                throw new ArgumentException("The source container must have a resource identifier.", nameof(source));
             }
 
             using ITrace discoveryTrace = trace.StartChild("SecondaryIndexDiscovery", TraceComponent.Query, TraceLevel.Info);
 
             ClientCollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(discoveryTrace);
-            ContainerProperties source = await collectionCache.ResolveByRidAsync(
-                HttpConstants.Versions.CurrentVersion,
-                sourceCollectionRid,
-                discoveryTrace,
-                clientSideRequestStatistics: null,
-                cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             IReadOnlyList<MaterializedViewProperties> mvReferences = source.MaterializedViews;
 
             List<ISecondaryIndexMetadata> secondaryIndexesMetadata = new ();
