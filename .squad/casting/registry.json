@@ -1,0 +1,143 @@
+{
+  "schema": "squad-agent-provenance/v1",
+  "schema_version": 1,
+  "revision": 1,
+  "generated_at": "2026-10-12T15:00:00.000Z",
+  "agents": {
+    "pr-review-router": {
+      "display_name": "pr-review-router",
+      "persistent_name": "pr-review-router",
+      "role": "Lead PR Review Orchestrator & Tier Dispatcher",
+      "universe": "descriptive",
+      "status": "active",
+      "created_at": "2026-10-12T15:00:00.000Z",
+      "updated_at": "2026-10-12T15:00:00.000Z"
+    },
+    "pr-deep-reviewer": {
+      "display_name": "pr-deep-reviewer",
+      "persistent_name": "pr-deep-reviewer",
+      "role": "Deep Correctness & Architecture Reviewer",
+      "universe": "descriptive",
+      "status": "active",
+      "created_at": "2026-10-12T15:00:00.000Z",
+      "updated_at": "2026-10-12T15:00:00.000Z"
+    },
+    "engineering-quality-reviewer": {
+      "display_name": "engineering-quality-reviewer",
+      "persistent_name": "engineering-quality-reviewer",
+      "role": "Engineering Quality Specialist",
+      "universe": "descriptive",
+      "status": "active",
+      "created_at": "2026-10-12T15:00:00.000Z",
+      "updated_at": "2026-10-12T15:00:00.000Z"
+    },
+    "cosmos-pr-reviewer": {
+      "display_name": "cosmos-pr-reviewer",
+      "persistent_name": "cosmos-pr-reviewer",
+      "role": "Cosmos DB Domain & Architecture Specialist",
+      "universe": "descriptive",
+      "status": "active",
+      "created_at": "2026-10-12T15:00:00.000Z",
+      "updated_at": "2026-10-12T15:00:00.000Z"
+    },
+    "cross-sdk-reviewer": {
+      "display_name": "cross-sdk-reviewer",
+      "persistent_name": "cross-sdk-reviewer",
+      "role": "Cross-SDK Parity Specialist",
+      "universe": "descriptive",
+      "status": "active",
+      "created_at": "2026-10-12T15:00:00.000Z",
+      "updated_at": "2026-10-12T15:00:00.000Z"
+    },
+    "fresh-eyes-reviewer": {
+      "display_name": "fresh-eyes-reviewer",
+      "persistent_name": "fresh-eyes-reviewer",
+      "role": "Unbiased Fresh Eyes Reviewer",
+      "universe": "descriptive",
+      "status": "active",
+      "created_at": "2026-10-12T15:00:00.000Z",
+      "updated_at": "2026-10-12T15:00:00.000Z"
+    },
+    "ci-artifact-reviewer": {
+      "display_name": "ci-artifact-reviewer",
+      "persistent_name": "ci-artifact-reviewer",
+      "role": "CI Pipeline & Shipped Artifact Reviewer",
+      "universe": "descriptive",
+      "status": "active",
+      "created_at": "2026-10-12T15:00:00.000Z",
+      "updated_at": "2026-10-12T15:00:00.000Z"
+    },
+    "security-reviewer": {
+      "display_name": "security-reviewer",
+      "persistent_name": "security-reviewer",
+      "role": "Security & Cryptography Reviewer",
+      "universe": "descriptive",
+      "status": "active",
+      "created_at": "2026-10-12T15:00:00.000Z",
+      "updated_at": "2026-10-12T15:00:00.000Z"
+    },
+    "skeptic-lens": {
+      "display_name": "skeptic-lens",
+      "persistent_name": "skeptic-lens",
+      "role": "Adversarial & Edge Case Reviewer",
+      "universe": "descriptive",
+      "status": "active",
+      "created_at": "2026-10-12T15:00:00.000Z",
+      "updated_at": "2026-10-12T15:00:00.000Z"
+    },
+    "pr-test-model-reviewer": {
+      "display_name": "pr-test-model-reviewer",
+      "persistent_name": "pr-test-model-reviewer",
+      "role": "Test Coverage & Cosmos Failure Modes Reviewer",
+      "universe": "descriptive",
+      "status": "active",
+      "created_at": "2026-10-12T15:00:00.000Z",
+      "updated_at": "2026-10-12T15:00:00.000Z"
+    },
+    "review-context-builder": {
+      "display_name": "review-context-builder",
+      "persistent_name": "review-context-builder",
+      "role": "Codebase Context & Call Graph Explorer",
+      "universe": "descriptive",
+      "status": "active",
+      "created_at": "2026-10-12T15:00:00.000Z",
+      "updated_at": "2026-10-12T15:00:00.000Z"
+    },
+    "review-quality-gate": {
+      "display_name": "review-quality-gate",
+      "persistent_name": "review-quality-gate",
+      "role": "Quality Normalizer & Gatekeeper",
+      "universe": "descriptive",
+      "status": "active",
+      "created_at": "2026-10-12T15:00:00.000Z",
+      "updated_at": "2026-10-12T15:00:00.000Z"
+    },
+    "past-review": {
+      "display_name": "past-review",
+      "persistent_name": "past-review",
+      "role": "Past PR Triage Reviewer",
+      "universe": "descriptive",
+      "status": "active",
+      "created_at": "2026-10-12T15:00:00.000Z",
+      "updated_at": "2026-10-12T15:00:00.000Z"
+    },
+    "past-pr-investigator": {
+      "display_name": "past-pr-investigator",
+      "persistent_name": "past-pr-investigator",
+      "role": "Past PR Detailed Investigator",
+      "universe": "descriptive",
+      "status": "active",
+      "created_at": "2026-10-12T15:00:00.000Z",
+      "updated_at": "2026-10-12T15:00:00.000Z"
+    },
+    "pr-review-feedback": {
+      "display_name": "pr-review-feedback",
+      "persistent_name": "pr-review-feedback",
+      "role": "Review Feedback & Memory Maintainer",
+      "universe": "descriptive",
+      "status": "active",
+      "created_at": "2026-10-12T15:00:00.000Z",
+      "updated_at": "2026-10-12T15:00:00.000Z"
+    }
+  }
+}

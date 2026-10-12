@@ -344,3 +344,12 @@ oom-*
 timeout-*
 slow-unit-*
 leak-*
+
+# Squad PR review runtime artifacts (local-only, not committed)
+.squad/pr-review/findings/
+.squad/pr-review/reconciliation/
+.squad/pr-review/cache/
+.squad/pr-review/*.tmp
+.squad/pr-review/*.log
+.squad/watch.log
+.squad/audit-trail.md

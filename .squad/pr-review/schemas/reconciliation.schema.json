@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PR review reconciliation report",
+  "type": "object",
+  "required": ["version", "pr", "generated_at", "summary", "missed_human_issues", "possible_false_positives"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "pr": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "summary": {
+      "type": "object",
+      "required": ["agent_terms", "human_terms", "overlap_terms", "missed_terms"],
+      "additionalProperties": false,
+      "properties": {
+        "agent_terms": { "type": "integer" },
+        "human_terms": { "type": "integer" },
+        "overlap_terms": { "type": "integer" },
+        "missed_terms": { "type": "integer" }
+      }
+    },
+    "missed_human_issues": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "possible_false_positives": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "notes": { "type": "string" }
+  }
+}

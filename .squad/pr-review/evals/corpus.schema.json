@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PR reviewer golden corpus",
+  "type": "object",
+  "required": ["version", "cases"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "pr", "sdk", "enabled", "expected_findings"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "pr": {
+            "type": "string",
+            "description": "GitHub PR ref in owner/repo#N form."
+          },
+          "sdk": {
+            "type": "string",
+            "enum": ["dotnet", "java", "python", "go", "rust", "spark", "kafka", "spring-data"]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "tier": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "notes": {
+            "type": "string"
+          },
+          "expected_findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "category", "severity", "required_terms"],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]*$"
+                },
+                "category": {
+                  "type": "string",
+                  "enum": ["correctness", "code_quality", "testing", "perf", "security", "api", "parity", "design_alignment", "agentic", "style", "other"]
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": ["blocker", "major", "minor", "nit"]
+                },
+                "source": {
+                  "type": "string",
+                  "description": "Human review comment, follow-up fix, reverted commit, linked bug, CI failure, etc."
+                },
+                "required_terms": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "forbidden_terms": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          "known_false_positive_terms": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

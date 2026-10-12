@@ -1,0 +1,11 @@
+{
+  "casting_policy_version": "1.2",
+  "allow_custom_universes": true,
+  "default_naming": "descriptive",
+  "allowlist_universes": [
+    "descriptive"
+  ],
+  "universe_capacity": {
+    "descriptive": 25
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "java-48890-netty-handler",
+      "pr": "Azure/azure-sdk-for-java#48890",
+      "sdk": "java",
+      "enabled": true,
+      "tier": 2,
+      "notes": "Seeded from saved router findings. Replace/confirm with final human comments during reconciliation.",
+      "expected_findings": [
+        {
+          "id": "hot-path-pipeline-scan",
+          "category": "perf",
+          "severity": "major",
+          "source": "saved-router-finding",
+          "required_terms": ["per-stream pipeline scan", "ReactorNettyClient", "AttributeKey"]
+        },
+        {
+          "id": "log-level-test-gap",
+          "category": "testing",
+          "severity": "major",
+          "source": "saved-router-finding",
+          "required_terms": ["Tests assert consumption", "ListAppender", "log level"]
+        },
+        {
+          "id": "java-only-parity-verified",
+          "category": "parity",
+          "severity": "nit",
+          "source": "saved-router-verified-negative",
+          "required_terms": ["Cross-SDK parity", "not applicable", "verified"]
+        }
+      ],
+      "known_false_positive_terms": ["missing .NET analog", "Python should support HTTP/2"]
+    },
+    {
+      "id": "dotnet-5792-ppaf-hub-header",
+      "pr": "Azure/azure-cosmos-dotnet-v3#5792",
+      "sdk": "dotnet",
+      "enabled": true,
+      "tier": 2,
+      "notes": "Seeded from saved router re-review findings for PPAF hub-region retry path.",
+      "expected_findings": [
+        {
+          "id": "retry-threshold-overloaded",
+          "category": "code_quality",
+          "severity": "minor",
+          "source": "saved-router-finding",
+          "required_terms": ["MaxSessionTokenRetryCount", "overloaded", "HubRegionHeaderRetryThreshold"]
+        },
+        {
+          "id": "hub-header-diagnostics-gap",
+          "category": "code_quality",
+          "severity": "minor",
+          "source": "saved-router-finding",
+          "required_terms": ["No `DefaultTrace`", "hub-header", "attach site"]
+        },
+        {
+          "id": "retry-test-chain-gap",
+          "category": "testing",
+          "severity": "nit",
+          "source": "saved-router-finding",
+          "required_terms": ["PersistsThroughRetriableErrors", "408", "410"]
+        }
+      ],
+      "known_false_positive_terms": ["missing multi-master"]
+    },
+    {
+      "id": "go-26889-cross-region-failover",
+      "pr": "Azure/azure-sdk-for-go#26889",
+      "sdk": "go",
+      "enabled": true,
+      "tier": 3,
+      "notes": "Seeded from saved Tier 3 re-review findings for cross-region failover and async GEM refresh.",
+      "expected_findings": [
+        {
+          "id": "changelog-connection-error-omission",
+          "category": "api",
+          "severity": "major",
+          "source": "saved-router-finding",
+          "required_terms": ["CHANGELOG accuracy", "connection-error", "cross-region failover"]
+        },
+        {
+          "id": "panic-recovery-test-gap",
+          "category": "testing",
+          "severity": "minor",
+          "source": "saved-router-finding",
+          "required_terms": ["panic-injection test", "async refresh", "recover"]
+        },
+        {
+          "id": "godoc-orphaned",
+          "category": "code_quality",
+          "severity": "minor",
+          "source": "saved-router-finding",
+          "required_terms": ["godoc accidentally orphaned", "maxForceRefreshRetries", "Update"]
+        }
+      ],
+      "known_false_positive_terms": ["public API change", "cross-SDK parity gap"]
+    },
+    {
+      "id": "python-47172-response-headers",
+      "pr": "Azure/azure-sdk-for-python#47172",
+      "sdk": "python",
+      "enabled": true,
+      "tier": 2,
+      "notes": "Seeded from saved Python findings; especially useful for migration-guidance and public API docs checks.",
+      "expected_findings": [
+        {
+          "id": "migration-guidance",
+          "category": "api",
+          "severity": "major",
+          "source": "saved-router-finding",
+          "required_terms": ["CHANGELOG missing migration guidance", "get_response_headers", "get_last_response_headers"]
+        }
+      ],
+      "known_false_positive_terms": ["breaking change without migration path already documented"]
+    },
+    {
+      "id": "spring-ai-44-release-wave",
+      "pr": "AzureCosmosDB/spring-ai#44",
+      "sdk": "spring-data",
+      "enabled": true,
+      "tier": 3,
+      "notes": "Seeded from saved custom spring-ai release review; covers release mechanics, docs, Maven repository leakage, and milestone naming.",
+      "expected_findings": [
+        {
+          "id": "snapshot-doc-snippets",
+          "category": "api",
+          "severity": "major",
+          "source": "saved-router-finding",
+          "required_terms": ["README", "1.0.0-SNAPSHOT", "1.0.0-M.1"]
+        },
+        {
+          "id": "spring-snapshots-repository-leak",
+          "category": "security",
+          "severity": "major",
+          "source": "saved-router-finding",
+          "required_terms": ["spring-snapshots", "published POM", "repo.spring.io/snapshot"]
+        },
+        {
+          "id": "spring-milestone-naming",
+          "category": "api",
+          "severity": "major",
+          "source": "saved-router-finding",
+          "required_terms": ["1.0.0-M.1", "Spring AI", "M7"]
+        }
+      ],
+      "known_false_positive_terms": ["Cosmos design-doc contradiction"]
+    }
+  ]
+}

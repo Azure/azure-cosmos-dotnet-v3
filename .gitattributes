@@ -16,3 +16,10 @@
 # explicitly deferred.
 /changelog.md merge=union
 /Microsoft.Azure.Cosmos/FaultInjection/changelog.md merge=union
+
+# Squad append-only team state (union merge driver)
+/.squad/decisions.md merge=union
+/.squad/identity/wisdom.md merge=union
+/.squad/ceremonies.md merge=union
+/.squad/casting/history.json merge=union
+

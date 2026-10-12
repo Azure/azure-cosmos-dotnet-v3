@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PR review context completeness manifest",
+  "type": "object",
+  "required": ["version", "pr_ref", "sdk", "status", "checks"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "pr_ref": {
+      "type": "string"
+    },
+    "sdk": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["complete", "partial", "degraded"]
+    },
+    "checks": {
+      "type": "object",
+      "required": [
+        "pr_metadata",
+        "diff",
+        "linked_issues",
+        "existing_comments",
+        "design_docs",
+        "specs",
+        "tests",
+        "ci",
+        "codeowners",
+        "callers_callees",
+        "peer_sdks"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "pr_metadata": { "$ref": "#/$defs/check" },
+        "diff": { "$ref": "#/$defs/check" },
+        "linked_issues": { "$ref": "#/$defs/check" },
+        "existing_comments": { "$ref": "#/$defs/check" },
+        "design_docs": { "$ref": "#/$defs/check" },
+        "specs": { "$ref": "#/$defs/check" },
+        "tests": { "$ref": "#/$defs/check" },
+        "ci": { "$ref": "#/$defs/check" },
+        "codeowners": { "$ref": "#/$defs/check" },
+        "callers_callees": { "$ref": "#/$defs/check" },
+        "peer_sdks": { "$ref": "#/$defs/check" }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "message"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "severity": { "type": "string", "enum": ["info", "warning", "critical"] },
+          "message": { "type": "string" },
+          "owner": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "check": {
+      "type": "object",
+      "required": ["status", "evidence"],
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["found", "not_found", "skipped", "failed", "not_applicable"]
+        },
+        "evidence": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "updated_at": "2026-06-04T05:23:33Z",
+  "always_check": [
+    {
+      "id": "ac-1",
+      "text": "Before claiming cross-SDK parity gap or shared anti-pattern, fetch the peer SDK repos and verify the equivalent code/CI actually exists. Cross-SDK reasoning by analogy is forbidden.",
+      "added_at": "2026-04-22T22:06:54Z",
+      "last_used_at": "2026-04-22T22:06:54Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0
+    },
+    {
+      "id": "ac-2",
+      "text": "Before adding any finding (especially anything labeled BLOCKING), read the PR description in full and check whether the author has already scoped, documented, or acknowledged the concern. If they have, either drop the finding or downgrade it to SUGGESTION/OBSERVATION accordingly.",
+      "added_at": "2026-04-29T18:13:54Z",
+      "last_used_at": "2026-04-29T18:13:54Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0
+    },
+    {
+      "id": "ac-3",
+      "text": "Before finalizing a review, read all existing PR comments and existing review threads. Drop or downgrade findings that have already been raised, addressed, or explicitly resolved by the author or prior reviewers. Do not duplicate prior reviewer comments.",
+      "added_at": "2026-04-29T18:13:54Z",
+      "last_used_at": "2026-04-29T18:13:54Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0
+    },
+    {
+      "id": "ac-4",
+      "text": "Every PR review (every tier, every SDK) MUST include a dedicated test-coverage analysis with two parts: (1) PRACTICAL — enumerate what tests EXIST for the changed lines (cite file:test_name + the grep used), what they cover (happy path / failure modes / concurrency / boundaries), and where they leave gaps for the specific diff; (2) CONCEPTUAL — brainstorm what tests SHOULD exist by reasoning from Cosmos DB domain knowledge for the subsystem being touched. The conceptual brainstorm MUST consult existing cosmosdb-design-docs chapters for the relevant subsystem (for example: 02-gateway-layer, 03-backend-storage-engine, 04-partitioning, 05-replication-consistency, 06-transport-layer-rntbd, 07-query-engine, 08-indexing-engine, 09-global-distribution, 11-request-units-throttling, 12-change-feed, 16-session-tokens, 17-status-codes-and-sdk-retries) and walk the Cosmos failure modes that apply: partition split/merge during the operation, replica failover mid-request, session-token staleness across region failover, throttling (429) with retry-after, request-timeout vs server-side-timeout, multi-region writes / conflict resolution, gateway-vs-direct mode divergence, cold-start vs warm-cache, PPAF / circuit-breaker / hub-region staleness where applicable, hostile/malformed wire payloads for serialization paths. Output the analysis as a short section in the review titled 'Test coverage analysis (existing + recommended)' with at least 3 numbered conceptual gaps that map to a concrete recommended test name. The presence of mechanical Dimension 2 grep checks does NOT satisfy this rule — those verify what's there; this rule mandates brainstorming what's missing from first principles.",
+      "added_at": "2026-06-02T16:43:00Z",
+      "last_used_at": "2026-06-02T16:43:00Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0,
+      "category": "testing"
+    },
+    {
+      "id": "ac-5",
+      "text": "**Public API surface discipline (NET-NEW / CHANGED public symbols, all SDKs)** — For every PR that adds, modifies, or expands a public type / method / constructor / enum / field / property in any SDK's public package, explicitly evaluate the API surface BEFORE approving. For each new or modified public symbol, ask and answer: (a) **Why is this public?** Is there a real external caller need, or can it be hidden behind the SDK's internal/bridge access mechanism — `ImplementationBridgeHelpers` (Java), `internal` namespace (.NET), `_*` underscore-prefixed module (Python), lowercase identifier (Go), `pub(crate)` (Rust)? (b) **Is the constructor necessary?** Public constructors should be questioned — prefer builders, factories, or `from*` static methods. Justify each public ctor explicitly. (c) **Preview / experimental annotation consistency.** When a new public class is annotated preview/experimental (`@Beta(...)` Java, `[Experimental(...)]` .NET, `_*beta*` or version-introduced metadata Python, doc-tag `// Beta:` Go), every new public field, method, and constructor of that class should also carry the same annotation, per the `Http2ConnectionConfig` / `CosmosClientBuilder` (Java) and equivalent SDK precedents. The documented exception is enum-class types, where class-level-only annotation is acceptable (Java's `ReadConsistencyStrategy` precedent). Flag any missing member-level preview annotation on non-enum classes. (d) **Deprecated APIs exposed publicly.** If a method, class, or field is `@Deprecated` (Java), `[Obsolete]` (.NET), emits `DeprecationWarning` (Python), or carries an equivalent deprecation marker, ask why it is exposed publicly at all. Prefer hiding behind internal access + bridge helpers rather than adding a new public-yet-deprecated API. (e) **Sibling consistency on locks / synchronization.** For getters and setters of internal cache-vs-property-bag classes (e.g., `DocumentCollection` in Cosmos Java), flag any `synchronized` / `lock` / mutex on a getter/setter when sibling getters/setters in the same class for the same cache pattern are unsynchronized. Ask whether the lock is necessary or a copy-paste artifact. Findings from this pass are MAJOR-tier, not nits. (source: kushagra-feedback-pr48480-review-4424918700)",
+      "added_at": "2026-06-04T05:23:33Z",
+      "last_used_at": "2026-06-04T05:23:33Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0,
+      "category": "api"
+    }
+  ],
+  "stop_flagging": [],
+  "preferences": {},
+  "recurring_patterns": [
+    {
+      "id": "rp-1",
+      "text": "CI builds project-ref while shipped artifact has different preprocessor/feature surface; needs explicit parity build to catch ABI gaps",
+      "seen_count": 1,
+      "added_at": "2026-04-22T22:06:54Z",
+      "last_used_at": "2026-04-22T22:06:54Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0
+    }
+  ],
+  "recent_reviews": []
+}

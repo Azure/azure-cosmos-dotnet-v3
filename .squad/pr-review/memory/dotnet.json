@@ -1,0 +1,230 @@
+{
+  "sdk": "dotnet",
+  "version": 1,
+  "updated_at": "2026-10-08T00:42:20Z",
+  "always_check": [
+    {
+      "id": "ac-1",
+      "text": "Always pull past reviews from Kiran (github.com/kirankumarkolli) and Fabian (github.com/FabianMeiswinkel) on touched files/areas and learn from their patterns before commenting",
+      "added_at": "2026-04-22T22:06:54Z",
+      "last_used_at": "2026-04-22T22:06:54Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0
+    },
+    {
+      "id": "ac-2",
+      "text": "Before asserting any cross-SDK parity claim, fetch the peer SDK repo and confirm the equivalent code/CI actually exists. Never reason from analogy alone.",
+      "added_at": "2026-04-22T22:06:54Z",
+      "last_used_at": "2026-04-22T22:06:54Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0
+    },
+    {
+      "id": "ac-3",
+      "text": "Before adding any finding (especially anything labeled BLOCKING), read the PR description in full and check whether the author has already scoped, documented, or acknowledged the concern. If they have, either drop the finding or downgrade it to SUGGESTION/OBSERVATION accordingly.",
+      "added_at": "2026-04-29T18:04:29Z",
+      "last_used_at": "2026-04-29T18:04:29Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0
+    },
+    {
+      "id": "ac-4",
+      "text": "Before finalizing a review, read all existing PR comments and existing review threads. Drop or downgrade findings that have already been raised, addressed, or explicitly resolved by the author or prior reviewers. Do not duplicate prior reviewer comments.",
+      "added_at": "2026-04-29T18:04:29Z",
+      "last_used_at": "2026-04-29T18:04:29Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0
+    },
+    {
+      "id": "ac-5",
+      "text": "Before suggesting \"add tests for X\" or any missing-coverage comment on a Cosmos .NET PR, grep the relevant test class(es) AND sibling test files in the same test project for concept keywords (e.g., MultiMaster, useMultipleWriteLocations, isMultiMasterAccount, SingleMaster, the specific HTTP status code, the specific header name) and explicitly enumerate matches in your reasoning before commenting.",
+      "added_at": "2026-04-29T18:43:53Z",
+      "last_used_at": "2026-04-29T18:43:53Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0
+    },
+    {
+      "id": "ac-6",
+      "text": "Always inspect [DataRow], [DataTestMethod], [Theory], and [InlineData] entries on existing parameterized tests in the file — new coverage often arrives as additional rows on an existing method, not as new methods. A test name that mentions BasedOnAccountType / BothAccountTypes / MultiMasterAndSingleMaster strongly implies dual coverage already exists; verify before asking for it.",
+      "added_at": "2026-04-29T18:43:53Z",
+      "last_used_at": "2026-04-29T18:43:53Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0
+    },
+    {
+      "id": "ac-7",
+      "text": "Anchor Cosmos .NET PR reviews in the locally cloned repo (~/Data/microsoft/sandbox/azure-cosmos-dotnet-v3) checked out at the PR head SHA, not solely the GitHub web diff view. Read the full modified test class file end-to-end — not just the diff hunks.",
+      "added_at": "2026-04-29T18:43:53Z",
+      "last_used_at": "2026-04-29T18:43:53Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0
+    },
+    {
+      "id": "ac-8",
+      "text": "Before posting a \"missing test\" comment, write down (mentally or in scratch) the existing test method names that touch the area and the parameter rows they cover. If that scan finds coverage, drop the comment.",
+      "added_at": "2026-04-29T18:43:53Z",
+      "last_used_at": "2026-04-29T18:43:53Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0
+    },
+    {
+      "id": "ac-9",
+      "text": "When a PR shows mergeable: CONFLICTING AND the conflicts are in test files, diff the PR's new test methods against origin/main test methods of the same area BEFORE commenting on test coverage. Specifically: for each new [TestMethod]/[Fact] added in the PR, grep origin/main for tests with the same Mock<...> setup, same options shape, and same assertion shape — if a near-identical test already exists on main, flag the duplicate as a post-rebase collision risk. Source: PR #5852 added StartAsync_DoesNotSetStartTime_WhenAllVersionsAndDeletesMode at line 272 of head, but origin/main already has StartAsync_DoesNotSetStartTime_WhenAllVersionsAndDeletes at line 273 added by #5825 — once rebased, both methods land in the same file with effectively identical bodies.",
+      "added_at": "2026-05-19T16:24:58Z",
+      "last_used_at": "2026-05-19T16:24:58Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0,
+      "category": "testing"
+    },
+    {
+      "id": "ac-11",
+      "text": "For any PR touching Microsoft.Azure.Cosmos/src/Authorization/ (TokenCredentialCache.cs, AuthorizationTokenProviderTokenCredential.cs): (1) verify the test mock credential will THROW on non-empty claims (a mock that silently accepts any claims will miss AzureCliCredential-class regressions); (2) verify that the post-revocation 3rd token acquisition is tested to confirm it returns to null claims; (3) check for double volatile-reads on cachedClaimsChallenge — any code that reads the field more than once must be refactored to snapshot it first. These three gates are REQUIRED, not suggestions.",
+      "added_at": "2026-07-09T22:43:00Z",
+      "last_used_at": "2026-07-09T22:43:00Z",
+      "source": "session-analysis",
+      "confidence": 1.0,
+      "category": "auth"
+    },
+    {
+      "id": "ac-10",
+      "text": "Before accepting a PR description's framing of WHAT changed (e.g., \"the fix is a single-line addition to X\", \"this adds Y guard\"), verify the cumulative `gh pr diff <N> --repo Azure/azure-cosmos-dotnet-v3` against origin/main shows the claimed change actually being added by this PR. Use `gh api /repos/.../contents/<path>?ref=main` vs `?ref=<head-ref>` and base64-decode + sed -n the relevant section to confirm. The pr-description-divergence theme has now surfaced multiple times in dotnet (recent: #5838, #5852) where the PR description claimed functional changes that were either already on main from a sibling PR (#5852: clause shipped via #5825) or partially landed and re-attributed. When the description claims a code change that the diff doesn't actually contain, reframe the PR's value as the layer it does add (docs / tests / changelog / observability) and request a description+title update reflecting actual scope BEFORE going deeper on the substantive review.",
+      "added_at": "2026-05-19T16:32:04Z",
+      "last_used_at": "2026-05-19T16:32:04Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0,
+      "category": "code_quality"
+    }
+  ],
+  "stop_flagging": [],
+  "preferences": {
+    "last_rating": 3,
+    "tone": "concise",
+    "depth": "deep",
+    "good": [
+      "Findings called out csproj knob lacking explanatory comment and yml duplication; rating 4/5 from user",
+      "The follow-up re-review (after the user requested it) correctly identified that multi-master DataRow coverage existed in the latest commit and reported the comment status accurately. The structural review (verifying #if !INTERNAL placement, addHubRegionProcessingOnlyHeader field visibility, and the new PersistsThroughRetriableErrors test) was thorough and well-grounded in the source."
+    ],
+    "bad": [
+      "Fabricated cross-SDK parity claim about Java/Python encryption packages without verifying their repos. Python has no encryption package; Java encryption CI runs per-PR. Always verify peer SDK reality before asserting parity gaps.",
+      "Labeled F1 (etag→ifMatch naming asymmetry) as BLOCKING without crediting the PR description, which explicitly scoped the rename to the request body. This was a severity-calibration error — the asymmetry is intentional and documented, not an oversight.",
+      "On PR Azure/azure-cosmos-dotnet-v3#5792, the reviewer left a top-level comment asking \"I wonder if we can add some tests for multi-master account? making sure the retries are same in multi-master and are correct\" (kushagraThapar, 2026-04-28). The author replied (aavasthy, 2026-04-29) pointing out the multi-master tests had already existed for 10 days at Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/ClientRetryPolicyTests.cs line 415 — specifically [DataRow(true, false, ...)] and [DataRow(false, false, ...)] rows on the parameterized test ClientRetryPolicy_HubRegionHeader_AddedOn404_1002_BasedOnAccountType (added in commit 3daf5b895 on 2026-04-18). The reviewer comment was therefore unnecessary and left a thread that the author had to manually disprove. Root cause: the review was performed from the PR diff / GitHub discussion view without grepping the test class for existing concept coverage, and [DataRow] entries on a parameterized test method are easy to miss when scanning a diff. The fix code is single-master-focused (#if !INTERNAL block, MaxSessionTokenRetryCount), which biased the reviewer toward \"needs multi-master coverage\" without verifying."
+    ]
+  },
+  "recurring_patterns": [
+    {
+      "id": "rp-2",
+      "text": "AAD auth changes (TokenCredentialCache, AuthorizationTokenProviderTokenCredential): tests use a mock credential that accepts any claims value silently, so regressions that inject non-empty claims on the normal path are not caught. AzureCliCredential is never in emulator CI. Required: (1) test with a stub that throws on non-empty claims to pin the normal path; (2) test that revocation path sends non-null merged claims; (3) test that 3rd post-revocation acquisition returns to null claims. If any of these three tests are missing, flag as REQUIRED before merge. Root cause of original PR #5549 miss: mock credential masked the AzureCliCredential breakage; reviewer focus was on \"does CAE revocation work?\" not \"does the normal path still work for all credential types?\".",
+      "seen_count": 1,
+      "added_at": "2026-07-09T22:43:00Z",
+      "last_used_at": "2026-07-09T22:43:00Z",
+      "source": "session-analysis",
+      "confidence": 1.0,
+      "verified_by": "PR #5549 regression reproduced; PR #6008 confirmed three-test gap; two reviews independently found same issues"
+    },
+    {
+      "id": "rp-3",
+      "text": "Volatile double-read TOCTOU: when a volatile field is read once to compute a derived value and read again for a branch condition (even within a few lines), a concurrent write between the two reads can make the branch decision and the computed value diverge. Always snapshot volatile fields into a local variable and use the local exclusively. Pattern already present in GetNewTokenAsync (line 233 comment: \"Use a local variable to avoid the possibility the task gets changed between the null check and the await\"). Failure to follow this on cachedClaimsChallenge = dropped/misattributed CAE challenge + MaxCaeRevocationRetryCount=1 budget burned on a no-op request.",
+      "seen_count": 1,
+      "added_at": "2026-07-09T22:43:00Z",
+      "last_used_at": "2026-07-09T22:43:00Z",
+      "source": "session-analysis",
+      "confidence": 1.0,
+      "verified_by": "PR #6008 commit f0027255b introduced double-read; two independent reviews caught same issue"
+    },
+    {
+      "id": "rp-1",
+      "text": "Asks for tests that already exist as [DataRow] / [Theory] / [InlineData] rows on parameterized test methods. Reviewer scans the diff or method names but does not enumerate existing parameterized rows, so additional coverage that arrived as new data rows on an existing test method is missed. Common signal: a test name containing \"BasedOnAccountType\", \"BothAccountTypes\", \"MultiMasterAndSingleMaster\", \"ForBoth...\", or any name that implies dual/multi-scenario coverage already exists.",
+      "seen_count": 1,
+      "added_at": "2026-04-29T18:47:29Z",
+      "last_used_at": "2026-04-29T18:47:29Z",
+      "source": "feedback-cmd",
+      "confidence": 1.0
+    }
+  ],
+  "recent_reviews": [
+    {
+      "pr": "Azure/azure-cosmos-dotnet-v3#6137",
+      "tier": 3,
+      "verdict": "approve_with_suggestions",
+      "reviewed_at": "2026-10-08T00:42:20Z",
+      "themes": [
+        "source-only Direct import verified against pinned manifest",
+        "non-packable project and production package isolation",
+        "CPU diagnostic test uses fixed two-second sleep",
+        "meminfoInvalid fixture reference not included",
+        "no production behavior or API change"
+      ],
+      "summary": "Isolated Direct source import; two optional diagnostic test-quality findings, no production defect.",
+      "re_review_count": 0
+    },
+    {
+      "pr": "Azure/azure-cosmos-dotnet-v3#6147",
+      "tier": 1,
+      "verdict": "no_actionable_findings_partial_context",
+      "reviewed_at": "2026-10-08T00:49:35.693255Z",
+      "themes": [
+        "stale CFP lease ETag after headers-only successful replace; write snapshot receives response-header ETag",
+        "Java CFP requires content response and hydrates cached lease ETag from response document",
+        "no actionable findings after suppressing acknowledged two-copy allocation tradeoff",
+        "Tier 1 focused review; no local tests run"
+      ],
+      "summary": "Tier 1 review; no actionable findings. Java avoids the same headers-only stale-ETag scenario by requiring response content and copying response-document ETag into cached lease."
+    },
+    {
+      "pr": "Azure/azure-cosmos-dotnet-v3#6119",
+      "tier": 1,
+      "verdict": "no_actionable_findings_partial_context",
+      "reviewed_at": "2026-10-07T18:09:28Z",
+      "themes": [
+        "DTx mutable per-operation options intentionally captured at request construction per patch test and description",
+        "DT-001 not substantiated as actionable from supplied patch",
+        "partial review: PR-head checkout, linked issue details, review threads, and test execution unavailable",
+        "exact PR head 0d7d67a reviewed in temporary worktree",
+        "295 focused DTx unit tests passed under .NET 9 major roll-forward",
+        "current PR options-capture thread resolved",
+        "canonical design-doc sync fresh; no DTx-specific contract chapter",
+        "ADO Bug 5613093 unavailable without Azure DevOps auth",
+        "no actionable findings; confidence high on code, medium on intent context"
+      ],
+      "summary": "Complete Tier 1 re-review of exact PR head; no actionable finding, focused tests pass, ADO issue inaccessible.",
+      "re_review_count": 2,
+      "re_reviewed_at": "2026-10-07T18:09:28Z"
+    },
+    {
+      "pr": "Azure/azure-cosmos-dotnet-v3#6140",
+      "tier": 1,
+      "verdict": "approve",
+      "reviewed_at": "2026-10-07T17:36:28Z",
+      "themes": [
+        "cancellation documentation distinguishes client stop from service rollback",
+        "DTx cancellation coverage for dispatch, response parsing, and retry delay",
+        "no actionable findings"
+      ],
+      "re_review_count": 0
+    },
+    {
+      "pr": "Azure/azure-cosmos-dotnet-v3#6141",
+      "tier": 1,
+      "verdict": "approve",
+      "reviewed_at": "2026-10-07T17:27:40Z",
+      "themes": [
+        "synthesized DTX result indices follow request order",
+        "placeholder provenance remains HasIndex false",
+        "fallback and existing wire-index validation behavior preserved"
+      ],
+      "re_review_count": 0
+    }
+  ],
+  "author_history": {
+    "ramarag": {
+      "first_seen_pr": 5931,
+      "first_seen_at": "2026-06-08",
+      "observations": [
+        "NEW author for Cosmos .NET v3",
+        "POSITIVE: PR description cites Java sister PR + explains wire contract clearly",
+        "POSITIVE: code comment verbatim-derived from Java source (cross-SDK lineage)",
+        "GAP: test coverage validates mechanism (header presence) rather than bug class (post-merge filtering correctness) - same pattern as PR #5930"
+      ]
+    }
+  }
+}

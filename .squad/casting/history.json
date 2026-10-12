@@ -1,0 +1,24 @@
+[
+  {
+    "timestamp": "2026-10-12T15:00:00.000Z",
+    "action": "cast",
+    "universe": "descriptive",
+    "agents_added": [
+      "pr-review-router",
+      "pr-deep-reviewer",
+      "engineering-quality-reviewer",
+      "cosmos-pr-reviewer",
+      "cross-sdk-reviewer",
+      "fresh-eyes-reviewer",
+      "ci-artifact-reviewer",
+      "security-reviewer",
+      "skeptic-lens",
+      "pr-test-model-reviewer",
+      "review-context-builder",
+      "review-quality-gate",
+      "past-review",
+      "past-pr-investigator",
+      "pr-review-feedback"
+    ]
+  }
+]
