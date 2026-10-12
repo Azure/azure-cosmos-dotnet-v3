@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 throw new ArgumentNullException(nameof(sourceCollectionRid));
             }
 
-            using ITrace discoveryTrace = trace.StartChild("ContainerMetadataSecondaryIndexDiscovery", TraceComponent.Query, TraceLevel.Info);
+            using ITrace discoveryTrace = trace.StartChild("SecondaryIndexDiscovery", TraceComponent.Query, TraceLevel.Info);
 
             ClientCollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(discoveryTrace);
             ContainerProperties source = await collectionCache.ResolveByRidAsync(
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             }
 
             discoveryTrace.AddDatum("SecondaryIndexDiscovery.CandidateCount", secondaryIndexesMetadata.Count);
-            return secondaryIndexesMetadata.AsReadOnly();
+            return secondaryIndexesMetadata;
         }
 
         private static bool IsMaterializedViewForSource(

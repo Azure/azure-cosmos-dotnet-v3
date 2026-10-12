@@ -632,7 +632,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// When enabled, eligible queries can use a secondary index to reduce source-container fan-out.
         /// </summary>
-        internal bool EnableSecondaryIndexLookupRouting { get; set; } = false;
+        internal bool EnableSecondaryIndexRouting { get; set; } = false;
 
         /// <summary>
         /// Gets or sets the boolean flag to skip converting a text stream to binary and vice versa. When enabled, the request and response stream
