@@ -84,22 +84,11 @@ namespace Microsoft.Azure.Cosmos
             IEnumerable<ISecondaryIndexMetadata> globalSecondaryIndexes = Array.Empty<ISecondaryIndexMetadata>();
             if (this.clientContext.ClientOptions.EnableSecondaryIndexRouting)
             {
-                try
-                {
-                    globalSecondaryIndexes = 
-                        await this.clientContext.SecondaryIndexMetadataCache.GetSecondaryIndexMetadataAsync(
-                            containerProperties,
-                            trace, 
-                            cancellationToken: cancellationToken);
-                }
-                catch (CosmosException exception)
-                {
-                    trace.AddDatum("SecondaryIndexDiscovery.StatusCode", (int)exception.StatusCode);
-                }
-                catch (Exception exception) when (exception is not OperationCanceledException)
-                {
-                    trace.AddDatum("SecondaryIndexDiscovery.FailureType", exception.GetType().FullName);
-                }
+                globalSecondaryIndexes =
+                    await this.clientContext.SecondaryIndexMetadataCache.GetSecondaryIndexMetadataAsync(
+                        containerProperties,
+                        trace,
+                        cancellationToken: cancellationToken);
             }
 
             return new ContainerQueryProperties(
