@@ -107,12 +107,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             }
             else
             {
-                if (hybridSearchQueryInfo.Skip > int.MaxValue || hybridSearchQueryInfo.Take > int.MaxValue)
-                {
-                    return TryCatch<IQueryPipelineStage>.FromException(
-                        new ArgumentOutOfRangeException(nameof(hybridSearchQueryInfo), "Hybrid search skip and take must not exceed Int32.MaxValue."));
-                }
-
                 MonadicCreatePipelineStage monadicCreatePipelineStage = (_) => HybridSearchCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
                     containerQueryProperties: containerQueryProperties,

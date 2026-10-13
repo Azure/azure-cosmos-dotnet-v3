@@ -915,8 +915,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 info => info.ComponentQueryInfos[0].Top = uint.MaxValue,
                 info => info.ComponentQueryInfos[0].Limit = uint.MaxValue,
                 info => info.ComponentQueryInfos[0].Offset = uint.MaxValue,
-                info => info.Skip = uint.MaxValue,
-                info => info.Take = uint.MaxValue,
             };
             foreach (Action<HybridSearchQueryInfo> invalidate in invalidPlans)
             {
