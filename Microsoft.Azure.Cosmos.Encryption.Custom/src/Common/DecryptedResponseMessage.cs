@@ -48,7 +48,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// Releases a response that cannot be transferred to the caller after a processing failure.
         /// Cleanup errors are traced without replacing the processing exception.
         /// </summary>
+#if NET8_0_OR_GREATER
         internal static async Task DisposeOnFailureAsync(
+#else
+        internal static Task DisposeOnFailureAsync(
+#endif
             ResponseMessage responseMessage,
             Stream content,
             Stream decryptedContent = null)
@@ -91,6 +95,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         TraceCleanupFailure(contentCleanupFailure);
                     }
                 }
+
+#if !NET8_0_OR_GREATER
+                return Task.CompletedTask;
+#endif
             }
         }
 
