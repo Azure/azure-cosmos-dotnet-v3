@@ -1092,13 +1092,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return responseMessage;
             }
 
-            Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
-                responseMessage.Content,
-                this.Encryptor,
-                readManyRequestOptions.GetJsonProcessor(this.DefaultJsonProcessor),
-                cancellationToken);
+            Stream content = responseMessage.Content;
+            Stream decryptedContent = null;
+            try
+            {
+                decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
+                    content,
+                    this.Encryptor,
+                    readManyRequestOptions.GetJsonProcessor(this.DefaultJsonProcessor),
+                    cancellationToken);
 
-            return new DecryptedResponseMessage(responseMessage, decryptedContent);
+                return new DecryptedResponseMessage(responseMessage, decryptedContent);
+            }
+            catch
+            {
+                await DecryptedResponseMessage.DisposeOnFailureAsync(
+                    responseMessage, content, decryptedContent).ConfigureAwait(false);
+                throw;
+            }
         }
 
         private async Task<List<T>> DecryptChangeFeedDocumentsAsync<T>(

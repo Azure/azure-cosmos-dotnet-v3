@@ -4,8 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
+    using System;
     using System.IO;
     using System.Net;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
     internal sealed class DecryptedResponseMessage : ResponseMessage
@@ -41,6 +43,70 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public override HttpStatusCode StatusCode => this.responseMessage.StatusCode;
 
         public override bool IsSuccessStatusCode => this.responseMessage.IsSuccessStatusCode;
+
+        /// <summary>
+        /// Releases a response that cannot be transferred to the caller after a processing failure.
+        /// Cleanup errors are traced without replacing the processing exception.
+        /// </summary>
+        internal static async Task DisposeOnFailureAsync(
+            ResponseMessage responseMessage,
+            Stream content,
+            Stream decryptedContent = null)
+        {
+            if (decryptedContent != null && !ReferenceEquals(decryptedContent, content))
+            {
+                try
+                {
+#if NET8_0_OR_GREATER
+                    await decryptedContent.DisposeAsync().ConfigureAwait(false);
+#else
+                    decryptedContent.Dispose();
+#endif
+                }
+                catch (Exception cleanupFailure)
+                {
+                    TraceCleanupFailure(cleanupFailure);
+                }
+            }
+
+            try
+            {
+                responseMessage.Dispose();
+            }
+            catch (Exception cleanupFailure)
+            {
+                TraceCleanupFailure(cleanupFailure);
+                if (content != null)
+                {
+                    try
+                    {
+#if NET8_0_OR_GREATER
+                        await content.DisposeAsync().ConfigureAwait(false);
+#else
+                        content.Dispose();
+#endif
+                    }
+                    catch (Exception contentCleanupFailure)
+                    {
+                        TraceCleanupFailure(contentCleanupFailure);
+                    }
+                }
+            }
+        }
+
+        private static void TraceCleanupFailure(Exception failure)
+        {
+            try
+            {
+                System.Diagnostics.Trace.TraceWarning(
+                    "Failed to release an encrypted feed response after processing failed ({0}).",
+                    failure.GetType().Name);
+            }
+            catch (Exception)
+            {
+                // A caller-supplied trace listener must not replace the processing exception.
+            }
+        }
 
         protected override void Dispose(bool disposing)
         {
