@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 : encryptedData.ValueKind == JsonValueKind.Null
                     ? EncryptedDataState.Null
                     : encryptedData.ValueKind == JsonValueKind.String
-                        ? encryptedData.GetString().Length == 0
+                        ? encryptedData.ValueEquals(ReadOnlySpan<byte>.Empty)
                             ? EncryptedDataState.Empty
                             : EncryptedDataState.Value
                         : EncryptedDataState.Invalid;

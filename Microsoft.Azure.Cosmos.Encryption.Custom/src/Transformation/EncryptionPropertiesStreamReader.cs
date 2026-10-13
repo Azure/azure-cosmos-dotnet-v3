@@ -45,7 +45,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 input,
                 serializerOptions,
                 cancellationToken,
-                JsonFeedStreamHelper.MaximumBufferSize).ConfigureAwait(false);
+                JsonFeedStreamHelper.MaximumBufferSize,
+                materializeLegacyProperties: true).ConfigureAwait(false);
             return result.Properties;
         }
 
@@ -59,10 +60,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 input,
                 serializerOptions,
                 cancellationToken,
-                maxBufferSize).ConfigureAwait(false);
+                maxBufferSize,
+                materializeLegacyProperties: true).ConfigureAwait(false);
             return result.Properties;
         }
 
+        // Disposition-only callers route Legacy to Newtonsoft; ReadAsync still materializes
+        // its properties for lazy failure diagnostics and metadata inspection.
         internal static ValueTask<EncryptionMetadataReadResult> ReadResultAsync(
             Stream input,
             JsonSerializerOptions serializerOptions,
@@ -71,13 +75,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 input,
                 serializerOptions,
                 cancellationToken,
-                JsonFeedStreamHelper.MaximumBufferSize);
+                JsonFeedStreamHelper.MaximumBufferSize,
+                materializeLegacyProperties: false);
 
         private static async ValueTask<EncryptionMetadataReadResult> ReadResultAsync(
             Stream input,
             JsonSerializerOptions serializerOptions,
             CancellationToken cancellationToken,
-            int maxBufferSize)
+            int maxBufferSize,
+            bool materializeLegacyProperties)
         {
             if (input == null)
             {
@@ -122,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     if (outcome.Status == ScanResult.RootEnded)
                     {
                         StreamPositionHelper.ResetToStart(input, nameof(input));
-                        return metadataCandidate.Deserialize(serializerOptions);
+                        return metadataCandidate.Deserialize(serializerOptions, materializeLegacyProperties);
                     }
 
                     leftOver = dataSize - (int)outcome.BytesConsumed;
@@ -203,7 +209,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 this.seen = true;
             }
 
-            public EncryptionMetadataReadResult Deserialize(JsonSerializerOptions serializerOptions)
+            public EncryptionMetadataReadResult Deserialize(
+                JsonSerializerOptions serializerOptions,
+                bool materializeLegacyProperties)
             {
                 if (!this.seen)
                 {
@@ -231,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     EncryptionMetadataClassifier.Classify(document.RootElement);
                 EncryptionProperties properties =
                     disposition == EncryptionMetadataDisposition.Mde ||
-                    disposition == EncryptionMetadataDisposition.Legacy ||
+                    (disposition == EncryptionMetadataDisposition.Legacy && materializeLegacyProperties) ||
                     disposition == EncryptionMetadataDisposition.Unsupported
                         ? JsonSerializer.Deserialize<EncryptionProperties>(this.json, serializerOptions)
                         : null;

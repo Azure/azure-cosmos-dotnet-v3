@@ -140,7 +140,10 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
 #pragma warning disable CS0618
         if (result.Disposition != EncryptionMetadataDisposition.Mde)
         {
-            throw new NotSupportedException($"JsonProcessor.Stream is not supported for encryption algorithm '{result.Properties.EncryptionAlgorithm}'. Only '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' is supported with the Stream processor.");
+            string algorithm = result.Disposition == EncryptionMetadataDisposition.Legacy
+                ? CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized
+                : result.Properties.EncryptionAlgorithm;
+            throw new NotSupportedException($"JsonProcessor.Stream is not supported for encryption algorithm '{algorithm}'. Only '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' is supported with the Stream processor.");
         }
 #pragma warning restore CS0618
 
