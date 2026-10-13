@@ -35,13 +35,18 @@ namespace Microsoft.Azure.Cosmos
         /// Add all operations before calling this method; later additions are not submitted.
         /// An empty transaction is rejected without consuming the instance. Otherwise, the instance is
         /// single-use, even if execution fails or is cancelled. Create a new transaction for further operations.
-        /// Before resubmitting writes after an unknown outcome, verify the resulting state to avoid duplicates.
         /// Concurrent use of the transaction builder is not supported.
+        /// <para>
+        /// Cancellation stops client-side processing; it does not roll back writes that may have already
+        /// reached the service. Cancellation or a network failure can leave the transaction's outcome unknown.
+        /// Reconcile that outcome before resubmitting: a new transaction uses a new idempotency token and
+        /// can apply the same writes twice.
+        /// </para>
         /// </remarks>
-        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe during client-side processing. Cancellation does not guarantee that a write transaction has not committed.</param>
         /// <returns>A <see cref="Task{TResult}"/> containing a <see cref="DistributedTransactionResponse"/> that represents the result of the transaction.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the transaction has no operations or execution has already started on this instance.</exception>
-        /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is cancelled before or during the commit.</exception>
+        /// <exception cref="OperationCanceledException">Thrown when cancellation is observed before or during execution. A write transaction may still have committed.</exception>
         public abstract Task<DistributedTransactionResponse> ExecuteTransactionAsync(CancellationToken cancellationToken = default);
     }
 }

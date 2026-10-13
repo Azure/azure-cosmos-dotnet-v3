@@ -465,9 +465,10 @@ namespace Microsoft.Azure.Cosmos.Json
                 public static JsonTextNavigatorNode Parse(IJsonTextReaderPrivateImplementation jsonTextReader)
                 {
                     // Read past the json object not started state.
+                    // An empty or whitespace-only buffer yields no tokens.
                     if (!jsonTextReader.Read())
                     {
-                        throw new InvalidOperationException("Failed to read from reader");
+                        throw new JsonNotCompleteException();
                     }
 
                     JsonTextNavigatorNode rootNode = Parser.ParseNode(jsonTextReader);
@@ -475,7 +476,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     // Make sure that we are at the end of the file.
                     if (jsonTextReader.Read())
                     {
-                        throw new ArgumentException("Did not fully parse json");
+                        throw new JsonUnexpectedTokenException();
                     }
 
                     return rootNode;

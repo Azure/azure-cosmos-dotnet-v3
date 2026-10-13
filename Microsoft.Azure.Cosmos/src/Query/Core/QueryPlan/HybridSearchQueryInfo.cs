@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System.Collections.Generic;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     internal sealed class HybridSearchQueryInfo
     {
@@ -60,6 +61,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         [JsonProperty("requiresGlobalStatistics")]
         public bool RequiresGlobalStatistics
+        {
+            get;
+            set;
+        }
+
+        // An absent discriminator denotes a legacy RRF plan.
+        [JsonProperty("scoreCombinationKind", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonConverter(typeof(StringEnumConverter))]
+        public ScoreCombinationKind? ScoreCombinationKind
         {
             get;
             set;
