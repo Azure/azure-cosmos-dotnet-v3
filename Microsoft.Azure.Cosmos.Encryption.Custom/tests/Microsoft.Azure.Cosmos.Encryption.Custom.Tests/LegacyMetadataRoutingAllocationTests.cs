@@ -27,6 +27,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #pragma warning restore CS0618
         private const string KeyId = "routing-key";
 
+        public TestContext TestContext { get; set; }
+
         private static string Metadata(string data)
             => "{\"_ef\":2,\"_ea\":\"" + Legacy + "\",\"_en\":\"" + KeyId + "\",\"_ed\":" + data + ",\"_ep\":[\"/secret\"]}";
 
@@ -86,6 +88,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
 
             Assert.IsNotNull(failure, "Malformed base64 must not become plaintext or reach crypto.");
+            this.TestContext.WriteLine("OPT_PROOF " + Newtonsoft.Json.JsonConvert.SerializeObject(new
+            {
+                processor,
+                data,
+                error = failure.GetType().FullName,
+                message = failure.Message,
+                innerError = failure.InnerException?.GetType().FullName,
+                inputPosition = input.Position,
+                outputPosition = output.Position,
+            }));
             // Stream routing no longer converts the Legacy blob. Conversion failures now
             // belong to the Newtonsoft fallback, not the System.Text.Json byte[] converter.
             Assert.IsTrue(
@@ -208,6 +220,52 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(lastNull ? EncryptionMetadataDisposition.Plaintext : EncryptionMetadataDisposition.Legacy, result.Disposition);
             Assert.IsNull(result.Properties);
             Assert.AreEqual(0, input.Position);
+        }
+
+        [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task ReadResult_MetadataStrictParsingRemainsDeferredUntilLastValue(bool replaced)
+        {
+            string metadata = Metadata("\"AA==\"").Replace("\"_ef\":2", "\"_ef\":/*comment*/2");
+            string json = "{\"_ei\":" + metadata + (replaced ? ",\"_ei\":null}" : "}");
+            using MemoryStream input = new (Encoding.UTF8.GetBytes(json));
+            if (replaced)
+            {
+                EncryptionPropertiesStreamReader.EncryptionMetadataReadResult result =
+                    await EncryptionPropertiesStreamReader.ReadResultAsync(
+                        input, PooledJsonSerializer.SerializerOptions, CancellationToken.None);
+                Assert.AreEqual(EncryptionMetadataDisposition.Plaintext, result.Disposition);
+            }
+            else
+            {
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    async () => await EncryptionPropertiesStreamReader.ReadResultAsync(
+                        input, PooledJsonSerializer.SerializerOptions, CancellationToken.None));
+            }
+
+            Assert.AreEqual(0, input.Position);
+        }
+
+        [TestMethod]
+        public async Task ReadResult_ReplacingLargeMetadataAndReusingInputRetainsOnlyLastSlice()
+        {
+            string json = "{\"_ei\":" + Metadata("\"" + new string('A', 20000) + "\"") +
+                ",\"_ei\":" + Metadata("\"\\u0041A==\"") + "}";
+            using MemoryStream input = new (Encoding.UTF8.GetBytes(json));
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                EncryptionPropertiesStreamReader.EncryptionMetadataReadResult result =
+                    await EncryptionPropertiesStreamReader.ReadResultAsync(
+                        input, PooledJsonSerializer.SerializerOptions, CancellationToken.None);
+                Assert.AreEqual(EncryptionMetadataDisposition.Legacy, result.Disposition);
+                Assert.IsNull(result.Properties);
+                EncryptionProperties properties = await EncryptionPropertiesStreamReader.ReadAsync(
+                    input, PooledJsonSerializer.SerializerOptions, CancellationToken.None);
+                CollectionAssert.AreEqual(new byte[] { 0 }, properties.EncryptedData);
+                Assert.AreEqual(KeyId, properties.DataEncryptionKeyId);
+                Assert.AreEqual(0, input.Position);
+            }
         }
 
         [TestMethod]

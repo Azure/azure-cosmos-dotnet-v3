@@ -14,10 +14,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Locates the <c>_ei</c> encryption-metadata subtree on a JSON stream and deserializes
-    /// it into an <see cref="EncryptionProperties"/> without parsing the rest of the
-    /// document. Reads in small pooled chunks via <see cref="Utf8JsonReader"/> with
-    /// <c>isFinalBlock: false</c>, growing the buffer only when a single value exceeds it.
+    /// Scans the complete root object for its last top-level <c>_ei</c> value, retaining
+    /// that subtree in a pooled buffer until root validation completes. <see cref="ReadAsync(Stream, JsonSerializerOptions, CancellationToken)"/>
+    /// also materializes its <see cref="EncryptionProperties"/>. Reads in small pooled
+    /// chunks, growing the scan buffer only when a single value exceeds it.
     /// </summary>
     internal static class EncryptionPropertiesStreamReader
     {
@@ -100,12 +100,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             StreamPositionHelper.ResetToStart(input, nameof(input));
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(InitialBufferSize);
+            MetadataCandidate metadataCandidate = default;
             try
             {
                 int leftOver = 0;
                 bool isFinalBlock = false;
                 JsonReaderState readerState = new (JsonReaderOptions);
-                MetadataCandidate metadataCandidate = default;
                 bool rootObjectStarted = false;
                 bool rootObjectEnded = false;
 
@@ -157,6 +157,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
             finally
             {
+                metadataCandidate.Dispose();
                 ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
             }
         }
@@ -183,28 +184,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             public JsonReaderState NextState { get; }
         }
 
-        private struct MetadataCandidate
+        private struct MetadataCandidate : IDisposable
         {
             private byte[] json;
+            private int jsonLength;
             private bool seen;
             private bool invalid;
 
             public void SetNull()
             {
-                this.json = null;
+                this.Dispose();
                 this.seen = true;
                 this.invalid = false;
             }
 
             public void SetJson(ReadOnlySpan<byte> value)
             {
-                this.json = value.ToArray();
+                this.Dispose();
+                this.json = ArrayPool<byte>.Shared.Rent(value.Length);
+                value.CopyTo(this.json);
+                this.jsonLength = value.Length;
                 this.seen = true;
                 this.invalid = false;
             }
 
             public void SetInvalid()
             {
+                this.Dispose();
                 this.invalid = true;
                 this.seen = true;
             }
@@ -234,16 +240,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         properties: null);
                 }
 
-                using JsonDocument document = JsonDocument.Parse(this.json);
+                using JsonDocument document = JsonDocument.Parse(this.json.AsMemory(0, this.jsonLength));
                 EncryptionMetadataDisposition disposition =
                     EncryptionMetadataClassifier.Classify(document.RootElement);
                 EncryptionProperties properties =
                     disposition == EncryptionMetadataDisposition.Mde ||
                     (disposition == EncryptionMetadataDisposition.Legacy && materializeLegacyProperties) ||
                     disposition == EncryptionMetadataDisposition.Unsupported
-                        ? JsonSerializer.Deserialize<EncryptionProperties>(this.json, serializerOptions)
+                        ? JsonSerializer.Deserialize<EncryptionProperties>(this.json.AsSpan(0, this.jsonLength), serializerOptions)
                         : null;
                 return new EncryptionMetadataReadResult(disposition, properties);
+            }
+
+            public void Dispose()
+            {
+                if (this.json != null)
+                {
+                    ArrayPool<byte>.Shared.Return(this.json, clearArray: true);
+                    this.json = null;
+                    this.jsonLength = 0;
+                }
             }
         }
 
