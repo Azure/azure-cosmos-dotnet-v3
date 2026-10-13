@@ -18,6 +18,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
     internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatistics
     {
+        private const int MaxSnapshotAttempts = 3;
+
         private static readonly IReadOnlyDictionary<string, AddressResolutionStatistics> EmptyEndpointToAddressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
         private static readonly IReadOnlyList<StoreResponseStatistics> EmptyStoreResponseStatistics = new List<StoreResponseStatistics>();
         private static readonly IReadOnlyList<HttpResponseStatistics> EmptyHttpResponseStatistics = new List<HttpResponseStatistics>();
@@ -129,6 +131,66 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public bool? IsCpuHigh => this.systemUsageHistory?.IsCpuHigh;
 
         public bool? IsCpuThreadStarvation => this.systemUsageHistory?.IsCpuThreadStarvation;
+
+        /// <summary>
+        /// Returns a snapshot of <see cref="ContactedReplicas"/> that is safe to enumerate.
+        /// </summary>
+        internal IReadOnlyList<TransportAddressUri> GetContactedReplicasSnapshot()
+        {
+            return ClientSideRequestStatisticsTraceDatum.CreateSnapshotTolerantOfConcurrentUpdates(this.ContactedReplicas);
+        }
+
+        /// <summary>
+        /// Returns a snapshot of <see cref="FailedReplicas"/> that is safe to enumerate.
+        /// </summary>
+        internal IReadOnlyList<TransportAddressUri> GetFailedReplicasSnapshot()
+        {
+            return ClientSideRequestStatisticsTraceDatum.CreateSnapshotTolerantOfConcurrentUpdates(this.FailedReplicas);
+        }
+
+        /// <summary>
+        /// Returns a snapshot of <see cref="RegionsContacted"/> that is safe to enumerate.
+        /// </summary>
+        internal IReadOnlyList<(string, Uri)> GetRegionsContactedSnapshot()
+        {
+            return ClientSideRequestStatisticsTraceDatum.CreateSnapshotTolerantOfConcurrentUpdates(this.RegionsContacted);
+        }
+
+        /// <summary>
+        /// <see cref="ContactedReplicas"/>, <see cref="FailedReplicas"/> and <see cref="RegionsContacted"/> are
+        /// populated by the transport layer through <see cref="IClientSideRequestStatistics"/>, which does not take any
+        /// lock this type owns. Readers therefore cannot be synchronized against the writer and must instead tolerate a
+        /// concurrent update: retry the copy a bounded number of times, then fall back to the partial snapshot.
+        /// Diagnostics are best effort and must never fault the caller.
+        /// </summary>
+        private static IReadOnlyList<T> CreateSnapshotTolerantOfConcurrentUpdates<T>(IEnumerable<T> source)
+        {
+            if (source == null)
+            {
+                return Array.Empty<T>();
+            }
+
+            List<T> snapshot = new List<T>();
+            for (int attempt = 0; attempt < ClientSideRequestStatisticsTraceDatum.MaxSnapshotAttempts; attempt++)
+            {
+                try
+                {
+                    snapshot.Clear();
+                    foreach (T item in source)
+                    {
+                        snapshot.Add(item);
+                    }
+
+                    break;
+                }
+                catch (InvalidOperationException)
+                {
+                    // The transport layer mutated the collection mid-copy.
+                }
+            }
+
+            return snapshot;
+        }
 
         public void RecordRequest(DocumentServiceRequest request)
         {

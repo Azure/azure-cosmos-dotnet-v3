@@ -75,9 +75,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     return;
                 }
 
+                IReadOnlyList<(string, Uri)> regionsContacted = clientSideRequestStatisticsTraceDatum.GetRegionsContactedSnapshot();
+
                 lock (this.regionContactedInternal)
                 {
-                    this.regionContactedInternal.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                    this.regionContactedInternal.UnionWith(regionsContacted);
                 }
             }
         }

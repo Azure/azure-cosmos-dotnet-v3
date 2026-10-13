@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 {
                     this.AggregateStatsFromStoreResults(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList);
                     this.AggregateGatewayStatistics(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList);
-                    this.AggregateRegionsContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                    this.AggregateRegionsContacted(clientSideRequestStatisticsTraceDatum.GetRegionsContactedSnapshot());
                 }
             }
 
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
-        private void AggregateRegionsContacted(HashSet<(string, Uri)> regionsContacted)
+        private void AggregateRegionsContacted(IReadOnlyList<(string, Uri)> regionsContacted)
         {
             foreach ((string name, Uri uri) in regionsContacted)
             {
