@@ -11,14 +11,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
     internal sealed class HybridSearchQueryInfo
     {
-        [JsonProperty("scoreCombinationKind")]
-        [JsonConverter(typeof(ScoreCombinationKindJsonConverter))]
-        public ScoreCombinationKind? ScoreCombinationKind
-        {
-            get;
-            set;
-        }
-
         [JsonProperty("globalStatisticsQuery")]
         public string GlobalStatisticsQuery
         {
@@ -75,7 +67,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             set;
         }
 
-        public bool ShouldSerializeScoreCombinationKind() => this.ScoreCombinationKind.HasValue;
+        // An absent discriminator denotes a legacy RRF plan.
+        [JsonProperty("scoreCombinationKind", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonConverter(typeof(ScoreCombinationKindJsonConverter))]
+        public ScoreCombinationKind? ScoreCombinationKind
+        {
+            get;
+            set;
+        }
 
         private sealed class ScoreCombinationKindJsonConverter : StringEnumConverter
         {
