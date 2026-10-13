@@ -95,11 +95,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         TraceCleanupFailure(contentCleanupFailure);
                     }
                 }
+            }
 
 #if !NET8_0_OR_GREATER
-                return Task.CompletedTask;
+            return Task.CompletedTask;
 #endif
-            }
         }
 
         private static void TraceCleanupFailure(Exception failure)
