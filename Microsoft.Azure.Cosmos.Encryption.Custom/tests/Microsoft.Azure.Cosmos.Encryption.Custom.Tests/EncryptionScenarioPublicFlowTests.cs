@@ -272,7 +272,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 Assert.AreEqual(EncryptionMetadataClassifier.InvalidMetadataMessage, failure.Message);
             }
 
-            Assert.IsTrue(content.CanRead);
+            Assert.IsFalse(content.CanRead, "The iterator owns a response it cannot return after transformation failure.");
+            Assert.IsNull(raw.Content, "Disposing the owning response must release its content reference.");
             CollectionAssert.AreEqual(original, content.ToArray());
             Assert.AreEqual(fault == "metadata" ? 1 : 2, encryptor.DecryptCalls);
         }
