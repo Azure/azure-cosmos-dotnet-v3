@@ -199,10 +199,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("Id");
                 this.jsonWriter.WriteStringValue("AggregatedClientSideRequestStatistics");
 
-                this.WriteJsonUriArrayWithDuplicatesCounted("ContactedReplicas", clientSideRequestStatisticsTraceDatum.ContactedReplicas);
+                this.WriteJsonUriArrayWithDuplicatesCounted("ContactedReplicas", clientSideRequestStatisticsTraceDatum.GetContactedReplicasSnapshot());
 
-                this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContacted);
-                this.WriteJsonUriArray("FailedReplicas", clientSideRequestStatisticsTraceDatum.FailedReplicas);
+                this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.GetRegionsContactedSnapshot());
+                this.WriteJsonUriArray("FailedReplicas", clientSideRequestStatisticsTraceDatum.GetFailedReplicasSnapshot());
 
                 clientSideRequestStatisticsTraceDatum.WriteAddressCachRefreshContent(this.jsonWriter);
 

@@ -95,6 +95,66 @@
             Assert.AreEqual("http://storephysicaladdress3.com/", uri);
         }
 
+        /// <summary>
+        /// ContactedReplicas, FailedReplicas and RegionsContacted are populated by the transport layer
+        /// through IClientSideRequestStatistics while the application can be serializing the same trace,
+        /// so every reader of them has to tolerate a concurrent update rather than throw
+        /// "Collection was modified; enumeration operation may not execute."
+        /// </summary>
+        [TestMethod]
+        [Timeout(20000)]
+        public async Task ConcurrentReplicaAndRegionUpdatesDuringSerializationTests()
+        {
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(
+                DateTime.UtcNow,
+                Trace.GetRootTrace(nameof(ConcurrentReplicaAndRegionUpdatesDuringSerializationTests)));
+
+            ITrace trace = Trace.GetRootTrace(nameof(ConcurrentReplicaAndRegionUpdatesDuringSerializationTests));
+            trace.AddDatum("stats", datum);
+
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
+            Task backgroundTask = Task.Run(() =>
+            {
+                int i = 0;
+                while (!cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    Uri replicaUri = new Uri($"http://storephysicaladdress{i % 16}.com");
+                    datum.ContactedReplicas.Add(new TransportAddressUri(replicaUri));
+                    datum.FailedReplicas.Add(new TransportAddressUri(replicaUri));
+                    datum.RegionsContacted.Add(($"region{i % 16}", replicaUri));
+
+                    // Keep the collections bounded so serialization cost stays flat while they keep churning.
+                    if (datum.ContactedReplicas.Count > 64)
+                    {
+                        datum.ContactedReplicas.Clear();
+                        datum.FailedReplicas.Clear();
+                        datum.RegionsContacted.Clear();
+                    }
+
+                    i++;
+                }
+            });
+
+            try
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    Assert.IsNotNull(new CosmosTraceDiagnostics(trace).ToString());
+                    Assert.IsNotNull(TraceWriter.TraceToText(trace));
+                    Assert.IsNotNull(new SummaryDiagnostics(trace).AllRegionsContacted);
+
+                    // Exercises TraceSummary.UpdateRegionContacted against the live collection.
+                    Trace.GetRootTrace("scratch").AddDatum("stats", datum);
+                }
+            }
+            finally
+            {
+                cancellationTokenSource.Cancel();
+                await backgroundTask;
+            }
+        }
+
         [TestMethod]
         [Timeout(20000)]
         public async Task ConcurrentUpdateStoreResponseStatisticsListTests()
