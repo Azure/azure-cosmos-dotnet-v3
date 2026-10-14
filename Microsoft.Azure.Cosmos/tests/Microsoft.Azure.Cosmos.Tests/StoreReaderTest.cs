@@ -990,5 +990,298 @@ namespace Microsoft.Azure.Cosmos
                 Assert.AreEqual(SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet, goneEx.GetSubStatusCode());
             }
         }
+
+        /// <summary>
+        /// When a global strong write barrier times out due to E2E timeout, the resulting
+        /// RequestTimeoutException should carry SubStatusCode 21006 (Server_GlobalStrongWriteBarrierNotMet).
+        /// </summary>
+        [TestMethod]
+        public async Task GlobalStrongWriteBarrierTimeout_Returns408With21006()
+        {
+            DocumentServiceRequest entity = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.SystemAll);
+            entity.RequestContext = new DocumentServiceRequestContext
+            {
+                RequestChargeTracker = new RequestChargeTracker()
+            };
+            entity.ResourceId = "1-MxAPlgMgA=";
+            entity.Headers[HttpConstants.HttpHeaders.ConsistencyLevel] = ConsistencyLevel.Strong.ToString();
+            entity.RequestContext.TargetIdentity = new ServiceIdentity("dummyTargetIdentity1", new Uri("http://dummyTargetIdentity1"), false);
+            entity.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange();
+
+            AddressInformation[] addressInformation = this.GetMockAddressInformationDuringUpgrade();
+            Mock<IAddressResolver> mockAddressCache = this.GetMockAddressCache(addressInformation);
+            AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
+            ISessionContainer sessionContainer = new SessionContainer(string.Empty);
+
+            Mock<IServiceConfigurationReader> mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
+            mockServiceConfigReader.Setup(reader => reader.DefaultConsistencyLevel).Returns(Documents.ConsistencyLevel.Strong);
+
+            Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
+            mockAuthorizationTokenProvider.Setup(provider => provider.AddSystemAuthorizationHeaderAsync(
+                It.IsAny<DocumentServiceRequest>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(Task.FromResult(0));
+
+            // GlobalCommittedLSN never catches up — barrier never satisfied, each barrier call delays 200ms
+            TransportClient mockTransportClient = this.GetMockTransportClientForBarrierTimeoutTest(addressInformation, BarrierMode.Write);
+            ConsistencyWriter consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false);
+
+            // Timeout long enough for initial write to complete but expires during barrier retries
+            entity.RequestContext.TimeoutHelper = new TimeoutHelper(TimeSpan.FromMilliseconds(500));
+
+            try
+            {
+                await consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromMilliseconds(500)), false);
+                Assert.Fail("Expected RequestTimeoutException was not thrown");
+            }
+            catch (DocumentClientException ex) when (ex.StatusCode == System.Net.HttpStatusCode.RequestTimeout)
+            {
+                Assert.AreEqual(SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet, ex.GetSubStatusCode(),
+                    "Expected SubStatusCode 21006 (Server_GlobalStrongWriteBarrierNotMet) for global strong write barrier timeout");
+            }
+        }
+
+        /// <summary>
+        /// When an N-Region synchronous commit barrier times out due to E2E timeout, the resulting
+        /// RequestTimeoutException should carry SubStatusCode 21012 (Server_NRegionCommitWriteBarrierNotMet).
+        /// </summary>
+        [TestMethod]
+        public async Task NRegionCommitBarrierTimeout_Returns408With21012()
+        {
+            DocumentServiceRequest entity = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.SystemAll);
+            entity.RequestContext = new DocumentServiceRequestContext
+            {
+                RequestChargeTracker = new RequestChargeTracker()
+            };
+            entity.ResourceId = "1-MxAPlgMgA=";
+            entity.Headers[HttpConstants.HttpHeaders.ConsistencyLevel] = ConsistencyLevel.Session.ToString();
+            entity.RequestContext.TargetIdentity = new ServiceIdentity("dummyTargetIdentity1", new Uri("http://dummyTargetIdentity1"), false);
+            entity.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange();
+
+            AddressInformation[] addressInformation = this.GetMockAddressInformationDuringUpgrade();
+            Mock<IAddressResolver> mockAddressCache = this.GetMockAddressCache(addressInformation);
+            AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
+            ISessionContainer sessionContainer = new SessionContainer(string.Empty);
+
+            Mock<IServiceConfigurationReaderVnext> mockServiceConfigReader = new Mock<IServiceConfigurationReaderVnext>();
+            mockServiceConfigReader.Setup(reader => reader.DefaultConsistencyLevel).Returns(Documents.ConsistencyLevel.Session);
+            mockServiceConfigReader.Setup(reader => reader.EnableNRegionSynchronousCommit).Returns(true);
+
+            Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
+            mockAuthorizationTokenProvider.Setup(provider => provider.AddSystemAuthorizationHeaderAsync(
+                It.IsAny<DocumentServiceRequest>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(Task.FromResult(0));
+
+            // GlobalNRegionCommittedGLSN never catches up — barrier never satisfied, each barrier call delays 200ms
+            TransportClient mockTransportClient = this.GetMockTransportClientForBarrierTimeoutTest(addressInformation, BarrierMode.WriteNRegion);
+            ConsistencyWriter consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false);
+
+            // Timeout long enough for initial write to complete but expires during barrier retries
+            entity.RequestContext.TimeoutHelper = new TimeoutHelper(TimeSpan.FromMilliseconds(500));
+
+            try
+            {
+                await consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromMilliseconds(500)), false);
+                Assert.Fail("Expected RequestTimeoutException was not thrown");
+            }
+            catch (DocumentClientException ex) when (ex.StatusCode == System.Net.HttpStatusCode.RequestTimeout)
+            {
+                Assert.AreEqual(SubStatusCodes.Server_NRegionCommitWriteBarrierNotMet, ex.GetSubStatusCode(),
+                    "Expected SubStatusCode 21012 (Server_NRegionCommitWriteBarrierNotMet) for N-Region commit barrier timeout");
+            }
+        }
+
+        /// <summary>
+        /// When barrier retries are exhausted (not timeout), the existing behavior should remain
+        /// unchanged: GoneException (503) with the correct sub-status code.
+        /// </summary>
+        [TestMethod]
+        public async Task GlobalStrongWriteBarrierRetriesExhausted_Returns503WithSubStatus()
+        {
+            DocumentServiceRequest entity = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.SystemAll);
+            entity.RequestContext = new DocumentServiceRequestContext
+            {
+                RequestChargeTracker = new RequestChargeTracker()
+            };
+            entity.ResourceId = "1-MxAPlgMgA=";
+            entity.Headers[HttpConstants.HttpHeaders.ConsistencyLevel] = ConsistencyLevel.Strong.ToString();
+            entity.RequestContext.TimeoutHelper = new TimeoutHelper(TimeSpan.FromSeconds(30));
+            entity.RequestContext.TargetIdentity = new ServiceIdentity("dummyTargetIdentity1", new Uri("http://dummyTargetIdentity1"), false);
+            entity.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange();
+
+            AddressInformation[] addressInformation = this.GetMockAddressInformationDuringUpgrade();
+            Mock<IAddressResolver> mockAddressCache = this.GetMockAddressCache(addressInformation);
+            AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
+            ISessionContainer sessionContainer = new SessionContainer(string.Empty);
+
+            Mock<IServiceConfigurationReader> mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
+            mockServiceConfigReader.Setup(reader => reader.DefaultConsistencyLevel).Returns(Documents.ConsistencyLevel.Strong);
+
+            Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
+            mockAuthorizationTokenProvider.Setup(provider => provider.AddSystemAuthorizationHeaderAsync(
+                It.IsAny<DocumentServiceRequest>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(Task.FromResult(0));
+
+            // GlobalCommittedLSN never catches up — barrier retries will be exhausted
+            TransportClient mockTransportClient = this.GetMockTransportClientForGlobalStrongWrites(addressInformation, 0, true, false, false);
+            ConsistencyWriter consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false);
+
+            try
+            {
+                // Long timeout — retries exhaust before timeout fires
+                await consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false);
+                Assert.Fail("Expected GoneException was not thrown");
+            }
+            catch (DocumentClientException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Gone)
+            {
+                Assert.AreEqual(SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet, ex.GetSubStatusCode(),
+                    "Expected SubStatusCode 21006 (Server_GlobalStrongWriteBarrierNotMet) for barrier retry exhaustion");
+            }
+        }
+
+        /// <summary>
+        /// When a global strong read barrier times out due to E2E timeout, the resulting
+        /// GoneException should carry SubStatusCode 21014 (Server_ReadBarrierFailed).
+        /// </summary>
+        [TestMethod]
+        public async Task GlobalStrongReadBarrierTimeout_Returns410With21014()
+        {
+            DocumentServiceRequest entity = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.SystemAll);
+            entity.ResourceId = "1-MxAPlgMgA=";
+            entity.Headers[HttpConstants.HttpHeaders.ConsistencyLevel] = ConsistencyLevel.Strong.ToString();
+            entity.RequestContext = new DocumentServiceRequestContext
+            {
+                RequestChargeTracker = new RequestChargeTracker(),
+                PerformLocalRefreshOnGoneException = true,
+                OriginalRequestConsistencyLevel = Documents.ConsistencyLevel.Strong,
+                ClientRequestStatistics = new ClientSideRequestStatistics(),
+                QuorumSelectedLSN = -1,
+                GlobalCommittedSelectedLSN = -1,
+                TargetIdentity = new ServiceIdentity("dummyTargetIdentity1", new Uri("http://dummyTargetIdentity1"), false),
+                ResolvedPartitionKeyRange = new PartitionKeyRange()
+            };
+
+            AddressInformation[] addressInformation = this.GetMockAddressInformationDuringUpgrade();
+            Mock<IAddressResolver> mockAddressCache = this.GetMockAddressCache(addressInformation);
+            AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
+
+            // Read replicas return LSN=100 (quorum met on LSN) but GlobalCommittedLSN=90 stays
+            // behind indefinitely, and each HEAD barrier response is delayed so the E2E
+            // TimeoutHelper fires inside WaitForReadBarrierAsync → ThrowGoneIfElapsed(Server_ReadBarrierFailed).
+            TransportClient mockTransportClient = this.GetMockTransportClientForBarrierTimeoutTest(addressInformation, BarrierMode.Read);
+            ISessionContainer sessionContainer = new SessionContainer(string.Empty);
+            StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, new AddressEnumerator(), sessionContainer, false);
+
+            Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
+            mockAuthorizationTokenProvider.Setup(provider => provider.AddSystemAuthorizationHeaderAsync(
+                It.IsAny<DocumentServiceRequest>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(Task.FromResult(0));
+
+            ReplicationPolicy replicationPolicy = new ReplicationPolicy { MaxReplicaSetSize = 4 };
+            Mock<IServiceConfigurationReader> mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
+            mockServiceConfigReader.SetupGet(x => x.UserReplicationPolicy).Returns(replicationPolicy);
+
+            QuorumReader reader = new QuorumReader(
+                mockTransportClient, addressSelector, storeReader, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object);
+
+            // Short timeout: guaranteed to expire inside the barrier retry loop (each HEAD is delayed 200ms).
+            entity.RequestContext.TimeoutHelper = new TimeoutHelper(TimeSpan.FromMilliseconds(500));
+
+            try
+            {
+                await reader.ReadStrongAsync(entity, 2, ReadMode.Strong);
+                Assert.Fail("Expected GoneException was not thrown");
+            }
+            catch (DocumentClientException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Gone)
+            {
+                Assert.AreEqual(SubStatusCodes.Server_ReadBarrierFailed, ex.GetSubStatusCode(),
+                    "Expected SubStatusCode 21014 (Server_ReadBarrierFailed) for read barrier timeout");
+            }
+        }
+
+        /// <summary>
+        /// Creates a mock transport client where the initial write response has a lagging global committed LSN
+        /// (triggering the barrier), and each barrier HEAD request introduces a delay so the E2E timeout fires
+        /// during the barrier retry loop rather than before or after it.
+        /// </summary>
+        private enum BarrierMode
+        {
+            Write,
+            WriteNRegion,
+            Read,
+        }
+
+        /// <summary>
+        /// Creates a mock transport client for a barrier-timeout scenario:
+        /// - The initial call on each replica returns LSN=100 but with the tracked "global"
+        ///   marker (GlobalCommittedLSN for write / read barriers, GlobalNRegionCommittedGLSN
+        ///   for the N-region write barrier) held at 90 so the barrier is not met and the
+        ///   SDK enters the barrier retry loop.
+        /// - Every subsequent HEAD barrier request keeps the marker at 90 and delays 200ms,
+        ///   so the E2E TimeoutHelper fires inside the barrier wait loop.
+        /// </summary>
+        private TransportClient GetMockTransportClientForBarrierTimeoutTest(
+            AddressInformation[] addressInformation,
+            BarrierMode mode)
+        {
+            Mock<TransportClient> mockTransportClient = new Mock<TransportClient>();
+
+            StoreResponse initialResponse = new StoreResponse
+            {
+                Headers = BuildBarrierHeaders(mode, activityId: "ACTIVITYID_INITIAL")
+            };
+
+            StoreResponse barrierResponse = new StoreResponse
+            {
+                Headers = BuildBarrierHeaders(mode, activityId: "ACTIVITYID_BARRIER")
+            };
+
+            int callCount = 0;
+            for (int i = 0; i < addressInformation.Length; i++)
+            {
+                mockTransportClient.Setup(
+                    client => client.InvokeResourceOperationAsync(
+                        new TransportAddressUri(new Uri(addressInformation[i].PhysicalUri)),
+                        It.IsAny<DocumentServiceRequest>()))
+                    .Returns(async (TransportAddressUri uri, DocumentServiceRequest req) =>
+                    {
+                        int currentCall = System.Threading.Interlocked.Increment(ref callCount);
+                        if (currentCall <= addressInformation.Length)
+                        {
+                            // First call per replica: initial response (instant)
+                            return initialResponse;
+                        }
+
+                        // Subsequent calls: barrier HEAD — delay so the E2E timeout fires here.
+                        await Task.Delay(200);
+                        return barrierResponse;
+                    });
+            }
+
+            return mockTransportClient.Object;
+        }
+
+        private static StoreResponseNameValueCollection BuildBarrierHeaders(BarrierMode mode, string activityId)
+        {
+            StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection
+            {
+                { WFConstants.BackendHeaders.LSN, "100" },
+                { WFConstants.BackendHeaders.ActivityId, activityId },
+                { WFConstants.BackendHeaders.NumberOfReadRegions, "1" },
+                { WFConstants.BackendHeaders.CurrentReplicaSetSize, "3" },
+                { WFConstants.BackendHeaders.QuorumAckedLSN, "100" },
+            };
+
+            if (mode == BarrierMode.WriteNRegion)
+            {
+                headers.Add(WFConstants.BackendHeaders.GlobalNRegionCommittedGLSN, "90");
+                headers.Add(WFConstants.BackendHeaders.GlobalCommittedLSN, "100");
+            }
+            else
+            {
+                headers.Add(WFConstants.BackendHeaders.GlobalCommittedLSN, "90");
+            }
+
+            return headers;
+        }
     }
 }
