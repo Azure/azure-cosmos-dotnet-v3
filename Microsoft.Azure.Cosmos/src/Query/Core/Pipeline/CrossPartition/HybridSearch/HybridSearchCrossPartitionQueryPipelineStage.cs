@@ -481,8 +481,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             for (int index = 0; index < componentScores.Count; ++index)
             {
-                Comparison<double> compareScores = componentWeights[index].Comparison;
-                componentScores[index].Sort((x, y) => ScoreTuple.Compare(x, y, compareScores));
+                ComponentWeight componentWeight = componentWeights[index];
+                componentScores[index].Sort((x, y) => ScoreTuple.Compare(
+                    x, y, componentWeight.Comparison, componentWeight.IsRidAscending));
             }
 
             int[,] ranks = ComputeRanks(componentScores, isHybridSearchCompetitionRankingEnabled);
@@ -784,9 +785,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             public Comparison<double> Comparison { get; }
 
+            public bool IsRidAscending { get; }
+
             public ComponentWeight(double weight, SortOrder sortOrder)
             {
                 this.Weight = weight;
+                this.IsRidAscending = sortOrder == SortOrder.Ascending;
 
                 int comparisonFactor = (sortOrder == SortOrder.Ascending) ? 1 : -1;
                 this.Comparison = (x, y) => comparisonFactor * x.CompareTo(y);
@@ -805,10 +809,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 this.Index = index;
             }
 
-            public static int Compare(ScoreTuple x, ScoreTuple y, Comparison<double> compareScores)
+            public static int Compare(
+                ScoreTuple x,
+                ScoreTuple y,
+                Comparison<double> compareScores,
+                bool isRidAscending)
             {
                 int scoreComparison = compareScores(x.Score, y.Score);
-                return scoreComparison != 0 ? scoreComparison : x.Index.CompareTo(y.Index);
+                if (scoreComparison != 0)
+                {
+                    return scoreComparison;
+                }
+
+                // Candidate indices are assigned in descending document RID order.
+                return isRidAscending ? y.Index.CompareTo(x.Index) : x.Index.CompareTo(y.Index);
             }
         }
 

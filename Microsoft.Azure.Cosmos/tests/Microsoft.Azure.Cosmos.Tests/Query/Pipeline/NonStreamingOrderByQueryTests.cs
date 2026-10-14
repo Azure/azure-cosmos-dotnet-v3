@@ -714,19 +714,49 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [DataTestMethod]
-        [DataRow(false)]
-        [DataRow(true)]
-        public async Task HybridSearchComponentTiesUseNumericRidOrder(bool useCompetitionRanking)
+        [DataRow(false, 2.0, 1.0)]
+        [DataRow(false, -2.0, 1.0)]
+        [DataRow(false, 1.0, -2.0)]
+        [DataRow(true, 2.0, 1.0)]
+        public async Task HybridSearchComponentTiesUseNumericRidOrder(
+            bool useCompetitionRanking,
+            double firstWeight,
+            double secondWeight)
         {
             // Include base64 characters whose ordinal order differs from numeric RID order.
             const int count = 64;
             double[] scores = Enumerable.Repeat(1.0, count).ToArray();
+            int[] expected = Enumerable.Range(0, count)
+                .OrderByDescending(index =>
+                    (Math.Abs(firstWeight) / (60 + (useCompetitionRanking ? 1 : firstWeight < 0 ? index + 1 : count - index))) +
+                    (Math.Abs(secondWeight) / (60 + (useCompetitionRanking ? 1 : secondWeight < 0 ? index + 1 : count - index))))
+                .ThenByDescending(index => index)
+                .ToArray();
             int[] actual = await RunRankScenarioAsync(
                 scores,
                 useCompetitionRanking,
-                secondComponentScores: scores);
+                secondComponentScores: scores,
+                weights: new[] { firstWeight, secondWeight });
 
-            CollectionAssert.AreEqual(Enumerable.Range(0, count).Reverse().ToArray(), actual);
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task HybridSearchAscendingComponentTieGroupsUseExpectedRanks(bool useCompetitionRanking)
+        {
+            double[] scores = { 3.0, 1.0, 2.0, 1.0, 3.0, 2.0 };
+            int[] expected = useCompetitionRanking
+                ? new[] { 3, 1, 5, 2, 4, 0 }
+                : new[] { 1, 3, 2, 5, 0, 4 };
+            int[] actual = await RunRankScenarioAsync(
+                scores,
+                useCompetitionRanking,
+                secondComponentScores: scores,
+                weights: new[] { -2.0, -1.0 });
+
+            CollectionAssert.AreEqual(expected, actual);
         }
 
         [TestMethod]
