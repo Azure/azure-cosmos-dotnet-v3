@@ -95,6 +95,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             int maxConcurrency,
             Cosmos.FullTextScoreScope fullTextScoreScope)
         {
+            TryCatch tryValidateQueryInfo = ValidateQueryInfo(queryInfo);
+            if (tryValidateQueryInfo.Failed)
+            {
+                return TryCatch<IQueryPipelineStage>.FromException(tryValidateQueryInfo.Exception);
+            }
+
             TryCatch<IQueryPipelineStage> ComponentPipelineFactory(QueryInfo rewrittenQueryInfo)
             {
                 HybridSearchDebugTraceHelpers.TraceQuerySpec(sqlQuerySpec);
@@ -258,6 +264,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage)> tryCollateSortedPipelineStageResults = await CollateSortedPipelineStageResultsAsync(
                 this.queryPipelineStages,
                 componentWeights,
+                this.hybridSearchQueryInfo.ScoreCombinationKind ?? ScoreCombinationKind.Rrf,
                 this.maxConcurrency,
                 trace,
                 cancellationToken);
@@ -407,6 +414,57 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             return TryCatch<List<IQueryPipelineStage>>.FromResult(queryPipelineStages);
         }
 
+        private static TryCatch ValidateQueryInfo(HybridSearchQueryInfo queryInfo)
+        {
+            ScoreCombinationKind kind = queryInfo.ScoreCombinationKind ?? ScoreCombinationKind.Rrf;
+            if (kind != ScoreCombinationKind.Rrf && kind != ScoreCombinationKind.CombinedScore)
+            {
+                return TryCatch.FromException(new InternalServerErrorException("Unknown hybrid search scoreCombinationKind."));
+            }
+
+            if (kind == ScoreCombinationKind.CombinedScore)
+            {
+                if (queryInfo.ComponentQueryInfos == null || queryInfo.ComponentQueryInfos.Count < 2)
+                {
+                    return TryCatch.FromException(new InternalServerErrorException("CombinedScore requires at least two component queries."));
+                }
+
+                if (queryInfo.RequiresGlobalStatistics && string.IsNullOrEmpty(queryInfo.GlobalStatisticsQuery))
+                {
+                    return TryCatch.FromException(new InternalServerErrorException("CombinedScore requires a global statistics query."));
+                }
+
+                if (queryInfo.ComponentWeights != null && queryInfo.ComponentWeights.Count != 0)
+                {
+                    if (queryInfo.ComponentWeights.Count != queryInfo.ComponentQueryInfos.Count ||
+                        queryInfo.ComponentWeights.Any(weight => weight < 0 || double.IsNaN(weight) || double.IsInfinity(weight)))
+                    {
+                        return TryCatch.FromException(new InternalServerErrorException(
+                            "CombinedScore requires one finite, non-negative weight per component query."));
+                    }
+                }
+
+                foreach (QueryInfo component in queryInfo.ComponentQueryInfos)
+                {
+                    if (component == null || string.IsNullOrEmpty(component.RewrittenQuery) ||
+                        (component.HasOrderBy && (component.OrderBy.Count != 1 ||
+                        component.OrderByExpressions == null || component.OrderByExpressions.Count != 1 ||
+                        (component.OrderBy[0] != SortOrder.Ascending && component.OrderBy[0] != SortOrder.Descending))))
+                    {
+                        return TryCatch.FromException(new InternalServerErrorException("Invalid CombinedScore component query."));
+                    }
+
+                    if (component.Top > int.MaxValue || component.Offset > int.MaxValue || component.Limit > int.MaxValue)
+                    {
+                        return TryCatch.FromException(new ArgumentOutOfRangeException(
+                            nameof(queryInfo), "CombinedScore component TOP, OFFSET and LIMIT must not exceed Int32.MaxValue."));
+                    }
+                }
+            }
+
+            return TryCatch.FromResult();
+        }
+
         private static IReadOnlyList<ComponentWeight> ExtractComponentWeights(HybridSearchQueryInfo hybridSearchQueryInfo)
         {
             bool useDefaultComponentWeight = (hybridSearchQueryInfo.ComponentWeights == null) || (hybridSearchQueryInfo.ComponentWeights.Count == 0);
@@ -427,21 +485,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         private static async ValueTask<TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage)>> CollateSortedPipelineStageResultsAsync(
             IReadOnlyList<IQueryPipelineStage> queryPipelineStages,
             IReadOnlyList<ComponentWeight> componentWeights,
+            ScoreCombinationKind scoreCombinationKind,
             int maxConcurrency,
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            // Sort and coalesce the results on _rid
-            // After sorting, each HybridSearchQueryResult has a fixed index in the list
-            // This index can be used as the key for the ranking array
-            // Now create an array (per dimension) of tuples (score, index) and sort it by score
-            // We can use these sorted arrays to compute standard competition ranks. Identical scores get the same rank.
-            // Create an array of tuples of (RRF scores, index) for each document using the ranks
-            // Use the ranks array to compute the RRF scores
-            // Sort the array by RRF scores
-
             TryCatch<(List<HybridSearchQueryResult> queryResults, QueryPage emptyPage)> tryGetResults = await PrefetchInParallelAsync(
                 queryPipelineStages,
+                scoreCombinationKind == ScoreCombinationKind.CombinedScore ? componentWeights : null,
                 maxConcurrency,
                 trace,
                 cancellationToken);
@@ -452,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             }
 
             (List<HybridSearchQueryResult> queryResults, QueryPage emptyPage) = tryGetResults.Result;
-            if (queryResults.Count == 0 || queryResults.Count == 1)
+            if (queryResults.Count == 0 || (queryResults.Count == 1 && scoreCombinationKind == ScoreCombinationKind.Rrf))
             {
                 return TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage emptyPage)>.FromResult((queryResults, emptyPage));
             }
@@ -463,26 +514,50 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             CoalesceDuplicateRids(queryResults);
 
-            TryCatch<IReadOnlyList<List<ScoreTuple>>> tryGetComponentScores = RetrieveComponentScores(queryResults, queryPipelineStages.Count);
-            if (tryGetComponentScores.Failed)
+            if (scoreCombinationKind == ScoreCombinationKind.CombinedScore)
             {
-                return TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage)>.FromException(tryGetComponentScores.Exception);
+                for (int index = 0; index < queryResults.Count; ++index)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    TryCatch<HybridSearchQueryResult> tryScore = ComputeCombinedScore(queryResults[index], componentWeights);
+                    if (tryScore.Failed)
+                    {
+                        return TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage)>.FromException(tryScore.Exception);
+                    }
+
+                    queryResults[index] = tryScore.Result;
+                }
+            }
+            else
+            {
+                // RRF uses standard competition ranks; identical component scores share a rank.
+                TryCatch<IReadOnlyList<List<ScoreTuple>>> tryGetComponentScores = RetrieveComponentScores(queryResults, queryPipelineStages.Count);
+                if (tryGetComponentScores.Failed)
+                {
+                    return TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage)>.FromException(tryGetComponentScores.Exception);
+                }
+
+                IReadOnlyList<List<ScoreTuple>> componentScores = tryGetComponentScores.Result;
+
+                for (int index = 0; index < componentScores.Count; ++index)
+                {
+                    componentScores[index].Sort((x, y) => componentWeights[index].Comparison(x.Score, y.Score));
+                }
+
+                int[,] ranks = ComputeRanks(componentScores);
+
+                ComputeRrfScores(ranks, componentWeights, queryResults);
+
+                HybridSearchDebugTraceHelpers.TraceQueryResultsWithRanks(queryResults, ranks);
             }
 
-            IReadOnlyList<List<ScoreTuple>> componentScores = tryGetComponentScores.Result;
-
-            for (int index = 0; index < componentScores.Count; ++index)
+            queryResults.Sort((x, y) =>
             {
-                componentScores[index].Sort((x, y) => componentWeights[index].Comparison(x.Score, y.Score));
-            }
-
-            int[,] ranks = ComputeRanks(componentScores);
-
-            ComputeRrfScores(ranks, componentWeights, queryResults);
-
-            HybridSearchDebugTraceHelpers.TraceQueryResultsWithRanks(queryResults, ranks);
-
-            queryResults.Sort((x, y) => (-1) * x.Score.CompareTo(y.Score)); // higher scores are better
+                int comparison = (-1) * x.Score.CompareTo(y.Score); // higher scores are better
+                return comparison == 0 && scoreCombinationKind == ScoreCombinationKind.CombinedScore
+                    ? string.CompareOrdinal(x.Rid.Value, y.Rid.Value)
+                    : comparison;
+            });
 
             HybridSearchDebugTraceHelpers.TraceQueryResults(queryResults, queryPipelineStages.Count);
 
@@ -491,6 +566,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private static async ValueTask<TryCatch<(List<HybridSearchQueryResult> queryResults, QueryPage emptyPage)>> PrefetchInParallelAsync(
             IReadOnlyList<IQueryPipelineStage> queryPipelineStages,
+            IReadOnlyList<ComponentWeight> combinedScoreWeights,
             int maxConcurrency,
             ITrace trace,
             CancellationToken cancellationToken)
@@ -538,7 +614,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     requestCharge += queryPage.RequestCharge;
                     foreach (CosmosElement document in queryPage.Documents)
                     {
-                        HybridSearchQueryResult hybridSearchQueryResult = HybridSearchQueryResult.Create(document);
+                        HybridSearchQueryResult hybridSearchQueryResult;
+                        try
+                        {
+                            hybridSearchQueryResult = HybridSearchQueryResult.Create(document);
+                        }
+                        catch (ArgumentException exception) when (combinedScoreWeights != null)
+                        {
+                            return TryCatch<(List<HybridSearchQueryResult>, QueryPage)>.FromException(
+                                new InternalServerErrorException("Invalid CombinedScore result envelope.", exception));
+                        }
+
+                        if (combinedScoreWeights != null)
+                        {
+                            TryCatch tryValidateScores = ValidateCombinedScoreComponents(hybridSearchQueryResult, combinedScoreWeights);
+                            if (tryValidateScores.Failed)
+                            {
+                                return TryCatch<(List<HybridSearchQueryResult>, QueryPage)>.FromException(tryValidateScores.Exception);
+                            }
+                        }
+
                         queryResults.Add(hybridSearchQueryResult);
                     }
                 }
@@ -640,6 +735,65 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
                 queryResults[index] = queryResults[index].WithScore(rrfScore);
             }
+        }
+
+        private static TryCatch ValidateCombinedScoreComponents(
+            HybridSearchQueryResult queryResult,
+            IReadOnlyList<ComponentWeight> componentWeights)
+        {
+            if (queryResult.ComponentScores.Count != componentWeights.Count)
+            {
+                return TryCatch.FromException(
+                    new InternalServerErrorException("CombinedScore requires one score per component query."));
+            }
+
+            for (int index = 0; index < componentWeights.Count; ++index)
+            {
+                if (!(queryResult.ComponentScores[index] is CosmosNumber number))
+                {
+                    return TryCatch.FromException(
+                        new InternalServerErrorException("componentScores must be an array of numbers."));
+                }
+
+                double score = Number64.ToDouble(number.Value);
+                if (componentWeights[index].Weight != 0 && (double.IsNaN(score) || double.IsInfinity(score)))
+                {
+                    return TryCatch.FromException(
+                        new InternalServerErrorException("CombinedScore requires finite component scores for non-zero weights."));
+                }
+            }
+
+            return TryCatch.FromResult();
+        }
+
+        private static TryCatch<HybridSearchQueryResult> ComputeCombinedScore(
+            HybridSearchQueryResult queryResult,
+            IReadOnlyList<ComponentWeight> componentWeights)
+        {
+            double score = 0;
+            for (int index = 0; index < componentWeights.Count; ++index)
+            {
+                ComponentWeight component = componentWeights[index];
+                // A zero weight contributes zero even when the projected score is non-finite.
+                if (component.Weight == 0)
+                {
+                    continue;
+                }
+
+                double componentScore = Number64.ToDouble(((CosmosNumber)queryResult.ComponentScores[index]).Value);
+                double adjustedScore = component.SortOrder == SortOrder.Ascending ? -componentScore : componentScore;
+                score += component.Weight * adjustedScore;
+
+                // Preserve missing-score sentinels. Reject unrepresentable products or partial sums
+                // instead of clamping them or allowing infinity/NaN to determine the ordering.
+                if (double.IsNaN(score) || double.IsInfinity(score))
+                {
+                    return TryCatch<HybridSearchQueryResult>.FromException(
+                        new InternalServerErrorException("CombinedScore requires finite scores and a weighted sum representable as a finite double."));
+                }
+            }
+
+            return TryCatch<HybridSearchQueryResult>.FromResult(queryResult.WithScore(score));
         }
 
         private static QueryInfo RewriteOrderByQueryInfo(QueryInfo queryInfo, GlobalFullTextSearchStatistics statistics)
@@ -765,11 +919,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         {
             public double Weight { get; }
 
+            public SortOrder SortOrder { get; }
+
             public Comparison<double> Comparison { get; }
 
             public ComponentWeight(double weight, SortOrder sortOrder)
             {
                 this.Weight = weight;
+                this.SortOrder = sortOrder;
 
                 int comparisonFactor = (sortOrder == SortOrder.Ascending) ? 1 : -1;
                 this.Comparison = (x, y) => comparisonFactor * x.CompareTo(y);
