@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Newtonsoft.Json.Linq;
     using H = EncryptionScenarioTestHelpers;
 
-    // These tests assert ownership/publication invariants, not reader equivalence for unspecified inputs.
+    // Ownership/publication invariants, not equivalence for unspecified reader behavior.
     [TestClass]
     public class EncryptionScenarioDecisionTests
     {

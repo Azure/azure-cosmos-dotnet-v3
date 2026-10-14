@@ -45,8 +45,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public override bool IsSuccessStatusCode => this.responseMessage.IsSuccessStatusCode;
 
         /// <summary>
-        /// Releases a response that cannot be transferred to the caller after a processing failure.
-        /// Cleanup errors are traced without replacing the processing exception.
+        /// Releases an unreturned response without replacing the processing exception.
         /// </summary>
 #if NET8_0_OR_GREATER
         internal static async Task DisposeOnFailureAsync(

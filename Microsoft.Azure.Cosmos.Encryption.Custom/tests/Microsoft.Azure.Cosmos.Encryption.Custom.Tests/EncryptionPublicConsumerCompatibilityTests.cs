@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    // Deliberately uses only public SDK APIs: this file also compiles in a standalone consumer.
+    // Public APIs only; shared with standalone compatibility consumers.
     [TestClass]
     public class EncryptionPublicConsumerCompatibilityTests
     {
@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         private const string PlainJson = "{\"id\":\"i\",\"PK\":\"p\",\"Sensitive\":\"secret!\"}";
         private const string FixturePlainJson = "{\"id\":\"released-legacy\",\"PK\":\"p\",\"Sensitive\":\"legacy fixture\",\"Nested\":{\"values\":[\"plain\",7,null]}}";
         // Produced by preview07's public CreateItemStreamAsync on 2026-10-12 with raw key bytes 1..32.
-        // The released package asset and producer TRX are pinned in the accompanying local proof artifacts.
         private const string ReleasedLegacyJson = "{\"id\":\"released-legacy\",\"PK\":\"p\",\"_ei\":{\"_ef\":2,\"_en\":\"consumer-key\",\"_ea\":\"AEAes256CbcHmacSha256Randomized\",\"_ed\":\"AY8fcyCFzsXbYEkdT/k4wy78WQjSdnpPZodytF/WsKjD0aqC5IEQsA2mSF8N5czQwACSFvFpXn1oFVTdUe+Q+SPD4X8MPH7wbRWK+VdWTzQtG6ifyTsl3bR8aIjqzzu5xyMQCIzH9MInaWg6Fr7lmtzz+88ZNFIS0nx2fvTdVMg3\",\"_ep\":[\"/Sensitive\",\"/Nested\"]}}";
         private static readonly ConsumerSerializer Serializer = new ();
 
@@ -86,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 Assert.AreEqual(0, encryptor.DecryptCalls);
             }
 
-            // This is an application retry/subsequent call, not a claim about the SDK's HTTP retry policy.
+            // Application retry, not the SDK's HTTP retry policy.
             using ResponseMessage success = await container.ReadManyItemsStreamAsync(ids, options);
             Assert.AreEqual(HttpStatusCode.OK, success.StatusCode);
             JObject page = Parse(await ReadTextAsync(success.Content));
@@ -907,7 +906,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     return Task.FromResult(plainText.ToArray());
                 }
 
-                // The custom cipher is intentionally opaque and one byte long. The SDK owns only its type marker.
+                // Opaque one-byte cipher; the SDK owns only its type marker.
                 byte[] cipher = new[] { checked((byte)(this.opaqueCiphertext.Count + 0xD0)) };
                 this.opaqueCiphertext.Add(Convert.ToBase64String(cipher), plainText.ToArray());
                 return Task.FromResult(cipher);

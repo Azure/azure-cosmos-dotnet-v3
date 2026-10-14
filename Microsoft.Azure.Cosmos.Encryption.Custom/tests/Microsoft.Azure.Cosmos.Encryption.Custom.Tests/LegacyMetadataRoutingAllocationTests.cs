@@ -98,8 +98,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 inputPosition = input.Position,
                 outputPosition = output.Position,
             }));
-            // Stream routing no longer converts the Legacy blob. Conversion failures now
-            // belong to the Newtonsoft fallback, not the System.Text.Json byte[] converter.
+            // Legacy conversion errors come from the Newtonsoft fallback.
             Assert.IsTrue(
                 failure is FormatException || failure is Newtonsoft.Json.JsonSerializationException ||
                 failure is InvalidOperationException, failure.ToString());

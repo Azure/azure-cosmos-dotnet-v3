@@ -14,10 +14,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Scans the complete root object for its last top-level <c>_ei</c> value, retaining
-    /// that subtree in a pooled buffer until root validation completes. <see cref="ReadAsync(Stream, JsonSerializerOptions, CancellationToken)"/>
-    /// also materializes its <see cref="EncryptionProperties"/>. Reads in small pooled
-    /// chunks, growing the scan buffer only when a single value exceeds it.
+    /// Scans the complete root for its last top-level <c>_ei</c> value.
+    /// Retains the metadata in a pooled buffer until root validation completes.
     /// </summary>
     internal static class EncryptionPropertiesStreamReader
     {
@@ -65,8 +63,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return result.Properties;
         }
 
-        // Disposition-only callers route Legacy to Newtonsoft; ReadAsync still materializes
-        // its properties for lazy failure diagnostics and metadata inspection.
+        // Only ReadAsync materializes Legacy properties for lazy diagnostics and raw inspection.
         internal static ValueTask<EncryptionMetadataReadResult> ReadResultAsync(
             Stream input,
             JsonSerializerOptions serializerOptions,
