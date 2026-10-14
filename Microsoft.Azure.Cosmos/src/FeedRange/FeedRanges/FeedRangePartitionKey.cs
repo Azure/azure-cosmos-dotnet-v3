@@ -26,8 +26,10 @@ namespace Microsoft.Azure.Cosmos
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
-            ITrace trace)
+            ITrace trace,
+            CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult(
                 new List<Documents.Routing.Range<string>>
                 {
