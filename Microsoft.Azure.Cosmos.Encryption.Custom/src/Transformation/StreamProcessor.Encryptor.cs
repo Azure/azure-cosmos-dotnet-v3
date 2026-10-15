@@ -28,11 +28,37 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             List<string> pathsEncrypted = new (encryptionOptions.PathsToEncrypt is ICollection<string> c ? c.Count : 0);
 
+            using PooledMemoryStream bufferedInput = replacePlaintextEncryptionMetadata &&
+                (!inputStream.CanSeek || inputStream.Position != 0)
+                ? new PooledMemoryStream()
+                : null;
+            Stream encryptionInput = bufferedInput ?? inputStream;
+            if (bufferedInput != null)
+            {
+                // Own the copy buffer so temporary plaintext is cleared before it returns to the pool.
+                using ArrayPoolManager copyBuffers = new (initialRentCapacity: 1);
+                byte[] copyBuffer = copyBuffers.Rent(PooledStreamConfiguration.Current.StreamProcessorBufferSize);
+                try
+                {
+                    int bytesRead;
+                    while ((bytesRead = await inputStream.ReadAsync(copyBuffer.AsMemory(), cancellationToken).ConfigureAwait(false)) != 0)
+                    {
+                        await bufferedInput.WriteAsync(copyBuffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
+                    }
+                }
+                finally
+                {
+                    Array.Clear(copyBuffer, 0, copyBuffer.Length);
+                }
+
+                bufferedInput.Position = 0;
+            }
+
             if (replacePlaintextEncryptionMetadata)
             {
                 EncryptionPropertiesStreamReader.EncryptionMetadataReadResult metadata =
                     await EncryptionPropertiesStreamReader.ReadResultAsync(
-                        inputStream,
+                        encryptionInput,
                         JsonSerializerOptions,
                         cancellationToken).ConfigureAwait(false);
                 if (metadata.Disposition != EncryptionMetadataDisposition.None &&
@@ -93,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             {
                 while (!isFinalBlock)
                 {
-                    int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
+                    int dataLength = await encryptionInput.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                     int dataSize = dataLength + leftOver;
                     isFinalBlock = dataLength == 0;
 

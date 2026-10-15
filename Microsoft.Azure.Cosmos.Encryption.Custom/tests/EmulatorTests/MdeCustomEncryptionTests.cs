@@ -997,24 +997,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 (JArray)fixture["encryptedPaths"].DeepClone());
             requestHandler.Reset();
 
-            if (readerProcessor == JsonProcessor.Newtonsoft)
-            {
-                await Assert.ThrowsExceptionAsync<ArgumentException>(
-                    async () => await trackedContainer.UpsertItemAsync(
-                        stored,
-                        partitionKey,
-                        requestOptions));
-            }
-#if NET8_0_OR_GREATER
-            else
-            {
-                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                    async () => await trackedContainer.UpsertItemAsync(
-                        stored,
-                        partitionKey,
-                        requestOptions));
-            }
-#endif
+            InvalidOperationException writeException = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await trackedContainer.UpsertItemAsync(
+                    stored,
+                    partitionKey,
+                    requestOptions));
+            Assert.AreEqual(EncryptionMetadataClassifier.InvalidMetadataMessage, writeException.Message);
 
             Assert.AreEqual(0, requestHandler.RequestCount);
             JObject rawAfter = CloneWithoutServiceProperties(

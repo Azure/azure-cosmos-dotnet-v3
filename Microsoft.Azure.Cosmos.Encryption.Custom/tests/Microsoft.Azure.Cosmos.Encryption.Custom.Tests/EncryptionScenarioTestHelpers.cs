@@ -116,7 +116,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         internal static Container Container(
             Encryptor encryptor,
             out Mock<Container> inner,
-            out Mock<CosmosResponseFactory> factory)
+            out Mock<CosmosResponseFactory> factory,
+            CosmosSerializer serializerOverride = null)
         {
             Mock<CosmosSerializer> serializer = new(MockBehavior.Strict);
             serializer.Setup(s => s.ToStream(It.IsAny<JObject>()))
@@ -135,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     return result.Object;
                 });
             Mock<CosmosClient> client = new();
-            client.SetupGet(c => c.ClientOptions).Returns(new CosmosClientOptions { Serializer = serializer.Object });
+            client.SetupGet(c => c.ClientOptions).Returns(new CosmosClientOptions { Serializer = serializerOverride ?? serializer.Object });
             client.SetupGet(c => c.ResponseFactory).Returns(factory.Object);
             Mock<Database> database = new();
             database.SetupGet(d => d.Client).Returns(client.Object);

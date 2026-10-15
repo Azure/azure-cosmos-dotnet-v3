@@ -14,9 +14,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     {
         internal const string InvalidBodyMessage = "The response body must contain a JSON object.";
 
-        public static JObject Read(Stream input)
+        public static JObject Read(Stream input, bool resetBeforeRead = true)
         {
-            StreamPositionHelper.ResetToStart(input, nameof(input));
+            if (resetBeforeRead)
+            {
+                StreamPositionHelper.ResetToStart(input, nameof(input));
+            }
 
             try
             {
@@ -33,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     MaxDepth = 64,
                 };
 
-                JToken token = JsonSerializer.CreateDefault().Deserialize<JToken>(jsonReader);
+                JToken token = JsonSerializer.Create(EncryptionProcessor.JsonSerializerSettings).Deserialize<JToken>(jsonReader);
                 if (token is not JObject document)
                 {
                     throw new InvalidOperationException(InvalidBodyMessage);
@@ -47,7 +50,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     }
                 }
 
-                StreamPositionHelper.ResetToStart(input, nameof(input));
+                if (input.CanSeek)
+                {
+                    StreamPositionHelper.ResetToStart(input, nameof(input));
+                }
+
                 return document;
             }
             catch (JsonException exception)

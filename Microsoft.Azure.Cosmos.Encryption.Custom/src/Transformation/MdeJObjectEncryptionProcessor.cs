@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 token.ThrowIfCancellationRequested();
             }
 
-            JObject itemJObj = NewtonsoftJsonObjectReader.Read(input);
+            JObject itemJObj = NewtonsoftJsonObjectReader.Read(input, resetBeforeRead: false);
             if (replacePlaintextEncryptionMetadata)
             {
                 JToken encryptionMetadata = itemJObj[Constants.EncryptedInfo];
