@@ -259,11 +259,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 return await this.MoveNextAsync_DrainSingletonComponentAsync(trace, cancellationToken);
             }
 
-            IReadOnlyList<ComponentWeight> componentWeights = ExtractComponentWeights(this.hybridSearchQueryInfo);
+            IReadOnlyList<ComponentRankingInfo> componentRankingInfos = ExtractComponentRankingInfos(this.hybridSearchQueryInfo);
 
             TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage)> tryCollateSortedPipelineStageResults = await CollateSortedPipelineStageResultsAsync(
                 this.queryPipelineStages,
-                componentWeights,
+                componentRankingInfos,
                 this.maxConcurrency,
                 this.isHybridSearchCompetitionRankingEnabled,
                 trace,
@@ -414,18 +414,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             return TryCatch<List<IQueryPipelineStage>>.FromResult(queryPipelineStages);
         }
 
-        private static IReadOnlyList<ComponentWeight> ExtractComponentWeights(HybridSearchQueryInfo hybridSearchQueryInfo)
+        private static IReadOnlyList<ComponentRankingInfo> ExtractComponentRankingInfos(HybridSearchQueryInfo hybridSearchQueryInfo)
         {
             bool useDefaultComponentWeight = (hybridSearchQueryInfo.ComponentWeights == null) || (hybridSearchQueryInfo.ComponentWeights.Count == 0);
 
-            List<ComponentWeight> result = new List<ComponentWeight>(hybridSearchQueryInfo.ComponentQueryInfos.Count);
+            List<ComponentRankingInfo> result = new List<ComponentRankingInfo>(hybridSearchQueryInfo.ComponentQueryInfos.Count);
             for (int index = 0; index < hybridSearchQueryInfo.ComponentQueryInfos.Count; ++index)
             {
                 QueryInfo queryInfo = hybridSearchQueryInfo.ComponentQueryInfos[index];
                 SortOrder sortOrder = queryInfo.HasOrderBy ? queryInfo.OrderBy[0] : SortOrder.Descending;
 
                 double componentWeight = useDefaultComponentWeight ? 1.0 : hybridSearchQueryInfo.ComponentWeights[index];
-                result.Add(new ComponentWeight(componentWeight, sortOrder));
+                result.Add(new ComponentRankingInfo(componentWeight, sortOrder));
             }
 
             return result;
@@ -433,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private static async ValueTask<TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage)>> CollateSortedPipelineStageResultsAsync(
             IReadOnlyList<IQueryPipelineStage> queryPipelineStages,
-            IReadOnlyList<ComponentWeight> componentWeights,
+            IReadOnlyList<ComponentRankingInfo> componentRankingInfos,
             int maxConcurrency,
             bool isHybridSearchCompetitionRankingEnabled,
             ITrace trace,
@@ -481,14 +481,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             for (int index = 0; index < componentScores.Count; ++index)
             {
-                ComponentWeight componentWeight = componentWeights[index];
-                componentScores[index].Sort((x, y) => ScoreTuple.Compare(
-                    x, y, componentWeight.Comparison, componentWeight.IsRidAscending));
+                ComponentRankingInfo component = componentRankingInfos[index];
+                componentScores[index].Sort(new ScoreTupleComparer(component.SortOrder));
             }
 
             int[,] ranks = ComputeRanks(componentScores, isHybridSearchCompetitionRankingEnabled);
 
-            ComputeRrfScores(ranks, componentWeights, queryResults);
+            ComputeRrfScores(ranks, componentRankingInfos, queryResults);
 
             HybridSearchDebugTraceHelpers.TraceQueryResultsWithRanks(queryResults, ranks);
 
@@ -633,7 +632,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                         rank = index + 1;
                     }
 
-                    ranks[componentIndex, componentScores[componentIndex][index].Index] = rank;
+                    ranks[componentIndex, componentScores[componentIndex][index].ResultIndex] = rank;
                 }
             }
 
@@ -642,18 +641,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private static void ComputeRrfScores(
             int[,] ranks,
-            IReadOnlyList<ComponentWeight> componentWeights,
+            IReadOnlyList<ComponentRankingInfo> componentRankingInfos,
             List<HybridSearchQueryResult> queryResults)
         {
             int componentCount = ranks.GetLength(0);
-            Debug.Assert(componentWeights.Count == componentCount, "The number of component weights should match the number of components");
+            Debug.Assert(componentRankingInfos.Count == componentCount, "The number of component ranking infos should match the number of components");
 
             for (int index = 0; index < queryResults.Count; ++index)
             {
                 double rrfScore = 0;
                 for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
                 {
-                    rrfScore += componentWeights[componentIndex].Weight / (RrfConstant + ranks[componentIndex, index]);
+                    rrfScore += componentRankingInfos[componentIndex].Weight / (RrfConstant + ranks[componentIndex, index]);
                 }
 
                 queryResults[index] = queryResults[index].WithScore(rrfScore);
@@ -779,21 +778,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             return TryCatch<(GlobalFullTextSearchStatistics, QueryPage)>.FromResult((globalStatisticsAggregator.GetResult(), queryPage));
         }
 
-        private class ComponentWeight
+        private sealed class ComponentRankingInfo
         {
             public double Weight { get; }
 
-            public Comparison<double> Comparison { get; }
+            public SortOrder SortOrder { get; }
 
-            public bool IsRidAscending { get; }
-
-            public ComponentWeight(double weight, SortOrder sortOrder)
+            public ComponentRankingInfo(double weight, SortOrder sortOrder)
             {
                 this.Weight = weight;
-                this.IsRidAscending = sortOrder == SortOrder.Ascending;
-
-                int comparisonFactor = (sortOrder == SortOrder.Ascending) ? 1 : -1;
-                this.Comparison = (x, y) => comparisonFactor * x.CompareTo(y);
+                this.SortOrder = sortOrder;
             }
         }
 
@@ -801,28 +795,38 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         {
             public double Score { get; }
 
-            public int Index { get; }
+            public int ResultIndex { get; }
 
-            public ScoreTuple(double score, int index)
+            public ScoreTuple(double score, int resultIndex)
             {
                 this.Score = score;
-                this.Index = index;
+                this.ResultIndex = resultIndex;
+            }
+        }
+
+        private sealed class ScoreTupleComparer : IComparer<ScoreTuple>
+        {
+            private SortOrder SortOrder { get; }
+
+            public ScoreTupleComparer(SortOrder sortOrder)
+            {
+                this.SortOrder = sortOrder;
             }
 
-            public static int Compare(
-                ScoreTuple x,
-                ScoreTuple y,
-                Comparison<double> compareScores,
-                bool isRidAscending)
+            public int Compare(ScoreTuple x, ScoreTuple y)
             {
-                int scoreComparison = compareScores(x.Score, y.Score);
+                int scoreComparison = this.SortOrder == SortOrder.Ascending
+                    ? x.Score.CompareTo(y.Score)
+                    : y.Score.CompareTo(x.Score);
                 if (scoreComparison != 0)
                 {
                     return scoreComparison;
                 }
 
-                // Candidate indices are assigned in descending document RID order.
-                return isRidAscending ? y.Index.CompareTo(x.Index) : x.Index.CompareTo(y.Index);
+                // Result indices are assigned in descending document RID order.
+                return this.SortOrder == SortOrder.Ascending
+                    ? y.ResultIndex.CompareTo(x.ResultIndex)
+                    : x.ResultIndex.CompareTo(y.ResultIndex);
             }
         }
 
