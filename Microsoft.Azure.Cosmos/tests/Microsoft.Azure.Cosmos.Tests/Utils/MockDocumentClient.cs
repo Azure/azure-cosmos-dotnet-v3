@@ -68,6 +68,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public Mock<GlobalEndpointManager> MockGlobalEndpointManager { get; private set; }
 
+        /// <summary>
+        /// The partition key range cache mock backing <see cref="GetPartitionKeyRangeCacheAsync"/>, exposed
+        /// so tests can stub or verify routing lookups.
+        /// </summary>
+        public Mock<PartitionKeyRangeCache> MockPartitionKeyRangeCache => this.partitionKeyRangeCache;
+
         internal MockDocumentClient(
             Uri serviceEndpoint,
             string authKeyOrResourceToken,
@@ -104,6 +110,16 @@ namespace Microsoft.Azure.Cosmos.Tests
         internal override Task<Cosmos.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
             return Task.FromResult(this.accountConsistencyLevel);
+        }
+
+        /// <summary>
+        /// Set to simulate a multi-master account without standing up a real account-properties refresh.
+        /// </summary>
+        public bool IsMultiMasterEnabled { get; set; }
+
+        internal override bool CanUseMultipleWriteLocations()
+        {
+            return this.IsMultiMasterEnabled;
         }
 
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(
