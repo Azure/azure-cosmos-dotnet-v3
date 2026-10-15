@@ -148,5 +148,39 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(operation.IfNoneMatch);
             Assert.IsNull(operation.SessionToken);
         }
+
+        [DataTestMethod]
+        [DataRow("from c where c.value = 1")]
+        [DataRow(null)]
+        [DataRow("")]
+        [DataRow("  ")]
+        public void CaptureRequestOptions_TypedPatch_PreparesCapturedPredicate(string predicate)
+        {
+            DistributedTransactionPatchItemRequestOptions options = new DistributedTransactionPatchItemRequestOptions
+            {
+                FilterPredicate = "from c where c.value = 0"
+            };
+            PatchItemRequestOptions patchOptions = new PatchItemRequestOptions();
+            PatchSpec patchSpec = new PatchSpec(
+                new[] { PatchOperation.Set("/value", 1) },
+                patchOptions);
+            DistributedTransactionOperation operation = new DistributedTransactionOperation<PatchSpec>(
+                OperationType.Patch, 0, "db", "container", new PartitionKey("pk"), "id", patchSpec, options);
+
+            options.FilterPredicate = predicate;
+            Assert.IsNull(patchOptions.FilterPredicate);
+            operation.CaptureRequestOptions();
+
+            Assert.AreEqual(predicate, patchOptions.FilterPredicate);
+            Assert.IsNull(operation.ResourceStream);
+            Assert.IsTrue(operation.ResourceBody.IsEmpty);
+            Assert.AreNotSame(options, operation.RequestOptions);
+
+            options.FilterPredicate = "from c where c.value = 2";
+
+            Assert.AreEqual(predicate, patchOptions.FilterPredicate);
+            Assert.AreEqual(predicate,
+                ((DistributedTransactionPatchItemRequestOptions)operation.RequestOptions).FilterPredicate);
+        }
     }
 }

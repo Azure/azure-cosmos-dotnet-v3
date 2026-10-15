@@ -190,7 +190,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(patchOperations));
             }
 
-            // The patch predicate is read from requestOptions when the resource is materialized.
             PatchSpec patchSpec = new PatchSpec(
                 patchOperations,
                 new PatchItemRequestOptions());

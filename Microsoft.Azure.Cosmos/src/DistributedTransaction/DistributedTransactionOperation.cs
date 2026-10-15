@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
             set => this.body = value;
         }
 
-        internal void CaptureRequestOptions()
+        internal virtual void CaptureRequestOptions()
         {
             this.RequestOptions = (DistributedTransactionRequestOptions)this.RequestOptions?.ShallowCopy();
         }
@@ -101,16 +101,22 @@ namespace Microsoft.Azure.Cosmos
 
         public T Resource { get; internal set; }
 
+        internal override void CaptureRequestOptions()
+        {
+            base.CaptureRequestOptions();
+
+            if (this.body.IsEmpty &&
+                this.Resource is PatchSpec patchSpec &&
+                this.RequestOptions is DistributedTransactionPatchItemRequestOptions patchOptions)
+            {
+                patchSpec.RequestOptions.FromLeft(null).FilterPredicate = patchOptions.FilterPredicate;
+            }
+        }
+
         internal override Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.Resource != null)
             {
-                if (this.Resource is PatchSpec patchSpec &&
-                    this.RequestOptions is DistributedTransactionPatchItemRequestOptions patchOptions)
-                {
-                    patchSpec.RequestOptions.FromLeft(null).FilterPredicate = patchOptions.FilterPredicate;
-                }
-
                 this.ResourceStream = serializerCore.ToStream(this.Resource);
                 return base.MaterializeResourceAsync(serializerCore, cancellationToken);
             }
