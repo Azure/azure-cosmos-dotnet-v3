@@ -14,11 +14,12 @@ namespace Microsoft.Azure.Cosmos
 
     internal class DistributedTransactionCommitterUtils
     {
-        public static async Task ResolveCollectionRidsAsync(
+        public static async Task<IReadOnlyDictionary<string, ContainerProperties>> ResolveCollectionRidsAsync(
             IReadOnlyList<DistributedTransactionOperation> operations,
             CosmosClientContext clientContext,
             CancellationToken cancellationToken)
         {
+            Dictionary<string, ContainerProperties> containerPropertiesByCollection = new Dictionary<string, ContainerProperties>(StringComparer.Ordinal);
             IEnumerable<IGrouping<string, DistributedTransactionOperation>> groupedOperations = operations
                 .GroupBy(op => DistributedTransactionConstants.GetCollectionFullName(op.Database, op.Container));
 
@@ -31,6 +32,7 @@ namespace Microsoft.Azure.Cosmos
                     collectionPath,
                     NoOpTrace.Singleton,
                     cancellationToken);
+                containerPropertiesByCollection.Add(collectionPath, containerProperties);
 
                 string containerResourceId = containerProperties.ResourceId;
                 ResourceId resourceId = ResourceId.Parse(containerResourceId);
@@ -42,6 +44,8 @@ namespace Microsoft.Azure.Cosmos
                     operation.DatabaseResourceId = databaseResourceId;
                 }
             }
+
+            return containerPropertiesByCollection;
         }
     }
 }
