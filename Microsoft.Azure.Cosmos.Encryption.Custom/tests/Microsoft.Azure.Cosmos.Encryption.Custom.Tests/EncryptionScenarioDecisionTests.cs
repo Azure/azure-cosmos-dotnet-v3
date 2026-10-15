@@ -372,7 +372,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [DataTestMethod]
         [DynamicData(nameof(LegacyCustomResultRows), DynamicDataSourceType.Method)]
-        public async Task Legacy_NullTaskOrEmptyCiphertext_RecordsUnspecifiedResultBehavior(string scenario)
+        public async Task Legacy_CustomResultFailures_RejectsEmptyCiphertextAndRecordsNullTask(string scenario)
         {
             H.PublicEncryptor encryptor = new()
             {
@@ -397,6 +397,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(1, encryptor.EncryptCalls);
             Assert.AreEqual(0, encryptor.KeyCalls);
             Assert.IsTrue(result != null || failure != null);
+            if (scenario == "empty cipher")
+            {
+                Assert.IsNull(result);
+                Assert.IsInstanceOfType(failure, typeof(InvalidOperationException));
+                Assert.AreEqual("Encryptor returned empty cipherText from EncryptAsync.", failure.Message);
+                Assert.IsTrue(input.CanRead);
+            }
+
             this.Record("E06", scenario + "; callerInputOpen=" + input.CanRead, 0, failure, encryptor.EncryptCalls, bytes, null);
         }
 

@@ -67,6 +67,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
             }
 
+            if (cipherText.Length == 0)
+            {
+                throw new InvalidOperationException($"{nameof(Encryptor)} returned empty cipherText from {nameof(EncryptAsync)}.");
+            }
+
             encryptionProperties = new EncryptionProperties(
                     encryptionFormatVersion: 2,
                     encryptionOptions.EncryptionAlgorithm,

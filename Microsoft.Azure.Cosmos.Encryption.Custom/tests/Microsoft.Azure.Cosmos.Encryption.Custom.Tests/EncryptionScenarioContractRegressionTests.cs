@@ -59,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DataTestMethod]
         [DataRow("fault")]
         [DataRow("null")]
+        [DataRow("empty")]
         [DataRow("cancel")]
         public async Task LegacyWriteFailure_DoesNotDisposeBorrowedCallerInput(string fault)
         {
@@ -79,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                         return Task.FromCanceled<byte[]>(cancellation.Token);
                     }
 
-                    return Task.FromResult<byte[]>(null);
+                    return Task.FromResult<byte[]>(fault == "empty" ? Array.Empty<byte>() : null);
                 },
             };
             Container container = H.Container(encryptor, out Mock<Container> inner, out _);
@@ -102,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             else
             {
                 Assert.IsInstanceOfType(failure, typeof(InvalidOperationException));
-                StringAssert.Contains(failure.Message, "null cipherText");
+                StringAssert.Contains(failure.Message, fault == "empty" ? "empty cipherText" : "null cipherText");
             }
 
             inner.Verify(c => c.CreateItemStreamAsync(It.IsAny<Stream>(), It.IsAny<PartitionKey>(),
@@ -110,6 +111,54 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             CollectionAssert.AreEqual(before, input.ToArray());
             // EncryptionProcessor's EncryptAsync remarks promise that failure does not dispose input.
             Assert.IsTrue(input.CanRead, "A failed Legacy encryption must leave borrowed caller input open.");
+        }
+
+        [DataTestMethod]
+        [DataRow("Create")]
+        [DataRow("Replace")]
+        [DataRow("Upsert")]
+        public void LegacyBatch_EmptyCiphertextFailsBeforeAddingOperation(string operation)
+        {
+            H.PublicEncryptor encryptor = new()
+            {
+                OnEncrypt = (bytes, algorithm, token) => Task.FromResult(Array.Empty<byte>()),
+            };
+            Container container = H.Container(encryptor, out Mock<Container> inner, out _);
+            Mock<TransactionalBatch> innerBatch = new();
+            inner.Setup(c => c.CreateTransactionalBatch(new PartitionKey("p"))).Returns(innerBatch.Object);
+            TransactionalBatch batch = container.CreateTransactionalBatch(new PartitionKey("p"));
+            EncryptionTransactionalBatchItemRequestOptions options = new()
+            {
+                EncryptionOptions = H.Options(0, H.Legacy).EncryptionOptions,
+            };
+            using MemoryStream input = H.Stream(H.PlainItem().ToString(Formatting.None));
+            byte[] before = input.ToArray();
+            AggregateException failure = Assert.ThrowsException<AggregateException>(() =>
+            {
+                switch (operation)
+                {
+                    case "Create":
+                        batch.CreateItemStream(input, options);
+                        break;
+                    case "Replace":
+                        batch.ReplaceItemStream("i", input, options);
+                        break;
+                    default:
+                        batch.UpsertItemStream(input, options);
+                        break;
+                }
+            });
+
+            Assert.IsInstanceOfType(failure.InnerException, typeof(InvalidOperationException));
+            Assert.AreEqual("Encryptor returned empty cipherText from EncryptAsync.", failure.InnerException.Message);
+            innerBatch.Verify(b => b.CreateItemStream(It.IsAny<Stream>(), It.IsAny<TransactionalBatchItemRequestOptions>()), Times.Never);
+            innerBatch.Verify(b => b.ReplaceItemStream(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<TransactionalBatchItemRequestOptions>()), Times.Never);
+            innerBatch.Verify(b => b.UpsertItemStream(It.IsAny<Stream>(), It.IsAny<TransactionalBatchItemRequestOptions>()), Times.Never);
+            Assert.AreEqual(1, encryptor.EncryptCalls);
+            Assert.AreEqual(0, encryptor.DecryptCalls);
+            Assert.AreEqual(0, encryptor.KeyCalls);
+            Assert.IsTrue(input.CanRead);
+            CollectionAssert.AreEqual(before, input.ToArray());
         }
 
         [DataTestMethod]

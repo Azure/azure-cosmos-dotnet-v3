@@ -111,12 +111,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DataTestMethod]
         [DataRow("Create", "fault")]
         [DataRow("Create", "null")]
+        [DataRow("Create", "empty")]
         [DataRow("Create", "cancel")]
         [DataRow("Replace", "fault")]
         [DataRow("Replace", "null")]
+        [DataRow("Replace", "empty")]
         [DataRow("Replace", "cancel")]
         [DataRow("Upsert", "fault")]
         [DataRow("Upsert", "null")]
+        [DataRow("Upsert", "empty")]
         [DataRow("Upsert", "cancel")]
         public async Task Legacy_PublicWriteFailure_AllowsCallerToReadAndRetrySameInput(string operation, string fault)
         {
@@ -134,6 +137,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     if (fault == "null")
                     {
                         return Task.FromResult<byte[]>(null);
+                    }
+
+                    if (fault == "empty")
+                    {
+                        return Task.FromResult(Array.Empty<byte>());
                     }
 
                     cancellation.Cancel();
@@ -173,6 +181,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             else
             {
                 Assert.IsInstanceOfType(failure, typeof(InvalidOperationException));
+                if (fault == "empty")
+                {
+                    Assert.AreEqual("Encryptor returned empty cipherText from EncryptAsync.", failure.Message);
+                }
             }
 
             Assert.AreEqual(0, dispatched, "Encryption failure must not send a write to the inner container.");
