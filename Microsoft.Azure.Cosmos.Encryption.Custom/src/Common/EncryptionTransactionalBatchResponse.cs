@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System;
     using System.Collections.Generic;
     using System.Net;
-    using System.Runtime.ExceptionServices;
     using System.Threading;
 
     internal sealed class EncryptionTransactionalBatchResponse : TransactionalBatchResponse
@@ -72,35 +71,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return;
             }
 
-            ExceptionDispatchInfo cleanupException = null;
             if (this.results != null)
             {
                 foreach (TransactionalBatchOperationResult result in this.results)
                 {
                     if (result is EncryptionTransactionalBatchOperationResult decryptedResult)
                     {
-                        try
-                        {
-                            decryptedResult.DisposeDecryptedResourceStream();
-                        }
-                        catch (Exception exception)
-                        {
-                            cleanupException ??= ExceptionDispatchInfo.Capture(exception);
-                        }
+                        decryptedResult.DisposeDecryptedResourceStream();
                     }
                 }
             }
 
-            try
-            {
-                this.response?.Dispose();
-            }
-            catch (Exception exception)
-            {
-                cleanupException ??= ExceptionDispatchInfo.Capture(exception);
-            }
-
-            cleanupException?.Throw();
+            this.response?.Dispose();
         }
     }
 }

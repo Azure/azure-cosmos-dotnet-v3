@@ -2,7 +2,6 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-#if NET8_0_OR_GREATER
 namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
@@ -24,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     [TestClass]
     public class EncryptionTransactionalBatchTests
     {
+#if NET8_0_OR_GREATER
         [TestMethod]
         public async Task ExecuteAsync_SnapshotsReusedOptionsForMixedOperationsByIndex()
         {
@@ -472,8 +472,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey]);
         }
 
-        [TestMethod]
-        public async Task LegacyEncryptedWrite_ContainerStreamDefault_UsesNewtonsoftAndDecryptsResponse()
+#endif
+        [DataTestMethod]
+        [DataRow("Newtonsoft")]
+#if NET8_0_OR_GREATER
+        [DataRow("Stream")]
+#endif
+        public async Task LegacyEncryptedWrite_UsesNewtonsoftAndDecryptsResponse(string containerDefault)
         {
             const string dekId = "dekId";
             Mock<Encryptor> encryptor = TestEncryptorFactory.CreateLegacy(dekId);
@@ -488,7 +493,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                         encryptedPayload = Copy(payload))
                     .Returns(inner.Object),
                 encryptor: encryptor.Object,
-                defaultJsonProcessor: JsonProcessor.Stream,
+                defaultJsonProcessor: Enum.Parse<JsonProcessor>(containerDefault),
                 resultStreamFactory: _ => Copy(encryptedPayload));
             EncryptionTransactionalBatchItemRequestOptions requestOptions = new ()
             {
@@ -511,6 +516,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 #pragma warning restore CS0618
         }
 
+#if NET8_0_OR_GREATER
         [TestMethod]
         public async Task ReadItem_StreamSelection_DecryptsLegacyCiphertext()
         {
@@ -614,6 +620,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 Times.Never());
         }
 
+#endif
         [TestMethod]
         public void Dispose_DisposesReplacementStreamAndInnerResponseOnce()
         {
@@ -645,36 +652,80 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(decryptedResult.ResourceStream);
         }
 
-        [TestMethod]
-        public void Dispose_WhenReplacementCleanupThrows_ContinuesAndIsIdempotent()
+        [DataTestMethod]
+        [DataRow("Newtonsoft", false)]
+        [DataRow("Newtonsoft", true)]
+#if NET8_0_OR_GREATER
+        [DataRow("Stream", false)]
+        [DataRow("Stream", true)]
+#endif
+        public async Task ExecuteAsync_DisposeClosesProcessorOutputsBeforeInnerResponse(
+            string jsonProcessor,
+            bool innerDisposeThrows)
         {
-            TrackingStream throwingStream = new (
-                Encoding.UTF8.GetBytes("{\"id\":\"doc1\"}"),
-                new IOException("replacement cleanup failed"));
-            TrackingStream secondStream = new (Encoding.UTF8.GetBytes("{\"id\":\"doc2\"}"));
-            Mock<TransactionalBatchOperationResult> firstOriginalResult = new ();
-            Mock<TransactionalBatchOperationResult> secondOriginalResult = new ();
+            Mock<Encryptor> encryptor = CreateMdeEncryptor("dekId");
+            TrackingStream[] encryptedStreams =
+            {
+                await CreateTrackingEncryptedPayloadAsync(encryptor.Object),
+                await CreateTrackingEncryptedPayloadAsync(encryptor.Object),
+            };
+            Stream[] decryptedStreams = null;
             int innerDisposeCount = 0;
-            Mock<TransactionalBatchResponse> innerResponse = new ();
-            innerResponse.Protected()
-                .Setup("Dispose", ItExpr.IsAny<bool>())
-                .Callback(() => innerDisposeCount++);
-            EncryptionTransactionalBatchResponse response = new (
-                new TransactionalBatchOperationResult[]
-                {
-                    new EncryptionTransactionalBatchOperationResult(firstOriginalResult.Object, throwingStream),
-                    new EncryptionTransactionalBatchOperationResult(secondOriginalResult.Object, secondStream),
-                },
-                innerResponse.Object,
-                Mock.Of<CosmosSerializer>());
+            IOException cleanupFailure = new ("inner cleanup failed");
+            EncryptionTransactionalBatch batch = CreateBatch(
+                setupOperation: inner => inner
+                    .Setup(b => b.ReadItem(It.IsAny<string>(), It.IsAny<TransactionalBatchItemRequestOptions>()))
+                    .Returns(inner.Object),
+                resultCount: encryptedStreams.Length,
+                encryptor: encryptor.Object,
+                defaultJsonProcessor: Enum.Parse<JsonProcessor>(jsonProcessor),
+                resultStreamFactory: index => encryptedStreams[index],
+                setupResponse: inner => inner.Protected()
+                    .Setup("Dispose", ItExpr.IsAny<bool>())
+                    .Callback(() =>
+                    {
+                        innerDisposeCount++;
+                        Assert.IsTrue(decryptedStreams.All(stream => !stream.CanRead));
+                        if (innerDisposeThrows)
+                        {
+                            throw cleanupFailure;
+                        }
+                    }));
+            batch.ReadItem("first");
+            batch.ReadItem("second");
+            TransactionalBatchResponse response = await batch.ExecuteAsync();
+            Assert.AreEqual(encryptedStreams.Length, response.Count);
+            decryptedStreams = response.Select(result => result.ResourceStream).ToArray();
+            Type expectedStreamType = typeof(MemoryStream);
+#if NET8_0_OR_GREATER
+            if (jsonProcessor == "Stream")
+            {
+                expectedStreamType = typeof(ReadOnlyBufferWriterStream);
+            }
+#endif
 
-            IOException exception = Assert.ThrowsException<IOException>(() => response.Dispose());
+            foreach (Stream stream in decryptedStreams)
+            {
+                Assert.AreEqual(expectedStreamType, stream.GetType());
+                using StreamReader reader = new (stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
+                StringAssert.Contains(await reader.ReadToEndAsync(), "\"Sensitive\":\"secret\"");
+            }
+
+            if (innerDisposeThrows)
+            {
+                IOException exception = Assert.ThrowsException<IOException>(() => response.Dispose());
+                Assert.AreSame(cleanupFailure, exception);
+            }
+            else
+            {
+                response.Dispose();
+            }
+
             response.Dispose();
-
-            Assert.AreEqual("replacement cleanup failed", exception.Message);
-            Assert.AreEqual(1, throwingStream.DisposeCount);
-            Assert.AreEqual(1, secondStream.DisposeCount);
             Assert.AreEqual(1, innerDisposeCount);
+            Assert.IsTrue(encryptedStreams.All(stream => stream.DisposeCount == 1));
+            Assert.IsTrue(decryptedStreams.All(stream => !stream.CanRead));
+            Assert.IsTrue(response.All(result => result.ResourceStream == null));
         }
 
         [DataTestMethod]
@@ -1031,15 +1082,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         private sealed class TrackingStream : MemoryStream
         {
-            private readonly Exception disposeException;
             private bool disposed;
 
-            public TrackingStream(
-                byte[] buffer,
-                Exception disposeException = null)
+            public TrackingStream(byte[] buffer)
                 : base(buffer)
             {
-                this.disposeException = disposeException;
             }
 
             public int DisposeCount { get; private set; }
@@ -1051,9 +1098,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     this.disposed = true;
                     this.DisposeCount++;
                     base.Dispose(true);
-                    return this.disposeException == null
-                        ? default
-                        : ValueTask.FromException(this.disposeException);
+                    return default;
                 }
 
                 return base.DisposeAsync();
@@ -1066,11 +1111,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     this.disposed = true;
                     this.DisposeCount++;
                     base.Dispose(disposing);
-                    if (this.disposeException != null)
-                    {
-                        throw this.disposeException;
-                    }
-
                     return;
                 }
 
@@ -1079,4 +1119,3 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
     }
 }
-#endif
