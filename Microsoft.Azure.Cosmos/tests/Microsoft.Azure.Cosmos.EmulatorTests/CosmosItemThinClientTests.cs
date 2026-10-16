@@ -2004,6 +2004,169 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "All created items should appear in the change feed results.");
         }
 
+        [DataTestMethod]
+        [TestCategory("ThinClient")]
+        [DataRow(false, DisplayName = "Query preserves sub-range across continuation tokens")]
+        [DataRow(true, DisplayName = "Incremental change feed preserves sub-range across continuation tokens")]
+        public async Task TestThinClientSubRangePreservedAsync(bool changeFeed)
+        {
+            using CancellationTokenSource timeout = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+            List<TestObject> items = Enumerable.Range(0, 12)
+                .Select(index => new TestObject
+                {
+                    Id = $"subrange-{index}",
+                    Pk = $"subrange-{index}",
+                    Other = "Sub-range regression"
+                })
+                .ToList();
+
+            await WarmUpThinClientProbeAsync(this.container, items[0]);
+            foreach (TestObject item in items.Skip(1))
+            {
+                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk), cancellationToken: timeout.Token);
+            }
+
+            ContainerProperties properties = await this.container.ReadContainerAsync(cancellationToken: timeout.Token);
+            var points = items.Select(item => new
+            {
+                item.Id,
+                Epk = new PartitionKey(item.Pk).InternalKey.GetEffectivePartitionKeyString(properties.PartitionKey)
+            }).ToList();
+            IReadOnlyList<FeedRange> physicalRanges = await this.container.GetFeedRangesAsync(timeout.Token);
+            var partitionPoints = physicalRanges.Cast<FeedRangeEpk>()
+                .Select(range => points.Where(point => range.Range.Contains(point.Epk))
+                    .OrderBy(point => point.Epk, StringComparer.Ordinal)
+                    .ToList())
+                .OrderByDescending(group => group.Count)
+                .First();
+            Assert.IsTrue(partitionPoints.Count >= 4, "Need at least two matching items and two outside the sub-range in one physical partition.");
+
+            // Exclude items at both ends of the same physical partition so widening the range cannot pass.
+            FeedRangeEpk subRange = new FeedRangeEpk(new Documents.Routing.Range<string>(
+                partitionPoints[1].Epk,
+                partitionPoints[partitionPoints.Count - 1].Epk,
+                isMinInclusive: true,
+                isMaxInclusive: false));
+            string[] expectedIds = partitionPoints.Skip(1).Take(partitionPoints.Count - 2)
+                .Select(point => point.Id).ToArray();
+            HashSet<string> actualIds = new HashSet<string>();
+            string continuation = null;
+            bool drained = false;
+            int resumedReads = 0;
+
+            for (int page = 0; page < 100; page++)
+            {
+                if (continuation != null)
+                {
+                    resumedReads++;
+                }
+
+                using FeedIterator<TestObject> iterator = changeFeed
+                    ? this.container.GetChangeFeedIterator<TestObject>(
+                        continuation == null
+                            ? ChangeFeedStartFrom.Beginning(subRange)
+                            : ChangeFeedStartFrom.ContinuationToken(continuation),
+                        ChangeFeedMode.LatestVersion,
+                        new ChangeFeedRequestOptions { PageSizeHint = 1 })
+                    : this.container.GetItemQueryIterator<TestObject>(
+                        subRange,
+                        new QueryDefinition("SELECT * FROM c"),
+                        continuation,
+                        new QueryRequestOptions { MaxItemCount = 1 });
+                FeedResponse<TestObject> response = await iterator.ReadNextAsync(timeout.Token);
+                string diagnostics = response.Diagnostics.ToString();
+                Assert.IsTrue(diagnostics.Contains("ThinClientStoreModel"), $"Expected Gateway V2 execution: {diagnostics}");
+                AssertExcludedRegionsNotInDiagnostics(diagnostics);
+
+                if (changeFeed && response.StatusCode == HttpStatusCode.NotModified)
+                {
+                    drained = true;
+                    break;
+                }
+
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                foreach (TestObject item in response)
+                {
+                    Assert.IsTrue(actualIds.Add(item.Id), $"Duplicate item after continuation: {item.Id}");
+                }
+
+                continuation = response.ContinuationToken;
+                if (!changeFeed && continuation == null)
+                {
+                    drained = true;
+                    break;
+                }
+
+                Assert.IsNotNull(continuation, "A continuing feed must supply a continuation token.");
+            }
+
+            Assert.IsTrue(drained, "The sub-range feed did not finish within the page limit.");
+            Assert.IsTrue(resumedReads > 0, "The test must exercise a continuation-token resume.");
+            CollectionAssert.AreEquivalent(expectedIds, actualIds.ToArray(), "Only items within the requested sub-range should be returned.");
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task TestThinClientHierarchicalPartitionKeyPrefixAggregateAsync()
+        {
+            using CancellationTokenSource timeout = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+            Container hpkContainer = await this.database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties("hpk_" + Guid.NewGuid().ToString("N"), new List<string> { "/tenantId", "/userId" }),
+                cancellationToken: timeout.Token);
+
+            string[] tenants = { "tenantA", "tenantB", "tenantC" };
+            const int usersPerTenant = 4;
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    await hpkContainer.CreateItemAsync(
+                        new Dictionary<string, string> { { "id", "warmup" }, { "tenantId", "warmup" }, { "userId", "warmup" } },
+                        new PartitionKeyBuilder().Add("warmup").Add("warmup").Build(),
+                        cancellationToken: timeout.Token);
+                    break;
+                }
+                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound && attempt < 11)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), timeout.Token);
+                }
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(30), timeout.Token);
+            foreach (string tenant in tenants)
+            {
+                for (int user = 0; user < usersPerTenant; user++)
+                {
+                    await hpkContainer.CreateItemAsync(
+                        new Dictionary<string, string>
+                        {
+                            { "id", $"{tenant}-{user}" },
+                            { "tenantId", tenant },
+                            { "userId", $"user{user}" }
+                        },
+                        new PartitionKeyBuilder().Add(tenant).Add($"user{user}").Build(),
+                        cancellationToken: timeout.Token);
+                }
+            }
+
+            // The prefix key maps to an EPK range narrower than a physical partition, so the SDK sets the range headers.
+            // The count is exact only if the range is preserved: widening it would also count the other tenants.
+            using FeedIterator<int> iterator = hpkContainer.GetItemQueryIterator<int>(
+                new QueryDefinition("SELECT VALUE COUNT(1) FROM c"),
+                requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKeyBuilder().Add("tenantB").Build() });
+
+            List<int> counts = new List<int>();
+            while (iterator.HasMoreResults)
+            {
+                FeedResponse<int> response = await iterator.ReadNextAsync(timeout.Token);
+                string diagnostics = response.Diagnostics.ToString();
+                Assert.IsTrue(diagnostics.Contains("ThinClientStoreModel"), $"Expected Gateway V2 execution: {diagnostics}");
+                counts.AddRange(response);
+            }
+
+            Assert.AreEqual(usersPerTenant, counts.Sum(), "The count must include only the requested tenant prefix.");
+        }
+
         /// <summary>
         /// End-to-end test against the live thin-client endpoint: verifies that when a
         /// <see cref="Microsoft.Azure.Cosmos.ReadConsistencyStrategy"/> is supplied on a point read,
