@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
@@ -20,6 +19,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </summary>
     internal static class EncryptionProcessor
     {
+        private enum LegacyEncryptionDocumentStatus
+        {
+            NotLegacy,
+            MissingAlgorithm,
+            Legacy,
+        }
+
         internal static readonly JsonSerializerSettings JsonSerializerSettings = new ()
         {
             DateParseHandling = DateParseHandling.None,
@@ -34,7 +40,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             EncryptionItemRequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool replacePlaintextEncryptionMetadata = false)
         {
             return EncryptAsync(
                 input,
@@ -42,7 +49,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 requestOptions.EncryptionOptions,
                 requestOptions.GetJsonProcessor(),
                 diagnosticsContext,
-                cancellationToken);
+                cancellationToken,
+                replacePlaintextEncryptionMetadata);
         }
 
         public static Task<Stream> EncryptAsync(
@@ -58,7 +66,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 requestOptions.EncryptionOptions,
                 requestOptions.GetJsonProcessor(),
                 diagnosticsContext,
-                cancellationToken);
+                cancellationToken,
+                replacePlaintextEncryptionMetadata: false);
         }
 
 #if NET8_0_OR_GREATER
@@ -101,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <remarks>
         /// If there isn't any data that needs to be decrypted, input stream will be returned without any modification.
         /// Else input stream will be disposed, and a new stream is returned.
-        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
+        /// In case of an exception, input stream won't be disposed. Its position is reset when the inspected path can do so safely.
         /// </remarks>
         public static async Task<(Stream, DecryptionContext)> DecryptAsync(
             Stream input,
@@ -118,72 +127,40 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
-            JObject itemJObj = RetrieveItem(input);
-            JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(itemJObj);
+            JObject itemJObj = NewtonsoftJsonObjectReader.Read(input);
+            EncryptionMetadataDisposition disposition = ClassifyEncryptionMetadata(
+                itemJObj,
+                out JObject encryptionPropertiesJObj);
 
-            if (encryptionPropertiesJObj == null)
+            if (disposition == EncryptionMetadataDisposition.None ||
+                disposition == EncryptionMetadataDisposition.Plaintext)
             {
-                input.Position = 0;
                 return (input, null);
             }
 
-            DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, itemJObj, encryptionPropertiesJObj, cancellationToken);
-            await input.DisposeCompatAsync();
-
-            return (BaseSerializer.ToStream(itemJObj), decryptionContext);
+            return await DecryptParsedDocumentAsync(
+                input,
+                itemJObj,
+                encryptionPropertiesJObj,
+                encryptor,
+                diagnosticsContext,
+                cancellationToken);
         }
 
-        public static async Task<(Stream, DecryptionContext)> DecryptAsync(
+        public static Task<(Stream, DecryptionContext)> DecryptAsync(
             Stream input,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            if (input == null)
-            {
-                return (input, null);
-            }
-
-            Debug.Assert(input.CanSeek);
-            Debug.Assert(encryptor != null);
-            Debug.Assert(diagnosticsContext != null);
-
-            // Try to peek at the content to check if it's legacy encryption algorithm
-            // Some streams (e.g., those that only support async reads or contain malformed JSON) may throw exceptions
-            // during synchronous peeking. In such cases, delegate directly to MdeEncryptionProcessor.
-            try
-            {
-                JObject itemJObj = RetrieveItem(input);
-                JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(itemJObj);
-
-                if (encryptionPropertiesJObj != null)
-                {
-                    // Parse encryption properties to check the algorithm
-                    EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
-
-#pragma warning disable CS0618 // Type or member is obsolete
-                    if (string.Equals(encryptionProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal))
-#pragma warning restore CS0618 // Type or member is obsolete
-                    {
-                        // Use legacy decryption for AEAes256CbcHmacSha256Randomized
-                        DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, itemJObj, encryptionPropertiesJObj, cancellationToken);
-                        await input.DisposeCompatAsync();
-                        return (BaseSerializer.ToStream(itemJObj), decryptionContext);
-                    }
-                }
-
-                // For MDE algorithm or no encryption properties, delegate to MdeEncryptionProcessor
-                input.Position = 0;
-            }
-            catch
-            {
-                // Stream doesn't support synchronous reads, contains malformed JSON, or other parsing error.
-                // Reset position and delegate to MdeEncryptionProcessor which uses async reads and will handle errors appropriately.
-                input.Position = 0;
-            }
-
-            return await MdeEncryptionProcessor.DecryptAsync(input, encryptor, diagnosticsContext, requestOptions, cancellationToken);
+            return DecryptAsync(
+                input,
+                encryptor,
+                requestOptions.GetJsonProcessor(),
+                legacyFallback: true,
+                diagnosticsContext,
+                cancellationToken);
         }
 
         public static async Task<DecryptionContext> DecryptAsync(
@@ -194,7 +171,74 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            return await MdeEncryptionProcessor.DecryptAsync(input, output, encryptor, diagnosticsContext, requestOptions, cancellationToken);
+            JsonProcessor jsonProcessor = requestOptions.GetJsonProcessor();
+            ValidateJsonProcessor(jsonProcessor);
+
+            if (input == null)
+            {
+                return null;
+            }
+
+            ValidateOutputForDecrypt(output);
+
+            if (jsonProcessor == JsonProcessor.Newtonsoft)
+            {
+                using (diagnosticsContext.CreateScope(
+                    CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft))
+                {
+                    return await DecryptNewtonsoftAsync(
+                        input,
+                        output,
+                        encryptor,
+                        diagnosticsContext,
+                        cancellationToken);
+                }
+            }
+
+            try
+            {
+                return await MdeEncryptionProcessor.DecryptAsync(
+                    input,
+                    output,
+                    encryptor,
+                    diagnosticsContext,
+                    requestOptions,
+                    cancellationToken);
+            }
+            catch (NotSupportedException)
+            {
+                if (!StreamPositionHelper.TryResetToStart(input))
+                {
+                    throw;
+                }
+
+                LegacyEncryptionDocumentStatus status = InspectLegacyEncryptionDocument(
+                    input,
+                    out JObject legacyDocument,
+                    out JObject legacyEncryptionProperties);
+                if (status == LegacyEncryptionDocumentStatus.MissingAlgorithm)
+                {
+                    return null;
+                }
+
+                if (status != LegacyEncryptionDocumentStatus.Legacy)
+                {
+                    throw;
+                }
+
+                using (diagnosticsContext.CreateScope(
+                    CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft))
+                {
+                    return await DecryptParsedDocumentAsync(
+                        input,
+                        output,
+                        legacyDocument,
+                        legacyEncryptionProperties,
+                        encryptor,
+                        diagnosticsContext,
+                        cancellationToken);
+                }
+            }
         }
 
         public static async Task<(Stream stream, DecryptionContext decryptableContext)> DecryptAsync(
@@ -205,12 +249,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            ValidateJsonProcessor(jsonProcessor);
+
+            if (input == null)
+            {
+                return (null, null);
+            }
+
+            if (legacyFallback && jsonProcessor == JsonProcessor.Newtonsoft)
+            {
+                using (diagnosticsContext.CreateScope(
+                    CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft))
+                {
+                    return await DecryptAsync(
+                        input,
+                        encryptor,
+                        diagnosticsContext,
+                        cancellationToken);
+                }
+            }
+
             try
             {
                 (Stream stream, DecryptionContext context) = await MdeEncryptionProcessor.DecryptAsync(input, encryptor, jsonProcessor, diagnosticsContext, cancellationToken);
                 if (context == null)
                 {
-                    input.Position = 0;
+                    StreamPositionHelper.ResetToStart(input, nameof(input));
                     return (input, null);
                 }
 
@@ -222,8 +286,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 if (legacyFallback)
                 {
-                    input.Position = 0;
-                    return await DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
+                    if (!StreamPositionHelper.TryResetToStart(input))
+                    {
+                        throw;
+                    }
+
+                    LegacyEncryptionDocumentStatus status = InspectLegacyEncryptionDocument(
+                        input,
+                        out JObject legacyDocument,
+                        out JObject legacyEncryptionProperties);
+                    if (status == LegacyEncryptionDocumentStatus.MissingAlgorithm)
+                    {
+                        return (input, null);
+                    }
+
+                    if (status == LegacyEncryptionDocumentStatus.Legacy)
+                    {
+                        using (diagnosticsContext.CreateScope(
+                            CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft))
+                        {
+                            return await DecryptParsedDocumentAsync(
+                                input,
+                                legacyDocument,
+                                legacyEncryptionProperties,
+                                encryptor,
+                                diagnosticsContext,
+                                cancellationToken);
+                        }
+                    }
                 }
 
                 throw;
@@ -240,9 +330,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             Debug.Assert(encryptor != null);
 
-            JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(document);
+            EncryptionMetadataDisposition disposition = ClassifyEncryptionMetadata(
+                document,
+                out JObject encryptionPropertiesJObj);
 
-            if (encryptionPropertiesJObj == null)
+            if (disposition == EncryptionMetadataDisposition.None ||
+                disposition == EncryptionMetadataDisposition.Plaintext)
             {
                 return (document, null);
             }
@@ -252,10 +345,108 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return (document, decryptionContext);
         }
 
+        private static LegacyEncryptionDocumentStatus InspectLegacyEncryptionDocument(
+            Stream input,
+            out JObject document,
+            out JObject encryptionProperties)
+        {
+            document = null;
+            encryptionProperties = null;
+            JObject parsedDocument = NewtonsoftJsonObjectReader.Read(input);
+            EncryptionMetadataDisposition disposition = ClassifyEncryptionMetadata(
+                parsedDocument,
+                out JObject parsedEncryptionProperties);
+
+            if (disposition == EncryptionMetadataDisposition.None)
+            {
+                return LegacyEncryptionDocumentStatus.NotLegacy;
+            }
+
+            if (disposition == EncryptionMetadataDisposition.Plaintext)
+            {
+                return LegacyEncryptionDocumentStatus.MissingAlgorithm;
+            }
+
+            if (disposition != EncryptionMetadataDisposition.Legacy)
+            {
+                return LegacyEncryptionDocumentStatus.NotLegacy;
+            }
+
+            document = parsedDocument;
+            encryptionProperties = parsedEncryptionProperties;
+            return LegacyEncryptionDocumentStatus.Legacy;
+        }
+
+        private static async Task<(Stream, DecryptionContext)> DecryptParsedDocumentAsync(
+            Stream input,
+            JObject document,
+            JObject encryptionProperties,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            DecryptionContext context = await DecryptInternalAsync(
+                encryptor,
+                diagnosticsContext,
+                document,
+                encryptionProperties,
+                cancellationToken);
+            await input.DisposeCompatAsync();
+            return (BaseSerializer.ToStream(document), context);
+        }
+
+        private static async Task<DecryptionContext> DecryptParsedDocumentAsync(
+            Stream input,
+            Stream output,
+            JObject document,
+            JObject encryptionProperties,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            DecryptionContext context = await DecryptInternalAsync(
+                encryptor,
+                diagnosticsContext,
+                document,
+                encryptionProperties,
+                cancellationToken);
+            BaseSerializer.WriteToStream(document, output);
+            output.Position = 0;
+            await input.DisposeCompatAsync();
+            return context;
+        }
+
+        private static async Task<DecryptionContext> DecryptNewtonsoftAsync(
+            Stream input,
+            Stream output,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            JObject document = NewtonsoftJsonObjectReader.Read(input);
+            EncryptionMetadataDisposition disposition = ClassifyEncryptionMetadata(
+                document,
+                out JObject encryptionProperties);
+            if (disposition == EncryptionMetadataDisposition.None ||
+                disposition == EncryptionMetadataDisposition.Plaintext)
+            {
+                return null;
+            }
+
+            return await DecryptParsedDocumentAsync(
+                input,
+                output,
+                document,
+                encryptionProperties,
+                encryptor,
+                diagnosticsContext,
+                cancellationToken);
+        }
+
         /// <remarks>
         /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
         /// Else input stream will be disposed, and a new stream is returned.
-        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
+        /// In case of an exception, input stream won't be disposed.
         /// </remarks>
         private static async Task<Stream> EncryptAsync(
             Stream input,
@@ -263,7 +454,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             EncryptionOptions encryptionOptions,
             JsonProcessor jsonProcessor,
             CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool replacePlaintextEncryptionMetadata)
         {
             ValidateInputForEncrypt(
                 input,
@@ -275,10 +467,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 return input;
             }
+
 #pragma warning disable CS0618 // Type or member is obsolete
             return encryptionOptions.EncryptionAlgorithm switch
             {
-                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, jsonProcessor, diagnosticsContext, cancellationToken),
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.EncryptAsync(
+                    input,
+                    encryptor,
+                    encryptionOptions,
+                    jsonProcessor,
+                    diagnosticsContext,
+                    cancellationToken,
+                    replacePlaintextEncryptionMetadata),
                 CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await AeAesEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken),
                 _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionOptions.EncryptionAlgorithm} is not supported."),
             };
@@ -336,34 +536,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             encryptionOptions.Validate(jsonProcessor);
         }
 
-        private static JObject RetrieveItem(
-            Stream input)
+        private static void ValidateJsonProcessor(JsonProcessor jsonProcessor)
         {
-            Debug.Assert(input != null);
-
-            using StreamReader sr = new (input, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
-            using JsonTextReader jsonTextReader = new (sr);
-            jsonTextReader.ArrayPool = JsonArrayPool.Instance;
-            JsonSerializerSettings jsonSerializerSettings = new ()
+            if (!Enum.IsDefined(typeof(JsonProcessor), jsonProcessor))
             {
-                DateParseHandling = DateParseHandling.None,
-                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
-            };
-
-            return Newtonsoft.Json.JsonSerializer.Create(jsonSerializerSettings).Deserialize<JObject>(jsonTextReader);
+                throw new NotSupportedException(
+                    $"JsonProcessor '{jsonProcessor}' is not supported on this platform. " +
+                    $"Supported processors: {string.Join(", ", Enum.GetNames(typeof(JsonProcessor)))}");
+            }
         }
 
-        private static JObject RetrieveEncryptionProperties(
-            JObject item)
+        private static void ValidateOutputForDecrypt(Stream output)
         {
-            JProperty encryptionPropertiesJProp = item.Property(Constants.EncryptedInfo);
-            JObject encryptionPropertiesJObj = null;
-            if (encryptionPropertiesJProp?.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
+            ArgumentValidation.ThrowIfNull(output);
+            if (!output.CanWrite)
             {
-                encryptionPropertiesJObj = (JObject)encryptionPropertiesJProp.Value;
+                throw new ArgumentException("Output stream must be writable.", nameof(output));
             }
 
-            return encryptionPropertiesJObj;
+            if (!output.CanSeek)
+            {
+                throw new ArgumentException("Output stream must be seekable.", nameof(output));
+            }
+        }
+
+        private static EncryptionMetadataDisposition ClassifyEncryptionMetadata(
+            JObject document,
+            out JObject encryptionProperties)
+        {
+            JToken encryptionMetadata = document[Constants.EncryptedInfo];
+            EncryptionMetadataDisposition disposition = EncryptionMetadataClassifier.Classify(encryptionMetadata);
+            EncryptionMetadataClassifier.ThrowIfInvalid(disposition);
+            encryptionProperties = encryptionMetadata as JObject;
+            return disposition;
         }
 
         internal static Task<List<DecryptableItem>> ConvertResponseToDecryptableItemsAsync(
@@ -456,7 +661,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             CosmosSerializer cosmosSerializer)
         {
-            JObject contentJObj = BaseSerializer.FromStream<JObject>(content);
+            JObject contentJObj = NewtonsoftJsonObjectReader.Read(content);
 
             if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is not JArray documents)
             {
@@ -494,7 +699,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
             catch (NotSupportedException)
             {
-                content.Position = 0;
+                if (!StreamPositionHelper.TryResetToStart(content))
+                {
+                    throw;
+                }
 
                 return await DecryptJsonArrayNewtonsoftAsync(content, encryptor, cancellationToken);
             }
@@ -503,7 +711,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private static async Task<Stream> DecryptJsonArrayNewtonsoftAsync(Stream content, Encryptor encryptor, CancellationToken cancellationToken)
         {
-            JObject contentJObj = BaseSerializer.FromStream<JObject>(content);
+            JObject contentJObj = NewtonsoftJsonObjectReader.Read(content);
 
             if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is not JArray documents)
             {

@@ -257,65 +257,61 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-        public async Task ReadAsync_WhenStreamIsEmpty_ThrowsJsonException()
+        public async Task ReadAsync_WhenStreamIsEmpty_ThrowsContractException()
         {
             await using MemoryStream stream = new (Array.Empty<byte>());
 
-            await ExpectJsonExceptionAsync(async () =>
+            await ExpectContractExceptionAsync(async () =>
                 await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None));
         }
 
         [TestMethod]
-        public async Task ReadAsync_WhenStreamIsOpenBraceOnly_ThrowsJsonException()
+        public async Task ReadAsync_WhenStreamIsOpenBraceOnly_ThrowsContractException()
         {
             await using MemoryStream stream = new (Encoding.UTF8.GetBytes("{"));
 
-            await ExpectJsonExceptionAsync(async () =>
+            await ExpectContractExceptionAsync(async () =>
                 await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None));
         }
 
-        private static async Task ExpectJsonExceptionAsync(Func<Task> action)
+        private static async Task ExpectContractExceptionAsync(Func<Task> action)
         {
-            try
-            {
-                await action();
-                Assert.Fail("Expected a JsonException.");
-            }
-            catch (System.Text.Json.JsonException)
-            {
-                // JsonReaderException is internal-sealed so catch the public base.
-            }
+            InvalidOperationException exception =
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(action);
+            Assert.AreEqual(
+                "The response body must contain a JSON object.",
+                exception.Message);
+            Assert.IsInstanceOfType(exception.InnerException, typeof(System.Text.Json.JsonException));
         }
 
         [TestMethod]
-        public async Task ReadAsync_WhenRootIsArray_ReturnsNull()
+        public async Task ReadAsync_WhenRootIsArray_ThrowsContractException()
         {
             await using MemoryStream stream = new (Encoding.UTF8.GetBytes("[1,2,3]"));
 
-            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
-
-            Assert.IsNull(result);
-            Assert.AreEqual(0, stream.Position);
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None));
+            Assert.AreEqual("The response body must contain a JSON object.", exception.Message);
         }
 
         [TestMethod]
-        public async Task ReadAsync_WhenRootIsNumber_ReturnsNull()
+        public async Task ReadAsync_WhenRootIsNumber_ThrowsContractException()
         {
             await using MemoryStream stream = new (Encoding.UTF8.GetBytes("123"));
 
-            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
-
-            Assert.IsNull(result);
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None));
+            Assert.AreEqual("The response body must contain a JSON object.", exception.Message);
         }
 
         [TestMethod]
-        public async Task ReadAsync_WhenRootIsString_ReturnsNull()
+        public async Task ReadAsync_WhenRootIsString_ThrowsContractException()
         {
             await using MemoryStream stream = new (Encoding.UTF8.GetBytes("\"hello\""));
 
-            EncryptionProperties result = await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None);
-
-            Assert.IsNull(result);
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await EncryptionPropertiesStreamReader.ReadAsync(stream, Options, CancellationToken.None));
+            Assert.AreEqual("The response body must contain a JSON object.", exception.Message);
         }
 
         [TestMethod]
@@ -372,9 +368,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 return n;
             }
 
-            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-            public override void SetLength(long value) => throw new NotSupportedException();
-            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void SetLength(long value)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                throw new NotSupportedException();
+            }
         }
 
         [TestMethod]
@@ -466,9 +473,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 return this.position;
             }
 
-            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void SetLength(long value)
+            {
+                throw new NotSupportedException();
+            }
 
-            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                throw new NotSupportedException();
+            }
         }
     }
 }
