@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
@@ -127,6 +128,132 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Assert
             Assert.IsNotNull(resultStream, "Expected a valid stream result.");
             Assert.IsTrue(resultStream.Length > 0, "Stream should contain RNTBD-serialized bytes.");
+        }
+
+        [TestMethod]
+        public async Task SerializeProxyRequestAsync_WithExistingCollectionRid_ShouldEncodeResolvedCollectionRid()
+        {
+            byte[] payload = await this.SerializeWithExtraHeadersAsync(
+                new Dictionary<string, string>
+                {
+                    { WFConstants.BackendHeaders.CollectionRid, "ccZ1ANCszwk=" }
+                });
+            ProxyRequestTokens tokens = new ProxyRequestTokens(payload);
+
+            CollectionAssert.AreEqual(
+                Encoding.UTF8.GetBytes(this.GetMockContainerProperties().ResourceId),
+                tokens.GetRequiredBytes(RntbdConstants.RequestIdentifiers.CollectionRid));
+        }
+
+        [DataTestMethod]
+        [DataRow(nameof(OperationType.Query), null, null, "05C1D0", "05C1E0", "05C1D0", "05C1E0",
+            DisplayName = "Query: physical range fallback")]
+        [DataRow(nameof(OperationType.Query), "05C1D8", "05C1DC", "05C1D0", "05C1E0", "05C1D8", "05C1DC",
+            DisplayName = "Query: preserve narrower range and replace existing headers")]
+        [DataRow(nameof(OperationType.Query), "", "05C1DC", "", "FF", "", "05C1DC",
+            DisplayName = "Query: sub-range with empty minimum boundary")]
+        [DataRow(nameof(OperationType.Query), "05C1D8", "FF", "", "FF", "05C1D8", "FF",
+            DisplayName = "Query: sub-range ending at maximum boundary")]
+        [DataRow(nameof(OperationType.Query), null, null, "", "FF", "", "FF",
+            DisplayName = "Query: physical range fallback with empty minimum boundary")]
+        [DataRow(nameof(OperationType.ReadFeed), null, null, "05C1D0", "05C1E0", "05C1D0", "05C1E0",
+            DisplayName = "Incremental change feed: physical range fallback")]
+        [DataRow(nameof(OperationType.ReadFeed), "05C1D8", "05C1DC", "05C1D0", "05C1E0", "05C1D8", "05C1DC",
+            DisplayName = "Incremental change feed: preserve narrower range and replace existing headers")]
+        public async Task SerializeProxyRequestAsync_ShouldEncodeExpectedEpkRange(
+            string operationName,
+            string requestedMin,
+            string requestedMax,
+            string physicalMin,
+            string physicalMax,
+            string expectedMin,
+            string expectedMax)
+        {
+            OperationType operationType = Enum.Parse<OperationType>(operationName);
+            using HttpRequestMessage message = new HttpRequestMessage
+            {
+                Content = operationType == OperationType.Query
+                    ? new StringContent("{\"query\":\"SELECT * FROM c\"}")
+                    : null,
+                RequestUri = new Uri("https://localhost/dbs/TestDb/colls/TestColl/docs")
+            };
+            message.Headers.Add(ThinClientConstants.ProxyOperationType, operationType.ToString());
+            message.Headers.Add(ThinClientConstants.ProxyResourceType, ResourceType.Document.ToString());
+            message.Headers.Add(HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
+            message.Headers.TryAddWithoutValidation(ThinClientConstants.ProxyStartEpk, physicalMin);
+            message.Headers.TryAddWithoutValidation(ThinClientConstants.ProxyEndEpk, physicalMax);
+
+            if (operationType == OperationType.ReadFeed)
+            {
+                message.Headers.TryAddWithoutValidation(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
+            }
+
+            if (requestedMin != null)
+            {
+                message.Headers.TryAddWithoutValidation(HttpConstants.HttpHeaders.ReadFeedKeyType, "EffectivePartitionKeyRange");
+                message.Headers.TryAddWithoutValidation(HttpConstants.HttpHeaders.StartEpk, requestedMin);
+                message.Headers.TryAddWithoutValidation(HttpConstants.HttpHeaders.EndEpk, requestedMax);
+            }
+
+            Mock<ClientCollectionCache> clientCollectionCacheMock = this.CreateClientCollectionCacheMock();
+
+            using Stream resultStream = await ThinClientTransportSerializer.SerializeProxyRequestAsync(
+                new ThinClientTransportSerializer.BufferProviderWrapper(),
+                "MockAccount",
+                clientCollectionCacheMock.Object,
+                message);
+
+            using MemoryStream serializedStream = new MemoryStream();
+            await resultStream.CopyToAsync(serializedStream);
+            ProxyRequestTokens tokens = new ProxyRequestTokens(serializedStream.ToArray());
+
+            RntbdToken readKeyType = tokens.Get(RntbdConstants.RequestIdentifiers.ReadFeedKeyType);
+            Assert.IsTrue(readKeyType.isPresent);
+            Assert.AreEqual((byte)RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange, readKeyType.value.valueByte);
+
+            CollectionAssert.AreEqual(
+                Convert.FromHexString(expectedMin),
+                tokens.GetRequiredBytes(RntbdConstants.RequestIdentifiers.StartEpkHash));
+            CollectionAssert.AreEqual(
+                Convert.FromHexString(expectedMax),
+                tokens.GetRequiredBytes(RntbdConstants.RequestIdentifiers.EndEpkHash));
+            RntbdToken startEpk = tokens.Get(RntbdConstants.RequestIdentifiers.StartEpk);
+            Assert.AreEqual(expectedMin.Length != 0, startEpk.isPresent);
+            if (startEpk.isPresent)
+            {
+                CollectionAssert.AreEqual(Encoding.UTF8.GetBytes(expectedMin), startEpk.value.valueBytes.ToArray());
+            }
+
+            CollectionAssert.AreEqual(
+                Encoding.UTF8.GetBytes(expectedMax),
+                tokens.GetRequiredBytes(RntbdConstants.RequestIdentifiers.EndEpk));
+        }
+
+        private sealed class ProxyRequestTokens : RntbdTokenStream<RntbdConstants.RequestIdentifiers>
+        {
+            public ProxyRequestTokens(byte[] serialized)
+            {
+                // Proxy requests omit the replica path and transport request ID required by direct requests.
+                this.tokens = new RntbdConstants.Request().tokens
+                    .Select(token => token == null ? null : new RntbdToken(false, token.GetTokenType(), token.GetTokenIdentifier()))
+                    .ToArray();
+
+                int headerLength = BitConverter.ToInt32(serialized, 0);
+                Rntbd.BytesDeserializer reader = new Rntbd.BytesDeserializer(serialized, headerLength);
+                reader.ReadBytes(24);
+                this.ParseFrom(ref reader);
+            }
+
+            public override int RequiredTokenCount => 0;
+
+            public RntbdToken Get(RntbdConstants.RequestIdentifiers identifier) => this.tokens[(int)identifier];
+
+            public byte[] GetRequiredBytes(RntbdConstants.RequestIdentifiers identifier)
+            {
+                RntbdToken token = this.Get(identifier);
+                Assert.IsTrue(token.isPresent, $"Missing token: {identifier}");
+                return token.value.valueBytes.ToArray();
+            }
         }
 
         [TestMethod]
