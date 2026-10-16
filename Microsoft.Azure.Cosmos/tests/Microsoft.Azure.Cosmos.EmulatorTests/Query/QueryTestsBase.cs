@@ -677,7 +677,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         try
                         {
                             FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
-                            if (queryRequestOptions.MaxItemCount.HasValue)
+                            if (queryRequestOptions.MaxItemCount.HasValue && queryRequestOptions.MaxItemCount.Value > 0)
                             {
                                 Assert.IsTrue(
                                     cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
@@ -735,7 +735,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         results.AddRange(page);
                         resultCount += page.Count;
 
-                        if (queryRequestOptions.MaxItemCount.HasValue)
+                        if (queryRequestOptions.MaxItemCount.HasValue && queryRequestOptions.MaxItemCount.Value > 0)
                         {
                             if (page.Count > queryRequestOptions.MaxItemCount.Value)
                             {

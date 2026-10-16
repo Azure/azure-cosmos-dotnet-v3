@@ -248,6 +248,54 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         }
 
         [TestMethod]
+        public async Task GetQueryPlanThroughGatewayAsync_PropagatesExcludeRegionsToQueryPlanRequest()
+        {
+            // Regression test: gateway query-plan requests must honor QueryRequestOptions.ExcludeRegions the
+            // same way the actual data query does, instead of silently dropping it (which previously caused
+            // the query-plan call to ignore excluded regions and route to the default/write region).
+            IReadOnlyList<string> expectedExcludeRegions = new List<string> { "East US 2" };
+            IReadOnlyList<string> actualExcludeRegions = null;
+
+            Mock<CosmosQueryClient> queryClient = new Mock<CosmosQueryClient>();
+            Mock<CosmosQueryContext> queryContext = new Mock<CosmosQueryContext>(
+                queryClient.Object,
+                ResourceType.Document,
+                OperationType.Query,
+                typeof(object),
+                "dbs/db/colls/coll",
+                Guid.NewGuid(),
+                /* isContinuationExpected: */ false,
+                /* allowNonValueAggregateQuery: */ false,
+                /* useSystemPrefix: */ false,
+                /* containerResourceId: */ null);
+
+            queryContext.Setup(c => c.ExecuteQueryPlanRequestAsync(
+                It.IsAny<string>(),
+                It.IsAny<ResourceType>(),
+                It.IsAny<OperationType>(),
+                It.IsAny<SqlQuerySpec>(),
+                It.IsAny<Cosmos.PartitionKey?>(),
+                It.IsAny<string>(),
+                It.IsAny<IReadOnlyList<string>>(),
+                It.IsAny<ITrace>(),
+                It.IsAny<CancellationToken>()))
+                .Callback<string, ResourceType, OperationType, SqlQuerySpec, Cosmos.PartitionKey?, string, IReadOnlyList<string>, ITrace, CancellationToken>(
+                    (_, __, ___, ____, _____, ______, excludeRegions, _______, ________) => actualExcludeRegions = excludeRegions)
+                .ReturnsAsync(new PartitionedQueryExecutionInfo());
+
+            await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
+                queryContext.Object,
+                new SqlQuerySpec("SELECT * FROM c"),
+                "dbs/db/colls/coll",
+                partitionKey: null,
+                isHybridSearchQueryPlanOptimizationDisabled: false,
+                excludeRegions: expectedExcludeRegions,
+                trace: NoOpTrace.Singleton);
+
+            CollectionAssert.AreEqual((List<string>)expectedExcludeRegions, (List<string>)actualExcludeRegions);
+        }
+
+        [TestMethod]
         public async Task SanityTests()
         {
             TestCase[] testCases = new TestCase[]
@@ -573,7 +621,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 throw new NotImplementedException();
             }
 
-            public override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(string resourceUri, ResourceType resourceType, OperationType operationType, SqlQuerySpec sqlQuerySpec, Cosmos.PartitionKey? partitionKey, string supportedQueryFeatures, Guid clientQueryCorrelationId, ITrace trace, CancellationToken cancellationToken)
+            public override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(string resourceUri, ResourceType resourceType, OperationType operationType, SqlQuerySpec sqlQuerySpec, Cosmos.PartitionKey? partitionKey, string supportedQueryFeatures, IReadOnlyList<string> excludeRegions, Guid clientQueryCorrelationId, ITrace trace, CancellationToken cancellationToken)
             {
                 throw new NotImplementedException();
             }

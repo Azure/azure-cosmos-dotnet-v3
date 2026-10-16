@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -232,19 +234,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(itemsToRead.Count, response.Count, "ReadMany with ReadConsistencyStrategy should return all requested items");
         }
 
-        /// <summary>
-        /// Verifies that the Direct layer's ServerStoreModel rejects requests when both
-        /// x-ms-consistency-level and x-ms-cosmos-read-consistency-strategy headers are set.
-        /// This guards against SDK regressions that accidentally send both headers.
-        /// </summary>
         [TestMethod]
-        public async Task DualConsistencyHeadersRejectedWithBadRequest()
+        public async Task DualConsistencyHeadersAcceptedReadConsistencyStrategyTakesPrecedence()
         {
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             await this.Container.CreateItemAsync(testItem);
 
             // Inject both headers manually via a custom handler to bypass SDK's logic
-            // that normally prevents this.
+            // that normally only sends one of them.
             RequestHandlerHelper headerInjector = new RequestHandlerHelper();
             headerInjector.UpdateRequestMessage = (request) =>
             {
@@ -253,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     request.Headers.Set(
                         HttpConstants.HttpHeaders.ConsistencyLevel,
-                        Cosmos.ConsistencyLevel.Session.ToString());
+                        Cosmos.ConsistencyLevel.Eventual.ToString());
                     request.Headers.Set(
                         HttpConstants.HttpHeaders.ReadConsistencyStrategy,
                         ReadConsistencyStrategy.Session.ToString());
@@ -269,20 +266,76 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using CosmosClient customClient = TestCommon.CreateCosmosClient(clientOptions);
             Container container = customClient.GetContainer(this.database.Id, this.Container.Id);
 
-            try
-            {
-                await container.ReadItemAsync<ToDoActivity>(
-                    testItem.id,
-                    new Cosmos.PartitionKey(testItem.pk));
+            ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(
+                testItem.id,
+                new Cosmos.PartitionKey(testItem.pk));
 
-                Assert.Fail("Expected BadRequest when both ConsistencyLevel and ReadConsistencyStrategy headers are set");
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+            Assert.AreEqual(
+                HttpStatusCode.OK,
+                response.StatusCode,
+                "Read with both ConsistencyLevel and ReadConsistencyStrategy headers should succeed (Direct package 3.43.1+ contract).");
+            Assert.AreEqual(testItem.id, response.Resource.id);
+        }
+
+        /// <summary>
+        /// Verifies that <see cref="ReadConsistencyStrategy.LastCommittedSingleWriteRegion"/> is honored in
+        /// Gateway mode against a single-write-region (single-master) account such as the emulator.
+        /// For a single-master account the SDK translates the strategy into hub-region routing: it sets the
+        /// <c>x-ms-cosmos-hub-region-processing-only</c> header to true and downgrades the wire
+        /// ReadConsistencyStrategy header to <see cref="ReadConsistencyStrategy.LatestCommitted"/>.
+        /// The interceptor confirms the headers actually sent on the wire, proving the value is honored
+        /// end-to-end in Gateway mode.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadItemWithLastCommittedSingleWriteRegionInGatewayMode()
+        {
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            await this.Container.CreateItemAsync(testItem);
+
+            string readConsistencyStrategyHeader = null;
+            string hubRegionHeader = null;
+            RequestHandlerHelper interceptor = new RequestHandlerHelper
             {
-                Assert.IsTrue(
-                    ex.Message.Contains("Cannot specify both"),
-                    $"Error should mention dual header conflict. Got: {ex.Message}");
-            }
+                UpdateRequestMessage = (request) =>
+                {
+                    if (request.OperationType == Documents.OperationType.Read
+                        && request.ResourceType == Documents.ResourceType.Document)
+                    {
+                        readConsistencyStrategyHeader = request.Headers[HttpConstants.HttpHeaders.ReadConsistencyStrategy];
+                        hubRegionHeader = request.Headers[HttpConstants.HttpHeaders.ShouldProcessOnlyInHubRegion];
+                    }
+                }
+            };
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway
+            };
+            clientOptions.CustomHandlers.Add(interceptor);
+
+            using CosmosClient customClient = TestCommon.CreateCosmosClient(clientOptions);
+            Container container = customClient.GetContainer(this.database.Id, this.Container.Id);
+
+            ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(
+                testItem.id,
+                new Cosmos.PartitionKey(testItem.pk),
+                new ItemRequestOptions { ReadConsistencyStrategy = Cosmos.ReadConsistencyStrategy.LastCommittedSingleWriteRegion });
+
+            Assert.AreEqual(
+                HttpStatusCode.OK,
+                readResponse.StatusCode,
+                "Read with LastCommittedSingleWriteRegion should succeed in Gateway mode against a single-master account.");
+            Assert.AreEqual(testItem.id, readResponse.Resource.id);
+
+            // For a single-master account the strategy is honored via hub-region routing.
+            Assert.AreEqual(
+                bool.TrueString,
+                hubRegionHeader,
+                "LastCommittedSingleWriteRegion should set the hub-region-processing-only header for single-master accounts.");
+            Assert.AreEqual(
+                ReadConsistencyStrategy.LatestCommitted.ToString(),
+                readConsistencyStrategyHeader,
+                "LastCommittedSingleWriteRegion should be sent on the wire as LatestCommitted with hub-region routing.");
         }
     }
 }

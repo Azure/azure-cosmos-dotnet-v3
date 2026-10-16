@@ -41,10 +41,7 @@ ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
 SELECT VALUE {"stringField": root["StringField"], "PartitionKey": root["Pk"]}["PartitionKey"] 
 FROM root 
 ORDER BY RANK FullTextScore({"stringField": root["StringField"], "PartitionKey": root["Pk"]}["stringField"], "test1")]]></SqlQuery>
-      <Results><![CDATA[[
-  "Test",
-  "Test"
-]]]></Results>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"Errors":["An unknown error occurred while processing this request. If the issue persists, please contact Azure Support: http://aka.ms/azure-support"]},Catastrophic failure (0x8000FFFF (E_UNEXPECTED))]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             await implementation.TestMoveNextAsyncThrowsTaskCanceledException();
         }
 
-        [TestClass]
         private sealed class Implementation : PartitionRangeEnumeratorTests<OrderByQueryPage, QueryState>
         {
             public Implementation()

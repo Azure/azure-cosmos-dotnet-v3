@@ -10,12 +10,25 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal class DistributedWriteTransactionCore : DistributedWriteTransaction
     {
+        internal const string CommitAlreadyCalledMessage =
+            "ExecuteTransactionAsync has already been called on this transaction instance. " +
+            "A DistributedWriteTransaction is single-use because each commit generates a new " +
+            "idempotency token; a second call would bypass server-side duplicate detection and " +
+            "risk a double-commit. To retry, construct a new DistributedWriteTransaction with " +
+            "the same operations. If the previous commit's outcome is unknown (e.g., cancellation " +
+            "or network failure), verify the resulting state before retrying to avoid duplicate writes.";
+
         private readonly CosmosClientContext clientContext;
         private readonly List<DistributedTransactionOperation> operations;
+        private readonly object idempotencyTokenLock = new object();
+        private Guid latestIdempotencyToken;
+        private int isCommitInvoked;
 
         internal DistributedWriteTransactionCore(CosmosClientContext clientContext)
         {
@@ -23,36 +36,51 @@ namespace Microsoft.Azure.Cosmos
             this.operations = new List<DistributedTransactionOperation>();
         }
 
+        /// <inheritdoc/>
+        internal override Guid IdempotencyToken
+        {
+            get
+            {
+                lock (this.idempotencyTokenLock)
+                {
+                    return this.latestIdempotencyToken;
+                }
+            }
+        }
+
         public override DistributedWriteTransaction CreateItem<T>(
-            string database,
-            string collection,
+            Container container,
             PartitionKey partitionKey,
+            string id,
             T resource,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
+            DistributedWriteTransactionCore.ValidateItemId(id);
             DistributedWriteTransactionCore.ValidateResource(resource);
 
             this.operations.Add(
                 new DistributedTransactionOperation<T>(
                     operationType: OperationType.Create,
                     operationIndex: this.operations.Count,
-                    database,
-                    collection,
+                    databaseId,
+                    containerId,
                     partitionKey,
+                    id,
                     resource,
                     requestOptions));
             return this;
         }
 
         public override DistributedWriteTransaction CreateItemStream(
-            string database,
-            string collection,
+            Container container,
             PartitionKey partitionKey,
+            string id,
             Stream streamPayload,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
+            DistributedWriteTransactionCore.ValidateItemId(id);
             if (streamPayload == null)
             {
                 throw new ArgumentNullException(nameof(streamPayload));
@@ -62,9 +90,10 @@ namespace Microsoft.Azure.Cosmos
                 new DistributedTransactionOperation(
                     operationType: OperationType.Create,
                     operationIndex: this.operations.Count,
-                    database: database,
-                    container: collection,
+                    database: databaseId,
+                    container: containerId,
                     partitionKey: partitionKey,
+                    id: id,
                     requestOptions: requestOptions)
                 {
                     ResourceStream = streamPayload
@@ -73,14 +102,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override DistributedWriteTransaction ReplaceItem<T>(
-            string database,
-            string collection,
+            Container container,
             PartitionKey partitionKey,
             string id,
             T resource,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
             DistributedWriteTransactionCore.ValidateResource(resource);
 
@@ -88,8 +116,8 @@ namespace Microsoft.Azure.Cosmos
                 new DistributedTransactionOperation<T>(
                     operationType: OperationType.Replace,
                     operationIndex: this.operations.Count,
-                    database,
-                    collection,
+                    databaseId,
+                    containerId,
                     partitionKey,
                     id,
                     resource,
@@ -98,14 +126,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override DistributedWriteTransaction ReplaceItemStream(
-            string database,
-            string collection,
+            Container container,
             PartitionKey partitionKey,
             string id,
             Stream streamPayload,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
             if (streamPayload == null)
             {
@@ -116,8 +143,8 @@ namespace Microsoft.Azure.Cosmos
                 new DistributedTransactionOperation(
                     operationType: OperationType.Replace,
                     operationIndex: this.operations.Count,
-                    database: database,
-                    container: collection,
+                    database: databaseId,
+                    container: containerId,
                     partitionKey: partitionKey,
                     id: id,
                     requestOptions: requestOptions)
@@ -128,21 +155,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override DistributedWriteTransaction DeleteItem(
-            string database,
-            string collection,
+            Container container,
             PartitionKey partitionKey,
             string id,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
 
             this.operations.Add(
                 new DistributedTransactionOperation(
                     operationType: OperationType.Delete,
                     operationIndex: this.operations.Count,
-                    database,
-                    collection,
+                    databaseId,
+                    containerId,
                     partitionKey,
                     id: id,
                     requestOptions));
@@ -150,14 +176,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override DistributedWriteTransaction PatchItem(
-            string database,
-            string collection,
+            Container container,
             PartitionKey partitionKey,
             string id,
             IReadOnlyList<PatchOperation> patchOperations,
-            DistributedTransactionRequestOptions requestOptions = null)
+            DistributedTransactionPatchItemRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
 
             if (patchOperations == null || !patchOperations.Any())
@@ -165,14 +190,19 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(patchOperations));
             }
 
-            PatchSpec patchSpec = new PatchSpec(patchOperations, new PatchItemRequestOptions());
+            // Forward the customer-supplied conditional predicate (if any) into the PatchSpec so the
+            // serializer emits the server-evaluated 'condition' field. Other request-level options
+            // (SessionToken, IfMatchEtag, IfNoneMatchEtag) flow through the operation's requestOptions.
+            PatchSpec patchSpec = new PatchSpec(
+                patchOperations,
+                new PatchItemRequestOptions { FilterPredicate = requestOptions?.FilterPredicate });
 
             this.operations.Add(
                 new DistributedTransactionOperation<PatchSpec>(
                     operationType: OperationType.Patch,
                     operationIndex: this.operations.Count,
-                    database,
-                    collection,
+                    databaseId,
+                    containerId,
                     partitionKey,
                     id,
                     resource: patchSpec,
@@ -181,14 +211,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override DistributedWriteTransaction PatchItemStream(
-            string database,
-            string collection,
+            Container container,
             PartitionKey partitionKey,
             string id,
             Stream streamPayload,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
             DistributedWriteTransactionCore.ValidateItemId(id);
             if (streamPayload == null)
             {
@@ -199,8 +228,8 @@ namespace Microsoft.Azure.Cosmos
                 new DistributedTransactionOperation(
                     operationType: OperationType.Patch,
                     operationIndex: this.operations.Count,
-                    database: database,
-                    container: collection,
+                    database: databaseId,
+                    container: containerId,
                     partitionKey: partitionKey,
                     id: id,
                     requestOptions: requestOptions)
@@ -211,35 +240,38 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override DistributedWriteTransaction UpsertItem<T>(
-            string database,
-            string collection,
+            Container container,
             PartitionKey partitionKey,
+            string id,
             T resource,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
+            DistributedWriteTransactionCore.ValidateItemId(id);
             DistributedWriteTransactionCore.ValidateResource(resource);
 
             this.operations.Add(
                 new DistributedTransactionOperation<T>(
                     operationType: OperationType.Upsert,
                     operationIndex: this.operations.Count,
-                    database,
-                    collection,
+                    databaseId,
+                    containerId,
                     partitionKey,
+                    id,
                     resource,
                     requestOptions));
             return this;
         }
 
         public override DistributedWriteTransaction UpsertItemStream(
-            string database,
-            string collection,
+            Container container,
             PartitionKey partitionKey,
+            string id,
             Stream streamPayload,
             DistributedTransactionRequestOptions requestOptions = null)
         {
-            DistributedWriteTransactionCore.ValidateContainerReference(database, collection);
+            (string databaseId, string containerId) = DistributedTransactionConstants.ValidateAndUnpackContainer(container, this.clientContext.Client);
+            DistributedWriteTransactionCore.ValidateItemId(id);
             if (streamPayload == null)
             {
                 throw new ArgumentNullException(nameof(streamPayload));
@@ -249,9 +281,10 @@ namespace Microsoft.Azure.Cosmos
                 new DistributedTransactionOperation(
                     operationType: OperationType.Upsert,
                     operationIndex: this.operations.Count,
-                    database: database,
-                    container: collection,
+                    database: databaseId,
+                    container: containerId,
                     partitionKey: partitionKey,
+                    id: id,
                     requestOptions: requestOptions)
                 {
                     ResourceStream = streamPayload
@@ -259,25 +292,54 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        public override async Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken)
+        /// <inheritdoc/>
+        /// <remarks>
+        /// The server uses idempotency tokens for duplicate detection during the SDK's internal retries.
+        /// Cancellation does not abort or roll back a transaction that may already have reached the service.
+        /// When the outcome is unknown after cancellation or a network failure, reconcile the outcome
+        /// using application-specific safeguards before deciding whether to submit another transaction.
+        /// Executing a new transaction uses a new idempotency token and can apply the same writes twice.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.ExecuteTransactionAsync"/> has already been called on this instance.</exception>
+        /// <exception cref="OperationCanceledException">Thrown when cancellation is observed before or during execution. The write transaction may still have committed.</exception>
+        public override Task<DistributedTransactionResponse> ExecuteTransactionAsync(CancellationToken cancellationToken = default)
         {
-            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                operations: this.operations,
-                clientContext: this.clientContext);
-
-            return await committer.CommitTransactionAsync(cancellationToken);
-        }
-
-        private static void ValidateContainerReference(string database, string collection)
-        {
-            if (string.IsNullOrWhiteSpace(database))
+            if (this.operations.Count == 0)
             {
-                throw new ArgumentNullException(nameof(database));
+                throw new InvalidOperationException("Cannot commit a distributed write transaction with zero operations. Add at least one write operation before committing.");
             }
 
-            if (string.IsNullOrWhiteSpace(collection))
+            if (Interlocked.CompareExchange(ref this.isCommitInvoked, DistributedTransactionConstants.CommitStarted, DistributedTransactionConstants.CommitNotStarted) != DistributedTransactionConstants.CommitNotStarted)
             {
-                throw new ArgumentNullException(nameof(collection));
+                throw new InvalidOperationException(CommitAlreadyCalledMessage);
+            }
+
+            return this.clientContext.OperationHelperAsync(
+                operationName: $"{nameof(DistributedWriteTransaction)}.{nameof(ExecuteTransactionAsync)}",
+                containerName: null,
+                databaseName: null,
+                operationType: OperationType.CommitDistributedTransaction,
+                requestOptions: null,
+                task: (trace) =>
+                {
+                    DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                        operations: this.operations,
+                        clientContext: this.clientContext,
+                        operationType: OperationType.CommitDistributedTransaction,
+                        onDispatch: this.PublishIdempotencyToken);
+
+                    return committer.ExecuteTransactionAsync(trace, cancellationToken);
+                },
+                openTelemetry: new (OpenTelemetryConstants.Operations.ExecuteDistributedWriteTransaction,
+                                    (response) => new OpenTelemetryResponse(response)),
+                traceComponent: TraceComponent.Batch);
+        }
+
+        private void PublishIdempotencyToken(Guid token)
+        {
+            lock (this.idempotencyTokenLock)
+            {
+                this.latestIdempotencyToken = token;
             }
         }
 

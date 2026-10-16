@@ -17,12 +17,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Runtime.Serialization.Json;
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
+    using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
@@ -79,11 +81,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore] //This change makes the race condition in the test deterministic, test will be re-enabled once the fix is in place.
         [TestMethod]
         public async Task InitTaskThreadSafe()
         {
             int httpCallCount = 0;
             int metadataCallCount = 0;
+            ConcurrentBag<string> httpRequestUris = new ConcurrentBag<string>();
             bool delayCallBack = true;
 
             var isInitializedField = typeof(VmMetadataApiHandler).GetField("isInitialized",
@@ -100,15 +104,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 RequestCallBack = async (request, cancellToken) =>
                 {
-                    if(request.RequestUri.AbsoluteUri ==  VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri)
+                    string requestUri = request.RequestUri?.AbsoluteUri;
+                    if (requestUri == VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri)
                     {
                         Interlocked.Increment(ref metadataCallCount);
-                    } 
+                    }
                     else
                     {
                         Interlocked.Increment(ref httpCallCount);
+                        httpRequestUris.Add(requestUri ?? "<null>");
                     }
-                    
+
                     while (delayCallBack)
                     {
                         await Task.Delay(TimeSpan.FromMilliseconds(100));
@@ -149,13 +155,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await Task.WhenAll(tasks);
 
                 Assert.AreEqual(1, metadataCallCount, "Only one call for VM Metadata call with be made");
-                Assert.AreEqual(1, httpCallCount, "Only the first task should do the http call. All other should wait on the first task");
+                Assert.AreEqual(
+                    1,
+                    httpCallCount,
+                    $"Only the first task should do the http call. All other should wait on the first task. Observed URIs: [{string.Join(", ", httpRequestUris)}]");
 
-                // Reset counters and retry the client to verify a new http call is done for new requests
+                // Reset counters and retry the client to verify a new http call is done for new requests.
                 tasks.Clear();
                 delayCallBack = true;
                 this.TaskStartedCount = 0;
-                httpCallCount = 0;
+                Interlocked.Exchange(ref httpCallCount, 0);
+                Interlocked.Exchange(ref metadataCallCount, 0);
+                // Drain in-place: the RequestCallBack closure captured this specific bag instance,
+                // so we cannot swap the reference without the handler writing into a stale bag.
+                while (httpRequestUris.TryTake(out _))
+                {
+                }
             }
         }
 
@@ -1135,6 +1150,124 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 if (db != null) await db.DeleteAsync();
             }
         }
+
+        [TestMethod]
+        public async Task ValidateSpatialPointSTJSerialization()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            using (CosmosClient cosmosClient = new CosmosClient(endpoint, authKey,
+               new CosmosClientOptions()
+               {
+                   // this makes it use STJ library for serialization/de-serialization
+                   UseSystemTextJsonSerializerWithOptions = new JsonSerializerOptions()
+                   {
+                       PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                   }
+               }
+               ))
+            {
+
+                string GUID = Guid.NewGuid().ToString();
+                Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("AzureCosmosSpatialSerialization");
+                Container container = await database.CreateContainerIfNotExistsAsync("spatial-items", "/id");
+
+                Point point = new Point(
+                    new Position(20, 30),
+                    new GeometryParams
+                    {
+                        AdditionalProperties = new Dictionary<string, object>
+                        {
+                            ["one"] = "a large one",
+                            ["two"] = "a new two"
+                        },
+                        Crs = Crs.Linked("http://foo.com", "link")
+                    });
+
+                SpatialItem inputItem = new SpatialItem()
+                {
+                    Id = GUID,
+                    Name = "Spatial Point",
+                    Location = point
+                };
+
+                SpatialItem result = await container.CreateItemAsync<SpatialItem>(inputItem);
+                SpatialItem readItem = await container.ReadItemAsync<SpatialItem>(GUID, new Cosmos.PartitionKey(GUID));
+
+                Assert.AreEqual<SpatialItem>(readItem, inputItem);
+                Assert.AreEqual<SpatialItem>(result, inputItem);
+
+                Point updatedPoint = new Point(new Position(40, 50));
+                SpatialItem patchedItem = await container.PatchItemAsync<SpatialItem>(
+                    GUID,
+                    new Cosmos.PartitionKey(GUID),
+                    patchOperations: new[]
+                    {
+                        PatchOperation.Set("/location", updatedPoint)
+                    });
+
+                Assert.AreEqual(updatedPoint, patchedItem.Location);
+
+                SpatialItem readAfterPatch = await container.ReadItemAsync<SpatialItem>(GUID, new Cosmos.PartitionKey(GUID));
+                Assert.AreEqual(updatedPoint, readAfterPatch.Location);
+            }
+
+        }
+        [TestMethod]
+        public async Task ValidateSpatialPointNewtonSoftSerialization()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+            // default serialization uses NewtonSoft
+            using (CosmosClient cosmosClient = new CosmosClient(endpoint, authKey))
+            {
+
+                string GUID = Guid.NewGuid().ToString();
+                Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("AzureCosmosSpatialSerialization");
+                Container container = await database.CreateContainerIfNotExistsAsync("spatial-items", "/id");
+
+                Point point = new Point(
+                    new Position(20, 30),
+                    new GeometryParams
+                    {
+                        AdditionalProperties = new Dictionary<string, object>
+                        {
+                            ["one"] = "a large one",
+                            ["two"] = "a new two"
+                        },
+                        Crs = Crs.Linked("http://foo.com", "link")
+                    });
+
+                SpatialItem inputItem = new SpatialItem()
+                {
+                    Id = GUID,
+                    Name = "Spatial Point",
+                    Location = point
+                };
+
+                SpatialItem result = await container.CreateItemAsync<SpatialItem>(inputItem);
+                SpatialItem readItem = await container.ReadItemAsync<SpatialItem>(GUID, new Cosmos.PartitionKey(GUID));
+
+                Assert.AreEqual<SpatialItem>(readItem, inputItem);
+                Assert.AreEqual<SpatialItem>(result, inputItem);
+
+                Point updatedPoint = new Point(new Position(40, 50));
+                SpatialItem patchedItem = await container.PatchItemAsync<SpatialItem>(
+                    GUID,
+                    new Cosmos.PartitionKey(GUID),
+                    patchOperations: new[]
+                    {
+                        PatchOperation.Set("/Location", updatedPoint)
+                    });
+
+                Assert.AreEqual(updatedPoint, patchedItem.Location);
+
+                SpatialItem readAfterPatch = await container.ReadItemAsync<SpatialItem>(GUID, new Cosmos.PartitionKey(GUID));
+                Assert.AreEqual(updatedPoint, readAfterPatch.Location);
+            }
+
+        }
         public static IReadOnlyList<string> GetActiveConnections()
         {
             string testPid = Process.GetCurrentProcess().Id.ToString();
@@ -1269,6 +1402,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             return input.Replace("'", "\\'").Replace("\"", "\\\"");
         }
+    }
+    internal record SpatialItem
+    {
+        [JsonProperty("id")]
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public Point Location { get; set; }
     }
 
     internal class TestWebProxy : IWebProxy

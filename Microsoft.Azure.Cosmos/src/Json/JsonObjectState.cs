@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// FWIW .Net chose 100
         /// Note: This value needs to be a multiple of 8 and must be less than 2^15 (see asserts in the constructor)
         /// </summary>
-        private const int JsonMaxNestingDepth = 256;
+        internal const int JsonMaxNestingDepth = 256;
 
         /// <summary>
         /// Flag for determining whether to throw exceptions that connote a context at the end or not started / complete.
@@ -181,7 +181,11 @@ namespace Microsoft.Azure.Cosmos.Json
         {
             if (this.nestingStackIndex + 1 >= JsonMaxNestingDepth)
             {
-                throw new InvalidOperationException(RMResources.JsonMaxNestingExceeded);
+                // Use the dedicated JsonMaxNestingExceededException so callers can
+                // catch the "JSON too deeply nested" condition with a single type
+                // regardless of whether the limit was hit by the streaming reader
+                // or by the binary value-length decoder.
+                throw new JsonMaxNestingExceededException();
             }
 
             this.nestingStackIndex++;

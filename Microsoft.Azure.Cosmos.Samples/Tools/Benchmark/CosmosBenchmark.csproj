@@ -17,6 +17,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.17.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.16.0" />
     <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.0.0-beta.13" />
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
@@ -27,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-    <!-- Enabled easier integration into master -->
+    <!-- Enables easier integration into main -->
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
   </ItemGroup>
 

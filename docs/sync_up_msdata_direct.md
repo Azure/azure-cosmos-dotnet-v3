@@ -29,8 +29,8 @@ Before covering the sync-up process in detail, please follow the below steps to 
 
 - Clone the CosmosDB repository in the local environment, using the CosmosDB onboarding guide. Please note, building the entire repository is not required for the sync-up process.
 
-- Navigate to the cloned `CosmosDB` directory and check out the following branch, `master` using the below git commands:
-    -       git pull && git checkout master
+- Navigate to the cloned `CosmosDB` directory and check out the following branch, `main` using the below git commands:
+    -       git pull && git checkout main
 
 ## Steps Required to Update msdata direct Repo
 
@@ -42,11 +42,11 @@ The first step to sync up the `msdata/direct` repo is to create a feature branch
 
 ### Merging the cosmos db v3 Code into Feature Branch.
 
-The next step is to port the latest `master` branch code into the newly created feature branch. Please see the below git commands to perform this action:
+The next step is to port the latest `main` branch code into the newly created feature branch. Please see the below git commands to perform this action:
 
-- Make sure the `master` branch is up-to-date.
-- Stay on the newly created feature branch `users/<user_name>/update_msdata_direct_<mm_dd_yyyy>` and run `git merge master`.
-- There are likely to be conflicts during the merge. If that happens, we will need to resolve the conflicts gracefully by accepting the incoming `master` branch changes.
+- Make sure the `main` branch is up-to-date.
+- Stay on the newly created feature branch `users/<user_name>/update_msdata_direct_<mm_dd_yyyy>` and run `git merge main`.
+- There are likely to be conflicts during the merge. If that happens, we will need to resolve the conflicts gracefully by accepting the incoming `main` branch changes.
 
 ### Pick the Required Microsoft Azure Cosmos.Direct files into `msdata/direct` repo.
 
@@ -89,9 +89,9 @@ Once the feature branch builds successfully, it's time to submit the PR to `msda
 
 ## Sample Pull Requests to Sync-up msdata direct
 
-- [[Internal] Direct package: Adds msdata/direct update from master](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5612)
+- [[Internal] Direct package: Adds msdata/direct update from main](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5612)
 - [[Internal] Msdata/Direct: Refactors msdata branch with latest v3 and direct release](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3726)
-- [[Internal] Msdata/Direct: Refactors msdata/direct branch with latest v3 master and Cosmos.Direct v3.30.4](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3776)
+- [[Internal] Msdata/Direct: Refactors msdata/direct branch with latest v3 main and Cosmos.Direct v3.30.4](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3776)
 
 ## Automated Workflow (Recommended)
 
@@ -104,10 +104,10 @@ Use the Copilot agent at [`.github/agents/msdata-direct-sync-agent.agent.md`](..
 ```
 Follow the msdata/direct sync agent plan in .github/agents/msdata-direct-sync-agent.agent.md
 
-Sync the msdata/direct branch with the latest v3 master and msdata direct codebase.
+Sync the msdata/direct branch with the latest v3 main and msdata direct codebase.
 ```
 
-The agent handles: environment validation, branch creation, master merge, conflict resolution, msdata file sync, build validation, and PR creation.
+The agent handles: environment validation, branch creation, main merge, conflict resolution, msdata file sync, build validation, and PR creation.
 
 ### Option 2: PowerShell Helper Script
 

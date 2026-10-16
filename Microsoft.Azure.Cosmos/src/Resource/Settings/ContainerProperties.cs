@@ -87,6 +87,12 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "fullTextPolicy", NullValueHandling = NullValueHandling.Ignore)]
         private FullTextPolicy fullTextPolicyInternal;
 
+        [JsonProperty(PropertyName = "materializedViews", NullValueHandling = NullValueHandling.Ignore)]
+        private IReadOnlyList<MaterializedViewProperties> materializedViewsInternal;
+
+        [JsonProperty(PropertyName = "materializedViewDefinition", NullValueHandling = NullValueHandling.Ignore)]
+        private MaterializedViewDefinition materializedViewDefinitionInternal;
+
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
@@ -96,6 +102,7 @@ namespace Microsoft.Azure.Cosmos
 
         private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
+        private bool? isLastPartitionKeyPathId;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
@@ -373,18 +380,33 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets or sets metadata for the materialized views associated with this source container.
+        /// </summary>
+        [JsonIgnore]
+        internal IReadOnlyList<MaterializedViewProperties> MaterializedViews
+        {
+            get => this.materializedViewsInternal;
+            set => this.materializedViewsInternal = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the materialized view definition when this container is a materialized view.
+        /// </summary>
+        [JsonIgnore]
+        internal MaterializedViewDefinition MaterializedViewDefinition
+        {
+            get => this.materializedViewDefinitionInternal;
+            set => this.materializedViewDefinitionInternal = value;
+        }
+
+        /// <summary>
         /// Gets the <see cref="ChangeFeedPolicy"/> associated with the container from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The change feed policy associated with the container.
         /// </value>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        ChangeFeedPolicy ChangeFeedPolicy
+        public ChangeFeedPolicy ChangeFeedPolicy
         {
             get
             {
@@ -711,6 +733,38 @@ namespace Microsoft.Azure.Cosmos
         internal string ResourceId { get; private set; }
 
         internal bool HasPartitionKey => this.PartitionKey != null;
+
+        /// <summary>
+        /// Gets a value indicating whether the last partition key path is "id".
+        /// This property is used to determine if the item's "id" field is part of the hierarchical partition key.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if the last partition key path is "id"; otherwise, <c>false</c>.
+        /// Returns <c>false</c> if the partition key is not defined or has no paths.
+        /// </value>
+        [JsonIgnore]
+        internal bool IsLastPartitionKeyPathId
+        {
+            get
+            {
+                if (this.isLastPartitionKeyPathId.HasValue)
+                {
+                    return this.isLastPartitionKeyPathId.Value;
+                }
+
+                IReadOnlyList<string> partitionKeyPaths = this.PartitionKey?.Paths;
+                if (partitionKeyPaths == null || partitionKeyPaths.Count <= 0)
+                {
+                    this.isLastPartitionKeyPathId = false;
+                    return this.isLastPartitionKeyPathId.Value;
+                }
+
+                string lastPartitionKeyPath = partitionKeyPaths[partitionKeyPaths.Count - 1];
+
+                this.isLastPartitionKeyPathId = string.Equals(lastPartitionKeyPath, "/id", StringComparison.Ordinal);
+                return this.isLastPartitionKeyPathId.Value;
+            }
+        }
 
         internal IReadOnlyList<IReadOnlyList<string>> PartitionKeyPathTokens
         {

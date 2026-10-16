@@ -706,20 +706,20 @@ line_endings:
     
   prevention:
     before_editing:
-      - "Check original line endings: git show master:{file} | python -c \"import sys; d=sys.stdin.buffer.read(); print(f'CRLF:{d.count(chr(13).encode()+chr(10).encode())} LF:{d.count(chr(10).encode())}')\""
+      - "Check original line endings: git show main:{file} | python -c \"import sys; d=sys.stdin.buffer.read(); print(f'CRLF:{d.count(chr(13).encode()+chr(10).encode())} LF:{d.count(chr(10).encode())}')\""
       
     after_editing:
-      - "Verify no whitespace-only changes: git diff master --ignore-all-space -- {file}"
-      - "If whitespace diff appears, restore from master and re-apply only intentional changes"
+      - "Verify no whitespace-only changes: git diff main --ignore-all-space -- {file}"
+      - "If whitespace diff appears, restore from main and re-apply only intentional changes"
       
     restore_pattern: |
       # If you accidentally introduced whitespace changes:
-      git checkout master -- {file}          # Restore original
+      git checkout main -- {file}          # Restore original
       # Then re-apply only your intentional additions using edit tool
       
   diff_verification:
-    always_run: "git diff master --ignore-cr-at-eol -- {file}"
-    if_spurious_changes: "git checkout master -- {file} and re-apply edits"
+    always_run: "git diff main --ignore-cr-at-eol -- {file}"
+    if_spurious_changes: "git checkout main -- {file} and re-apply edits"
 ```
 
 ---
@@ -844,7 +844,7 @@ mandatory_checkpoints:
     - "If before/after evidence is not possible (environment-specific issue), document why and provide unit test evidence instead"
     - "PR MUST be created as DRAFT: `gh pr create --draft`"
     - "PR title MUST follow format: `[Internal] Category: (Adds|Fixes|Refactors|Removes) Description` (enforced by PR Lint bot)"
-    - "Verify no spurious whitespace changes: `git diff master --ignore-all-space`"
+    - "Verify no spurious whitespace changes: `git diff main --ignore-all-space`"
     
   before_marking_pr_ready:
     - "ALL CI gates MUST show green (passed) status — not just completed"
@@ -1313,7 +1313,7 @@ I've analyzed issue #{number} and gathered the following initial context:
 **Proposed Investigation Plan:**
 1. Historical search: GitHub issues, PRs, StackOverflow, changelog
 2. Code analysis: {specific areas to investigate}
-3. Reproduction: Test against {reported version}, {latest SDK}, {master branch}
+3. Reproduction: Test against {reported version}, {latest SDK}, {main branch}
 
 **Estimated Time:** {X minutes}
 
@@ -1685,19 +1685,19 @@ reproduction_versions:
     source: "NuGet package (latest)"
     
   3_master_branch:
-    description: "Current master/main branch"
+    description: "Current main/main branch"
     purpose: "Check if fix exists but not released"
-    source: "Local build from master"
+    source: "Local build from main"
 ```
 
 **Version Matrix Test Results:**
 
 | Version | Result | Implication |
 |---------|--------|-------------|
-| Reported ✅ / Latest ✅ / Master ✅ | Issue persists | Needs fix |
-| Reported ✅ / Latest ❌ / Master ❌ | Fixed in release | Recommend upgrade |
-| Reported ✅ / Latest ✅ / Master ❌ | Fixed, not released | Mention upcoming fix |
-| Reported ❌ / Latest ❌ / Master ❌ | Cannot reproduce | Request more info |
+| Reported ✅ / Latest ✅ / Main ✅ | Issue persists | Needs fix |
+| Reported ✅ / Latest ❌ / Main ❌ | Fixed in release | Recommend upgrade |
+| Reported ✅ / Latest ✅ / Main ❌ | Fixed, not released | Mention upcoming fix |
+| Reported ❌ / Latest ❌ / Main ❌ | Cannot reproduce | Request more info |
 
 ### 4.2 Environment Setup
 
@@ -1725,11 +1725,11 @@ version_setup:
       cd IssueRepro_{number}_latest
       dotnet add package Microsoft.Azure.Cosmos  # Gets latest
       
-  master_branch:
+  main_branch:
     command: |
-      # Build from local master
-      git checkout master
-      git pull origin master
+      # Build from local main
+      git checkout main
+      git pull origin main
       dotnet build Microsoft.Azure.Cosmos.sln -c Release
       # Reference local build in test project
 ```
@@ -1751,7 +1751,7 @@ version_setup:
 
 /// <summary>
 /// Reproduction tests for GitHub Issue #{number}
-/// Run against: Reported version, Latest stable, Master branch
+/// Run against: Reported version, Latest stable, Main branch
 /// </summary>
 [TestClass]
 public class Issue_{number}_Tests
@@ -1829,15 +1829,15 @@ test_execution:
       command: dotnet test --filter "Issue_{number}" -- CosmosDB:ConnectionMode=Direct
     record: "version=latest, gateway={pass/fail}, direct={pass/fail}"
       
-  master_branch:
+  main_branch:
     setup: |
-      # Ensure master is built
+      # Ensure main is built
       dotnet build Microsoft.Azure.Cosmos.sln -c Release
     gateway:
       command: dotnet test --filter "Issue_{number}" -- CosmosDB:ConnectionMode=Gateway
     direct:
       command: dotnet test --filter "Issue_{number}" -- CosmosDB:ConnectionMode=Direct
-    record: "version=master, gateway={pass/fail}, direct={pass/fail}"
+    record: "version=main, gateway={pass/fail}, direct={pass/fail}"
   
 capture:
   - CosmosDiagnostics output
@@ -1856,12 +1856,12 @@ capture:
 |---------|--------------|-------------|-------|
 | {reported_version} | ✅ Reproduced / ❌ Not Reproduced | ✅ / ❌ | {notes} |
 | {latest_version} | ✅ / ❌ | ✅ / ❌ | {notes} |
-| master ({commit_sha}) | ✅ / ❌ | ✅ / ❌ | {notes} |
+| main ({commit_sha}) | ✅ / ❌ | ✅ / ❌ | {notes} |
 
 **Conclusion:** 
 - [ ] Issue persists in all versions → Needs fix
 - [ ] Fixed in latest release → Recommend upgrade to {version}
-- [ ] Fixed in master, not released → Will be available in next release
+- [ ] Fixed in main, not released → Will be available in next release
 - [ ] Cannot reproduce → Need more information
 ```
 
@@ -1898,7 +1898,7 @@ public class Issue_{number}_Benchmark
     [Params("Gateway", "Direct")]
     public string ConnectionMode { get; set; }
     
-    [Params("3.35.0", "Latest", "Master")]  // Versions to compare
+    [Params("3.35.0", "Latest", "Main")]  // Versions to compare
     public string SdkVersion { get; set; }
 
     [GlobalSetup]
@@ -1977,8 +1977,8 @@ benchmark_workflow:
       command: dotnet run -c Release -- --filter "*" --artifacts ./results/v{reported}
     latest_version:
       command: dotnet run -c Release -- --filter "*" --artifacts ./results/latest
-    master_branch:
-      command: dotnet run -c Release -- --filter "*" --artifacts ./results/master
+    main_branch:
+      command: dotnet run -c Release -- --filter "*" --artifacts ./results/main
 ```
 
 #### Benchmark Metrics to Capture
@@ -2022,8 +2022,8 @@ metrics:
 | {reported} | Direct | {ms} | {ms} | {ms} | {ms} | {KB} |
 | {latest} | Gateway | {ms} | {ms} | {ms} | {ms} | {KB} |
 | {latest} | Direct | {ms} | {ms} | {ms} | {ms} | {KB} |
-| master | Gateway | {ms} | {ms} | {ms} | {ms} | {KB} |
-| master | Direct | {ms} | {ms} | {ms} | {ms} | {KB} |
+| main | Gateway | {ms} | {ms} | {ms} | {ms} | {KB} |
+| main | Direct | {ms} | {ms} | {ms} | {ms} | {KB} |
 
 ### Throughput Comparison
 
@@ -2385,7 +2385,7 @@ Created: {date}
 ## Reproduction Status
 - [ ] Reproduced with reported SDK version ({version})
 - [ ] Reproduced with latest SDK version ({version})
-- [ ] Reproduced with master branch ({commit_sha})
+- [ ] Reproduced with main branch ({commit_sha})
 - [ ] Reproduced in Gateway mode
 - [ ] Reproduced in Direct mode
 - [ ] Unable to reproduce
@@ -2397,7 +2397,7 @@ Created: {date}
 |---------|---------|--------|-------|-------|
 | {reported_version} | ✅/❌ | ✅/❌ | ✅ | {notes} |
 | {latest_version} | ✅/❌ | ✅/❌ | ✅ | {notes} |
-| master ({short_sha}) | ✅/❌ | ✅/❌ | ✅ | {notes} |
+| main ({short_sha}) | ✅/❌ | ✅/❌ | ✅ | {notes} |
 
 ### Reproduction Steps Attempted
 ~~~
@@ -2947,8 +2947,8 @@ reviewer_feedback_workflow:
     naming_feedback:
       action: "Rename as requested, update all references, reply with new name"
     whitespace_noise:
-      action: "Restore original file from master, re-apply only intentional changes"
-      command: "git checkout master -- {file} && re-apply edits"
+      action: "Restore original file from main, re-apply only intentional changes"
+      command: "git checkout main -- {file} && re-apply edits"
     missing_tests:
       action: "Add requested tests, show pass evidence in reply"
     style_issues:
@@ -4362,14 +4362,14 @@ flaky_tests:
     action: "Retry failed stage via ADO API"
 
 pre_existing_failures:
-  description: "Tests that consistently fail in master (not flaky)"
+  description: "Tests that consistently fail in main (not flaky)"
   note: "These are baseline issues, not caused by your PR changes"
   tests:
     - name: "TestQueryExecutionInfo_FromString"
       location: "OptimisticDirectExecutionQueryBaselineTests.cs"
     - name: "TestTextDistributionPlanParsingFromStream"
       location: "OptimisticDirectExecutionQueryBaselineTests.cs"
-  handling: "Ignore if they fail - verify by running on master branch"
+  handling: "Ignore if they fail - verify by running on main branch"
 
 handling_flaky_failures:
   step_1: "Check if failed test is in flaky registry"
@@ -4448,7 +4448,7 @@ ci_monitoring_loop:
         code_related: "Your changes broke something"
         flaky_test: "Known intermittent failure (see Section 16.7)"
         infrastructure: "Emulator/network/timeout issues"
-        unrelated: "Pre-existing failure in master"
+        unrelated: "Pre-existing failure in main"
         
       respond:
         code_related:
@@ -4464,7 +4464,7 @@ ci_monitoring_loop:
           action: "Wait 5 min, then retry failed stage via MCP"
           
         unrelated:
-          action: "Document that failure exists in master, proceed"
+          action: "Document that failure exists in main, proceed"
           
     step_4_iterate:
       loop: "Repeat step_2 and step_3 until all gates GREEN"
@@ -4473,10 +4473,10 @@ ci_monitoring_loop:
     step_5_pre_ready_checks:
       description: "Verify branch is ready before marking for review"
       checks:
-        - name: "Ensure branch is up-to-date with master"
+        - name: "Ensure branch is up-to-date with main"
           commands: |
-            git fetch origin master
-            git rebase origin/master
+            git fetch origin main
+            git rebase origin/main
             # If conflicts, resolve and push
             git push origin {branch_name} --force-with-lease
           note: "Rebase ensures clean merge, re-triggers CI if needed"
@@ -4495,7 +4495,7 @@ ci_monitoring_loop:
   auto_ready_behavior:
     principle: "Mark PR ready for review immediately when conditions met"
     required_conditions:
-      - "Branch is up-to-date with master (rebased)"
+      - "Branch is up-to-date with main (rebased)"
       - "dotnet-v3-ci check is SUCCESS (main CI gate)"
     do_not_wait_for:
       - "User confirmation"
@@ -4505,7 +4505,7 @@ ci_monitoring_loop:
       
   success_criteria:
     required:
-      - "Branch rebased on latest master"
+      - "Branch rebased on latest main"
       - "**dotnet-v3-ci check is SUCCESS** (primary gate)"
       - "PR lint passed"
       - "CLA signed"
@@ -4850,7 +4850,7 @@ pre_existing_failures:
   purpose: "Distinguish regressions from known issues"
   
   approach:
-    step_1: "Run tests on clean master before making changes"
+    step_1: "Run tests on clean main before making changes"
     step_2: "Document any failures as 'pre-existing'"
     step_3: "After fix, compare failure list - new failures = regression"
     
@@ -4861,7 +4861,7 @@ pre_existing_failures:
   ci_implications:
     - "Pre-existing failures may cause CI to fail"
     - "Check if same tests fail in recent passing PRs"
-    - "If test passes in master but fails in PR, it's a regression"
+    - "If test passes in main but fails in PR, it's a regression"
 ```
 
 ### 17.3 Check for Existing PRs First
@@ -5510,7 +5510,7 @@ performance:
     
   benchmarking:
     location: "Microsoft.Azure.Cosmos.Samples/Tools/Benchmark"
-    url: "https://github.com/Azure/azure-cosmos-dotnet-v3/tree/master/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark"
+    url: "https://github.com/Azure/azure-cosmos-dotnet-v3/tree/main/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark"
     important: "ALL benchmarks go here ONLY - do not add benchmarks elsewhere"
     
     adding_benchmarks:

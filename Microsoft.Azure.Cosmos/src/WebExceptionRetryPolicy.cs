@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
         private const int initialBackoffSeconds = 1;
         private const int backoffMultiplier = 2;
 
+        private readonly Func<TimeSpan> getElapsedTime;
         private ValueStopwatch durationTimer = new ValueStopwatch();
         private int attemptCount = 1;
 
@@ -26,7 +27,18 @@ namespace Microsoft.Azure.Cosmos
 
         public WebExceptionRetryPolicy()
         {
-            durationTimer.Start();
+            this.durationTimer.Start();
+            this.getElapsedTime = () => this.durationTimer.Elapsed;
+        }
+
+        /// <summary>
+        /// Test-only constructor that allows injecting the elapsed time so the retry budget
+        /// can be validated deterministically without relying on wall-clock progression.
+        /// </summary>
+        internal WebExceptionRetryPolicy(Func<TimeSpan> getElapsedTime)
+        {
+            this.durationTimer.Start();
+            this.getElapsedTime = getElapsedTime ?? throw new ArgumentNullException(nameof(getElapsedTime));
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
@@ -45,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
             // Don't penalise first retry with delay.
             if (attemptCount++ > 1)
             {
-                int remainingSeconds = WebExceptionRetryPolicy.waitTimeInSeconds - this.durationTimer.Elapsed.Seconds;
+                double remainingSeconds = WebExceptionRetryPolicy.waitTimeInSeconds - this.getElapsedTime().TotalSeconds;
                 if (remainingSeconds <= 0)
                 {
                     this.durationTimer.Stop();

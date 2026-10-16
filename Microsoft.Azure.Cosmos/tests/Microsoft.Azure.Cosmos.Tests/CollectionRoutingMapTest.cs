@@ -273,6 +273,71 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        // Regression for GetRangeByEffectivePartitionKey honoring the configured length-aware comparer.
+        // Previously the point lookup hard-coded the ordinal Range<string>.MinComparer.Instance while its
+        // sibling GetOverlappingRanges used the configured comparer, so the two disagreed for a short/partial
+        // EPK sitting on a zero-padded range boundary.
+        // The 32-char EPK "06AB34CFE4E482236BCACBBF50E234AB" equals (length-aware) range "2"'s zero-padded
+        // MinInclusive "06AB34CFE4E482236BCACBBF50E234AB00000000000000000000000000000000".
+        // Length-aware -> "2" (matches GetOverlappingRanges scenario 1.1); ordinal lands one bucket low at "1".
+        [TestMethod]
+        public void TestGetRangeByEffectivePartitionKeyUsesLengthAwareComparer()
+        {
+            CollectionRoutingMap routingMap = this.GenerateRoutingMap(isFullySpecified: false, useLengthAwareComparer: true);
+
+            string id = routingMap.GetRangeByEffectivePartitionKey("06AB34CFE4E482236BCACBBF50E234AB").Id;
+
+            Assert.AreEqual("2", id, "Length-aware point lookup must select the partition that owns the zero-padded boundary EPK.");
+        }
+
+        // The point lookup must agree with its sibling GetOverlappingRanges for the boundary EPK.
+        [TestMethod]
+        public void TestGetRangeByEffectivePartitionKeyAgreesWithGetOverlappingRanges()
+        {
+            CollectionRoutingMap routingMap = this.GenerateRoutingMap(isFullySpecified: false, useLengthAwareComparer: true);
+
+            const string boundaryEpk = "06AB34CFE4E482236BCACBBF50E234AB";
+
+            PartitionKeyRange pointLookup = routingMap.GetRangeByEffectivePartitionKey(boundaryEpk);
+
+            IReadOnlyList<PartitionKeyRange> overlapping = routingMap.GetOverlappingRanges(
+                new Range<string>(boundaryEpk, boundaryEpk + "FF", true, false));
+
+            Assert.AreEqual(1, overlapping.Count);
+            Assert.AreEqual("2", pointLookup.Id);
+            Assert.AreEqual(pointLookup.Id, overlapping[0].Id, "GetRangeByEffectivePartitionKey must agree with GetOverlappingRanges on the boundary EPK.");
+        }
+
+        // Legacy/ordinal path must be preserved when length-aware comparison is disabled: the same boundary
+        // EPK lands in range "1" under ordinal comparison (the historical behavior).
+        [TestMethod]
+        public void TestGetRangeByEffectivePartitionKeyLegacyComparerUnchanged()
+        {
+            CollectionRoutingMap routingMap = this.GenerateRoutingMap(isFullySpecified: false, useLengthAwareComparer: false);
+
+            string id = routingMap.GetRangeByEffectivePartitionKey("06AB34CFE4E482236BCACBBF50E234AB").Id;
+
+            Assert.AreEqual("1", id, "With the length-aware comparer disabled the ordinal/legacy behavior must be preserved.");
+        }
+
+        // Fully specified (64-char) EPKs are unaffected by the fix: current synchronous callers pass full-length
+        // EPKs, for which ordinal and length-aware comparison are equivalent. The same partition must be selected
+        // regardless of which comparer is configured.
+        [TestMethod]
+        public void TestGetRangeByEffectivePartitionKeyFullEpkUnaffected()
+        {
+            const string fullEpk = "0800000000000000000000000000000000000000000000000000000000000000";
+
+            CollectionRoutingMap lengthAwareMap = this.GenerateRoutingMap(isFullySpecified: false, useLengthAwareComparer: true);
+            CollectionRoutingMap legacyMap = this.GenerateRoutingMap(isFullySpecified: false, useLengthAwareComparer: false);
+
+            string lengthAwareId = lengthAwareMap.GetRangeByEffectivePartitionKey(fullEpk).Id;
+            string legacyId = legacyMap.GetRangeByEffectivePartitionKey(fullEpk).Id;
+
+            Assert.AreEqual("2", lengthAwareId);
+            Assert.AreEqual(legacyId, lengthAwareId, "A full-length EPK must map to the same partition under both comparers.");
+        }
+
         private CollectionRoutingMap GenerateRoutingMap(bool isFullySpecified, bool useLengthAwareComparer)
         {
             IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> partitionKeyRangeTuples = new[]

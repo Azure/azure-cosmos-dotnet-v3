@@ -272,6 +272,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                    {
                        if (request.Version == new Version(2, 0))
                        {
+                           if (request.RequestUri.AbsolutePath.Contains("connectivity-probe"))
+                           {
+                               return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                               {
+                                   RequestMessage = request,
+                                   Content = new StringContent(string.Empty)
+                               });
+                           }
+
                            if (request.RequestUri.ToString().Contains("eastus"))
                            {
                                regionsVisited.Add(Regions.EastUS);
@@ -433,6 +442,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                    {
                        if (request.Version == new Version(2, 0))
                        {
+                           if (request.RequestUri.AbsolutePath.Contains("connectivity-probe"))
+                           {
+                               return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                               {
+                                   RequestMessage = request,
+                                   Content = new StringContent(string.Empty)
+                               });
+                           }
+
                            if (request.RequestUri.ToString().Contains("eastus"))
                            {
                                throw new HttpRequestException();
@@ -584,6 +602,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                    {
                        if (request.Version == new Version(2, 0))
                        {
+                           if (request.RequestUri.AbsolutePath.Contains("connectivity-probe"))
+                           {
+                               return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                               {
+                                   RequestMessage = request,
+                                   Content = new StringContent(string.Empty)
+                               });
+                           }
+
                            if (request.RequestUri.ToString().Contains("eastus"))
                            {
                                regionsVisited.Add(Regions.EastUS);

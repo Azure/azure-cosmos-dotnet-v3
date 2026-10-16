@@ -664,7 +664,7 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Consistency, Session, Properties, and Triggers are not allowed when AllowBulkExecution is set to true..
+        ///   Looks up a localized string similar to Consistency, Session, Properties, Triggers, and ThroughputBucket are not allowed when AllowBulkExecution is set to true..
         /// </summary>
         internal static string UnsupportedBulkRequestOptions {
             get {

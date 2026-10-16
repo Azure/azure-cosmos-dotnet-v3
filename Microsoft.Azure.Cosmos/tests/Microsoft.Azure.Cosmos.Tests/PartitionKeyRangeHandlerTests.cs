@@ -668,7 +668,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 collectionCache.Object,
                 endpointManager,
                 false,
-                false);
+                false,
+                null);
             partitionKeyRangeCache.Setup(c => c.TryLookupAsync(collectionRid, null, It.IsAny<DocumentServiceRequest>(), trace))
                 .ReturnsAsync(collectionRoutingMap);
 

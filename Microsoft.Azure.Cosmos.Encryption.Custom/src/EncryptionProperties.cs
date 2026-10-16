@@ -12,6 +12,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     {
         [JsonProperty(PropertyName = Constants.EncryptionFormatVersion)]
         [JsonPropertyName(Constants.EncryptionFormatVersion)]
+#if NET8_0_OR_GREATER
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+#endif
         public int EncryptionFormatVersion { get; }
 
         [JsonProperty(PropertyName = Constants.EncryptionDekId)]

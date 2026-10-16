@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -87,6 +88,40 @@ namespace Microsoft.Azure.Cosmos
 
             foreach (KeyValuePair<PartitionKeyRange, List<(string, PartitionKey)>> entry in partitionKeyRangeItemMap)
             {
+                // Per-partition optimization: when a physical partition has exactly one
+                // requested (id, partitionKey) tuple, issue a point read instead of a query.
+                // A point read on a small (<32 KB) document is ~1 RU, while any query pays
+                // a fixed cover charge (~2.82 RU). Matches the existing Java and Python
+                // SDK behavior. IfMatchEtag / IfNoneMatchEtag are intentionally stripped
+                // by ConvertToItemRequestOptions, so this branch is safe to take regardless
+                // of whether the caller set them -- the wire-level behavior matches the
+                // query path's existing silent-ignore.
+                if (entry.Value.Count == 1)
+                {
+                    await semaphore.WaitAsync();
+
+                    ITrace childTrace = trace.StartChild("Point read for a partitionkeyrange", TraceComponent.Query, TraceLevel.Info);
+                    (string itemId, PartitionKey itemPartitionKey) = entry.Value[0];
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            return await this.GeneratePointReadResponseForPartitionAsync(itemId,
+                                                                                         itemPartitionKey,
+                                                                                         readManyRequestOptions,
+                                                                                         childTrace,
+                                                                                         cancellationToken);
+                        }
+                        finally
+                        {
+                            semaphore.Release();
+                            childTrace.Dispose();
+                        }
+                    }));
+
+                    continue;
+                }
+
                 // Fit MaxItemsPerQuery items in a single query to BE
                 for (int startIndex = 0; startIndex < entry.Value.Count; startIndex += this.maxItemsPerQuery)
                 {
@@ -131,8 +166,11 @@ namespace Microsoft.Azure.Cosmos
             IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap = new
                 Dictionary<PartitionKeyRange, List<(string, PartitionKey)>>();
 
-            foreach ((string id, PartitionKey pk) item in items)
+            foreach ((string id, PartitionKey pk) in items)
             {
+                (PartitionKey? partitionKey, _) = await this.container.EnsureIdGetsAppendedToPartitionKeyIfNeededAsync(pk, id, null, cancellationToken);
+                (string id, PartitionKey pk) item = (id, partitionKey ?? pk);
+
                 Documents.Routing.PartitionKeyInternal partitionKeyInternal = 
                             await this.GetPartitionKeyInternalAsync(item.pk, trace, cancellationToken);
                 string effectivePartitionKeyValue = partitionKeyInternal.GetEffectivePartitionKeyString(this.partitionKeyDefinition);
@@ -392,6 +430,225 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return pages;
+        }
+
+        /// <summary>
+        /// Issues a point read for a single (id, partitionKey) tuple and wraps the result
+        /// as a <see cref="QueryResponse"/> so the existing aggregation logic in
+        /// <see cref="CombineStreamsFromQueryResponses"/> / <see cref="CombineFeedResponseFromQueryResponses{T}"/>
+        /// can consume it unchanged.
+        ///
+        /// 404/Unknown is treated as "item is not present" — the request charge is still
+        /// aggregated, but no element contributes to the result set. This mirrors the
+        /// behavior of the Java and Python SDKs' readMany point-read branch.
+        /// </summary>
+        private async Task<List<ResponseMessage>> GeneratePointReadResponseForPartitionAsync(
+            string itemId,
+            PartitionKey partitionKey,
+            ReadManyRequestOptions readManyRequestOptions,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return null;
+            }
+
+            ItemRequestOptions itemRequestOptions = readManyRequestOptions?.ConvertToItemRequestOptions();
+            ResponseMessage pointReadResponse;
+            try
+            {
+                pointReadResponse = await this.container.ReadItemStreamAsync(
+                    id: itemId,
+                    partitionKey: partitionKey,
+                    trace: trace,
+                    requestOptions: itemRequestOptions,
+                    cancellationToken: cancellationToken);
+            }
+            catch
+            {
+                this.CancelCancellationToken(cancellationToken);
+                throw;
+            }
+
+            using (pointReadResponse)
+            {
+                // Treat 404/Unknown as "missing item" — do not fail the overall ReadMany.
+                // This matches the Java SDK behavior (see pointReadsForReadMany in
+                // RxDocumentClientImpl.java) and parallels its bug fixes (azure-sdk-for-java
+                // PRs 34966, 35513) for swallowing missing-item 404s in the point-read
+                // fast path. The guard reads pointReadResponse.Headers directly so it
+                // remains anchored to the real wire value regardless of how the synthetic
+                // header is shaped below.
+                if (pointReadResponse.StatusCode == System.Net.HttpStatusCode.NotFound
+                    && pointReadResponse.Headers?.SubStatusCode == Documents.SubStatusCodes.Unknown)
+                {
+                    return new List<ResponseMessage>
+                    {
+                        QueryResponse.CreateSuccess(
+                            result: Array.Empty<CosmosElement>(),
+                            count: 0,
+                            responseHeaders: ReadManyQueryHelper.BuildSyntheticQueryResponseHeaders(pointReadResponse, containerRid: null),
+                            serializationOptions: null,
+                            trace: trace)
+                    };
+                }
+
+                // Any other non-success status — propagate via QueryResponse.CreateFailure
+                // so CombineStreamsFromQueryResponses short-circuits and surfaces the error
+                // exactly as the query path does today.
+                if (!pointReadResponse.IsSuccessStatusCode)
+                {
+                    this.CancelCancellationToken(cancellationToken);
+                    return new List<ResponseMessage>
+                    {
+                        QueryResponse.CreateFailure(
+                            responseHeaders: ReadManyQueryHelper.BuildSyntheticQueryResponseHeaders(pointReadResponse, containerRid: null),
+                            statusCode: pointReadResponse.StatusCode,
+                            requestMessage: null,
+                            cosmosException: pointReadResponse.CosmosException,
+                            trace: trace)
+                    };
+                }
+
+                // Success: parse the single-document body into a CosmosElement, then derive
+                // the container RID from the document's _rid field. A document's resource
+                // ID encodes the parent container's RID hierarchically (see CollectionCache
+                // and NetworkAttachedDocumentContainer for the canonical pattern), so we
+                // avoid an extra ContainerCore.GetCachedRIDAsync hop. If the derivation
+                // fails (malformed _rid, non-document element) the synthetic header's
+                // containerRid is non-load-bearing on this code path — but
+                // BuildSyntheticQueryResponseHeaders below coerces null to string.Empty
+                // before storing it, so any downstream consumer that realizes the
+                // Lazy<MemoryStream> via QueryResponse.Content (e.g. diagnostics,
+                // logging, middleware) will not hit a latent NRE inside
+                // CosmosElementSerializer.ToStream's WriteStringValue(null) call.
+                CosmosElement element = await ReadManyQueryHelper.ReadStreamAsCosmosElementAsync(
+                    pointReadResponse.Content,
+                    cancellationToken);
+
+                string containerRid = ReadManyQueryHelper.TryGetContainerRidFromDocument(element);
+                IReadOnlyList<CosmosElement> elements = element != null
+                    ? (IReadOnlyList<CosmosElement>)new[] { element }
+                    : Array.Empty<CosmosElement>();
+
+                return new List<ResponseMessage>
+                {
+                    QueryResponse.CreateSuccess(
+                        result: elements,
+                        count: elements.Count,
+                        responseHeaders: ReadManyQueryHelper.BuildSyntheticQueryResponseHeaders(pointReadResponse, containerRid: containerRid),
+                        serializationOptions: null,
+                        trace: trace)
+                };
+            }
+        }
+
+        /// <summary>
+        /// Shapes the synthetic <see cref="CosmosQueryResponseMessageHeaders"/> that the
+        /// point-read fast path hands to <see cref="QueryResponse.CreateSuccess"/> /
+        /// <see cref="QueryResponse.CreateFailure"/>. Mirrors the wire response's
+        /// SubStatusCode so non-404 failures (e.g. 400/410/503) surface the same
+        /// diagnostic signal a caller would see on a direct ReadItemStreamAsync call;
+        /// without this, the stream overload's combined ResponseMessage would surface
+        /// SubStatusCode=Unknown for those failures.
+        /// </summary>
+        /// <remarks>
+        /// <paramref name="containerRid"/> is coerced to <see cref="string.Empty"/>
+        /// when null. <see cref="QueryResponse.CreateSuccess"/> captures the header's
+        /// <c>ContainerRid</c> inside a <c>Lazy&lt;MemoryStream&gt;</c> that, on
+        /// realization via <see cref="ResponseMessage.Content"/>, calls
+        /// <c>CosmosElementSerializer.ToStream</c> → <c>IJsonWriter.WriteStringValue(containerRid)</c>.
+        /// A null value would throw <see cref="ArgumentNullException"/> deep inside
+        /// UTF-8 encoding (<c>Encoding.UTF8.GetByteCount(null)</c>). Today's callers in
+        /// <c>CombineStreamsFromQueryResponses</c> read <c>.CosmosElements</c> directly
+        /// and never materialize <c>.Content</c>, so the latent NRE has no observable
+        /// effect — but coercing here lets any future diagnostic / logging /
+        /// middleware path realize the stream safely. The coerced empty string is
+        /// non-load-bearing on the failure / 404 / malformed-_rid branches that pass
+        /// null in the first place.
+        /// </remarks>
+        internal static CosmosQueryResponseMessageHeaders BuildSyntheticQueryResponseHeaders(
+            ResponseMessage pointReadResponse,
+            string containerRid)
+        {
+            return new CosmosQueryResponseMessageHeaders(
+                continauationToken: null,
+                disallowContinuationTokenMessage: null,
+                resourceType: Documents.ResourceType.Document,
+                containerRid: containerRid ?? string.Empty)
+            {
+                RequestCharge = pointReadResponse.Headers?.RequestCharge ?? 0,
+                ActivityId = pointReadResponse.Headers?.ActivityId,
+                SubStatusCode = pointReadResponse.Headers?.SubStatusCode ?? Documents.SubStatusCodes.Unknown
+            };
+        }
+
+        /// <summary>
+        /// Extracts the parent container RID from a document's <c>_rid</c> field. A
+        /// document's resource ID encodes the container RID hierarchically; this is the
+        /// same derivation used by <c>CollectionCache</c> and
+        /// <c>NetworkAttachedDocumentContainer</c>. Returns <c>null</c> when the element
+        /// is not a document object, lacks <c>_rid</c>, or carries a malformed resource id —
+        /// in which case callers should treat the synthetic header's containerRid as unknown.
+        /// </summary>
+        internal static string TryGetContainerRidFromDocument(CosmosElement document)
+        {
+            if (document is CosmosObject documentObject
+                && documentObject.TryGetValue("_rid", out CosmosString ridString)
+                && ridString != null
+                && Documents.ResourceId.TryParse(ridString.Value, out Documents.ResourceId resourceId))
+            {
+                return resourceId.DocumentCollectionId.ToString();
+            }
+
+            return null;
+        }
+
+        internal static async Task<CosmosElement> ReadStreamAsCosmosElementAsync(
+            Stream stream,
+            CancellationToken cancellationToken)
+        {
+            if (stream == null)
+            {
+                return null;
+            }
+
+            // When the caller hands us a MemoryStream, it owns the buffer's lifetime
+            // (in the point-read path the outer `using (pointReadResponse)` already
+            // disposes ResponseMessage.Content). We must NOT dispose it ourselves —
+            // doing so would be a contract violation now that this helper is internal
+            // and visible to other call sites. TryGetBuffer / ToArray are position-
+            // independent, so we read the full underlying buffer without touching the
+            // caller's Position.
+            if (stream is MemoryStream callerMemoryStream)
+            {
+                return ReadManyQueryHelper.ReadFromMemoryStreamBuffer(callerMemoryStream);
+            }
+
+            // Non-MemoryStream: copy into an owned MemoryStream that we DO dispose.
+            // CopyToAsync reads from the source's current Position to EOF (the standard
+            // stream contract). The helper-owned MemoryStream lives entirely within
+            // this `using` block.
+            using (MemoryStream ownedMemoryStream = new MemoryStream())
+            {
+                await stream.CopyToAsync(ownedMemoryStream, bufferSize: 81920, cancellationToken);
+                return ReadManyQueryHelper.ReadFromMemoryStreamBuffer(ownedMemoryStream);
+            }
+        }
+
+        private static CosmosElement ReadFromMemoryStreamBuffer(MemoryStream memoryStream)
+        {
+            if (memoryStream.Length == 0)
+            {
+                return null;
+            }
+
+            ReadOnlyMemory<byte> buffer = memoryStream.TryGetBuffer(out ArraySegment<byte> segment)
+                ? new ReadOnlyMemory<byte>(segment.Array, segment.Offset, segment.Count)
+                : memoryStream.ToArray();
+
+            return CosmosElement.CreateFromBuffer(buffer);
         }
 
         private void CancelCancellationToken(CancellationToken cancellationToken)

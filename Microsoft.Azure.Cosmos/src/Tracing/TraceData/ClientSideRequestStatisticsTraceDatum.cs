@@ -6,9 +6,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
@@ -269,6 +271,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     this.TraceSummary?.AddRegionContacted(regionName, locationEndpoint);
                 }
 
+                // Hedging-Detection API: record the responding region (duplicates allowed and
+                // expected — see internal-spec §3.1 and AC14).
+                this.TraceSummary?.HedgingDetectionState?.AppendResponded(regionName);
+
                 if (responseStatistics.StoreResult != null && !((HttpStatusCode)responseStatistics.StoreResult.StatusCode).IsSuccess()
                     && !(responseStatistics.StoreResult.StatusCode == StatusCodes.NotFound && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown)
                     && !(responseStatistics.StoreResult.StatusCode == StatusCodes.Conflict && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown)
@@ -327,7 +333,14 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             {
                 if (!this.endpointToAddressResolutionStats.ContainsKey(identifier))
                 {
-                    throw new ArgumentException("Identifier {0} does not exist. Please call start before calling end.", identifier);
+                    // Address resolution statistics are diagnostics bookkeeping only. A missing
+                    // identifier means the start was recorded on a different datum instance (for
+                    // example a background address refresh outliving the attempt that started it),
+                    // which must never fault the caller.
+                    DefaultTrace.TraceVerbose(
+                        "ClientSideRequestStatisticsTraceDatum: address resolution identifier {0} was not recorded by this instance. Skipping end.",
+                        identifier);
+                    return;
                 }
 
                 AddressResolutionStatistics start = this.endpointToAddressResolutionStats[identifier];
@@ -357,6 +370,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                         request.Properties.TryGetValue(HttpRequestRegionNameProperty, out regionName))
                 {
                     this.TraceSummary.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
+                    this.TraceSummary.HedgingDetectionState?.AppendResponded(Convert.ToString(regionName));
                 }
 
                 this.shallowCopyOfHttpResponseStatistics = null;
@@ -367,7 +381,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                                            resourceType,
                                                                            response,
                                                                            exception: null,
-                                                                           region: Convert.ToString(regionName)));
+                                                                           region: Convert.ToString(regionName),
+                                                                           requestMessage: request));
             }
         }
 
@@ -388,6 +403,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                         request.Properties.TryGetValue(HttpRequestRegionNameProperty, out regionName))
                 {
                     this.TraceSummary.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
+                    this.TraceSummary.HedgingDetectionState?.AppendResponded(Convert.ToString(regionName));
                 }
 
                 this.shallowCopyOfHttpResponseStatistics = null;
@@ -398,7 +414,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                                            resourceType,
                                                                            responseMessage: null,
                                                                            exception: exception,
-                                                                           region: Convert.ToString(regionName)));
+                                                                           region: Convert.ToString(regionName),
+                                                                           requestMessage: request));
             }
         }
 
@@ -501,7 +518,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 ResourceType resourceType,
                 HttpResponseMessage responseMessage,
                 Exception exception,
-                string region)
+                string region,
+                HttpRequestMessage requestMessage = null)
             {
                 this.RequestStartTime = requestStartTime;
                 this.Duration = requestEndTime - requestStartTime;
@@ -511,6 +529,26 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 this.HttpMethod = httpMethod;
                 this.RequestUri = requestUri;
                 this.Region = region;
+                this.IsDtxRetry = null;
+                this.IsDtxCrossRegionRedirect = null;
+
+                if (requestMessage != null)
+                {
+                    if (requestMessage.Headers.TryGetValues(
+                        DistributedTransactionConstants.IsDtxRetry,
+                        out IEnumerable<string> isDtxRetryValues))
+                    {
+                        this.IsDtxRetry = isDtxRetryValues.FirstOrDefault();
+                    }
+
+                    if (requestMessage.Headers.TryGetValues(
+                        DistributedTransactionConstants.IsDtxCrossRegionRedirect,
+                        out IEnumerable<string> isDtxCrossRegionRedirectValues))
+                    {
+                        this.IsDtxCrossRegionRedirect = isDtxCrossRegionRedirectValues.FirstOrDefault();
+                    }
+                }
+
                 this.ResponseContentLength = responseMessage?.Content?.Headers?.ContentLength;
                 if (responseMessage != null)
                 {
@@ -533,6 +571,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public Uri RequestUri { get; }
             public string ActivityId { get; }
             public long? ResponseContentLength { get; }
+            public string IsDtxRetry { get; }
+            public string IsDtxCrossRegionRedirect { get; }
         }
     }
 }

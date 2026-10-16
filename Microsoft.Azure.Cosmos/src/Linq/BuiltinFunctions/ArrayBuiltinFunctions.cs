@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Linq
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Immutable;
@@ -59,11 +60,27 @@ namespace Microsoft.Azure.Cosmos.Linq
                     searchList = methodCallExpression.Arguments[0];
                     searchExpression = methodCallExpression.Arguments[1];
                 }
+                // In .NET 10+, enum arrays resolve to MemoryExtensions.Contains(ReadOnlySpan<T>, T, IEqualityComparer<T>)
+                // which has 3 arguments. The compiler passes null for the comparer when using default equality
+                // (e.g., enum arrays). A non-null comparer cannot be honored in SQL translation and will
+                // fall through to the unsupported method error below.
+                else if (methodCallExpression.Arguments.Count == 3
+                    && methodCallExpression.Method.DeclaringType == typeof(MemoryExtensions)
+                    && methodCallExpression.Arguments[2] is ConstantExpression comparerConstant
+                    && comparerConstant.Value == null)
+                {
+                    searchList = methodCallExpression.Arguments[0];
+                    searchExpression = methodCallExpression.Arguments[1];
+                }
 
                 if (searchList == null || searchExpression == null)
                 {
                     return null;
                 }
+
+                // In .NET 10+, the searchList may be wrapped in an op_Implicit conversion
+                // from T[] to ReadOnlySpan<T>. Unwrap it to get the underlying array constant.
+                searchList = UnwrapSpanImplicitConversion(searchList);
 
                 if (searchList.NodeType == ExpressionType.Constant)
                 {
@@ -73,6 +90,29 @@ namespace Microsoft.Azure.Cosmos.Linq
                 SqlScalarExpression array = ExpressionToSql.VisitScalarExpression(searchList, context);
                 SqlScalarExpression expression = ExpressionToSql.VisitScalarExpression(searchExpression, context);
                 return SqlFunctionCallScalarExpression.CreateBuiltin("ARRAY_CONTAINS", array, expression);
+            }
+
+            /// <summary>
+            /// Unwraps an op_Implicit conversion from T[] to ReadOnlySpan&lt;T&gt; or Span&lt;T&gt;,
+            /// returning the inner array expression. Returns the original expression if not a Span conversion.
+            /// </summary>
+            private static Expression UnwrapSpanImplicitConversion(Expression expression)
+            {
+                if (expression is MethodCallExpression call
+                    && call.Method.Name == "op_Implicit"
+                    && call.Arguments.Count == 1)
+                {
+                    Type declaringType = call.Method.DeclaringType;
+                    if (declaringType != null
+                        && declaringType.IsGenericType
+                        && (declaringType.GetGenericTypeDefinition() == typeof(ReadOnlySpan<>)
+                            || declaringType.GetGenericTypeDefinition() == typeof(Span<>)))
+                    {
+                        return call.Arguments[0];
+                    }
+                }
+
+                return expression;
             }
 
             private SqlScalarExpression VisitIN(Expression expression, ConstantExpression constantExpressionList, TranslationContext context)

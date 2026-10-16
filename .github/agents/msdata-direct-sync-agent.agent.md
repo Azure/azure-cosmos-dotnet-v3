@@ -1,6 +1,6 @@
 ---
 name: 'MsdataDirectSyncAgent'
-description: 'Orchestrates syncing the msdata/direct branch with the latest v3 master and msdata direct codebase.'
+description: 'Orchestrates syncing the msdata/direct branch with the latest v3 main and msdata direct codebase.'
 tools:
   - read
   - search
@@ -20,14 +20,14 @@ tools:
 ```
 Follow the msdata/direct sync agent plan in .github/agents/msdata-direct-sync-agent.agent.md
 
-Sync the msdata/direct branch with the latest v3 master and msdata direct codebase.
+Sync the msdata/direct branch with the latest v3 main and msdata direct codebase.
 ```
 
 **What the agent will do:**
 1. Verify environment setup (git, .NET SDK, repo clones)
 2. Prompt for msdata CosmosDB repo path
 3. Create feature branch from `msdata/direct`
-4. Merge latest `master` into feature branch
+4. Merge latest `main` into feature branch
 5. Run `msdata_sync.ps1` to sync direct package files
 6. **Verify sync completeness** — scan msdata source dirs for files missed by the script and auto-copy them
 7. Build and validate
@@ -67,14 +67,14 @@ required_repos:
   azure_cosmos_dotnet_v3:
     url: "https://github.com/Azure/azure-cosmos-dotnet-v3.git"
     required_branches:
-      - master
+      - main
       - msdata/direct
     verify: "git branch -a | Select-String 'msdata/direct'"
     
   msdata_cosmosdb:
     description: "Internal CosmosDB repository (msdata)"
     note: "User will be prompted for local path at runtime"
-    required_branch: "master"
+    required_branch: "main"
     verify: "Test-Path <user_provided_path>"
 ```
 
@@ -87,7 +87,7 @@ required_repos:
 - [ ] .NET SDK installed: `dotnet --version`
 - [ ] gh CLI authenticated: `gh auth status`
 - [ ] v3 repo cloned with msdata/direct branch available
-- [ ] msdata CosmosDB repo cloned and on master branch
+- [ ] msdata CosmosDB repo cloned and on main branch
 ```
 
 ---
@@ -100,7 +100,7 @@ required_repos:
 sync_principles:
   rules:
     - "ALWAYS verify each phase before proceeding to the next"
-    - "ALWAYS accept incoming master changes when resolving merge conflicts"
+    - "ALWAYS accept incoming main changes when resolving merge conflicts"
     - "NEVER force-push to msdata/direct directly"
     - "ALWAYS create PRs as draft first"
     - "ALWAYS run a clean build before creating the PR"
@@ -150,19 +150,19 @@ phase_1_steps:
     commands:
       - "cd <msdata_path> && git status"
       - "cd <msdata_path> && git branch --show-current"
-    action: "Ensure msdata repo is on master and up to date"
-    fix: "cd <msdata_path> && git checkout master && git pull"
+    action: "Ensure msdata repo is on main and up to date"
+    fix: "cd <msdata_path> && git checkout main && git pull"
 ```
 
 ### Phase 2: Branch Preparation
 
-**Goal:** Create a feature branch from `msdata/direct` and merge latest `master`.
+**Goal:** Create a feature branch from `msdata/direct` and merge latest `main`.
 
 ```yaml
 phase_2_steps:
   step_1_update_branches:
     commands:
-      - "git fetch origin master:master --quiet"
+      - "git fetch origin main:main --quiet"
       - "git fetch origin msdata/direct --quiet"
     verify: "Both branches are up to date with remote"
     
@@ -178,11 +178,11 @@ phase_2_steps:
     
   step_3_merge_master:
     commands:
-      - "git merge master"
+      - "git merge main"
     expect: "Merge conflicts are likely"
     
   step_4_resolve_conflicts:
-    strategy: "Accept incoming master changes for most conflicts"
+    strategy: "Accept incoming main changes for most conflicts"
     commands:
       - "git checkout --theirs <conflicted_files>"
       - "git add <resolved_files>"
@@ -296,7 +296,7 @@ phase_4_steps:
         fix: "Check using statements, resolve with fully qualified names"
       api_changes:
         symptom: "Method signature mismatch"
-        fix: "Update to match latest API from master or direct"
+        fix: "Update to match latest API from main or direct"
     action: "Fix errors, rebuild, repeat until clean"
     
   step_3_verify_build:
@@ -314,7 +314,7 @@ phase_5_steps:
   step_1_stage_and_commit:
     commands:
       - "git add -A"
-      - 'git commit -m "[Internal] Direct package: Adds msdata/direct update from master"'
+      - 'git commit -m "[Internal] Direct package: Adds msdata/direct update from main"'
     verify: "git status shows clean working tree"
     
   step_2_push_branch:
@@ -325,7 +325,7 @@ phase_5_steps:
     command: |
       gh pr create --draft \
         --base msdata/direct \
-        --title "[Internal] Direct package: Adds msdata/direct update from master" \
+        --title "[Internal] Direct package: Adds msdata/direct update from main" \
         --body "<detailed_description>"
     pr_description_template: |
       # Pull Request Template
@@ -333,13 +333,13 @@ phase_5_steps:
       ## Description
 
       Syncs the `msdata/direct` branch with:
-      - Latest `master` branch (v3 SDK changes)
+      - Latest `main` branch (v3 SDK changes)
       - Latest `Microsoft.Azure.Cosmos.Direct` files from msdata CosmosDB repo
 
       ### Changes Include
-      - Merged latest `master` branch into `msdata/direct`
+      - Merged latest `main` branch into `msdata/direct`
       - Updated `Microsoft.Azure.Cosmos.Direct` files via `msdata_sync.ps1`
-      - Resolved merge conflicts (accepted master changes)
+      - Resolved merge conflicts (accepted main changes)
       - Build validated: `dotnet build` passes
 
       ## Type of change
@@ -409,8 +409,8 @@ helper_script:
 ```yaml
 merge_conflicts:
   directory_build_props:
-    description: "Version number conflicts between master and msdata/direct"
-    resolution: "Accept master version numbers, they are the source of truth"
+    description: "Version number conflicts between main and msdata/direct"
+    resolution: "Accept main version numbers, they are the source of truth"
     
   csproj_files:
     description: "Project file conflicts from both sides adding references"
@@ -435,7 +435,7 @@ build_failures:
   duplicate_definitions:
     symptom: "error CS0111: Type already defines a member"
     causes:
-      - "Same file exists in both master and direct"
+      - "Same file exists in both main and direct"
     fix: "Remove the duplicate, keep the direct version"
     
   api_incompatibility:
@@ -473,8 +473,8 @@ Reference these PRs for expected format and scope:
 
 | PR | Title | Date | Scope |
 |----|-------|------|-------|
-| [#5612](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5612) | [Internal] Direct package: Adds msdata/direct update from master | Feb 2026 | 545 files, 76K additions |
-| [#3776](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3776) | [Internal] Msdata/Direct: Refactors msdata/direct with v3 master and Direct v3.30.4 | Mar 2023 | 155 files, 13K additions |
+| [#5612](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5612) | [Internal] Direct package: Adds msdata/direct update from main | Feb 2026 | 545 files, 76K additions |
+| [#3776](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3776) | [Internal] Msdata/Direct: Refactors msdata/direct with v3 main and Direct v3.30.4 | Mar 2023 | 155 files, 13K additions |
 | [#3726](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3726) | [Internal] Msdata/Direct: Refactors msdata branch with latest v3 and direct release | Feb 2023 | 361 files, 27K additions |
 
 ---

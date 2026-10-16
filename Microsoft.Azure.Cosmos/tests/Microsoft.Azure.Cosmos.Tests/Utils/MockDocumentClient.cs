@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             this.Init();
             this.isThinClientEnabled = thinClient;
+            this.thinClientEndpointsAvailable = thinClient;
         }
 
         public MockDocumentClient(Cosmos.ConsistencyLevel accountConsistencyLevel, ConnectionPolicy connectionPolicy = null)
@@ -158,7 +159,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
 
         private void Init()
         {
-            this.collectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), new ServerStoreModel(null), null, null, null, true);
+            this.collectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), new ServerStoreModel(null), null, null, null, true, null);
             const string pkPath = "/pk";
             this.collectionCache.Setup
                     (m =>
@@ -231,7 +232,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
 
             using GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
 
-            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, endpointManager, false, false);
+            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, endpointManager, false, false, null);
             this.partitionKeyRangeCache.Setup(
                         m => m.TryLookupAsync(
                             It.IsAny<string>(),

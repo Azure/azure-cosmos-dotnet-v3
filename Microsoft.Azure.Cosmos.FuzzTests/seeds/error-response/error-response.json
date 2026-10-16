@@ -1,0 +1,1 @@
+{"code":"BadRequest","message":"Cross partition query with TOP/ORDER BY or aggregates is not supported. Provide x-ms-documentdb-query-enablecrosspartition header.","activityId":"a1b2c3d4","substatus":1004}

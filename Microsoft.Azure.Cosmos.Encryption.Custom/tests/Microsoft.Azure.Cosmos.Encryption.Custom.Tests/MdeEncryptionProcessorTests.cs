@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System.IO;
     using System.Linq;
 #if NET8_0_OR_GREATER
+    using System.Text.Json;
     using System.Text.Json.Nodes;
 #endif
     using System.Threading;
@@ -35,7 +36,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             _ = testContext;
 
 #if NET8_0_OR_GREATER
-            StreamProcessor.InitialBufferSize = 16; //we force smallest possible initial buffer to make sure both secondary reads and resize paths are executed
+            // Force smallest possible initial buffer to make sure both secondary reads and resize paths are executed
+            PooledStreamConfiguration.SetConfiguration(new PooledStreamConfiguration { StreamProcessorBufferSize = 16 });
 #endif
 
             mockEncryptor = TestEncryptorFactory.CreateMde(dekId, out _);
@@ -54,13 +56,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 PathsToEncrypt = new List<string>() { "/SensitiveStr", "/Invalid" },
             };
 
+            EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(encryptionOptionsWithInvalidPathToEncrypt, jsonProcessor);
+
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
-                   testDoc.ToStream(),
-                   mockEncryptor.Object,
-                   encryptionOptionsWithInvalidPathToEncrypt,
-                   jsonProcessor,
-                   new CosmosDiagnosticsContext(),
-                   CancellationToken.None);
+                testDoc.ToStream(),
+                mockEncryptor.Object,
+                requestOptions,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
 
 
             JObject encryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);
@@ -94,11 +97,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             try
             {
+                EncryptionItemRequestOptions duplicateRequestOptions = RequestOptionsOverrideHelper.Create(encryptionOptionsWithDuplicatePathToEncrypt, jsonProcessor);
+
                 await EncryptionProcessor.EncryptAsync(
                     testDoc.ToStream(),
                     mockEncryptor.Object,
-                    encryptionOptionsWithDuplicatePathToEncrypt,
-                    jsonProcessor,
+                    duplicateRequestOptions,
                     new CosmosDiagnosticsContext(),
                     CancellationToken.None);
 
@@ -165,11 +169,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             EncryptionOptions encryptionOptions = this.CreateEncryptionOptions();
             TestDoc testDoc = TestDoc.Create();
 
+            EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(encryptionOptions, jsonProcessor);
+
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                 testDoc.ToStream(),
                 mockEncryptor.Object,
-                encryptionOptions,
-                jsonProcessor,
+                requestOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -197,11 +202,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             EncryptionOptions encryptionOptions = this.CreateEncryptionOptions();
             TestDoc testDoc = TestDoc.Create();
 
+            EncryptionItemRequestOptions encryptionRequestOptions = RequestOptionsOverrideHelper.Create(encryptionOptions, encryptionJsonProcessor);
+
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                 testDoc.ToStream(),
                 mockEncryptor.Object,
-                encryptionOptions,
-                encryptionJsonProcessor,
+                encryptionRequestOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -230,11 +236,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             EncryptionOptions encryptionOptions = this.CreateEncryptionOptions();
             TestDoc testDoc = TestDoc.Create();
 
+            EncryptionItemRequestOptions encryptionRequestOptions = RequestOptionsOverrideHelper.Create(encryptionOptions, encryptionJsonProcessor);
+
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                 testDoc.ToStream(),
                 mockEncryptor.Object,
-                encryptionOptions,
-                encryptionJsonProcessor,
+                encryptionRequestOptions,
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
@@ -253,6 +260,90 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 decryptionContext);
         }
 #endif
+
+        [TestMethod]
+        [DynamicData(nameof(JsonProcessorCombinations))]
+        public async Task RoundTrip_DoesNotMatchNestedPropertyWithSameName(int encryptionJsonProcessorValue, int decryptionJsonProcessorValue)
+        {
+            JsonProcessor encryptionJsonProcessor = ResolveJsonProcessor(encryptionJsonProcessorValue);
+            JsonProcessor decryptionJsonProcessor = ResolveJsonProcessor(decryptionJsonProcessorValue);
+
+            const string topPlaintext = "top-secret";
+            const string nestedPlaintext = "child-plaintext";
+            const int nestedOther = 42;
+
+            JObject payload = new JObject
+            {
+                ["id"] = Guid.NewGuid().ToString(),
+                ["PK"] = "pk",
+                ["NonSensitive"] = "open",
+                ["SensitiveStr"] = topPlaintext,
+                ["nested"] = new JObject
+                {
+                    ["SensitiveStr"] = nestedPlaintext,
+                    ["Other"] = nestedOther,
+                },
+            };
+
+            EncryptionOptions encryptionOptions = new EncryptionOptions
+            {
+                DataEncryptionKeyId = dekId,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                PathsToEncrypt = new List<string> { "/SensitiveStr" },
+            };
+
+            EncryptionItemRequestOptions encryptionRequestOptions = RequestOptionsOverrideHelper.Create(encryptionOptions, encryptionJsonProcessor);
+
+            byte[] encryptedBytes;
+            using (Stream inputStream = EncryptionProcessor.BaseSerializer.ToStream(payload))
+            using (Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
+                inputStream,
+                mockEncryptor.Object,
+                encryptionRequestOptions,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None))
+            using (MemoryStream copy = new MemoryStream())
+            {
+                await encryptedStream.CopyToAsync(copy);
+                encryptedBytes = copy.ToArray();
+            }
+
+            using (MemoryStream inspectStream = new MemoryStream(encryptedBytes))
+            {
+                JObject encryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(inspectStream);
+
+                Assert.IsNotNull(encryptedDoc.Property(Constants.EncryptedInfo), "Expected encryption metadata at root.");
+                Assert.AreNotEqual(topPlaintext, encryptedDoc.Value<string>("SensitiveStr"), "Root /SensitiveStr should have been encrypted.");
+
+                JObject nested = (JObject)encryptedDoc["nested"];
+                Assert.IsNotNull(nested, "Nested object must survive encryption.");
+                Assert.AreEqual(nestedPlaintext, nested.Value<string>("SensitiveStr"), "Nested SensitiveStr must remain plaintext.");
+                Assert.AreEqual(nestedOther, nested.Value<int>("Other"), "Sibling nested property must survive untouched.");
+            }
+
+            (Stream decryptedStream, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
+                new MemoryStream(encryptedBytes),
+                mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
+                RequestOptionsOverrideHelper.Create(decryptionJsonProcessor),
+                CancellationToken.None);
+
+            JObject decryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
+
+            Assert.IsNull(decryptedDoc.Property(Constants.EncryptedInfo), "Encryption metadata must be removed after decryption.");
+            Assert.AreEqual(topPlaintext, decryptedDoc.Value<string>("SensitiveStr"), "Root /SensitiveStr must round-trip to its original value.");
+
+            JObject decryptedNested = (JObject)decryptedDoc["nested"];
+            Assert.IsNotNull(decryptedNested, "Nested object must survive decryption.");
+            Assert.AreEqual(nestedPlaintext, decryptedNested.Value<string>("SensitiveStr"), "Nested SensitiveStr must round-trip unchanged.");
+            Assert.AreEqual(nestedOther, decryptedNested.Value<int>("Other"), "Sibling nested property must round-trip unchanged.");
+
+            Assert.IsNotNull(decryptionContext);
+            Assert.IsNotNull(decryptionContext.DecryptionInfoList);
+            Assert.AreEqual(1, decryptionContext.DecryptionInfoList.Count);
+            Assert.AreEqual(1, decryptionContext.DecryptionInfoList[0].PathsDecrypted.Count, "Only the root /SensitiveStr should have been decrypted.");
+            Assert.IsTrue(decryptionContext.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
+        }
 
         [TestMethod]
         [DynamicData(nameof(JsonProcessors))]
@@ -277,13 +368,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         private static async Task<JObject> VerifyEncryptionSucceededNewtonsoft(TestDoc testDoc, EncryptionOptions encryptionOptions, JsonProcessor jsonProcessor)
         {
+            EncryptionItemRequestOptions requestOptions = RequestOptionsOverrideHelper.Create(encryptionOptions, jsonProcessor);
+
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
-                 testDoc.ToStream(),
-                 mockEncryptor.Object,
-                 encryptionOptions,
-                 jsonProcessor,
-                 new CosmosDiagnosticsContext(),
-                 CancellationToken.None);
+                testDoc.ToStream(),
+                mockEncryptor.Object,
+                requestOptions,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
 
             JObject encryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);
 

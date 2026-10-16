@@ -278,6 +278,129 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        public void VerifyEmbeddingGeneratorBuilderProperties()
+        {
+            string endpoint = AccountEndpoint;
+            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+
+            // Verify default is null
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
+
+            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
+
+            Assert.IsNull(clientOptions.EmbeddingGenerator);
+
+            // Verify WithEmbeddingGenerator sets the property
+            ICosmosEmbeddingGenerator generator = new MockEmbeddingGenerator();
+            cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
+
+            cosmosClientBuilder.WithEmbeddingGenerator(generator);
+
+            cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            clientOptions = cosmosClient.ClientOptions;
+
+            Assert.AreSame(generator, clientOptions.EmbeddingGenerator,
+                "EmbeddingGenerator instance did not round-trip through the builder");
+
+            // Verify null throws ArgumentNullException
+            Assert.ThrowsException<ArgumentNullException>(
+                () => new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: key)
+                          .WithEmbeddingGenerator(null),
+                "WithEmbeddingGenerator should throw ArgumentNullException for null input");
+        }
+
+#if PREVIEW
+        [TestMethod]
+        public void CosmosClient_EmbeddingGenerator_ReturnsConfiguredInstance()
+        {
+            string endpoint = AccountEndpoint;
+            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+
+            // Default: CosmosClient.EmbeddingGenerator is null when nothing was configured.
+            CosmosClient defaultClient = new CosmosClientBuilder(endpoint, key)
+                .Build(new MockDocumentClient());
+            Assert.IsNull(defaultClient.EmbeddingGenerator,
+                "CosmosClient.EmbeddingGenerator must be null when no generator was configured");
+
+            // Configured via builder: CosmosClient.EmbeddingGenerator returns the same instance.
+            ICosmosEmbeddingGenerator builderGenerator = new MockEmbeddingGenerator();
+            CosmosClient builderClient = new CosmosClientBuilder(endpoint, key)
+                .WithEmbeddingGenerator(builderGenerator)
+                .Build(new MockDocumentClient());
+            Assert.AreSame(builderGenerator, builderClient.EmbeddingGenerator,
+                "CosmosClient.EmbeddingGenerator must return the instance set via CosmosClientBuilder.WithEmbeddingGenerator");
+
+            // Configured via CosmosClientOptions directly: same accessor surfaces it.
+            ICosmosEmbeddingGenerator optionsGenerator = new MockEmbeddingGenerator();
+            CosmosClient optionsClient = new CosmosClientBuilder(endpoint, key)
+                .WithCustomSerializer(new CosmosJsonDotNetSerializer())  // ensures non-default options path
+                .Build(new MockDocumentClient());
+            optionsClient.ClientOptions.EmbeddingGenerator = optionsGenerator;
+            Assert.AreSame(optionsGenerator, optionsClient.EmbeddingGenerator,
+                "CosmosClient.EmbeddingGenerator must return the instance set on CosmosClientOptions.EmbeddingGenerator");
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_Clone_PreservesAbortedTransactionRetryOptions()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                MaxRetryAttemptsOnAbortedTransactions = 5,
+                MaxRetryWaitTimeOnAbortedTransactions = TimeSpan.FromSeconds(12),
+            };
+
+            CosmosClientOptions clone = options.Clone();
+
+            Assert.AreEqual(5, clone.MaxRetryAttemptsOnAbortedTransactions,
+                "Clone() must preserve MaxRetryAttemptsOnAbortedTransactions");
+            Assert.AreEqual(TimeSpan.FromSeconds(12), clone.MaxRetryWaitTimeOnAbortedTransactions,
+                "Clone() must preserve MaxRetryWaitTimeOnAbortedTransactions");
+            Assert.AreNotSame(options, clone, "Clone() must return a distinct instance");
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_AbortedTransactionRetryOptions_DefaultToNull()
+        {
+            CosmosClientOptions options = new CosmosClientOptions();
+
+            Assert.IsNull(options.MaxRetryAttemptsOnAbortedTransactions,
+                "MaxRetryAttemptsOnAbortedTransactions must be null by default so the SDK default applies");
+            Assert.IsNull(options.MaxRetryWaitTimeOnAbortedTransactions,
+                "MaxRetryWaitTimeOnAbortedTransactions must be null by default so the SDK default applies");
+        }
+
+        [TestMethod]
+        public void CosmosClientOptions_Clone_PreservesEmbeddingGenerator()
+        {
+            ICosmosEmbeddingGenerator generator = new MockEmbeddingGenerator();
+
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                EmbeddingGenerator = generator,
+            };
+
+            CosmosClientOptions clone = options.Clone();
+
+            Assert.AreSame(generator, clone.EmbeddingGenerator,
+                "CosmosClientOptions.Clone() must preserve the EmbeddingGenerator reference on the clone");
+
+            // The clone must be a distinct instance so subsequent mutations are isolated.
+            Assert.AreNotSame(options, clone, "Clone() must return a distinct instance");
+
+            // Mutating the clone must not affect the source.
+            ICosmosEmbeddingGenerator otherGenerator = new MockEmbeddingGenerator();
+            clone.EmbeddingGenerator = otherGenerator;
+            Assert.AreSame(generator, options.EmbeddingGenerator,
+                "Mutating EmbeddingGenerator on a clone must not affect the original options instance");
+        }
+#endif
+
         /// <summary>
         /// Test to validate that when the partition level failover is enabled with the preferred regions list is missing, then the client
         /// initialization should succeed. This should hold true for both environment variable and CosmosClientOptions.
@@ -526,6 +649,42 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void ThrowOnNegativeMaxRetryAttemptsOnAbortedTransactions()
+        {
+            new CosmosClientOptions().MaxRetryAttemptsOnAbortedTransactions = -1;
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void ThrowOnNegativeMaxRetryWaitTimeOnAbortedTransactions()
+        {
+            new CosmosClientOptions().MaxRetryWaitTimeOnAbortedTransactions = TimeSpan.FromSeconds(-1);
+        }
+
+        [TestMethod]
+        public void AbortedTransactionRetryOptionsAcceptValidValues()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+
+            // Unset (null) is valid and applies SDK defaults downstream.
+            Assert.IsNull(cosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions);
+            Assert.IsNull(cosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions);
+
+            // Zero is valid (disables automatic abort retries).
+            cosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions = 0;
+            cosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions = TimeSpan.Zero;
+            Assert.AreEqual(0, cosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions);
+            Assert.AreEqual(TimeSpan.Zero, cosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions);
+
+            // Positive values are stored and read back unchanged.
+            cosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions = 5;
+            cosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions = TimeSpan.FromSeconds(15);
+            Assert.AreEqual(5, cosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions);
+            Assert.AreEqual(TimeSpan.FromSeconds(15), cosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions);
+        }
+
+        [TestMethod]
         public void UserAgentContainsEnvironmentInformation()
         {
             EnvironmentInformation environmentInformation = new EnvironmentInformation();
@@ -605,7 +764,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 if (appName)
                 {
                     Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
-                    cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.AppendFeatures(cosmosClientOptions.ApplicationName);
+
+                    // The application name reaches the container via the user-agent suffix (as it does in
+                    // production through ConnectionPolicy.UserAgentSuffix), not via AppendFeatures, which is
+                    // reserved for feature flags.
+                    cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.Suffix = cosmosClientOptions.ApplicationName;
                 }
                 else
                 {
@@ -642,6 +805,67 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
                 Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
             }
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public void UserAgentContainer_AppendFeatures_DynamicallyAddsReplacesAndRemovesFeatureFlag()
+        {
+            // No customer suffix: flag is added, replaced (incl. hex values), and removed cleanly, never duplicated.
+            Cosmos.UserAgentContainer noSuffix = new Cosmos.UserAgentContainer(clientId: 0);
+            noSuffix.AppendFeatures("F4");
+            Assert.IsTrue(noSuffix.UserAgent.EndsWith("F4"), noSuffix.UserAgent);
+
+            noSuffix.AppendFeatures("F4");
+            Assert.IsTrue(noSuffix.UserAgent.EndsWith("F4"), "Re-appending the same flag must not duplicate it: " + noSuffix.UserAgent);
+            Assert.IsFalse(noSuffix.UserAgent.Contains("F4|F4"), noSuffix.UserAgent);
+
+            noSuffix.AppendFeatures("FC");
+            Assert.IsTrue(noSuffix.UserAgent.EndsWith("FC"), "Hex feature flags must replace the previous flag: " + noSuffix.UserAgent);
+            Assert.IsFalse(noSuffix.UserAgent.Contains("F4"), noSuffix.UserAgent);
+
+            noSuffix.AppendFeatures(string.Empty);
+            Assert.IsFalse(noSuffix.UserAgent.Contains("FC"), "Empty features must remove the flag: " + noSuffix.UserAgent);
+
+            // Customer suffix (including hex-like and pipe-containing names) must be preserved verbatim.
+            foreach (string appName in new[] { "myApp", "Facade", "Face|X" })
+            {
+                Cosmos.UserAgentContainer withSuffix = new Cosmos.UserAgentContainer(clientId: 0)
+                {
+                    Suffix = appName
+                };
+
+                withSuffix.AppendFeatures("F4");
+                Assert.IsTrue(withSuffix.UserAgent.EndsWith(appName), withSuffix.UserAgent);
+                Assert.IsTrue(withSuffix.UserAgent.Contains("F4|" + appName), withSuffix.UserAgent);
+
+                withSuffix.AppendFeatures("FF");
+                Assert.IsTrue(withSuffix.UserAgent.EndsWith(appName), withSuffix.UserAgent);
+                Assert.IsTrue(withSuffix.UserAgent.Contains("FF|" + appName), withSuffix.UserAgent);
+                Assert.IsFalse(withSuffix.UserAgent.Contains("F4"), withSuffix.UserAgent);
+
+                withSuffix.AppendFeatures(string.Empty);
+                Assert.IsTrue(withSuffix.UserAgent.EndsWith(appName), "Customer suffix must survive flag removal: " + withSuffix.UserAgent);
+                Assert.IsFalse(withSuffix.UserAgent.Contains("FF|"), withSuffix.UserAgent);
+            }
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public void GetUserAgentFeatures_ThinClientFlag_RequiresLiveEndpointAvailability()
+        {
+            // Capable client, service currently advertising thin-client endpoints => F4 present.
+            using MockDocumentClient capableWithEndpoints = new MockDocumentClient(thinClient: true);
+            Assert.AreEqual("F4", capableWithEndpoints.GetUserAgentFeatures());
+
+            // Capable client, but service is not advertising thin-client endpoints => F4 absent.
+            capableWithEndpoints.thinClientEndpointsAvailable = false;
+            Assert.AreEqual(string.Empty, capableWithEndpoints.GetUserAgentFeatures());
+
+            // Not thin-capable: a stale availability flag must not surface F4.
+            using MockDocumentClient notCapable = new MockDocumentClient(thinClient: false);
+            notCapable.thinClientEndpointsAvailable = true;
+            Assert.AreEqual(string.Empty, notCapable.GetUserAgentFeatures());
         }
 
         [TestMethod]
@@ -727,6 +951,42 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void GetSerializedConfiguration_WithSTJSerializerOptions_DoesNotThrow()
+        {
+            System.Text.Json.JsonSerializerOptions jsonSerializerOptions = new System.Text.Json.JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            };
+
+            // Set a TypeInfoResolver via reflection to reproduce the circular reference
+            // scenario from the bug report (TypeInfoResolver → Options → TypeInfoResolver).
+            // TypeInfoResolver was introduced in .NET 7 and is not available at compile time
+            // with the STJ 6.0 package reference, but is available at runtime on .NET 7+.
+            PropertyInfo typeInfoResolverProp = typeof(System.Text.Json.JsonSerializerOptions)
+                .GetProperty("TypeInfoResolver");
+
+            if (typeInfoResolverProp != null)
+            {
+                Type defaultResolverType = typeof(System.Text.Json.JsonSerializerOptions).Assembly
+                    .GetType("System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver");
+
+                if (defaultResolverType != null)
+                {
+                    typeInfoResolverProp.SetValue(jsonSerializerOptions, Activator.CreateInstance(defaultResolverType));
+                }
+            }
+
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                UseSystemTextJsonSerializerWithOptions = jsonSerializerOptions,
+            };
+
+            string serializedConfig = options.GetSerializedConfiguration();
+            Assert.IsNotNull(serializedConfig);
+            Assert.IsTrue(serializedConfig.Contains("System.Text.Json.JsonSerializerOptions"));
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullTokenCredential()
         {
@@ -792,6 +1052,173 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void OpenTcpConnectionTimeoutZeroIsAllowedAndRoundTripsThroughConnectionPolicy()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.Zero,
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            Assert.AreEqual(TimeSpan.Zero, policy.OpenTcpConnectionTimeout);
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeoutSubSecondNormalizesToZeroInRntbdConfig()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.FromMilliseconds(500),
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient cosmosClient = builder.Build(new MockDocumentClient(connectionPolicy: policy));
+
+            Microsoft.Azure.Cosmos.Tracing.TraceData.RntbdConnectionConfig tcpConfig =
+                cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+
+            Assert.AreEqual(
+                0,
+                tcpConfig.ConnectionTimeout,
+                "Sub-second OpenTcpConnectionTimeout must surface as 0 seconds (fall back to request timeout).");
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeoutExactlyOneSecondPreservedInRntbdConfig()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.FromSeconds(1),
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient cosmosClient = builder.Build(new MockDocumentClient(connectionPolicy: policy));
+
+            Microsoft.Azure.Cosmos.Tracing.TraceData.RntbdConnectionConfig tcpConfig =
+                cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+
+            Assert.AreEqual(1, tcpConfig.ConnectionTimeout);
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeoutWholeSecondsPreservedInRntbdConfig()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.FromSeconds(7),
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient cosmosClient = builder.Build(new MockDocumentClient(connectionPolicy: policy));
+
+            Microsoft.Azure.Cosmos.Tracing.TraceData.RntbdConnectionConfig tcpConfig =
+                cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+
+            Assert.AreEqual(7, tcpConfig.ConnectionTimeout);
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeoutFractionalRoundsUpInRntbdConfig()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.FromSeconds(2.5),
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient cosmosClient = builder.Build(new MockDocumentClient(connectionPolicy: policy));
+
+            Microsoft.Azure.Cosmos.Tracing.TraceData.RntbdConnectionConfig tcpConfig =
+                cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+
+            Assert.AreEqual(
+                3,
+                tcpConfig.ConnectionTimeout,
+                "Fractional OpenTcpConnectionTimeout (>= 1s) rounds up to the nearest whole second at the transport boundary.");
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeoutJustOverOneSecondRoundsUpInRntbdConfig()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = TimeSpan.FromMilliseconds(1001),
+            };
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            CosmosClientBuilder builder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            CosmosClient cosmosClient = builder.Build(new MockDocumentClient(connectionPolicy: policy));
+
+            Microsoft.Azure.Cosmos.Tracing.TraceData.RntbdConnectionConfig tcpConfig =
+                cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+
+            Assert.AreEqual(
+                2,
+                tcpConfig.ConnectionTimeout,
+                "1.001s rounds up to 2s at the transport boundary.");
+        }
+
+        [TestMethod]
+        public void OpenTcpConnectionTimeoutFractionalPreservedOnConnectionPolicyTimeSpan()
+        {
+            TimeSpan customerSupplied = TimeSpan.FromSeconds(2.5);
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                OpenTcpConnectionTimeout = customerSupplied,
+            };
+
+            Assert.AreEqual(
+                customerSupplied,
+                options.OpenTcpConnectionTimeout,
+                "CosmosClientOptions preserves the supplied TimeSpan unchanged.");
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            Assert.AreEqual(
+                customerSupplied,
+                policy.OpenTcpConnectionTimeout,
+                "ConnectionPolicy preserves the supplied TimeSpan unchanged.");
+        }
+
+        [TestMethod]
+        public void WithConnectionModeDirectNegativeOpenTcpTimeoutPassesThroughUnchanged()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Direct,
+            };
+
+            // Negative values are preserved on the property and round-trip through ConnectionPolicy.
+            options.OpenTcpConnectionTimeout = TimeSpan.FromSeconds(-1);
+            Assert.AreEqual(TimeSpan.FromSeconds(-1), options.OpenTcpConnectionTimeout,
+                "Negative openTcpConnectionTimeout should be preserved unchanged.");
+
+            ConnectionPolicy policy = options.GetConnectionPolicy(clientId: 0);
+            Assert.AreEqual(TimeSpan.FromSeconds(-1), policy.OpenTcpConnectionTimeout,
+                "Negative value should round-trip through ConnectionPolicy unchanged.");
+        }
+
+        [TestMethod]
         public void VerifyHttpClientFactoryBlockedWithConnectionLimit()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
@@ -829,6 +1256,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             SocketsHttpHandler handler = (SocketsHttpHandler)cosmosHttpClient.HttpMessageHandler;
 
             Assert.IsTrue(object.ReferenceEquals(webProxy, handler.Proxy));
+            Assert.IsTrue(handler.EnableMultipleHttp2Connections, "EnableMultipleHttp2Connections should be set through the builder pipeline");
+            Assert.AreEqual(TimeSpan.FromSeconds(1), handler.KeepAlivePingDelay, "KeepAlivePingDelay should be set through the builder pipeline");
+            Assert.AreEqual(TimeSpan.FromSeconds(2), handler.KeepAlivePingTimeout, "KeepAlivePingTimeout should be set through the builder pipeline");
+            Assert.AreEqual(HttpKeepAlivePingPolicy.Always, handler.KeepAlivePingPolicy, "KeepAlivePingPolicy should be set through the builder pipeline");
         }
 
         [TestMethod]
@@ -1293,6 +1724,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
 
                 return 1;
+            }
+        }
+
+        private sealed class MockEmbeddingGenerator : ICosmosEmbeddingGenerator
+        {
+            public System.Threading.Tasks.Task<CosmosEmbeddingResult> GenerateEmbeddingsAsync(
+                System.Collections.Generic.IReadOnlyList<string> texts,
+                string endpoint,
+                string deploymentName,
+                int dimensions,
+                System.Threading.CancellationToken cancellationToken = default)
+            {
+                throw new NotImplementedException();
             }
         }
     }

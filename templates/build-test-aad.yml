@@ -1,0 +1,186 @@
+# File: templates/build-test-aad.yml
+#
+# Live-account AAD (Microsoft Entra ID) integration tests (TestCategory=MultiRegionAad).
+# These authenticate to a real, AAD-only Cosmos DB account (dotnet-v3-multiregion) using a real
+# Entra token (data-plane RBAC), via an Azure Resource Manager service connection that uses
+# Workload Identity Federation (no client secret -- secrets are blocked by tenant policy).
+#
+# The connection's identity is an app registration in the SAME tenant as the account
+# (dotnet-v3-aad-ci-app), which holds the Cosmos DB Built-in Data Contributor data-plane role on
+# the account. The AzureCLI@2 task logs `az` in as that identity; the SDK's DefaultAzureCredential
+# (AzureCliCredential) then acquires Cosmos data-plane tokens. (A co-tenant app registration is
+# required because Cosmos data-plane RBAC cannot grant a role to a principal in another tenant --
+# e.g. the OneES build-agent managed identity, which lives in a different tenant.)
+#
+# The job stays skipped (green) until 'AadServiceConnection' is set to the service connection name.
+#
+# Fail-closed contract
+# --------------------
+# The tests skip (Assert.Inconclusive) on an unsatisfied prerequisite so that local, opt-in runs stay
+# green for developers without a provisioned AAD account. That is NOT acceptable in CI: MSTest exits
+# successfully when every case is inconclusive, so a missing role assignment, a stale endpoint, or a
+# missing fixture would leave this lane green without validating a single Entra-authenticated
+# operation. Two independent guards prevent that:
+#
+#   1. COSMOSDB_AAD_STRICT=true turns every unsatisfied prerequisite (missing endpoint, missing
+#      credential, 401/403 from a missing role assignment, 404 from a missing database/container)
+#      into a hard test failure instead of a skip.
+#   2. The 'Verify MultiRegionAad results' gate below parses the published TRX, requires at least one
+#      result, rejects every failed or skipped/inconclusive/not-executed result, and fails closed when
+#      no TRX was produced at all.
+#
+# Falsification (how to prove the lane really fails): point 'AadAccountEndpoint' at a nonexistent
+# account, or rename the pre-created container so the fixture is missing, and re-run. The test task
+# fails because of guard (1); even if guard (1) were removed, guard (2) still fails the job because
+# every result is skipped/inconclusive instead of passed.
+
+parameters:
+  BuildConfiguration: ''
+  OS: 'Windows'
+  Arguments: ' --filter "TestCategory=MultiRegionAad" --verbosity normal '
+  CategoryListName: ' MultiRegionAad '
+  AadAccountEndpoint: ''
+  AadServiceConnection: ''
+  # Fail the tests (instead of skipping them) when a live AAD prerequisite is not satisfied.
+  StrictMode: true
+jobs:
+- job:
+  displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.CategoryListName }}
+  timeoutInMinutes: 60
+  # Runs only when an AAD service connection (Workload Identity Federation) is configured. Stays
+  # skipped (green) until the connection is set.
+  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'), ne('${{ parameters.AadServiceConnection }}', ''))
+  pool:
+    name: 'OneES'
+
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  # Add this Command to Include the .NET 6 SDK
+  - task: UseDotNet@2
+    displayName: Use .NET 6.0
+    inputs:
+      packageType: 'runtime'
+      version: '6.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
+      packageType: 'sdk'
+      version: '8.x'
+
+  # Remove stale results from a previous run on this agent so the gate below can never validate a
+  # TRX that the current run did not produce.
+  - task: PowerShell@2
+    displayName: Remove stale MultiRegionAad results
+    inputs:
+      targetType: inline
+      pwsh: true
+      script: |
+        Get-ChildItem -Path '$(Build.SourcesDirectory)' -Recurse -Filter 'MultiRegionAad.trx' -File -ErrorAction SilentlyContinue |
+          ForEach-Object { Write-Host ('Removing stale result file ' + $_.FullName); Remove-Item -LiteralPath $_.FullName -Force }
+
+  - task: AzureCLI@2
+    displayName: Microsoft.Azure.Cosmos.EmulatorTests
+    retryCountOnTaskFailure: 2
+    condition: succeeded()
+    inputs:
+      azureSubscription: ${{ parameters.AadServiceConnection }}
+      scriptType: pscore
+      scriptLocation: inlineScript
+      # The AzureCLI task logs `az` in as the service connection identity; the SDK's
+      # DefaultAzureCredential (AzureCliCredential) then acquires Cosmos data-plane tokens.
+      inlineScript: |
+        dotnet test 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/Microsoft.Azure.Cosmos.EmulatorTests.csproj' `
+          ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} `
+          --logger 'trx;LogFileName=MultiRegionAad.trx'
+    env:
+      COSMOSDB_MULTI_REGION_AAD: ${{ parameters.AadAccountEndpoint }}
+      COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL: true
+      # Fail closed: an unsatisfied prerequisite (missing endpoint/credential, 401/403 from a missing
+      # data-plane role assignment, 404 from a missing database/container) fails the test instead of
+      # skipping it, so this lane cannot go green without exercising Entra auth.
+      COSMOSDB_AAD_STRICT: ${{ parameters.StrictMode }}
+      AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
+
+  - task: PublishTestResults@2
+    displayName: Publish MultiRegionAad results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: VSTest
+      testResultsFiles: '**/MultiRegionAad.trx'
+      testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
+
+  # Gate the published results. Runs after the publish step so the results are still visible in the
+  # run summary when this fails. See the "Fail-closed contract" note at the top of this file.
+  - task: PowerShell@2
+    displayName: Verify MultiRegionAad results (all passed, 0 skipped)
+    condition: succeededOrFailed()
+    inputs:
+      targetType: inline
+      pwsh: true
+      script: |
+        $ErrorActionPreference = 'Stop'
+        $trxFiles = @(Get-ChildItem -Path '$(Build.SourcesDirectory)' -Recurse -Filter 'MultiRegionAad.trx' -File -ErrorAction SilentlyContinue |
+          Sort-Object LastWriteTimeUtc -Descending)
+
+        if ($trxFiles.Count -eq 0) {
+          Write-Host '##vso[task.logissue type=error]No MultiRegionAad.trx was produced, so no Entra-authenticated operation was validated. Failing closed.'
+          exit 1
+        }
+
+        $trx = $trxFiles[0]
+        Write-Host ('Validating ' + $trx.FullName)
+
+        [xml] $document = Get-Content -LiteralPath $trx.FullName -Raw
+
+        # Count per-case outcomes instead of reading ResultSummary/Counters: the VSTest TRX logger only
+        # fills in total/executed/passed/failed and leaves notExecuted/inconclusive at 0, so an
+        # all-inconclusive run reports zero skipped there and would sail through this gate. Data-driven
+        # aggregate rows carry an InnerResults child; skip them so leaf cases are counted exactly once.
+        $results = @($document.GetElementsByTagName('UnitTestResult') |
+          Where-Object { $null -eq $_.SelectSingleNode('*[local-name()="InnerResults"]') })
+
+        $total = $results.Count
+        $passed = @($results | Where-Object { $_.outcome -eq 'Passed' }).Count
+        $failed = @($results | Where-Object { @('Failed', 'Error', 'Timeout', 'Aborted') -contains $_.outcome }).Count
+        # MSTest reports Assert.Inconclusive as NotExecuted.
+        $skipped = $total - $passed - $failed
+
+        Write-Host ('total={0} passed={1} failed={2} skipped/inconclusive={3} (required: at least 1 total, all passed)' -f $total, $passed, $failed, $skipped)
+
+        # Surface each non-passing case as a build issue, not just console output. ADO logs are not readable
+        # by everyone who can see the GitHub check, but logissue entries become check-run annotations, so this
+        # is what makes a red lane diagnosable from the pull request itself.
+        foreach ($result in ($results | Where-Object { $_.outcome -ne 'Passed' })) {
+          $detail = $result.SelectSingleNode('*[local-name()="Output"]/*[local-name()="ErrorInfo"]/*[local-name()="Message"]')
+          $message = if ($null -ne $detail) { $detail.InnerText } else { '(no error message in TRX)' }
+          # Annotations are single-line; collapse newlines and cap the length so the useful prefix survives.
+          $message = ($message -replace '\s*\r?\n\s*', ' ').Trim()
+          if ($message.Length -gt 900) {
+            $message = $message.Substring(0, 900) + ' ...'
+          }
+
+          Write-Host ('##vso[task.logissue type=error]{0} [{1}]: {2}' -f $result.testName, $result.outcome, $message)
+        }
+
+        $problems = @()
+        if ($failed -ne 0) {
+          $problems += ('{0} live AAD test case(s) failed.' -f $failed)
+        }
+        if ($skipped -ne 0) {
+          $problems += ('{0} live AAD test case(s) were skipped/inconclusive. The prerequisites (reachable endpoint, Cosmos DB data-plane role assignment, pre-created AadLiveTestDb/AadLiveTestContainer) must be satisfied in CI.' -f $skipped)
+        }
+        if ($total -eq 0) {
+          $problems += 'The TRX contained no live AAD test results, so no Entra-authenticated operation was validated.'
+        }
+
+        if ($problems.Count -gt 0) {
+          foreach ($problem in $problems) {
+            Write-Host ('##vso[task.logissue type=error]' + $problem)
+          }
+          exit 1
+        }
+
+        Write-Host ('All {0} live AAD test cases passed with no skipped or inconclusive results.' -f $total)

@@ -7,10 +7,22 @@ then
     exit -1
 fi
 
-if [ -z "$ACCOUNT_KEY" ]
+# ACCOUNT_KEY is optional. When it is not set the benchmark authenticates with
+# AAD (Microsoft Entra ID) using the VM's managed identity via DefaultAzureCredential.
+# In that case the database and container must already exist (a data-plane RBAC role
+# cannot create them). Optionally set ACCOUNT_MI_CLIENT_ID to select a specific
+# user-assigned managed identity.
+if [ -n "$ACCOUNT_KEY" ]
 then
-    echo "Missing ACCOUNT_KEY"
-    exit -1
+    AUTH_FLAGS="-k $ACCOUNT_KEY"
+    echo "Using account key authentication"
+else
+    AUTH_FLAGS=""
+    if [ -n "$ACCOUNT_MI_CLIENT_ID" ]
+    then
+        AUTH_FLAGS="--aadmanagedidentityclientid $ACCOUNT_MI_CLIENT_ID"
+    fi
+    echo "ACCOUNT_KEY not set - using AAD (Microsoft Entra ID) authentication"
 fi
 
 if [ -z "$RESULTS_PK" ]
@@ -64,7 +76,7 @@ do
             $MODE_FLAGS \
             --pl $PL \
             -e $ACCOUNT_ENDPOINT \
-            -k $ACCOUNT_KEY \
+            $AUTH_FLAGS \
             --enablelatencypercentiles \
             --disablecoresdklogging \
             --publishresults \
@@ -82,26 +94,26 @@ done
 # ---------- 2) ADDITIONAL SCENARIOS DIRECT-ONLY ----------
 if [ "${DIRECTMODE_ENABLED:-false}" = true ]; then
     # Client telemetry disabled ReadStreamExistsV3
-    dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 $MODE_FLAGS --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
+    dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 $MODE_FLAGS --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT $AUTH_FLAGS  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
     sleep 10 #Wait
 
     # Client telemetry enabled ReadStreamExistsV3. This is needed to see the impact of client telemetry. 
-    dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 $MODE_FLAGS --WorkloadName ReadStreamExistsV3WithTelemetry  --enableTelemetry --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
+    dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 $MODE_FLAGS --WorkloadName ReadStreamExistsV3WithTelemetry  --enableTelemetry --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT $AUTH_FLAGS  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
     sleep 10 #Wait
 
     # Open telemetry enabled ReadStreamExistsV3. This is needed to see the impact of distributed tracing (without listener) 
-    dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 $MODE_FLAGS --WorkloadName ReadStreamExistsV3WithDistributedTracingWOListener  --enableDistributedTracing --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
+    dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 $MODE_FLAGS --WorkloadName ReadStreamExistsV3WithDistributedTracingWOListener  --enableDistributedTracing --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT $AUTH_FLAGS  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
     sleep 10 #Wait
 
     #Point read operations
     for WORKLOAD_NAME in ReadNotExistsV3 ReadTExistsV3 ReadStreamExistsWithDiagnosticsV3
     do
-        dotnet run -c Release  -- -n 2000000 -w $WORKLOAD_NAME $MODE_FLAGS --pl $PL --enableTelemetry --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 10 -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
+        dotnet run -c Release  -- -n 2000000 -w $WORKLOAD_NAME $MODE_FLAGS --pl $PL --enableTelemetry --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 10 -e $ACCOUNT_ENDPOINT $AUTH_FLAGS  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
         sleep 10 #Wait
     done
 
     #Insert operation
-    dotnet run -c Release  -- -n 2000000 -w InsertV3 $MODE_FLAGS --pl 30 --enableTelemetry --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 1 -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
+    dotnet run -c Release  -- -n 2000000 -w InsertV3 $MODE_FLAGS --pl 30 --enableTelemetry --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 1 -e $ACCOUNT_ENDPOINT $AUTH_FLAGS  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
     sleep 45 #Wait
 
     if [ "$INCLUDE_QUERY" = true ]
@@ -111,7 +123,7 @@ if [ "${DIRECTMODE_ENABLED:-false}" = true ]; then
         # pl is 16 because 18 was casuing a small amount of thorrtles.
         for WORKLOAD_NAME in ReadFeedStreamV3 QueryTSinglePkV3 QueryTSinglePkOrderByWithPaginationV3 QueryTSinglePkOrderByFullDrainV3 QueryTCrossPkV3 QueryTCrossPkOrderByWithPaginationV3 QueryTCrossPkOrderByFullDrainV3 QueryStreamSinglePkV3 QueryStreamSinglePkOrderByWithPaginationV3 QueryStreamSinglePkOrderByFullDrainV3 QueryStreamCrossPkV3 QueryStreamCrossPkOrderByWithPaginationV3 QueryStreamCrossPkOrderByFullDrainV3
         do
-            dotnet run -c Release  -- -n 200000 -w $WORKLOAD_NAME $MODE_FLAGS --pl 16 --enableTelemetry --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 10 -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
+            dotnet run -c Release  -- -n 200000 -w $WORKLOAD_NAME $MODE_FLAGS --pl 16 --enableTelemetry --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 10 -e $ACCOUNT_ENDPOINT $AUTH_FLAGS --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
             sleep 10 #Wait
         done
     fi

@@ -1,0 +1,516 @@
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
+{
+    using System;
+    using System.Collections.Concurrent;
+    using System.Reflection;
+    using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Extensions.Caching.Distributed;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
+
+    /// <summary>
+    /// Cross-process / cross-instance interop contract for the distributed-cache feature: two
+    /// independent <see cref="DekCache"/> instances share a single <see cref="IDistributedCache"/>
+    /// (one writes, one reads) so assertions go through the L2 byte payload — the interop contract.
+    /// </summary>
+    [TestClass]
+    public class DekCacheInteropTests
+    {
+        private const string DekId = "interopDek";
+        private const string DefaultCachePrefix = "dek";
+        private const string DefaultCacheKey = DefaultCachePrefix + ":v1:" + DekId;
+
+        private static readonly TimeSpan DefaultTtl = TimeSpan.FromMinutes(30);
+
+        // ---------------------------------------------------------------
+        // A. Round-trip fidelity across independent DekCache instances
+        // ---------------------------------------------------------------
+
+        [TestMethod]
+        public async Task PeerA_Writes_PeerB_Reads_CreatedTime_PreservedUtc()
+        {
+            DateTime now = NewClock();
+            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
+
+            DekCache peerA = NewCache(l2, () => now);
+            DekCache peerB = NewCache(l2, () => now);
+
+            // Second-precision UTC DateTime (UnixDateTimeConverter truncates to seconds).
+            DateTime created = new DateTime(2024, 3, 15, 10, 30, 45, DateTimeKind.Utc);
+
+            DataEncryptionKeyProperties written = MakeDekProperties(DekId, createdTime: created);
+            peerA.SetDekProperties(DekId, written);
+            await peerA.WhenAllPendingWritesAsync();
+
+            DataEncryptionKeyProperties read = await peerB.GetOrAddDekPropertiesAsync(
+                DekId, FailingFetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
+
+            Assert.IsNotNull(read.CreatedTime, "CreatedTime must survive the L2 round-trip.");
+            Assert.AreEqual(created.Ticks, read.CreatedTime.Value.Ticks, "CreatedTime ticks must match exactly.");
+            Assert.AreEqual(DateTimeKind.Utc, read.CreatedTime.Value.Kind, "CreatedTime must be UTC after the round-trip.");
+        }
+
+        [TestMethod]
+        public async Task PeerA_Writes_PeerB_Reads_EncryptionKeyWrapMetadata_AllFieldsPreserved()
+        {
+            DateTime now = NewClock();
+            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
+
+            DekCache peerA = NewCache(l2, () => now);
+            DekCache peerB = NewCache(l2, () => now);
+
+            EncryptionKeyWrapMetadata meta = new EncryptionKeyWrapMetadata(
+                type: "akv",
+                value: "https://vault.example/keys/kek/v1",
+                algorithm: "RSA-OAEP-256",
+                name: "kekName");
+
+            DataEncryptionKeyProperties written = new DataEncryptionKeyProperties(
+                DekId,
+                "AEAD_AES_256_CBC_HMAC_SHA256",
+                new byte[] { 1, 2, 3, 4, 5 },
+                meta,
+                new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+
+            peerA.SetDekProperties(DekId, written);
+            await peerA.WhenAllPendingWritesAsync();
+
+            DataEncryptionKeyProperties read = await peerB.GetOrAddDekPropertiesAsync(
+                DekId, FailingFetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
+
+            Assert.IsTrue(
+                meta.Equals(read.EncryptionKeyWrapMetadata),
+                "All four EncryptionKeyWrapMetadata fields (Type, Algorithm, Name, Value) must round-trip through L2.");
+        }
+
+        [TestMethod]
+        public async Task PeerA_Writes_PeerB_Reads_LargeWrappedDataEncryptionKey_ByteForByte()
+        {
+            DateTime now = NewClock();
+            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
+
+            DekCache peerA = NewCache(l2, () => now);
+            DekCache peerB = NewCache(l2, () => now);
+
+            byte[] wrapped = new byte[1024];
+            for (int i = 0; i < wrapped.Length; i++)
+            {
+                wrapped[i] = (byte)((i * 31) ^ 0xA5);
+            }
+
+            DataEncryptionKeyProperties written = MakeDekProperties(DekId, wrappedKey: wrapped);
+            peerA.SetDekProperties(DekId, written);
+            await peerA.WhenAllPendingWritesAsync();
+
+            DataEncryptionKeyProperties read = await peerB.GetOrAddDekPropertiesAsync(
+                DekId, FailingFetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
+
+            CollectionAssert.AreEqual(
+                wrapped,
+                read.WrappedDataEncryptionKey,
+                "WrappedDataEncryptionKey bytes must be identical after an L2 round-trip.");
+        }
+
+        [TestMethod]
+        public async Task FreshThirdPeer_ReadsEntryWrittenByFirstPeer()
+        {
+            DateTime now = NewClock();
+            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
+
+            DekCache peerA = NewCache(l2, () => now);
+            peerA.SetDekProperties(DekId, MakeDekProperties(DekId, wrappedKey: new byte[] { 0x77, 0x88 }));
+            await peerA.WhenAllPendingWritesAsync();
+
+            // Peer C is constructed AFTER peer A wrote. Nothing in L1 is shared.
+            DekCache peerC = NewCache(l2, () => now);
+
+            int cosmosCalls = 0;
+            DataEncryptionKeyProperties read = await peerC.GetOrAddDekPropertiesAsync(
+                DekId,
+                (id, ctx, ct) => { cosmosCalls++; return Task.FromResult(MakeDekProperties(id)); },
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            Assert.AreEqual(0, cosmosCalls, "Peer C must read from L2 alone; no Cosmos call.");
+            CollectionAssert.AreEqual(new byte[] { 0x77, 0x88 }, read.WrappedDataEncryptionKey);
+            Assert.AreEqual(DekId, read.Id);
+        }
+
+        // ---------------------------------------------------------------
+        // B. Field stability / format pinning
+        // ---------------------------------------------------------------
+
+        [TestMethod]
+        public async Task RawL2Payload_ContainsPinnedJsonPropertyNames()
+        {
+            DateTime now = NewClock();
+            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
+            DekCache peerA = NewCache(l2, () => now);
+
+            peerA.SetDekProperties(DekId, MakeDekProperties(DekId));
+            await peerA.WhenAllPendingWritesAsync();
+
+            byte[] raw = l2.GetRawForTest(DefaultCacheKey);
+            Assert.IsNotNull(raw, "L2 must be populated after SetDekProperties.");
+
+            JObject parsed = JObject.Parse(Encoding.UTF8.GetString(raw));
+
+            Assert.IsNotNull(parsed.Property("v"), "JsonProperty 'v' is part of the pinned wire format.");
+            Assert.IsNotNull(parsed.Property("serverProperties"), "JsonProperty 'serverProperties' is part of the pinned wire format.");
+            Assert.IsNotNull(parsed.Property("serverPropertiesExpiryUtc"), "JsonProperty 'serverPropertiesExpiryUtc' is part of the pinned wire format.");
+
+            Assert.AreEqual(1, (int)parsed["v"], "Current wire version must be v:1.");
+        }
+
+        [TestMethod]
+        public async Task RawL2Payload_DoesNotContainTypeDiscriminator()
+        {
+            DateTime now = NewClock();
+            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
+            DekCache peerA = NewCache(l2, () => now);
+
+            peerA.SetDekProperties(DekId, MakeDekProperties(DekId));
+            await peerA.WhenAllPendingWritesAsync();
+
+            string json = Encoding.UTF8.GetString(l2.GetRawForTest(DefaultCacheKey));
+
+            Assert.IsFalse(
+                json.Contains("$type", StringComparison.Ordinal),
+                $"L2 JSON must not contain a '$type' discriminator (TypeNameHandling.None). Payload was: {json}");
+        }
+
+        [TestMethod]
+        public async Task RawL2Payload_ExpiryStampIsIsoUtc_AndEqualsWriteTimePlusTtl()
+        {
+            DateTime now = NewClock();
+            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
+            DekCache peerA = NewCache(l2, () => now);
+
+            peerA.SetDekProperties(DekId, MakeDekProperties(DekId));
+            await peerA.WhenAllPendingWritesAsync();
+
+            JObject parsed = JObject.Parse(Encoding.UTF8.GetString(l2.GetRawForTest(DefaultCacheKey)));
+            JToken stamp = parsed["serverPropertiesExpiryUtc"];
+            Assert.IsNotNull(stamp, "Expiry stamp must be present in the payload.");
+
+            // Newtonsoft in IsoDateFormat renders DateTime as a JSON string, not a raw integer/object.
+            Assert.AreEqual(JTokenType.Date, stamp.Type, "Expiry must be encoded as a JSON date/ISO string, not a numeric or arbitrary value.");
+
+            DateTime parsedExpiry = stamp.Value<DateTime>().ToUniversalTime();
+            DateTime expected = now + DefaultTtl;
+
+            Assert.AreEqual(
+                expected.Ticks,
+                parsedExpiry.Ticks,
+                $"Expiry stamp must equal write-clock + TTL. expected={expected:o} actual={parsedExpiry:o}");
+        }
+
+        // ---------------------------------------------------------------
+        // C. Forward-compat: tolerating unknown extra fields
+        // ---------------------------------------------------------------
+
+        [TestMethod]
+        public async Task L2PayloadWithUnknownExtraField_PeerStillDeserializes()
+        {
+            DateTime now = NewClock();
+            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
+            DekCache peerB = NewCache(l2, () => now);
+
+            // Simulate a future peer's write containing an extra "futureField" alongside
+            // the pinned fields. Keep "v" = 1 so version gating does not reject the entry.
+            DataEncryptionKeyProperties dek = MakeDekProperties(DekId);
+            JObject payload = new JObject
+            {
+                ["v"] = 1,
+                ["serverProperties"] = JObject.FromObject(dek),
+                ["serverPropertiesExpiryUtc"] = now.AddMinutes(30),
+                ["futureField"] = "some-future-value",
+                ["anotherFutureObject"] = new JObject { ["nested"] = 42 },
+            };
+
+            l2.SetRawForTest(DefaultCacheKey, Encoding.UTF8.GetBytes(payload.ToString(Formatting.None)));
+
+            int cosmosCalls = 0;
+            DataEncryptionKeyProperties read = await peerB.GetOrAddDekPropertiesAsync(
+                DekId,
+                (id, ctx, ct) => { cosmosCalls++; return Task.FromResult(MakeDekProperties(id)); },
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            Assert.AreEqual(DekId, read.Id, "Unknown extra fields must not cause a deserialization failure.");
+            Assert.AreEqual(0, cosmosCalls, "A forward-compatible payload must be served from L2, not fall through to Cosmos.");
+        }
+
+        // ---------------------------------------------------------------
+        // D. Version handling: missing "v" field -> treated as v1
+        // ---------------------------------------------------------------
+
+        [TestMethod]
+        // REQ: Default CachedDekPropertiesDto.Version must stay a literal 1 even if CurrentCacheFormatVersion changes.
+        // SOURCE: PR #5428 review comment 3255385235.
+        public void CachedDekPropertiesDto_DefaultVersion_IsLiteral1()
+        {
+            Type dtoType = typeof(DekCache).GetNestedType("CachedDekPropertiesDto", BindingFlags.NonPublic);
+            Assert.IsNotNull(dtoType, "Test contract requires the private nested DekCache.CachedDekPropertiesDto type to exist.");
+
+            object dto = Activator.CreateInstance(dtoType, nonPublic: true);
+            PropertyInfo versionProperty = dtoType.GetProperty("Version", BindingFlags.Instance | BindingFlags.Public);
+            Assert.IsNotNull(versionProperty, "CachedDekPropertiesDto must expose a Version property for the serialized contract.");
+
+            int defaultVersion = (int)versionProperty.GetValue(dto);
+            Assert.AreEqual(
+                1,
+                defaultVersion,
+                "CachedDekPropertiesDto.Version default MUST stay literally 1. Bumping CurrentCacheFormatVersion MUST NOT silently change this default; otherwise old missing-'v' payloads would be misclassified during a rolling upgrade.");
+        }
+
+        [TestMethod]
+        // REQ: Missing-'v' raw fixtures planted directly into L2 must be treated as v1 and served without a Cosmos fetch.
+        // SOURCE: PR #5428 review comment 3255385235.
+        public async Task L2RawFixtureMissingVersionField_IsServedAsV1_WithoutCosmosFetch()
+        {
+            DateTime now = NewClock();
+            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
+            DekCache peerB = NewCache(l2, () => now);
+
+            string fixture = "{\"serverProperties\":{\"id\":\"interopDek\",\"encryptionAlgorithm\":\"AEAD_AES_256_CBC_HMAC_SHA256\",\"wrappedDataEncryptionKey\":\"AQID\",\"keyWrapMetadata\":{\"type\":\"test\",\"name\":\"test\",\"algorithm\":\"RSA-OAEP\",\"value\":\"test\"},\"_ts\":1704067200},\"serverPropertiesExpiryUtc\":\"2026-01-01T00:30:00Z\"}";
+            l2.SetRawForTest(DefaultCacheKey, Encoding.UTF8.GetBytes(fixture));
+
+            int cosmosCalls = 0;
+            DataEncryptionKeyProperties read = await peerB.GetOrAddDekPropertiesAsync(
+                DekId,
+                (id, ctx, ct) => { cosmosCalls++; return Task.FromResult(MakeDekProperties(id)); },
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            Assert.AreEqual(DekId, read.Id, "Hard-coded missing-'v' fixture must deserialize as cache format v1.");
+            Assert.AreEqual(0, cosmosCalls, "Missing-'v' fixture must be served from L2 without a Cosmos round-trip.");
+        }
+
+        [TestMethod]
+        public async Task L2PayloadMissingVersionField_IsTreatedAsV1_AndServed()
+        {
+            DateTime now = NewClock();
+            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
+            DekCache peerB = NewCache(l2, () => now);
+
+            DataEncryptionKeyProperties dek = MakeDekProperties(DekId);
+            JObject payload = new JObject
+            {
+                // Deliberately no "v" field.
+                ["serverProperties"] = JObject.FromObject(dek),
+                ["serverPropertiesExpiryUtc"] = now.AddMinutes(30),
+            };
+
+            l2.SetRawForTest(DefaultCacheKey, Encoding.UTF8.GetBytes(payload.ToString(Formatting.None)));
+
+            int cosmosCalls = 0;
+            DataEncryptionKeyProperties read = await peerB.GetOrAddDekPropertiesAsync(
+                DekId,
+                (id, ctx, ct) => { cosmosCalls++; return Task.FromResult(MakeDekProperties(id)); },
+                CosmosDiagnosticsContext.Create(null),
+                CancellationToken.None);
+
+            Assert.AreEqual(DekId, read.Id, "Payload with missing 'v' must deserialize (default Version = 1).");
+            Assert.AreEqual(0, cosmosCalls, "Missing-'v' payload must be served from L2, not rejected as unsupported.");
+        }
+
+        // ---------------------------------------------------------------
+        // E. Concurrent writers
+        // ---------------------------------------------------------------
+
+        [TestMethod]
+        public async Task ConcurrentWrites_ByTwoPeers_PeerCReadsOneValidValue()
+        {
+            DateTime now = NewClock();
+            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
+
+            DekCache peerA = NewCache(l2, () => now);
+            DekCache peerB = NewCache(l2, () => now);
+            DekCache peerC = NewCache(l2, () => now);
+
+            byte[] valueA = new byte[] { 0xAA, 0xAA };
+            byte[] valueB = new byte[] { 0xBB, 0xBB };
+
+            // Kick off both writes concurrently (each SetDekProperties fires a background L2 write).
+            peerA.SetDekProperties(DekId, MakeDekProperties(DekId, wrappedKey: valueA));
+            peerB.SetDekProperties(DekId, MakeDekProperties(DekId, wrappedKey: valueB));
+
+            await Task.WhenAll(peerA.WhenAllPendingWritesAsync(), peerB.WhenAllPendingWritesAsync());
+
+            DataEncryptionKeyProperties read = await peerC.GetOrAddDekPropertiesAsync(
+                DekId, FailingFetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None);
+
+            bool isA = read.WrappedDataEncryptionKey.Length == valueA.Length
+                && read.WrappedDataEncryptionKey[0] == valueA[0]
+                && read.WrappedDataEncryptionKey[1] == valueA[1];
+            bool isB = read.WrappedDataEncryptionKey.Length == valueB.Length
+                && read.WrappedDataEncryptionKey[0] == valueB[0]
+                && read.WrappedDataEncryptionKey[1] == valueB[1];
+
+            Assert.IsTrue(
+                isA ^ isB,
+                $"Peer C must observe exactly one of the two concurrently-written values; got {BitConverter.ToString(read.WrappedDataEncryptionKey)}.");
+        }
+
+        // ---------------------------------------------------------------
+        // F. Remove propagation across instances
+        // ---------------------------------------------------------------
+
+        [TestMethod]
+        public async Task RemoveAsync_ByPeerA_InvalidatesL2_ForPeerB()
+        {
+            DateTime now = NewClock();
+            ClockControlledDistributedCache l2 = new ClockControlledDistributedCache(() => now);
+
+            DekCache peerA = NewCache(l2, () => now);
+            peerA.SetDekProperties(DekId, MakeDekProperties(DekId));
+            await peerA.WhenAllPendingWritesAsync();
+            Assert.IsTrue(l2.ContainsKey(DefaultCacheKey), "Pre-condition: L2 populated by peer A.");
+
+            await peerA.RemoveAsync(DekId);
+            Assert.IsFalse(l2.ContainsKey(DefaultCacheKey), "Peer A's RemoveAsync must invalidate the shared L2 entry.");
+
+            // Peer B is a fresh DekCache with empty L1; with L2 cleared and Cosmos failing,
+            // the cross-instance invalidation must surface as a fresh-fetch failure, not a
+            // silent hit on an un-invalidated L2.
+            DekCache peerB = NewCache(l2, () => now);
+
+            InvalidOperationException thrown = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => peerB.GetOrAddDekPropertiesAsync(
+                    DekId, FailingFetcher, CosmosDiagnosticsContext.Create(null), CancellationToken.None));
+
+            StringAssert.Contains(thrown.Message, "simulated cosmos outage");
+        }
+
+        // ---------------------------------------------------------------
+        // Helpers
+        // ---------------------------------------------------------------
+
+        private static DateTime NewClock()
+        {
+            return new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        }
+
+        private static DekCache NewCache(IDistributedCache l2, Func<DateTime> utcNow)
+        {
+            return new DekCache(
+                new DekCacheOptions
+                {
+                    DekPropertiesTimeToLive = DefaultTtl,
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = l2,
+                        KeyPrefix = DefaultCachePrefix,
+                    },
+                },
+                utcNow: utcNow
+            );
+        }
+
+        private static DataEncryptionKeyProperties MakeDekProperties(
+            string id,
+            byte[] wrappedKey = null,
+            DateTime? createdTime = null)
+        {
+            return new DataEncryptionKeyProperties(
+                id,
+                "AEAD_AES_256_CBC_HMAC_SHA256",
+                wrappedKey ?? new byte[] { 1, 2, 3 },
+                new EncryptionKeyWrapMetadata("test", "test", "RSA-OAEP", "test"),
+                createdTime ?? new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        }
+
+        private static Task<DataEncryptionKeyProperties> FailingFetcher(string id, CosmosDiagnosticsContext ctx, CancellationToken ct)
+        {
+            throw new InvalidOperationException("simulated cosmos outage");
+        }
+
+        /// <summary>
+        /// IDistributedCache test double that honours an injected clock and exposes the raw
+        /// byte payload for interop-contract inspection. Mirrors the pattern from
+        /// DekCacheResilienceTests so the two test files stay behaviourally aligned.
+        /// </summary>
+        private sealed class ClockControlledDistributedCache : IDistributedCache
+        {
+            private readonly ConcurrentDictionary<string, Entry> store = new ConcurrentDictionary<string, Entry>();
+            private readonly Func<DateTime> utcNow;
+
+            public ClockControlledDistributedCache(Func<DateTime> utcNow)
+            {
+                this.utcNow = utcNow;
+            }
+
+            public byte[] Get(string key) => this.GetAsync(key).GetAwaiter().GetResult();
+
+            public Task<byte[]> GetAsync(string key, CancellationToken token = default)
+            {
+                if (this.store.TryGetValue(key, out Entry entry))
+                {
+                    if (entry.AbsoluteExpiration.HasValue
+                        && entry.AbsoluteExpiration.Value.UtcDateTime <= this.utcNow())
+                    {
+                        this.store.TryRemove(key, out _);
+                        return Task.FromResult<byte[]>(null);
+                    }
+
+                    return Task.FromResult(entry.Value);
+                }
+
+                return Task.FromResult<byte[]>(null);
+            }
+
+            public void Set(string key, byte[] value, DistributedCacheEntryOptions options)
+                => this.SetAsync(key, value, options).GetAwaiter().GetResult();
+
+            public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options, CancellationToken token = default)
+            {
+                this.store[key] = new Entry
+                {
+                    Value = value,
+                    AbsoluteExpiration = options?.AbsoluteExpiration,
+                };
+
+                return Task.CompletedTask;
+            }
+
+            public void Remove(string key) => this.store.TryRemove(key, out _);
+
+            public Task RemoveAsync(string key, CancellationToken token = default)
+            {
+                this.Remove(key);
+                return Task.CompletedTask;
+            }
+
+            public void Refresh(string key) { }
+
+            public Task RefreshAsync(string key, CancellationToken token = default) => Task.CompletedTask;
+
+            public bool ContainsKey(string key) => this.store.ContainsKey(key);
+
+            public void SetRawForTest(string key, byte[] bytes)
+            {
+                this.store[key] = new Entry { Value = bytes, AbsoluteExpiration = null };
+            }
+
+            public byte[] GetRawForTest(string key)
+            {
+                return this.store.TryGetValue(key, out Entry entry) ? entry.Value : null;
+            }
+
+            private sealed class Entry
+            {
+                public byte[] Value { get; set; }
+
+                public DateTimeOffset? AbsoluteExpiration { get; set; }
+            }
+        }
+    }
+}

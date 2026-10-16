@@ -502,9 +502,18 @@ namespace Microsoft.Azure.Cosmos.Json
                             return false;
                         }
 
+                        if (!JsonBinaryEncoding.TryGetReferenceStringTarget(
+                            buffer,
+                            targetOffset: stringTokenSpan[0],
+                            out ReadOnlyMemory<byte> strR1Target))
+                        {
+                            value = default;
+                            return false;
+                        }
+
                         return TryGetBufferedStringValue(
                             buffer,
-                            buffer.Slice(start: stringTokenSpan[0]),
+                            strR1Target,
                             jsonStringDictionary,
                             out value);
 
@@ -515,9 +524,18 @@ namespace Microsoft.Azure.Cosmos.Json
                             return false;
                         }
 
+                        if (!JsonBinaryEncoding.TryGetReferenceStringTarget(
+                            buffer,
+                            targetOffset: MemoryMarshal.Read<ushort>(stringTokenSpan),
+                            out ReadOnlyMemory<byte> strR2Target))
+                        {
+                            value = default;
+                            return false;
+                        }
+
                         return TryGetBufferedStringValue(
                             buffer,
-                            buffer.Slice(start: MemoryMarshal.Read<ushort>(stringTokenSpan)),
+                            strR2Target,
                             jsonStringDictionary,
                             out value);
 
@@ -528,9 +546,18 @@ namespace Microsoft.Azure.Cosmos.Json
                             return false;
                         }
 
+                        if (!JsonBinaryEncoding.TryGetReferenceStringTarget(
+                            buffer,
+                            targetOffset: (int)MemoryMarshal.Read<UInt24>(stringTokenSpan),
+                            out ReadOnlyMemory<byte> strR3Target))
+                        {
+                            value = default;
+                            return false;
+                        }
+
                         return TryGetBufferedStringValue(
                             buffer,
-                            buffer.Slice(start: MemoryMarshal.Read<UInt24>(stringTokenSpan)),
+                            strR3Target,
                             jsonStringDictionary,
                             out value);
 
@@ -541,9 +568,18 @@ namespace Microsoft.Azure.Cosmos.Json
                             return false;
                         }
 
+                        if (!JsonBinaryEncoding.TryGetReferenceStringTarget(
+                            buffer,
+                            targetOffset: (int)MemoryMarshal.Read<uint>(stringTokenSpan),
+                            out ReadOnlyMemory<byte> strR4Target))
+                        {
+                            value = default;
+                            return false;
+                        }
+
                         return TryGetBufferedStringValue(
                             buffer,
-                            buffer.Slice(start: (int)MemoryMarshal.Read<uint>(stringTokenSpan)),
+                            strR4Target,
                             jsonStringDictionary,
                             out value);
 
@@ -560,6 +596,75 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             value = Utf8Memory.UnsafeCreateNoValidation(stringToken.Slice(start: start, length: (int)length));
+            return true;
+        }
+
+        /// <summary>
+        /// Validates that <paramref name="targetOffset"/> resolves to a real,
+        /// non-reference string token within <paramref name="buffer"/> -- the
+        /// single invariant every reference string (StrR1/2/3/4) must satisfy
+        /// before it is dereferenced.
+        /// </summary>
+        /// <remarks>
+        /// A well-formed binary buffer always resolves a reference string to a
+        /// non-reference string literal in exactly one hop. On a hostile or
+        /// corrupted buffer the target byte could be another reference string,
+        /// which would let an attacker construct an arbitrarily deep chain or a
+        /// cycle (e.g. StrR1@a -> StrR1@b -> StrR1@a, or a self reference) that
+        /// would otherwise recurse forever into an uncatchable
+        /// <see cref="StackOverflowException"/> and crash the process.
+        ///
+        /// Both the binary reader (<see cref="TryGetReferenceStringTarget"/>) and
+        /// the binary writer
+        /// (<c>JsonWriter.JsonBinaryWriter.RewriteResolvedReferenceString</c>,
+        /// PR #5909) gate on this single predicate so the invariant cannot drift
+        /// between the two decode paths again -- the divergence that produced
+        /// PR #5957. The reader surfaces a rejection as a catchable
+        /// <see cref="JsonInvalidTokenException"/> via <c>return false</c>; the
+        /// writer throws the same exception directly. The unsigned bounds compare
+        /// also rejects negative StrR4 offsets so we never index before the start
+        /// of the buffer.
+        /// </remarks>
+        internal static bool IsValidReferenceStringTarget(
+            ReadOnlyMemory<byte> buffer,
+            int targetOffset)
+        {
+            if ((uint)targetOffset >= (uint)buffer.Length)
+            {
+                return false;
+            }
+
+            byte targetTypeMarker = buffer.Span[targetOffset];
+            return JsonBinaryEncoding.TypeMarker.IsString(targetTypeMarker)
+                && !JsonBinaryEncoding.TypeMarker.IsReferenceString(targetTypeMarker);
+        }
+
+        /// <summary>
+        /// Validates the target of a reference string (StrR1/2/3/4) before it is
+        /// dereferenced, returning the target string token on success.
+        /// </summary>
+        /// <remarks>
+        /// Reader/navigator counterpart of the writer guard in
+        /// <c>JsonWriter.JsonBinaryWriter.RewriteResolvedReferenceString</c>. The
+        /// validation invariant itself lives in the shared
+        /// <see cref="IsValidReferenceStringTarget"/> predicate; this wrapper just
+        /// adapts it to the reader's try-get shape by slicing out the validated
+        /// target string token. Returning <c>false</c> lets the callers
+        /// (GetUtf8MemoryValue / GetStringValue) surface a catchable
+        /// <see cref="JsonInvalidTokenException"/>, matching the writer contract.
+        /// </remarks>
+        private static bool TryGetReferenceStringTarget(
+            ReadOnlyMemory<byte> buffer,
+            int targetOffset,
+            out ReadOnlyMemory<byte> targetStringToken)
+        {
+            if (!JsonBinaryEncoding.IsValidReferenceStringTarget(buffer, targetOffset))
+            {
+                targetStringToken = default;
+                return false;
+            }
+
+            targetStringToken = buffer.Slice(start: targetOffset);
             return true;
         }
 

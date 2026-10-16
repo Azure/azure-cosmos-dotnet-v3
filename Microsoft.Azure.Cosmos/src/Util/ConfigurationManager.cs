@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Threading;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal static class ConfigurationManager
     {
@@ -13,109 +15,134 @@ namespace Microsoft.Azure.Cosmos
         /// This will eventually be removed once replica valdiatin is enabled by default for both preview
         /// and GA.
         /// </summary>
-        internal static readonly string ReplicaConnectivityValidationEnabled = "AZURE_COSMOS_REPLICA_VALIDATION_ENABLED";
+        public static readonly string ReplicaConnectivityValidationEnabled = "AZURE_COSMOS_REPLICA_VALIDATION_ENABLED";
 
         /// <summary>
         /// A read-only string containing the environment variable name for enabling per partition automatic failover.
         /// This will eventually be removed once per partition automatic failover is enabled by default for both preview
         /// and GA.
         /// </summary>
-        internal static readonly string PartitionLevelFailoverEnabled = "AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED";
+        public static readonly string PartitionLevelFailoverEnabled = "AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED";
 
         /// <summary>
         /// A read-only string containing the environment variable name for enabling per partition circuit breaker. The default value
         /// for this flag is false.
         /// </summary>
-        internal static readonly string PartitionLevelCircuitBreakerEnabled = "AZURE_COSMOS_CIRCUIT_BREAKER_ENABLED";
+        public static readonly string PartitionLevelCircuitBreakerEnabled = "AZURE_COSMOS_CIRCUIT_BREAKER_ENABLED";
 
         /// <summary>
         /// A read-only string containing the environment variable name for capturing the stale partition refresh task interval time
         /// in seconds. The default value for this interval is 60 seconds.
         /// </summary>
-        internal static readonly string StalePartitionUnavailabilityRefreshIntervalInSeconds = "AZURE_COSMOS_PPCB_STALE_PARTITION_UNAVAILABILITY_REFRESH_INTERVAL_IN_SECONDS";
+        public static readonly string StalePartitionUnavailabilityRefreshIntervalInSeconds = "AZURE_COSMOS_PPCB_STALE_PARTITION_UNAVAILABILITY_REFRESH_INTERVAL_IN_SECONDS";
 
         /// <summary>
         /// A read-only string containing the environment variable name for capturing the unavailability duration applicable for a failed partition
         /// before the partition can be considered for a refresh by the background task.
         /// </summary>
-        internal static readonly string AllowedPartitionUnavailabilityDurationInSeconds = "AZURE_COSMOS_PPCB_ALLOWED_PARTITION_UNAVAILABILITY_DURATION_IN_SECONDS";
+        public static readonly string AllowedPartitionUnavailabilityDurationInSeconds = "AZURE_COSMOS_PPCB_ALLOWED_PARTITION_UNAVAILABILITY_DURATION_IN_SECONDS";
 
         /// <summary>
         /// Environment variable name to enable thin client mode.
         /// </summary>
-        internal static readonly string ThinClientModeEnabled = "AZURE_COSMOS_THIN_CLIENT_ENABLED";
+        public static readonly string ThinClientModeEnabled = "AZURE_COSMOS_THIN_CLIENT_ENABLED";
 
         /// <summary>
         /// Environment variable to override AAD scope.
         /// </summary>
-        internal static readonly string AADScopeOverride = "AZURE_COSMOS_AAD_SCOPE_OVERRIDE";
+        public static readonly string AADScopeOverride = "AZURE_COSMOS_AAD_SCOPE_OVERRIDE";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for enabling AAD token
+        /// revocation handling (emergency revocation and Continuous Access Evaluation). When this
+        /// flag is not set (or set to false), the SDK behaves exactly as it did before the token
+        /// revocation feature was introduced: no CAE client capability (cp1) is advertised and no
+        /// revocation detection / retry is performed. The default value for this flag is false.
+        /// </summary>
+        public static readonly string AadTokenRevocationEnabled = "AZURE_COSMOS_AAD_TOKEN_REVOCATION_ENABLED";
 
         /// <summary>
         /// A read-only string containing the environment variable name for capturing the consecutive failure count for reads, before triggering per partition
         /// circuit breaker flow. The default value for this interval is 10 consecutive requests within 1 min window.
         /// </summary>
-        internal static readonly string CircuitBreakerConsecutiveFailureCountForReads = "AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_FOR_READS";
+        public static readonly string CircuitBreakerConsecutiveFailureCountForReads = "AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_FOR_READS";
 
         /// <summary>
         /// A read-only string containing the environment variable name for capturing the consecutive failure count for writes, before triggering per partition
         /// circuit breaker flow. The default value for this interval is 10 consecutive requests within 1 min window.
         /// </summary>
-        internal static readonly string CircuitBreakerConsecutiveFailureCountForWrites = "AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_FOR_WRITES";
+        public static readonly string CircuitBreakerConsecutiveFailureCountForWrites = "AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_FOR_WRITES";
 
         /// <summary>
         /// A read-only string containing the environment variable name for capturing the consecutive failure count for writes, before triggering per partition
         /// circuit breaker flow. The default value for this interval is 5 consecutive requests within 1 min window.
         /// </summary>
-        internal static readonly string CircuitBreakerTimeoutCounterResetWindowInMinutes = "AZURE_COSMOS_PPCB_TIMEOUT_COUNTER_RESET_WINDOW_IN_MINUTES";
+        public static readonly string CircuitBreakerTimeoutCounterResetWindowInMinutes = "AZURE_COSMOS_PPCB_TIMEOUT_COUNTER_RESET_WINDOW_IN_MINUTES";
 
         /// <summary>
         /// Environment variable name for overriding optimistic direct execution of queries.
         /// </summary>
-        internal static readonly string OptimisticDirectExecutionEnabled = "AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED";
+        public static readonly string OptimisticDirectExecutionEnabled = "AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED";
 
         /// <summary>
         /// Environment variable name to disable sending non streaming order by query feature flag to the gateway.
         /// </summary>
-        internal static readonly string HybridSearchQueryPlanOptimizationDisabled = "AZURE_COSMOS_HYBRID_SEARCH_QUERYPLAN_OPTIMIZATION_DISABLED";
+        public static readonly string HybridSearchQueryPlanOptimizationDisabled = "AZURE_COSMOS_HYBRID_SEARCH_QUERYPLAN_OPTIMIZATION_DISABLED";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for enabling hub region processing for read requests.
+        /// When enabled (default), the SDK attaches a hub region header to read requests that encounter repeated 404/1002
+        /// (ReadSessionNotAvailable) errors, allowing the hub region to process the request directly. When disabled, the
+        /// SDK falls back to the original retry behavior without hub region header attachment.
+        /// </summary>
+        public static readonly string HubRegionProcessingEnabled = "AZURE_COSMOS_HUB_REGION_PROCESSING_ENABLED";
 
         /// <summary>
         /// Environment variable name to enable distributed query gateway mode.
         /// </summary>
-        internal static readonly string DistributedQueryGatewayModeEnabled = "AZURE_COSMOS_DISTRIBUTED_QUERY_GATEWAY_ENABLED";
+        public static readonly string DistributedQueryGatewayModeEnabled = "AZURE_COSMOS_DISTRIBUTED_QUERY_GATEWAY_ENABLED";
 
         /// <summary>
         /// intent is If a client specify a value, we will force it to be atleast 100ms, otherwise default is going to be 500ms
         /// </summary>
-        internal static readonly string MinInRegionRetryTimeForWritesInMs = "AZURE_COSMOS_SESSION_TOKEN_MISMATCH_IN_REGION_RETRY_TIME_IN_MILLISECONDS";
-        internal static readonly int DefaultMinInRegionRetryTimeForWritesInMs = 500;
-        internal static readonly int MinMinInRegionRetryTimeForWritesInMs = 100;
+        public static readonly string MinInRegionRetryTimeForWritesInMs = "AZURE_COSMOS_SESSION_TOKEN_MISMATCH_IN_REGION_RETRY_TIME_IN_MILLISECONDS";
+        public static readonly int DefaultMinInRegionRetryTimeForWritesInMs = 500;
+        public static readonly int MinMinInRegionRetryTimeForWritesInMs = 100;
 
         /// <summary>
         /// intent is If a client specify a value, we will force it to be atleast 1, otherwise default is going to be 1(right now both the values are 1 but we have the provision to change them in future).
         /// </summary>
-        internal static readonly string MaxRetriesInLocalRegionWhenRemoteRegionPreferred = "AZURE_COSMOS_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED";
-        internal static readonly int DefaultMaxRetriesInLocalRegionWhenRemoteRegionPreferred = 1;
-        internal static readonly int MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred = 1;
+        public static readonly string MaxRetriesInLocalRegionWhenRemoteRegionPreferred = "AZURE_COSMOS_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED";
+        public static readonly int DefaultMaxRetriesInLocalRegionWhenRemoteRegionPreferred = 1;
+        public static readonly int MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred = 1;
 
         /// <summary>
         /// A read-only string containing the environment variable name for enabling binary encoding. This will eventually
         /// be removed once binary encoding is enabled by default for both preview
         /// and GA.
         /// </summary>
-        internal static readonly string BinaryEncodingEnabled = "AZURE_COSMOS_BINARY_ENCODING_ENABLED";
+        public static readonly string BinaryEncodingEnabled = "AZURE_COSMOS_BINARY_ENCODING_ENABLED";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for enabling cross-region metadata
+        /// hedging. Metadata hedging applies to the Collection Read and PartitionKeyRange ReadFeed metadata
+        /// cache reads. It is enabled by default in the preview package; in the GA package it follows the
+        /// account's PPAF state unless this environment variable is explicitly set.
+        /// </summary>
+        public static readonly string MetadataHedgingEnabled = "AZURE_COSMOS_METADATA_HEDGING_ENABLED";
 
         /// <summary>
         /// A read-only string containing the environment variable name for enabling binary encoding. This will eventually
         /// be removed once binary encoding is enabled by default for both preview
         /// and GA.
         /// </summary>
-        internal static readonly string TcpChannelMultiplexingEnabled = "AZURE_COSMOS_TCP_CHANNEL_MULTIPLEX_ENABLED";
+        public static readonly string TcpChannelMultiplexingEnabled = "AZURE_COSMOS_TCP_CHANNEL_MULTIPLEX_ENABLED";
 
         /// <summary>
         /// A read-only string containing the environment variable name for bypassing query parsing.
         /// and GA.
         /// </summary>
-        internal static readonly string BypassQueryParsing = "AZURE_COSMOS_BYPASS_QUERY_PARSING";
+        public static readonly string BypassQueryParsing = "AZURE_COSMOS_BYPASS_QUERY_PARSING";
 
         /// <summary>
         /// A read-only string containing the environment variable name for disabling length aware range comparator.
@@ -123,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
         /// By default length aware range comparator is enabled. Refer to Range.cs in Msdata project for more details. Range.LengthAwareMinComparer/LengthAwareMaxComparer.
         /// Setting the value to false will disable length aware range comparator and switch to using the regular Range.MinComparer/MaxComparer.
         /// </summary>
-        internal static readonly string UseLengthAwareRangeComparator = "AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR";
+        public static readonly string UseLengthAwareRangeComparator = "AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR";
 
         /// <summary>
         /// Environment variable name to enable DNS dot-suffix (FQDN trailing dot) for
@@ -131,7 +158,60 @@ namespace Microsoft.Azure.Cosmos
         /// before DNS resolution to bypass Kubernetes ndots search-domain expansion.
         /// See: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5730
         /// </summary>
-        internal static readonly string TcpDnsDotSuffixEnabled = "AZURE_COSMOS_TCP_DNS_DOT_SUFFIX_ENABLED";
+        public static readonly string TcpDnsDotSuffixEnabled = "AZURE_COSMOS_TCP_DNS_DOT_SUFFIX_ENABLED";
+
+        /// <summary>
+        /// Environment variable to disable the barrier early yield on 429 optimization.
+        /// When set to "false", the Direct transport layer will not yield early on barrier
+        /// throttling and will instead spin until timeout (pre-3.44.0 behavior).
+        /// Default: true (enabled).
+        /// </summary>
+        public static readonly string BarrierEarlyYieldOn429Enabled = "AZURE_COSMOS_BARRIER_EARLY_YIELD_ON_429_ENABLED";
+
+        /// <summary>
+        /// Environment variable to override the HTTP/2 PING keep-alive delay (in seconds).
+        /// After this many seconds of inactivity on an HTTP/2 connection, a PING frame is sent
+        /// to detect broken connections in the pool. Default: 1 second.
+        /// </summary>
+        public static readonly string Http2KeepAlivePingDelayInSeconds = "AZURE_COSMOS_HTTP2_KEEPALIVE_PING_DELAY_IN_SECONDS";
+
+        /// <summary>
+        /// Environment variable to override the HTTP/2 PING keep-alive timeout (in seconds).
+        /// If no PONG response is received within this time, the connection is marked dead. Default: 2 seconds.
+        /// </summary>
+        public static readonly string Http2KeepAlivePingTimeoutInSeconds = "AZURE_COSMOS_HTTP2_KEEPALIVE_PING_TIMEOUT_IN_SECONDS";
+
+        /// <summary>
+        /// Environment variable name to enable deterministic lease-id partition key values for Change Feed lease creation.
+        /// </summary>
+        public static readonly string ChangeFeedLeaseIdAsPartitionKeyEnabled = "AZURE_COSMOS_CHANGE_FEED_LEASE_ID_AS_PARTITION_KEY_ENABLED";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for overriding the maximum number of
+        /// operations allowed in a single Direct mode batch request. When not set, the SDK uses the default
+        /// value defined by <see cref="Documents.Constants.MaxOperationsInDirectModeBatchRequest"/>.
+        /// </summary>
+        public static readonly string MaxOperationsInDirectModeBatchRequest = "AZURE_COSMOS_MAX_OPERATIONS_IN_BATCH_REQUEST";
+
+        private static Lazy<int> maxOperationsInDirectModeBatchRequestCached =
+            ConfigurationManager.CreateMaxOperationsInDirectModeBatchRequestCache();
+
+        /// <summary>
+        /// Environment variable to override the factor used when computing the initial per-partition
+        /// page size for a cross-partition ORDER BY query that carries a TOP or LIMIT clause.
+        /// </summary>
+        public static readonly string PageSizeFactorForTop = "AZURE_COSMOS_PAGE_SIZE_FACTOR_FOR_TOP";
+
+        /// <summary>
+        /// The factor used when <see cref="PageSizeFactorForTop"/> is not set or does not contain a valid integer.
+        /// </summary>
+        public static readonly int DefaultPageSizeFactorForTop = 2;
+
+        /// <summary>
+        /// The smallest factor honored from <see cref="PageSizeFactorForTop"/>. A smaller override is raised to this
+        /// value so that the per-partition page size stays at or above an even split of the TOP or LIMIT value.
+        /// </summary>
+        public static readonly int MinPageSizeFactorForTop = 1;
 
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
@@ -141,6 +221,48 @@ namespace Microsoft.Azure.Cosmos
                 return defaultValue;
             }
             return (T)Convert.ChangeType(value, typeof(T));
+        }
+
+        public static int GetMaxOperationsInDirectModeBatchRequest()
+        {
+            return ConfigurationManager.maxOperationsInDirectModeBatchRequestCached.Value;
+        }
+
+        public static void ResetMaxOperationsInDirectModeBatchRequestCacheForTesting()
+        {
+            ConfigurationManager.maxOperationsInDirectModeBatchRequestCached =
+                ConfigurationManager.CreateMaxOperationsInDirectModeBatchRequestCache();
+        }
+
+        private static Lazy<int> CreateMaxOperationsInDirectModeBatchRequestCache()
+        {
+            return new Lazy<int>(
+                ConfigurationManager.GetMaxOperationsInDirectModeBatchRequestInternal,
+                LazyThreadSafetyMode.PublicationOnly);
+        }
+
+        private static int GetMaxOperationsInDirectModeBatchRequestInternal()
+        {
+            string environmentValue = Environment.GetEnvironmentVariable(ConfigurationManager.MaxOperationsInDirectModeBatchRequest);
+
+            if (string.IsNullOrEmpty(environmentValue))
+            {
+                return Documents.Constants.MaxOperationsInDirectModeBatchRequest;
+            }
+
+            if (!int.TryParse(environmentValue, out int parsedValue))
+            {
+                throw new ArgumentException(
+                    $"Environment variable {ConfigurationManager.MaxOperationsInDirectModeBatchRequest} must be a valid integer. Current value: {environmentValue}");
+            }
+
+            if (parsedValue <= 0 || parsedValue > Documents.Constants.MaxOperationsInDirectModeBatchRequest)
+            {
+                throw new ArgumentException(
+                    $"Environment variable {ConfigurationManager.MaxOperationsInDirectModeBatchRequest} must be between 1 and {Documents.Constants.MaxOperationsInDirectModeBatchRequest}. Current value: {environmentValue}");
+            }
+
+            return parsedValue;
         }
 
         public static int GetMaxRetriesInLocalRegionWhenRemoteRegionPreferred()
@@ -199,6 +321,32 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.ThinClientModeEnabled,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether AAD token revocation handling (emergency
+        /// revocation and Continuous Access Evaluation) is enabled. Defaults to false, in which case
+        /// the SDK preserves the exact pre-feature AAD behavior (no cp1 capability, no revocation retry).
+        /// </summary>
+        /// <returns>A boolean flag indicating if AAD token revocation handling is enabled.</returns>
+        public static bool IsAadTokenRevocationEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.AadTokenRevocationEnabled,
+                        defaultValue: false);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether Change Feed lease creation should use lease id as the partition key value.
+        /// </summary>
+        /// <returns>A boolean flag indicating if deterministic lease-id partition key behavior is enabled.</returns>
+        public static bool IsChangeFeedLeaseIdAsPartitionKeyEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.ChangeFeedLeaseIdAsPartitionKeyEnabled,
+                        defaultValue: true);
         }
 
         /// <summary>
@@ -339,6 +487,37 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets the factor applied to the initial per-partition page size of a cross-partition
+        /// ORDER BY query that has a TOP or LIMIT clause. Defaults to <see cref="DefaultPageSizeFactorForTop"/>
+        /// and can be overridden with the <c>AZURE_COSMOS_PAGE_SIZE_FACTOR_FOR_TOP</c> environment variable.
+        /// </summary>
+        /// <remarks>
+        /// A malformed value is traced and ignored in favor of the default rather than throwing, which is
+        /// why this parses the value itself instead of using <see cref="GetEnvironmentVariable{T}"/>.
+        /// </remarks>
+        public static int GetPageSizeFactorForTop()
+        {
+            string value = Environment.GetEnvironmentVariable(ConfigurationManager.PageSizeFactorForTop);
+            if (string.IsNullOrEmpty(value))
+            {
+                return ConfigurationManager.DefaultPageSizeFactorForTop;
+            }
+
+            if (!int.TryParse(value, out int factorOverride))
+            {
+                DefaultTrace.TraceWarning(
+                    "Ignoring the {0} environment variable because '{1}' is not a valid integer. Using the default value of {2}.",
+                    ConfigurationManager.PageSizeFactorForTop,
+                    value,
+                    ConfigurationManager.DefaultPageSizeFactorForTop);
+
+                return ConfigurationManager.DefaultPageSizeFactorForTop;
+            }
+
+            return Math.Max(factorOverride, ConfigurationManager.MinPageSizeFactorForTop);
+        }
+
+        /// <summary>
         /// Gets the boolean value indicating if distributed query gateway mode is enabled
         /// based on the environment variable override.
         /// </summary>
@@ -395,19 +574,52 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets the boolean value indicating if length-aware range comparator is enabled.
-        /// Default: true for preview , false for GA.
+        /// Default: true for GA and Preview builds, false for INTERNAL builds.
+        /// Can be overridden via the AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR environment variable.
+        /// Setting the environment variable to false disables length-aware range comparator across all
+        /// usage sites (TryCombine, QueryRangeUtils, PartitionRoutingHelper).
         /// </summary>
         /// <returns>A boolean flag indicating if length-aware range comparator is enabled.</returns>
         public static bool IsLengthAwareRangeComparatorEnabled()
         {
-            bool defaultValue = false;
-#if PREVIEW && !INTERNAL
-            defaultValue = true;
+            bool defaultValue = true;
+#if INTERNAL
+            defaultValue = false;
 #endif
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.UseLengthAwareRangeComparator,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Resolves the tri-state opt-in for cross-region metadata hedging.
+        /// <list type="bullet">
+        /// <item>If the <c>AZURE_COSMOS_METADATA_HEDGING_ENABLED</c> environment variable is set to a valid
+        /// boolean, that value wins (<c>true</c> force-enables, <c>false</c> is a hard kill-switch).</item>
+        /// <item>If the environment variable is unset, the preview package defaults to <c>true</c> (on) and
+        /// the GA package returns <c>null</c> so hedging follows the account's PPAF state.</item>
+        /// </list>
+        /// </summary>
+        /// <returns>
+        /// <c>true</c> / <c>false</c> when explicitly configured; otherwise <c>true</c> for preview builds and
+        /// <c>null</c> (follow PPAF) for GA builds.
+        /// </returns>
+        public static bool? GetMetadataHedgingOptIn()
+        {
+            string value = Environment.GetEnvironmentVariable(ConfigurationManager.MetadataHedgingEnabled);
+            if (!string.IsNullOrEmpty(value) && bool.TryParse(value, out bool parsed))
+            {
+                return parsed;
+            }
+
+#if PREVIEW
+            // Preview package: metadata hedging is on by default.
+            return true;
+#else
+            // GA package: follow the account's PPAF state (resolved per-request by the strategy).
+            return null;
+#endif
         }
 
         /// <summary>
@@ -425,6 +637,39 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.TcpDnsDotSuffixEnabled,
                         defaultValue: false);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if the barrier early yield on 429 optimization
+        /// is enabled. When true (default), ConsistencyWriter and QuorumReader in the Direct
+        /// transport layer yield early on barrier throttling. Set to false via environment
+        /// variable to revert to pre-3.44.0 spin-until-timeout behavior without an SDK redeploy.
+        /// Default: true.
+        /// </summary>
+        /// <returns>A boolean flag indicating if barrier early yield on 429 is enabled.</returns>
+        public static bool IsBarrierEarlyYieldOn429Enabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.BarrierEarlyYieldOn429Enabled,
+                        defaultValue: true);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if hub region processing is enabled for read requests
+        /// encountering repeated 404/1002 (ReadSessionNotAvailable) errors on single-master accounts.
+        /// When enabled, the SDK attaches a hub region header to route read requests to the hub region
+        /// for authoritative partition resolution. When disabled, the SDK falls back to the original
+        /// retry behavior (route to write region and give up after two 404/1002 attempts).
+        /// Default: true.
+        /// </summary>
+        /// <returns>A boolean flag indicating if hub region processing is enabled.</returns>
+        public static bool IsHubRegionProcessingEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.HubRegionProcessingEnabled,
+                        defaultValue: true);
         }
     }
 }

@@ -174,9 +174,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return this.orderedPartitionKeyRanges[0];
             }
 
+            // Search the ordinally-built orderedRanges with the configured (length-aware-by-default)
+            // comparer, mirroring GetOverlappingRanges. This is safe because partition key ranges form a
+            // contiguous hex-string space: (1) range boundaries with different significant prefixes keep the
+            // same relative order under both the ordinal and length-aware comparers, so the ordinal sort of
+            // orderedRanges is a valid precondition for the binary search; and (2) a short/partial EPK is
+            // intentionally treated as equal to its zero-padded boundary, which is exactly the disagreement
+            // with the previous ordinal comparer that this method must now resolve consistently with
+            // GetOverlappingRanges.
             int index = this.orderedRanges.BinarySearch(
                 new Range<string>(effectivePartitionKeyValue, effectivePartitionKeyValue, true, true),
-                Range<string>.MinComparer.Instance);
+                this.comparers.MinComparer);
 
             if (index < 0)
             {

@@ -25,9 +25,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             this.cosmosClient = TestCommon.CreateCosmosClient(useGateway: true);
             DatabaseResponse db = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
-            partitionKeyDefinition.Paths.Add("/Status");
-            this.cosmosContainer = (ContainerInlineCore)await db.Database.CreateContainerAsync(new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }, 10000);
+            ContainerProperties containerProperties = new ContainerProperties("mycoll", new List<string> { "/Status", "/id" });
+            this.cosmosContainer = (ContainerInlineCore)await db.Database.CreateContainerAsync(containerProperties);
+
         }
 
         [TestCleanup]
@@ -86,6 +86,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(
                 new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), 
                 new ItemRequestOptions() { DedicatedGatewayRequestOptions = new DedicatedGatewayRequestOptions { MaxIntegratedCacheStaleness = TimeSpan.FromMinutes(3) }  }));
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(
+                new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)),
+                new ItemRequestOptions() { ThroughputBucket = 1 }));
         }
 
         private static ItemBatchOperation CreateItem(string id)

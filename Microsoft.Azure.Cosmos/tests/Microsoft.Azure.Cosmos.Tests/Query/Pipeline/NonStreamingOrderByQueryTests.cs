@@ -31,6 +31,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     [TestClass]
     public class NonStreamingOrderByQueryTests
     {
+        private delegate IReadOnlyList<double> CalculateScores(int componentCount, int documentIndex);
+
         private const int MaxConcurrency = 10;
 
         private const int DocumentCount = 420;
@@ -644,6 +646,80 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
+        public async Task CompetitionRanksDetermineWeightedRrfOrder()
+        {
+            await AssertCompetitionRankScenarioAsync(
+                firstComponentScores: new[] { 10.0, 10.0, 8.0, 7.0, 6.0 },
+                expected: new[] { 1, 0, 2, 3, 4 });
+
+            // Verify the regression case where a middle tie group causes the next rank to skip from 2 to 5.
+            await AssertCompetitionRankScenarioAsync(
+                firstComponentScores: new[] { 10.0, 9.0, 9.0, 9.0, 4.0 },
+                expected: new[] { 3, 0, 2, 1, 4 });
+
+            await AssertCompetitionRankScenarioAsync(
+                firstComponentScores: new[] { 10.0, 9.0, 8.0, 7.0, 7.0 },
+                expected: new[] { 0, 1, 4, 2, 3 });
+
+            await AssertCompetitionRankScenarioAsync(
+                firstComponentScores: new[] { 5.0, 5.0, 5.0, 5.0, 5.0 },
+                expected: new[] { 4, 3, 2, 1, 0 });
+        }
+
+        private static async Task AssertCompetitionRankScenarioAsync(double[] firstComponentScores, int[] expected)
+        {
+            int[] actual = await RunCompetitionRankScenarioAsync(firstComponentScores);
+            if (!expected.SequenceEqual(actual))
+            {
+                System.Diagnostics.Trace.WriteLine("Mismatch in competition rank results");
+                System.Diagnostics.Trace.WriteLine($"Expected: {string.Join(", ", expected)}");
+                System.Diagnostics.Trace.WriteLine($"Actual: {string.Join(", ", actual)}");
+                Assert.Fail();
+            }
+        }
+
+        private static async Task<int[]> RunCompetitionRankScenarioAsync(double[] firstComponentScores)
+        {
+            IReadOnlyList<FeedRangeEpk> feedRanges = new List<FeedRangeEpk>
+            {
+                new FeedRangeEpk(new Documents.Routing.Range<string>(string.Empty, "FF", true, false)),
+            };
+
+            MockDocumentContainer documentContainer = MockDocumentContainer.CreateHybridSearchContainer(
+                feedRanges,
+                new[]
+                {
+                    PartitionedFeedMode.NonStreamingReversed,
+                    PartitionedFeedMode.NonStreamingReversed,
+                },
+                leafPageCount: 1,
+                backendPageSize: firstComponentScores.Length,
+                returnEmptyGlobalStatistics: false,
+                skipOrderByRewrite: false,
+                calculateScores: (_, index) => new[]
+                {
+                    firstComponentScores[index],
+                    index + 1.0,
+                });
+
+            (IReadOnlyList<CosmosElement> results, _) = await CreateAndRunHybridSearchQueryPipelineStage(
+                documentContainer,
+                targetRanges: feedRanges,
+                allRanges: feedRanges,
+                requiresGlobalStatistics: false,
+                pageSize: firstComponentScores.Length,
+                skip: null,
+                take: null,
+                weights: new[] { 2.0, 1.0 },
+                skipOrderByRewrite: false,
+                fullTextScoreScope: FullTextScoreScope.Local);
+
+            return results
+                .Select(result => (int)Number64.ToLong(((CosmosNumber)((CosmosObject)result)[Index]).Value))
+                .ToArray();
+        }
+
+        [TestMethod]
         public async Task HybridSearchSkipOrderByRewriteWeightedRRFTests()
         {
             IReadOnlyList<HybridSearchTest> testCases = new List<HybridSearchTest>
@@ -755,6 +831,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 PartitionedFeedMode.NonStreamingReversed,
             };
 
+            CalculateScores calculateScores = CalculateDefaultScores;
+
             if (testCase.Weights != null)
             {
                 Assert.IsTrue(testCase.Weights.All(x => x >= 0) || testCase.Weights.All(x => x <= 0));
@@ -764,10 +842,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     expectedIndices = expectedIndices.Reverse();
 
                     PartitionedFeedMode feedMode = testCase.SkipOrderByRewrite?
-                        PartitionedFeedMode.NonStreamingReversed | PartitionedFeedMode.NegateScores:
+                        PartitionedFeedMode.NonStreamingReversed:
                         PartitionedFeedMode.NonStreaming;
 
                     feedModes = new PartitionedFeedMode[] { feedMode, feedMode };
+                    calculateScores = testCase.SkipOrderByRewrite ? CalculateNegatedScores : CalculateDefaultScores;
                 }
             }
 
@@ -788,7 +867,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 leafPageCount: testCase.LeafPageCount,
                 backendPageSize: testCase.BackendPageSize,
                 returnEmptyGlobalStatistics: testCase.ReturnEmptyGlobalStatistics,
-                skipOrderByRewrite: testCase.SkipOrderByRewrite);
+                skipOrderByRewrite: testCase.SkipOrderByRewrite,
+                calculateScores: calculateScores);
 
             (IReadOnlyList<CosmosElement> results, double requestCharge) = await CreateAndRunHybridSearchQueryPipelineStage(
                 documentContainer: nonStreamingDocumentContainer,
@@ -1651,7 +1731,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 int leafPageCount,
                 int backendPageSize,
                 bool returnEmptyGlobalStatistics,
-                bool skipOrderByRewrite)
+                bool skipOrderByRewrite,
+                CalculateScores calculateScores = null)
             {
                 Assert.IsTrue(feedModes.All(x => x.HasFlag(PartitionedFeedMode.NonStreaming)) || feedModes.All(x => !x.HasFlag(PartitionedFeedMode.NonStreaming)));
 
@@ -1660,7 +1741,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     feedModes,
                     leafPageCount,
                     backendPageSize,
-                    skipOrderByRewrite);
+                    skipOrderByRewrite,
+                    calculateScores ?? CalculateDefaultScores);
 
                 return new MockDocumentContainer(
                     pages,
@@ -1867,8 +1949,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             NonStreaming = 1,
             Reversed = 2,
 
-            NegateScores = 4,
-
             StreamingReversed = Streaming | Reversed,
             NonStreamingReversed = NonStreaming | Reversed,
         }
@@ -1925,7 +2005,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             PartitionedFeedMode[] feedModes,
             int leafPageCount,
             int pageSize,
-            bool skipOrderByRewrite)
+            bool skipOrderByRewrite,
+            CalculateScores calculateScores)
         {
             int componentCount = feedModes.Length;
             List<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> componentPages = new List<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>>(componentCount);
@@ -1942,7 +2023,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         index: index,
                         componentIndex: componentIndex,
                         skipOrderByRewrite: skipOrderByRewrite,
-                        negateScores: feedModes[componentIndex].HasFlag(PartitionedFeedMode.NegateScores)));
+                        calculateScores: calculateScores));
 
                 componentPages.Add(pages);
             }
@@ -2072,17 +2153,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             return globalStatistics;
         }
 
-        private static CosmosElement CreateHybridSearchDocument(int componentCount, int index, int componentIndex, bool skipOrderByRewrite, bool negateScores)
+        private static CosmosElement CreateHybridSearchDocument(
+            int componentCount,
+            int index,
+            int componentIndex,
+            bool skipOrderByRewrite,
+            CalculateScores calculateScores)
         {
             CosmosElement indexElement = CosmosNumber64.Create(index);
             CosmosElement indexStringElement = CosmosString.Create(index.ToString("D4"));
-            double[] scores = new double[componentCount];
-            double delta = 0.1;
-            double factor = negateScores ? -1.0 : 1.0;
-            for (int scoreIndex = 0; scoreIndex < componentCount; ++scoreIndex)
-            {
-                scores[scoreIndex] = factor * (index + ((1 + scoreIndex) * delta));
-            }
+            IReadOnlyList<double> scores = calculateScores(componentCount, index);
+            Assert.AreEqual(componentCount, scores.Count);
 
             List<CosmosElement> orderByItems = new List<CosmosElement>
             {
@@ -2123,6 +2204,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             CosmosElement document = CosmosObject.Create(payload);
             return document;
+        }
+
+        private static IReadOnlyList<double> CalculateDefaultScores(int componentCount, int documentIndex)
+        {
+            double delta = 0.1;
+            return Enumerable.Range(0, componentCount)
+                .Select(componentIndex => documentIndex + ((componentIndex + 1) * delta))
+                .ToArray();
+        }
+
+        private static IReadOnlyList<double> CalculateNegatedScores(int componentCount, int documentIndex)
+        {
+            return CalculateDefaultScores(componentCount, documentIndex)
+                .Select(score => -score)
+                .ToArray();
         }
 
         private static CosmosElement CreateDocument(int index, DocumentCreationMode mode)

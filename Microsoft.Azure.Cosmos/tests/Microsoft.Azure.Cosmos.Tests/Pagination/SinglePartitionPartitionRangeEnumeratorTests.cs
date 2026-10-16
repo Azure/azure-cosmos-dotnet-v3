@@ -60,7 +60,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             await implementation.TestSplitAsync();
         }
 
-        [TestClass]
         private sealed class Implementation : PartitionRangeEnumeratorTests<ReadFeedPage, ReadFeedState>
         {
             public Implementation()
@@ -68,7 +67,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
             }
 
-            [TestMethod]
             public async Task TestSplitAsync()
             {
                 int numItems = 100;

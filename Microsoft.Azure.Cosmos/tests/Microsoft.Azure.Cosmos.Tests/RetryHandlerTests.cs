@@ -23,6 +23,19 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class RetryHandlerTests
     {
         private static readonly Uri TestUri = new Uri("https://dummy.documents.azure.com:443/dbs");
+
+        private sealed class RetryPolicyFactoryDocumentClient : MockDocumentClient
+        {
+            private readonly IRetryPolicyFactory retryPolicyFactory;
+
+            public RetryPolicyFactoryDocumentClient(IRetryPolicyFactory retryPolicyFactory)
+            {
+                this.retryPolicyFactory = retryPolicyFactory;
+            }
+
+            internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => this.retryPolicyFactory;
+        }
+
         [TestMethod]
         public async Task ValidateQueryPlanDoesNotThrowExceptionForOverlappingRanges()
         {
@@ -316,6 +329,191 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task GetRetryPolicyAsync_RequestWithoutDispatchTracker_UsesDefaultFactoryOverload()
+        {
+            Mock<IDocumentClientRetryPolicy> retryPolicy = new();
+            Mock<IRetryPolicyFactory> retryPolicyFactory = new();
+            retryPolicyFactory.Setup(factory => factory.GetRequestPolicy()).Returns(retryPolicy.Object);
+
+            using DocumentClient documentClient = new RetryPolicyFactoryDocumentClient(retryPolicyFactory.Object);
+            using CosmosClient client = new CosmosClient(
+                RetryHandlerTests.TestUri.OriginalString,
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                new CosmosClientOptions(),
+                documentClient);
+
+            RetryHandler retryHandler = new(client);
+
+            IDocumentClientRetryPolicy actual = await retryHandler.GetRetryPolicyAsync(new RequestMessage());
+
+            Assert.AreSame(retryPolicy.Object, actual);
+            retryPolicyFactory.Verify(factory => factory.GetRequestPolicy(), Times.Once);
+            retryPolicyFactory.Verify(
+                factory => factory.GetRequestPolicy(It.IsAny<DistributedTransactionDispatchTracker>()),
+                Times.Never);
+        }
+
+        [TestMethod]
+        public async Task GetRetryPolicyAsync_RequestWithDispatchTracker_UsesDtxFactoryOverload()
+        {
+            DistributedTransactionDispatchTracker dispatchTracker = new DistributedTransactionDispatchTracker(Guid.NewGuid());
+            Mock<IDocumentClientRetryPolicy> retryPolicy = new();
+            Mock<IRetryPolicyFactory> retryPolicyFactory = new();
+            retryPolicyFactory
+                .Setup(factory => factory.GetRequestPolicy(dispatchTracker))
+                .Returns(retryPolicy.Object);
+
+            using DocumentClient documentClient = new RetryPolicyFactoryDocumentClient(retryPolicyFactory.Object);
+            using CosmosClient client = new CosmosClient(
+                RetryHandlerTests.TestUri.OriginalString,
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                new CosmosClientOptions(),
+                documentClient);
+
+            RetryHandler retryHandler = new(client);
+            using RequestMessage request = new RequestMessage
+            {
+                DistributedTransactionDispatchTracker = dispatchTracker
+            };
+
+            IDocumentClientRetryPolicy actual = await retryHandler.GetRetryPolicyAsync(request);
+
+            Assert.AreSame(retryPolicy.Object, actual);
+            retryPolicyFactory.Verify(factory => factory.GetRequestPolicy(dispatchTracker), Times.Once);
+            retryPolicyFactory.Verify(factory => factory.GetRequestPolicy(), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task RetryHandler_DistributedTransactionTracker_ComposesIntoDispatchHeaders()
+        {
+            using MockDocumentClient documentClient = new();
+            documentClient.MockGlobalEndpointManager
+                .Setup(manager => manager.GetExactLocation(It.IsAny<Uri>()))
+                .Returns("location1");
+
+            using CosmosClient client = new CosmosClient(
+                RetryHandlerTests.TestUri.OriginalString,
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                new CosmosClientOptions(),
+                documentClient);
+
+            List<(string IsRetry, string IsCrossRegionRedirect)> dispatchHeaders = new();
+            RetryHandler retryHandler = new RetryHandler(client)
+            {
+                InnerHandler = new TestHandler((request, cancellationToken) =>
+                {
+                    DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
+                    dispatchHeaders.Add((
+                        serviceRequest.Headers[DistributedTransactionConstants.IsDtxRetry],
+                        serviceRequest.Headers[DistributedTransactionConstants.IsDtxCrossRegionRedirect]));
+                    return TestHandler.ReturnSuccess();
+                })
+            };
+
+            DistributedTransactionDispatchTracker tracker = new DistributedTransactionDispatchTracker(Guid.NewGuid());
+            using (RequestMessage request = RetryHandlerTests.CreateDtxRequestMessage(tracker))
+            {
+                await retryHandler.SendAsync(request, CancellationToken.None);
+                await retryHandler.SendAsync(request, CancellationToken.None);
+            }
+
+            using (RequestMessage request = RetryHandlerTests.CreateDtxRequestMessage(
+                new DistributedTransactionDispatchTracker(Guid.NewGuid())))
+            {
+                await retryHandler.SendAsync(request, CancellationToken.None);
+            }
+
+            using (RequestMessage request = RetryHandlerTests.CreateDtxRequestMessage(dispatchTracker: null, isRead: true))
+            {
+                await retryHandler.SendAsync(request, CancellationToken.None);
+            }
+
+            CollectionAssert.AreEqual(
+                new List<(string IsRetry, string IsCrossRegionRedirect)>
+                {
+                    (bool.FalseString, bool.FalseString),
+                    (bool.TrueString, bool.FalseString),
+                    (bool.FalseString, bool.FalseString),
+                    (null, null),
+                },
+                dispatchHeaders);
+        }
+
+        [TestMethod]
+        public async Task RetryHandler_DistributedTransaction_AwaitsDispatchBeforeReusingRequest()
+        {
+            using MockDocumentClient documentClient = new();
+            documentClient.MockGlobalEndpointManager
+                .Setup(manager => manager.GetExactLocation(It.IsAny<Uri>()))
+                .Returns("location1");
+            using CosmosClient client = new(
+                RetryHandlerTests.TestUri.OriginalString,
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                new CosmosClientOptions(),
+                documentClient);
+            using CancellationTokenSource cancellation = new(TimeSpan.FromSeconds(10));
+            using ResponseMessage retryResponse = new(HttpStatusCode.TooManyRequests);
+            TaskCompletionSource<bool> firstDispatchStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> releaseFirstDispatch = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            List<DocumentServiceRequest> serviceRequests = new();
+            List<(string IsRetry, string IsCrossRegionRedirect)> dispatchHeaders = new();
+            int activeDispatches = 0;
+            int dispatchCount = 0;
+            RetryHandler retryHandler = new(client)
+            {
+                InnerHandler = new TestHandler(async (request, cancellationToken) =>
+                {
+                    Assert.AreEqual(1, Interlocked.Increment(ref activeDispatches));
+                    try
+                    {
+                        int attempt = Interlocked.Increment(ref dispatchCount);
+                        DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
+                        serviceRequests.Add(serviceRequest);
+                        dispatchHeaders.Add((
+                            serviceRequest.Headers[DistributedTransactionConstants.IsDtxRetry],
+                            serviceRequest.Headers[DistributedTransactionConstants.IsDtxCrossRegionRedirect]));
+                        if (attempt == 1)
+                        {
+                            firstDispatchStarted.TrySetResult(true);
+                            await releaseFirstDispatch.Task.WaitAsync(cancellationToken);
+                            return retryResponse;
+                        }
+
+                        return await TestHandler.ReturnSuccess();
+                    }
+                    finally
+                    {
+                        Interlocked.Decrement(ref activeDispatches);
+                    }
+                })
+            };
+
+            using RequestMessage request = CreateDtxRequestMessage(
+                new DistributedTransactionDispatchTracker(Guid.NewGuid()));
+            Task<ResponseMessage> send = retryHandler.SendAsync(request, cancellation.Token);
+            try
+            {
+                await firstDispatchStarted.Task.WaitAsync(cancellation.Token);
+                Assert.AreEqual(1, Volatile.Read(ref dispatchCount));
+                Assert.AreEqual(1, Volatile.Read(ref activeDispatches));
+                Assert.IsFalse(send.IsCompleted);
+            }
+            finally
+            {
+                releaseFirstDispatch.TrySetResult(true);
+                using ResponseMessage response = await send.WaitAsync(cancellation.Token);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            }
+
+            Assert.AreEqual(0, activeDispatches);
+            Assert.AreEqual(2, serviceRequests.Count);
+            Assert.AreSame(serviceRequests[0], serviceRequests[1], "Sequential retries reuse the service request.");
+            CollectionAssert.AreEqual(
+                new[] { (bool.FalseString, bool.FalseString), (bool.TrueString, bool.FalseString) },
+                dispatchHeaders);
+        }
+
+        [TestMethod]
         public async Task RetryHandlerNoRetryOnAuthError()
         {
             await this.RetryHandlerDontRetryOnStatusCode(HttpStatusCode.Unauthorized);
@@ -447,6 +645,18 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await invoker.SendAsync(requestMessage, new CancellationToken());
             Assert.AreEqual(expectedHandlerCalls, handlerCalls);
+        }
+
+        private static RequestMessage CreateDtxRequestMessage(
+            DistributedTransactionDispatchTracker dispatchTracker,
+            bool isRead = false)
+        {
+            return new RequestMessage(HttpMethod.Post, RetryHandlerTests.TestUri)
+            {
+                ResourceType = ResourceType.DistributedTransactionBatch,
+                OperationType = isRead ? OperationType.Read : OperationType.CommitDistributedTransaction,
+                DistributedTransactionDispatchTracker = dispatchTracker,
+            };
         }
     }
 }

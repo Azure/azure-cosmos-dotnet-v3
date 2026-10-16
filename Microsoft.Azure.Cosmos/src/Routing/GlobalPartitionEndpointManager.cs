@@ -16,7 +16,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// new a location based if a partition level failover occurred
         /// </summary>
         public abstract bool TryAddPartitionLevelLocationOverride(
-            DocumentServiceRequest request);
+            DocumentServiceRequest request,
+            bool checkHubRegionOverrideInCache = false);
 
         /// <summary>
         /// Marks the current location unavailable for write. Future 
@@ -79,5 +80,17 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Returns true if circuit breaker logic for partition key ranges is active, otherwise false.
         /// </summary>
         public abstract bool IsPartitionLevelCircuitBreakerEnabled();
+
+#if !INTERNAL
+        /// <summary>
+        /// Caches the hub region location for a partition after a successful response.
+        /// When a request that carried the hub region processing header succeeds (200 OK),
+        /// this method stores the endpoint as the confirmed hub region for the partition,
+        /// enabling direct routing on subsequent 404/1002 retry scenarios.
+        /// </summary>
+        /// <param name="request">The <see cref="DocumentServiceRequest"/> that completed successfully.</param>
+        public abstract void TryCacheHubRegionLocationForPartition(
+            DocumentServiceRequest request);
+#endif
     }
 }

@@ -89,7 +89,8 @@ namespace Microsoft.Azure.Cosmos
                cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions,
                chaosInterceptorFactory: clientOptions.ChaosInterceptorFactory,
                enableAsyncCacheExceptionNoSharing: clientOptions.EnableAsyncCacheExceptionNoSharing,
-               useLengthAwareRangeComparer: clientOptions.UseLengthAwareRangeComparer);
+               useLengthAwareRangeComparer: clientOptions.UseLengthAwareRangeComparer,
+               enableMetadataHedging: ConfigurationManager.GetMetadataHedgingOptIn());
 
             return ClientContextCore.Create(
                 cosmosClient,
@@ -315,7 +316,7 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal override Task<ResponseMessage> ProcessResourceOperationStreamAsync(
+        internal override async Task<ResponseMessage> ProcessResourceOperationStreamAsync(
             string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -329,6 +330,12 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             this.ThrowIfDisposed();
+
+            if (ContainerPropertiesExtensions.ShouldValidatePartitionKeyHasId(resourceType, operationType))
+            {
+                (partitionKey, streamPayload) = await cosmosContainerCore.EnsureIdGetsAppendedToPartitionKeyIfNeededAsync(partitionKey, itemId, streamPayload, cancellationToken);
+            }
+
             if (this.IsBulkOperationSupported(resourceType, operationType))
             {
                 if (!partitionKey.HasValue)
@@ -341,7 +348,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException($"Bulk does not support {nameof(requestEnricher)}");
                 }
 
-                return this.ProcessResourceOperationAsBulkStreamAsync(
+                return await this.ProcessResourceOperationAsBulkStreamAsync(
                     operationType: operationType,
                     requestOptions: requestOptions,
                     cosmosContainerCore: cosmosContainerCore,
@@ -352,7 +359,7 @@ namespace Microsoft.Azure.Cosmos
                     cancellationToken: cancellationToken);
             }
 
-            return this.ProcessResourceOperationStreamAsync(
+            return await this.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
