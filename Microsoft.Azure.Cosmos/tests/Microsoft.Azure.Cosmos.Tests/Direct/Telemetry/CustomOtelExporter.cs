@@ -1,0 +1,58 @@
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Test.OpenTelemetryUtils
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using OpenTelemetry;
+    using OpenTelemetry.Trace;
+
+    internal class CustomOtelExporter : BaseExporter<Activity>
+    {
+        private readonly string _name;
+
+        public static List<Activity> CollectedActivities { get; set; } = new List<Activity>();
+
+        public CustomOtelExporter(string name = "CustomOtelExporter")
+        {
+            this._name = name;
+        }
+
+        public override ExportResult Export(in Batch<Activity> batch)
+        {
+            // SuppressInstrumentationScope should be used to prevent exporter
+            // code from generating telemetry and causing live-loop.
+            using IDisposable scope = SuppressInstrumentationScope.Begin();
+            foreach (Activity activity in batch)
+            {
+                CollectedActivities.Add(activity);
+            }
+            return ExportResult.Success;
+        }
+
+        public List<Activity> ExportData()
+        {
+            return CollectedActivities;
+        }
+        public static void ResetData()
+        {
+            CollectedActivities.Clear();
+        }
+    }
+
+    internal static class OTelExtensions
+    {
+        public static TracerProviderBuilder AddCustomOtelExporter(this TracerProviderBuilder builder)
+        {
+            if (builder == null)
+            {
+                throw new ArgumentNullException(nameof(builder));
+            }
+
+            return builder.AddProcessor(new SimpleActivityExportProcessor(new CustomOtelExporter()));
+        }
+    }
+}
