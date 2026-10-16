@@ -27,8 +27,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         /// <summary>Gets the secondary index indexing policy.</summary>
         IndexingPolicy IndexingPolicy { get; }
 
-        /// <summary>Gets the mapping from source paths to projected secondary index paths.</summary>
-        IReadOnlyDictionary<PropertyPath, PropertyPath> IncludedProperties { get; }
+        /// <summary>Gets the mapping from projected secondary index property names to source paths.</summary>
+        IReadOnlyDictionary<string, PropertyPath> IncludedProperties { get; }
 
         /// <summary>Gets the consistency level of the secondary index.</summary>
         ConsistencyLevel ConsistencyLevel { get; }

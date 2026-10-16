@@ -1,0 +1,52 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Simple partition key</Description>
+      <Query>SELECT * FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Nested partition key</Description>
+      <Query>SELECT * FROM c</Query>
+      <PartitionKeyPath>/address/zip</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Literal slash in partition key</Description>
+      <Query>SELECT * FROM c</Query>
+      <PartitionKeyPath>/"a/b"</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Empty partition key segment</Description>
+      <Query>SELECT * FROM c</Query>
+      <PartitionKeyPath>/""</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Literal star partition key</Description>
+      <Query>SELECT * FROM c</Query>
+      <PartitionKeyPath>/*</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+</Results>

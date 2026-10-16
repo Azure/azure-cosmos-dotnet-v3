@@ -20,13 +20,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
     /// Discovers secondary indexes from collection secondaryIndexesMetadata and normalizes them to
     /// the provider-neutral query-routing contract.
     /// </summary>
-    internal sealed class ContainerMetadataSecondaryIndexMetadataProvider : ISecondaryIndexMetadataProvider
+    internal sealed class SecondaryIndexMetadataProvider : ISecondaryIndexMetadataProvider
     {
-        internal const string GlobalSecondaryIndexContainerType = "GlobalSecondaryIndex";
-
         private readonly DocumentClient documentClient;
 
-        internal ContainerMetadataSecondaryIndexMetadataProvider(DocumentClient documentClient)
+        internal SecondaryIndexMetadataProvider(DocumentClient documentClient)
         {
             this.documentClient = documentClient ?? throw new ArgumentNullException(nameof(documentClient));
         }
@@ -34,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         public async Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
             ContainerProperties source,
             ITrace trace,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken)
         {
             if (source == null)
             {
@@ -89,18 +87,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         // Query parsing logic is temporary and not exhaustive. This is intended to cover MVP scenarios, which intentionally limits possible defintion queries.
         private static bool TryGetIncludedProperties(
             string definition,
-            ContainerProperties source,
-            out IReadOnlyDictionary<PropertyPath, PropertyPath> includedProperties)
+            out IReadOnlyDictionary<string, PropertyPath> includedProperties)
         {
             includedProperties = null;
             if (definition == null)
             {
                 throw new ArgumentNullException(nameof(definition));
-            }
-
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
             }
 
             if (!SqlQueryParser.TryParse(definition, out SqlQuery query)
@@ -110,19 +102,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 return false;
             }
 
-            Dictionary<PropertyPath, PropertyPath> projections = new ();
+            Dictionary<string, PropertyPath> projections = new (StringComparer.Ordinal);
             switch (query.SelectClause.SelectSpec)
             {
-                case SqlSelectStarSpec:
-                    projections[PropertyPath.Wildcard] = PropertyPath.Wildcard;
-                    foreach (string partitionKeyPath in source.PartitionKeyPaths)
-                    {
-                        PropertyPath path = new PropertyPath(PathParser.GetPathParts(partitionKeyPath));
-                        projections[path] = path;
-                    }
-
-                    break;
-
                 case SqlSelectListSpec selectList:
                     foreach (SqlSelectItem item in selectList.Items)
                     {
@@ -141,7 +123,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                             return false;
                         }
 
-                        projections[sourcePath] = new PropertyPath(new[] { projectedProperty });
+                        if (projections.TryGetValue(projectedProperty, out PropertyPath existingPath) && !existingPath.Equals(sourcePath))
+                        {
+                            return false;
+                        }
+
+                        projections[projectedProperty] = sourcePath;
                     }
 
                     break;
@@ -175,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             }
 
             MaterializedViewDefinition definition = candidate.MaterializedViewDefinition;
-            if (!TryGetIncludedProperties(definition.Definition, source, out IReadOnlyDictionary<PropertyPath, PropertyPath> includedProperties))
+            if (!TryGetIncludedProperties(definition.Definition, out IReadOnlyDictionary<string, PropertyPath> includedProperties))
             {
                 return false;
             }

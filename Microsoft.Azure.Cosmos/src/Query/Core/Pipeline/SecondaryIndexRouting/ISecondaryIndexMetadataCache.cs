@@ -22,8 +22,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
             ContainerProperties source,
             ITrace trace,
-            bool forceRefresh = false,
-            CancellationToken cancellationToken = default);
+            CancellationToken cancellationToken,
+            bool forceRefresh = false);
 
         /// <summary>
         /// Invalidates all cached secondary index metadata for a source collection.

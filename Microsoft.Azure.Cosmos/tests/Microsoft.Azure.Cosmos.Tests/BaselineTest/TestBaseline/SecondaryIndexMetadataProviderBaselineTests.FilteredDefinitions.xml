@@ -1,0 +1,26 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Unfiltered materialized view</Description>
+      <Query>SELECT c.id FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"id":["id"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Filtered materialized view</Description>
+      <Query>SELECT c.id FROM c WHERE c.enabled = true</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+</Results>

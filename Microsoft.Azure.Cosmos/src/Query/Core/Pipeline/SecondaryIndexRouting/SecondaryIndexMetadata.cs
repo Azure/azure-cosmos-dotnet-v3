@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             string sourceCollectionRid,
             PartitionKeyDefinition partitionKey,
             IndexingPolicy indexingPolicy,
-            IReadOnlyDictionary<PropertyPath, PropertyPath> includedProperties,
+            IReadOnlyDictionary<string, PropertyPath> includedProperties,
             ConsistencyLevel consistencyLevel)
         {
             this.Id = id ?? throw new ArgumentNullException(nameof(id));
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 
         public IndexingPolicy IndexingPolicy { get; }
 
-        public IReadOnlyDictionary<PropertyPath, PropertyPath> IncludedProperties { get; }
+        public IReadOnlyDictionary<string, PropertyPath> IncludedProperties { get; }
 
         public ConsistencyLevel ConsistencyLevel { get; }
     }

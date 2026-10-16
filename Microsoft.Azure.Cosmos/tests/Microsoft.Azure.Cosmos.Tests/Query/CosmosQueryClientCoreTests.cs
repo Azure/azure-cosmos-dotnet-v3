@@ -60,12 +60,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                         source.ResourceId,
                         source.PartitionKey,
                         source.IndexingPolicy,
-                        new Dictionary<PropertyPath, PropertyPath>(),
+                        new Dictionary<string, PropertyPath>(),
                         ConsistencyLevel.Eventual),
                 }
                 : Array.Empty<ISecondaryIndexMetadata>();
             Mock<ISecondaryIndexMetadataCache> cache = new Mock<ISecondaryIndexMetadataCache>(MockBehavior.Strict);
-            cache.Setup(c => c.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, false, CancellationToken.None))
+            cache.Setup(c => c.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, CancellationToken.None, false))
                 .ReturnsAsync(metadata);
             using MockDocumentClient documentClient = new MockDocumentClient();
             CosmosQueryClientCore queryClient = CreateQueryClient(documentClient, source, cache.Object, true, CancellationToken.None);
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Assert.AreSame(metadata, properties.GlobalSecondaryIndexes);
             Assert.AreEqual(source.ResourceId, properties.ResourceId);
             Assert.AreSame(source.PartitionKey, properties.PartitionKeyDefinition);
-            cache.Verify(c => c.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, false, CancellationToken.None), Times.Once);
+            cache.Verify(c => c.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, CancellationToken.None, false), Times.Once);
         }
 
         [TestMethod]
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             using CancellationTokenSource cancellationSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationSource.Token;
             Mock<ISecondaryIndexMetadataCache> cache = new Mock<ISecondaryIndexMetadataCache>(MockBehavior.Strict);
-            cache.Setup(c => c.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, false, cancellationToken))
+            cache.Setup(c => c.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, cancellationToken, false))
                 .Returns(Task.FromException<IEnumerable<ISecondaryIndexMetadata>>(exception));
             using MockDocumentClient documentClient = new MockDocumentClient();
             CosmosQueryClientCore queryClient = CreateQueryClient(documentClient, source, cache.Object, true, cancellationToken);
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 queryClient.GetCachedContainerQueryPropertiesAsync(ContainerLink, null, NoOpTrace.Singleton, cancellationToken));
 
             Assert.AreSame(exception, actual);
-            cache.Verify(c => c.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, false, cancellationToken), Times.Once);
+            cache.Verify(c => c.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, cancellationToken, false), Times.Once);
         }
 
         private static ContainerProperties CreateSource()

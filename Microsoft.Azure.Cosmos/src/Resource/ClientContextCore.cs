@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
             this.userAgent = userAgent;
             this.batchExecutorCache = batchExecutorCache;
 
-            ISecondaryIndexMetadataProvider secondaryIndexMetadataProvider = new ContainerMetadataSecondaryIndexMetadataProvider(documentClient);
+            ISecondaryIndexMetadataProvider secondaryIndexMetadataProvider = new SecondaryIndexMetadataProvider(documentClient);
             this.secondaryIndexMetadataCache = new SecondaryIndexMetadataCache(secondaryIndexMetadataProvider, clientOptions.EnableAsyncCacheExceptionNoSharing);
         }
 

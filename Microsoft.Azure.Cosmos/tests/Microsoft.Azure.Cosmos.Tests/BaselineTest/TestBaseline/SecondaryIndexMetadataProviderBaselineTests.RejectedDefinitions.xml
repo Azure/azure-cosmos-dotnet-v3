@@ -1,0 +1,202 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Empty query</Description>
+      <Query />
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Invalid query</Description>
+      <Query>not a query</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Wildcard with ROOT alias</Description>
+      <Query>SELECT * FROM ROOT item</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Wildcard with collection alias</Description>
+      <Query>SELECT * FROM c AS item</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SELECT VALUE</Description>
+      <Query>SELECT VALUE c.id FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Root object projection</Description>
+      <Query>SELECT c FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Arithmetic expression</Description>
+      <Query>SELECT c.value + 1 AS value FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>System function</Description>
+      <Query>SELECT UPPER(c.name) AS name FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>User-defined function</Description>
+      <Query>SELECT udf.normalize(c.name) AS name FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Aggregate</Description>
+      <Query>SELECT COUNT(1) AS count FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Mixed direct and computed projections</Description>
+      <Query>SELECT c.id, UPPER(c.name) AS name FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Root property with JOIN</Description>
+      <Query>SELECT c.id FROM c JOIN child IN c.children</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Joined alias projection</Description>
+      <Query>SELECT child.id FROM c JOIN child IN c.children</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Array iterator</Description>
+      <Query>SELECT item.id FROM item IN c.items</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Subquery collection</Description>
+      <Query>SELECT item.id FROM (SELECT * FROM c) item</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Unrelated root identifier</Description>
+      <Query>SELECT other.id FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Conflicting leaf names</Description>
+      <Query>SELECT c.billing.zip, c.shipping.zip FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Conflicting leaf names in reverse order</Description>
+      <Query>SELECT c.shipping.zip, c.billing.zip FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Conflicting alias</Description>
+      <Query>SELECT c.id, c.name AS id FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Conflicting alias in reverse order</Description>
+      <Query>SELECT c.name AS id, c.id FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates />
+    </Output>
+  </Result>
+</Results>

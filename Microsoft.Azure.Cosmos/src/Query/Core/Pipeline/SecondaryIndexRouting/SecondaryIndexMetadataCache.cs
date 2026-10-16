@@ -25,8 +25,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         public Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
             ContainerProperties source,
             ITrace trace,
-            bool forceRefresh = false,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken,
+            bool forceRefresh = false)
         {
             if (source == null)
             {
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 
         public void Invalidate(string sourceCollectionRid)
         {
-            if (string.IsNullOrWhiteSpace(sourceCollectionRid))
+            if (sourceCollectionRid == null)
             {
                 throw new ArgumentNullException(nameof(sourceCollectionRid));
             }

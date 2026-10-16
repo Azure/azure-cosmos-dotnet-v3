@@ -9,18 +9,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Xml;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Test.BaselineTest;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using Formatting = Newtonsoft.Json.Formatting;
     using IClientSideRequestStatistics = Microsoft.Azure.Documents.IClientSideRequestStatistics;
     using ResourceId = Microsoft.Azure.Documents.ResourceId;
     using ServerStoreModel = Microsoft.Azure.Documents.ServerStoreModel;
 
     [TestClass]
-    public class ContainerMetadataSecondaryIndexMetadataProviderTests
+    public class SecondaryIndexMetadataProviderBaselineTests
+        : BaselineTests<SecondaryIndexMetadataProviderBaselineTests.Input, SecondaryIndexMetadataProviderBaselineTests.Output>
     {
+        private const string GlobalSecondaryIndexContainerType = "GlobalSecondaryIndex";
+
         private static readonly string SourceRid = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
         private static readonly string GsiARid = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
         private static readonly string GsiBRid = ResourceId.NewDocumentCollectionId(42, 131).DocumentCollectionId.ToString();
@@ -38,17 +45,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 new MaterializedViewProperties
                 {
                     ResourceId = GsiBRid,
-                    ContainerType = ContainerMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
+                    ContainerType = GlobalSecondaryIndexContainerType,
                 },
                 new MaterializedViewProperties
                 {
                     ResourceId = GsiARid,
-                    ContainerType = ContainerMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
+                    ContainerType = GlobalSecondaryIndexContainerType,
                 },
                 new MaterializedViewProperties
                 {
                     ResourceId = GsiARid,
-                    ContainerType = ContainerMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
+                    ContainerType = GlobalSecondaryIndexContainerType,
                 },
             };
 
@@ -77,10 +84,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             ISecondaryIndexMetadata gsiB = metadata.Single(candidate => candidate.Rid == GsiBRid);
             Assert.AreEqual(GsiARid, gsiA.Id);
             Assert.AreEqual(SourceRid, gsiA.SourceCollectionRid);
-            Assert.AreEqual(new PropertyPath(new[] { "_id" }), gsiA.IncludedProperties[new PropertyPath(new[] { "id" })]);
-            Assert.AreEqual(new PropertyPath(new[] { "region" }), gsiA.IncludedProperties[new PropertyPath(new[] { "region" })]);
+            Assert.AreEqual(new PropertyPath(new[] { "id" }), gsiA.IncludedProperties["_id"]);
+            Assert.AreEqual(new PropertyPath(new[] { "region" }), gsiA.IncludedProperties["region"]);
             Assert.AreEqual(ConsistencyLevel.Eventual, gsiA.ConsistencyLevel);
-            Assert.AreEqual(new PropertyPath(new[] { "category" }), gsiB.IncludedProperties[new PropertyPath(new[] { "category" })]);
+            Assert.AreEqual(new PropertyPath(new[] { "category" }), gsiB.IncludedProperties["category"]);
 
             foreach (ISecondaryIndexMetadata candidate in metadata)
             {
@@ -96,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Dictionary<string, ContainerProperties> collections = new Dictionary<string, ContainerProperties>();
             using ProviderTestContext context = new ProviderTestContext(collections);
 
-            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton);
+            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.AreEqual(0, metadata.Count());
             Assert.AreEqual(0, context.ResolveCount);
@@ -108,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             using ProviderTestContext context = new ProviderTestContext(new Dictionary<string, ContainerProperties>());
 
             ArgumentNullException exception = await Assert.ThrowsExceptionAsync<ArgumentNullException>(() =>
-                context.Provider.GetSecondaryIndexMetadataAsync(null, NoOpTrace.Singleton));
+                context.Provider.GetSecondaryIndexMetadataAsync(null, NoOpTrace.Singleton, CancellationToken.None));
 
             Assert.AreEqual("source", exception.ParamName);
             Assert.AreEqual(0, context.ResolveCount);
@@ -120,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             using ProviderTestContext context = new ProviderTestContext(new Dictionary<string, ContainerProperties>());
 
             ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
-                context.Provider.GetSecondaryIndexMetadataAsync(new ContainerProperties("source", "/pk"), NoOpTrace.Singleton));
+                context.Provider.GetSecondaryIndexMetadataAsync(new ContainerProperties("source", "/pk"), NoOpTrace.Singleton, CancellationToken.None));
 
             Assert.AreEqual("source", exception.ParamName);
             Assert.AreEqual(0, context.ResolveCount);
@@ -160,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 };
             using ProviderTestContext context = new ProviderTestContext(collections);
 
-            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton);
+            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.AreEqual(0, metadata.Count());
             Assert.AreEqual(1, context.ResolveCount);
@@ -175,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 new MaterializedViewProperties
                 {
                     ResourceId = FilteredRid,
-                    ContainerType = ContainerMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
+                    ContainerType = GlobalSecondaryIndexContainerType,
                 },
                 new MaterializedViewProperties
                 {
@@ -185,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 new MaterializedViewProperties
                 {
                     ResourceId = EligibleRid,
-                    ContainerType = ContainerMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
+                    ContainerType = GlobalSecondaryIndexContainerType,
                 },
             };
 
@@ -211,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 };
             using ProviderTestContext context = new ProviderTestContext(collections);
 
-            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton);
+            IEnumerable<ISecondaryIndexMetadata> metadata = await context.Provider.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.AreEqual(3, context.ResolveCount);
             Assert.AreEqual(2, metadata.Count());
@@ -220,103 +227,82 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 metadata.Select(candidate => candidate.Rid).ToArray());
         }
 
-        #region TryGetIncludedProperties Tests
-
-        [DataTestMethod]
-        [DataRow("SELECT c.id AS _id FROM c", new[] { "id" }, "_id")]
-        [DataRow("SELECT c['category'] FROM c", new[] { "category" }, "category")]
-        [DataRow("SELECT c.address.zip AS postalCode FROM c", new[] { "address", "zip" }, "postalCode")]
-        [DataRow("SELECT c['address']['zip'] AS postalCode FROM c", new[] { "address", "zip" }, "postalCode")]
-        [DataRow("SELECT c.address['zip'] FROM c", new[] { "address", "zip" }, "zip")]
-        [DataRow("SELECT item.id FROM ROOT item", new[] { "id" }, "id")]
-        [DataRow("SELECT item.id FROM c AS item", new[] { "id" }, "id")]
-        [DataRow("SELECT c[''] AS empty FROM c", new[] { "" }, "empty")]
-        [DataRow("SELECT c[''].zip FROM c", new[] { "", "zip" }, "zip")]
-        [DataRow("SELECT c['a.b'] FROM c", new[] { "a.b" }, "a.b")]
-        [DataRow("SELECT c['a b'] FROM c", new[] { "a b" }, "a b")]
-        [DataRow("SELECT c['a\"b'] FROM c", new[] { "a\"b" }, "a\"b")]
-        public async Task TryGetIncludedPropertiesMapsPropertyPaths(
-            string query,
-            string[] sourceSegments,
-            string projectedProperty)
+        [TestMethod]
+        public void PropertyProjections()
         {
-            ISecondaryIndexMetadata metadata = (await GetMetadataAsync(query)).Single();
-
-            Assert.AreEqual(1, metadata.IncludedProperties.Count);
-            Assert.AreEqual(
-                new PropertyPath(new[] { projectedProperty }),
-                metadata.IncludedProperties[new PropertyPath(sourceSegments)]);
+            this.ExecuteTestSuite(new[]
+            {
+                new Input("Aliased property", "SELECT c.id AS _id FROM c"),
+                new Input("Bracket property", "SELECT c['category'] FROM c"),
+                new Input("Aliased nested dot path", "SELECT c.address.zip AS postalCode FROM c"),
+                new Input("Aliased nested bracket path", "SELECT c['address']['zip'] AS postalCode FROM c"),
+                new Input("Mixed dot and bracket path", "SELECT c.address['zip'] FROM c"),
+                new Input("Explicit ROOT alias", "SELECT item.id FROM ROOT item"),
+                new Input("Explicit collection alias", "SELECT item.id FROM c AS item"),
+                new Input("Empty property name", "SELECT c[''] AS empty FROM c"),
+                new Input("Empty segment in nested path", "SELECT c[''].zip FROM c"),
+                new Input("Literal dot in property name", "SELECT c['a.b'] FROM c"),
+                new Input("Literal space in property name", "SELECT c['a b'] FROM c"),
+                new Input("Literal quote in property name", "SELECT c['a\"b'] FROM c"),
+                new Input("Multiple property paths", "SELECT c.id AS _id, c.region, c.address.zip AS postalCode FROM c"),
+                new Input("Equivalent dot and bracket paths", "SELECT c.address.zip, c['address']['zip'] FROM c"),
+                new Input("Same source path with different aliases", "SELECT c.address.zip AS postalCode, c.address.zip AS ZIP FROM c"),
+                new Input("Case-sensitive projected names", "SELECT c.id, c.otherId AS ID FROM c"),
+                new Input("Literal slash and tilde in property names", "SELECT c[\"a/b\"], c[\"a~1b\"] FROM c"),
+                new Input("Literal slash versus nested path", "SELECT c[\"a/b\"], c.a.b FROM c"),
+                new Input("Literal star in property name", "SELECT c['*'] FROM c"),
+            });
         }
 
         [TestMethod]
-        public async Task TryGetIncludedPropertiesMapsMultiplePropertyPaths()
+        public void RejectedDefinitions()
         {
-            ISecondaryIndexMetadata metadata = (await GetMetadataAsync(
-                "SELECT c.id AS _id, c.region, c.address.zip AS postalCode FROM c")).Single();
-
-            Assert.AreEqual(3, metadata.IncludedProperties.Count);
-            Assert.AreEqual(new PropertyPath(new[] { "_id" }), metadata.IncludedProperties[new PropertyPath(new[] { "id" })]);
-            Assert.AreEqual(new PropertyPath(new[] { "region" }), metadata.IncludedProperties[new PropertyPath(new[] { "region" })]);
-            Assert.AreEqual(new PropertyPath(new[] { "postalCode" }), metadata.IncludedProperties[new PropertyPath(new[] { "address", "zip" })]);
+            this.ExecuteTestSuite(new[]
+            {
+                new Input("Empty query", ""),
+                new Input("Invalid query", "not a query"),
+                new Input("Wildcard with ROOT alias", "SELECT * FROM ROOT item"),
+                new Input("Wildcard with collection alias", "SELECT * FROM c AS item"),
+                new Input("SELECT VALUE", "SELECT VALUE c.id FROM c"),
+                new Input("Root object projection", "SELECT c FROM c"),
+                new Input("Arithmetic expression", "SELECT c.value + 1 AS value FROM c"),
+                new Input("System function", "SELECT UPPER(c.name) AS name FROM c"),
+                new Input("User-defined function", "SELECT udf.normalize(c.name) AS name FROM c"),
+                new Input("Aggregate", "SELECT COUNT(1) AS count FROM c"),
+                new Input("Mixed direct and computed projections", "SELECT c.id, UPPER(c.name) AS name FROM c"),
+                new Input("Root property with JOIN", "SELECT c.id FROM c JOIN child IN c.children"),
+                new Input("Joined alias projection", "SELECT child.id FROM c JOIN child IN c.children"),
+                new Input("Array iterator", "SELECT item.id FROM item IN c.items"),
+                new Input("Subquery collection", "SELECT item.id FROM (SELECT * FROM c) item"),
+                new Input("Unrelated root identifier", "SELECT other.id FROM c"),
+                new Input("Conflicting leaf names", "SELECT c.billing.zip, c.shipping.zip FROM c"),
+                new Input("Conflicting leaf names in reverse order", "SELECT c.shipping.zip, c.billing.zip FROM c"),
+                new Input("Conflicting alias", "SELECT c.id, c.name AS id FROM c"),
+                new Input("Conflicting alias in reverse order", "SELECT c.name AS id, c.id FROM c"),
+            });
         }
 
         [TestMethod]
-        public async Task TryGetIncludedPropertiesUnifiesDotAndBracketPaths()
+        public void WildcardProjections()
         {
-            ISecondaryIndexMetadata metadata = (await GetMetadataAsync(
-                "SELECT c.address.zip, c['address']['zip'] FROM c")).Single();
-
-            Assert.AreEqual(1, metadata.IncludedProperties.Count);
-            Assert.AreEqual(new PropertyPath(new[] { "zip" }), metadata.IncludedProperties[new PropertyPath(new[] { "address", "zip" })]);
+            this.ExecuteTestSuite(new[]
+            {
+                new Input("Simple partition key", "SELECT * FROM c", "/tenantId"),
+                new Input("Nested partition key", "SELECT * FROM c", "/address/zip"),
+                new Input("Literal slash in partition key", "SELECT * FROM c", "/\"a/b\""),
+                new Input("Empty partition key segment", "SELECT * FROM c", "/\"\""),
+                new Input("Literal star partition key", "SELECT * FROM c", "/*"),
+            });
         }
 
         [TestMethod]
-        public async Task TryGetIncludedPropertiesMapsSpecialCharacterProperties()
+        public void FilteredDefinitions()
         {
-            ISecondaryIndexMetadata metadata = (await GetMetadataAsync(
-                "SELECT c[\"a/b\"], c[\"a~1b\"] FROM c")).Single();
-
-            Assert.AreEqual(2, metadata.IncludedProperties.Count);
-            Assert.AreEqual(new PropertyPath(new[] { "a/b" }), metadata.IncludedProperties[new PropertyPath(new[] { "a/b" })]);
-            Assert.AreEqual(new PropertyPath(new[] { "a~1b" }), metadata.IncludedProperties[new PropertyPath(new[] { "a~1b" })]);
-        }
-
-        [TestMethod]
-        public async Task TryGetIncludedPropertiesDistinguishesPropertyFromNestedPath()
-        {
-            ISecondaryIndexMetadata metadata = (await GetMetadataAsync(
-                "SELECT c[\"a/b\"], c.a.b FROM c")).Single();
-
-            Assert.AreEqual(2, metadata.IncludedProperties.Count);
-            Assert.AreEqual(new PropertyPath(new[] { "a/b" }), metadata.IncludedProperties[new PropertyPath(new[] { "a/b" })]);
-            Assert.AreEqual(new PropertyPath(new[] { "b" }), metadata.IncludedProperties[new PropertyPath(new[] { "a", "b" })]);
-        }
-
-        [TestMethod]
-        public async Task TryGetIncludedPropertiesDistinguishesLiteralStarFromWildcard()
-        {
-            ISecondaryIndexMetadata metadata = (await GetMetadataAsync("SELECT c['*'] FROM c")).Single();
-            PropertyPath literalStar = new PropertyPath(new[] { "*" });
-
-            Assert.AreEqual(1, metadata.IncludedProperties.Count);
-            Assert.AreEqual(literalStar, metadata.IncludedProperties[literalStar]);
-            Assert.IsFalse(metadata.IncludedProperties.ContainsKey(PropertyPath.Wildcard));
-        }
-
-        [DataTestMethod]
-        [DataRow("/tenantId", new[] { "tenantId" })]
-        [DataRow("/address/zip", new[] { "address", "zip" })]
-        [DataRow("/\"a/b\"", new[] { "a/b" })]
-        [DataRow("/\"\"", new[] { "" })]
-        [DataRow("/*", new[] { "*" })]
-        public async Task TryGetIncludedPropertiesMapsWildcardAndPartitionKey(string partitionKeyPath, string[] partitionKeySegments)
-        {
-            ISecondaryIndexMetadata metadata = (await GetMetadataAsync("SELECT * FROM c", partitionKeyPath)).Single();
-            PropertyPath expectedPartitionKeyPath = new PropertyPath(partitionKeySegments);
-
-            Assert.AreEqual(2, metadata.IncludedProperties.Count);
-            Assert.AreEqual(PropertyPath.Wildcard, metadata.IncludedProperties[PropertyPath.Wildcard]);
-            Assert.AreEqual(expectedPartitionKeyPath, metadata.IncludedProperties[expectedPartitionKeyPath]);
+            this.ExecuteTestSuite(new[]
+            {
+                new Input("Unfiltered materialized view", "SELECT c.id FROM c"),
+                new Input("Filtered materialized view", "SELECT c.id FROM c WHERE c.enabled = true"),
+            });
         }
 
         [TestMethod]
@@ -327,34 +313,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Assert.AreEqual("definition", exception.ParamName);
         }
 
-        [DataTestMethod]
-        [DataRow("")]
-        [DataRow("not a query")]
-        [DataRow("SELECT VALUE c.id FROM c")]
-        [DataRow("SELECT c FROM c")]
-        [DataRow("SELECT c.value + 1 AS value FROM c")]
-        [DataRow("SELECT UPPER(c.name) AS name FROM c")]
-        [DataRow("SELECT udf.normalize(c.name) AS name FROM c")]
-        [DataRow("SELECT COUNT(1) AS count FROM c")]
-        [DataRow("SELECT c.id, UPPER(c.name) AS name FROM c")]
-        [DataRow("SELECT c.id FROM c JOIN child IN c.children")]
-        [DataRow("SELECT child.id FROM c JOIN child IN c.children")]
-        [DataRow("SELECT item.id FROM item IN c.items")]
-        [DataRow("SELECT item.id FROM (SELECT * FROM c) item")]
-        [DataRow("SELECT other.id FROM c")]
-        public async Task TryGetIncludedPropertiesRejectsUnsupportedDefinitions(string query)
+        public override Output ExecuteTest(Input input)
         {
-            Assert.AreEqual(0, (await GetMetadataAsync(query)).Count());
-        }
-
-        #endregion TryGetIncludedProperties Tests
-
-        [DataTestMethod]
-        [DataRow("SELECT * FROM c", false)]
-        [DataRow("SELECT * FROM c WHERE c.enabled = true", true)]
-        public async Task IsFilteredMaterializedViewIdentifiesWhereClause(string query, bool expected)
-        {
-            Assert.AreEqual(expected ? 0 : 1, (await GetMetadataAsync(query)).Count());
+            return new Output(GetMetadataAsync(input.Query, input.PartitionKeyPath).GetAwaiter().GetResult());
         }
 
         private static async Task<IEnumerable<ISecondaryIndexMetadata>> GetMetadataAsync(string query, string partitionKeyPath = "/tenantId")
@@ -365,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 new MaterializedViewProperties
                 {
                     ResourceId = EligibleRid,
-                    ContainerType = ContainerMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
+                    ContainerType = GlobalSecondaryIndexContainerType,
                 },
             };
 
@@ -375,7 +336,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             };
 
             using ProviderTestContext context = new ProviderTestContext(collections);
-            return await context.Provider.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton);
+            return await context.Provider.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, CancellationToken.None);
         }
 
         private static ContainerProperties CreateSource(string partitionKeyPath = "/tenantId")
@@ -399,11 +360,65 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                     SourceContainerId = "source",
                     SourceContainerResourceId = SourceRid,
                     Definition = query,
-                    ContainerType = ContainerMetadataSecondaryIndexMetadataProvider.GlobalSecondaryIndexContainerType,
+                    ContainerType = GlobalSecondaryIndexContainerType,
                 };
 
             candidate.IndexingPolicy.IncludedPaths.Add(new IncludedPath { Path = "/*" });
             return candidate;
+        }
+
+        public sealed class Input : BaselineTestInput
+        {
+            public Input(string description, string query, string partitionKeyPath = "/tenantId")
+                : base(description)
+            {
+                this.Query = query;
+                this.PartitionKeyPath = partitionKeyPath;
+            }
+
+            public string Query { get; }
+
+            public string PartitionKeyPath { get; }
+
+            public override void SerializeAsXml(XmlWriter xmlWriter)
+            {
+                xmlWriter.WriteElementString(nameof(this.Description), this.Description);
+                xmlWriter.WriteElementString(nameof(this.Query), this.Query);
+                xmlWriter.WriteElementString(nameof(this.PartitionKeyPath), this.PartitionKeyPath);
+            }
+        }
+
+        public sealed class Output : BaselineTestOutput
+        {
+            private readonly IEnumerable<ISecondaryIndexMetadata> metadata;
+
+            internal Output(IEnumerable<ISecondaryIndexMetadata> metadata)
+            {
+                this.metadata = metadata;
+            }
+
+            public override void SerializeAsXml(XmlWriter xmlWriter)
+            {
+                xmlWriter.WriteStartElement("Candidates");
+                foreach (ISecondaryIndexMetadata candidate in this.metadata)
+                {
+                    Dictionary<string, IEnumerable<string>> projections = candidate.IncludedProperties
+                        .OrderBy(projection => projection.Key, StringComparer.Ordinal)
+                        .ToDictionary(projection => projection.Key, projection => projection.Value.Segments, StringComparer.Ordinal);
+                    string serializedProjections = JsonConvert.SerializeObject(projections, Formatting.None, new JsonSerializerSettings
+                    {
+                        StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
+                    });
+
+                    // Baseline comparison ignores whitespace, so preserve literal spaces as JSON escapes.
+                    serializedProjections = serializedProjections.Replace(" ", "\\u0020");
+                    xmlWriter.WriteStartElement("Candidate");
+                    xmlWriter.WriteElementString("IncludedProperties", serializedProjections);
+                    xmlWriter.WriteEndElement();
+                }
+
+                xmlWriter.WriteEndElement();
+            }
         }
 
         private sealed class ProviderTestContext : IDisposable
@@ -415,10 +430,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             {
                 this.collectionCache = new TestClientCollectionCache(collections);
                 this.documentClient = new TestDocumentClient(this.collectionCache);
-                this.Provider = new ContainerMetadataSecondaryIndexMetadataProvider(this.documentClient);
+                this.Provider = new SecondaryIndexMetadataProvider(this.documentClient);
             }
 
-            public ContainerMetadataSecondaryIndexMetadataProvider Provider { get; }
+            public SecondaryIndexMetadataProvider Provider { get; }
 
             public int ResolveCount => this.collectionCache.ResolveCount;
 

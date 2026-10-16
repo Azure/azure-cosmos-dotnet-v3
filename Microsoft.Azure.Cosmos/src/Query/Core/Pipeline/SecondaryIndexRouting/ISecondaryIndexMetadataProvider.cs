@@ -21,6 +21,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
             ContainerProperties source,
             ITrace trace,
-            CancellationToken cancellationToken = default);
+            CancellationToken cancellationToken);
     }
 }
