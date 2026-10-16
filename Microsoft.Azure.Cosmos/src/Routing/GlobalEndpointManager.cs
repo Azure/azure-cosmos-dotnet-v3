@@ -632,6 +632,28 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.CanUseMultipleWriteLocations(request);
         }
 
+        /// <summary>
+        /// Request-free equivalent of <see cref="CanUseMultipleWriteLocations(DocumentServiceRequest)"/> for
+        /// <see cref="ResourceType.Document"/> operations.
+        /// </summary>
+        /// <remarks>
+        /// Exists for callers that must classify an operation before any <see cref="DocumentServiceRequest"/>
+        /// is built, such as the distributed transaction path resolving each sub-operation's session token
+        /// before serialization. Equivalent because the request overload is this same predicate ANDed with a
+        /// <see cref="ResourceType.Document"/> check, and every distributed-transaction sub-operation is a
+        /// document operation.
+        /// <para>
+        /// Deliberately not <see cref="CanSupportMultipleWriteLocations(ResourceType, OperationType)"/>: that
+        /// one additionally requires more than one *available* write location, so it reports false for a
+        /// multi-master account that currently has a single available region. Using it here would withhold a
+        /// session token that a point operation would still send.
+        /// </para>
+        /// </remarks>
+        internal bool CanUseMultipleWriteLocations()
+        {
+            return this.locationCache.CanUseMultipleWriteLocations();
+        }
+
         public void Dispose()
         {
             this.connectionPolicy.PreferenceChanged -= this.OnPreferenceChanged;
