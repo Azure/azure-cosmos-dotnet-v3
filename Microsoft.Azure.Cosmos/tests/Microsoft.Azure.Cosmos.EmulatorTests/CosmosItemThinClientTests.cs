@@ -2105,6 +2105,68 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CollectionAssert.AreEquivalent(expectedIds, actualIds.ToArray(), "Only items within the requested sub-range should be returned.");
         }
 
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task TestThinClientHierarchicalPartitionKeyPrefixAggregateAsync()
+        {
+            using CancellationTokenSource timeout = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+            Container hpkContainer = await this.database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties("hpk_" + Guid.NewGuid().ToString("N"), new List<string> { "/tenantId", "/userId" }),
+                cancellationToken: timeout.Token);
+
+            string[] tenants = { "tenantA", "tenantB", "tenantC" };
+            const int usersPerTenant = 4;
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    await hpkContainer.CreateItemAsync(
+                        new Dictionary<string, string> { { "id", "warmup" }, { "tenantId", "warmup" }, { "userId", "warmup" } },
+                        new PartitionKeyBuilder().Add("warmup").Add("warmup").Build(),
+                        cancellationToken: timeout.Token);
+                    break;
+                }
+                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound && attempt < 11)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), timeout.Token);
+                }
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(30), timeout.Token);
+            foreach (string tenant in tenants)
+            {
+                for (int user = 0; user < usersPerTenant; user++)
+                {
+                    await hpkContainer.CreateItemAsync(
+                        new Dictionary<string, string>
+                        {
+                            { "id", $"{tenant}-{user}" },
+                            { "tenantId", tenant },
+                            { "userId", $"user{user}" }
+                        },
+                        new PartitionKeyBuilder().Add(tenant).Add($"user{user}").Build(),
+                        cancellationToken: timeout.Token);
+                }
+            }
+
+            // The prefix key maps to an EPK range narrower than a physical partition, so the SDK sets the range headers.
+            // The count is exact only if the range is preserved: widening it would also count the other tenants.
+            using FeedIterator<int> iterator = hpkContainer.GetItemQueryIterator<int>(
+                new QueryDefinition("SELECT VALUE COUNT(1) FROM c"),
+                requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKeyBuilder().Add("tenantB").Build() });
+
+            List<int> counts = new List<int>();
+            while (iterator.HasMoreResults)
+            {
+                FeedResponse<int> response = await iterator.ReadNextAsync(timeout.Token);
+                string diagnostics = response.Diagnostics.ToString();
+                Assert.IsTrue(diagnostics.Contains("ThinClientStoreModel"), $"Expected Gateway V2 execution: {diagnostics}");
+                counts.AddRange(response);
+            }
+
+            Assert.AreEqual(usersPerTenant, counts.Sum(), "The count must include only the requested tenant prefix.");
+        }
+
         /// <summary>
         /// End-to-end test against the live thin-client endpoint: verifies that when a
         /// <see cref="Microsoft.Azure.Cosmos.ReadConsistencyStrategy"/> is supplied on a point read,
