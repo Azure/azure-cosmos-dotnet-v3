@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using global::Azure;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
     using TestObject = MultiRegionSetupHelpers.CosmosIntegrationTestObject;
@@ -1441,6 +1442,160 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
+        public async Task HierarchicalPartitionKeyPrefixAggregateUsesThinClient()
+        {
+            string tenant = "tenant_" + Guid.NewGuid().ToString("N");
+            string otherTenant = "other_" + Guid.NewGuid().ToString("N");
+            string containerName = "TestHpk_" + Guid.NewGuid().ToString("N");
+            Container hpkContainer = await this.database.CreateContainerAsync(
+                new ContainerProperties(containerName, new List<string> { "/tenant", "/user", "/session" }));
+
+            List<HierarchicalTestObject> items = new List<HierarchicalTestObject>
+            {
+                new HierarchicalTestObject { Id = Guid.NewGuid().ToString(), Tenant = tenant, User = "user1", Session = "session1" },
+                new HierarchicalTestObject { Id = Guid.NewGuid().ToString(), Tenant = tenant, User = "user2", Session = "session1" },
+                new HierarchicalTestObject { Id = Guid.NewGuid().ToString(), Tenant = otherTenant, User = "user1", Session = "session1" },
+            };
+
+            try
+            {
+                foreach (HierarchicalTestObject item in items)
+                {
+                    PartitionKey partitionKey = new PartitionKeyBuilder()
+                        .Add(item.Tenant)
+                        .Add(item.User)
+                        .Add(item.Session)
+                        .Build();
+                    await hpkContainer.CreateItemAsync(item, partitionKey);
+                }
+
+                int count = await hpkContainer
+                    .GetItemLinqQueryable<HierarchicalTestObject>()
+                    .Where(item => item.Tenant == tenant)
+                    .CountAsync();
+
+                Assert.AreEqual(2, count, "The hierarchical partition-key prefix aggregate should return only the matching tenant's items.");
+            }
+            finally
+            {
+                await hpkContainer.DeleteContainerAsync();
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task FeedRangeQueryWithWhereClauseReturnsOnlyRequestedSubRange()
+        {
+            string targetPk = "pk_feedrange_" + Guid.NewGuid().ToString("N");
+            string otherPk = "pk_feedrange_other_" + Guid.NewGuid().ToString("N");
+            List<TestObject> items = new List<TestObject>
+            {
+                new TestObject { Id = Guid.NewGuid().ToString(), Pk = targetPk, Other = "match_target_1" },
+                new TestObject { Id = Guid.NewGuid().ToString(), Pk = targetPk, Other = "match_target_2" },
+                new TestObject { Id = Guid.NewGuid().ToString(), Pk = targetPk, Other = "exclude_target" },
+                new TestObject { Id = Guid.NewGuid().ToString(), Pk = otherPk, Other = "match_other" },
+            };
+
+            try
+            {
+                foreach (TestObject item in items)
+                {
+                    await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
+                }
+
+                QueryRequestOptions requestOptions = new QueryRequestOptions
+                {
+                    FeedRange = FeedRange.FromPartitionKey(new PartitionKey(targetPk)),
+                };
+                QueryDefinition query = new QueryDefinition(
+                    "SELECT * FROM c WHERE c.pk = @pk AND STARTSWITH(c.other, @prefix)")
+                    .WithParameter("@pk", targetPk)
+                    .WithParameter("@prefix", "match_");
+
+                using FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(
+                    query,
+                    requestOptions: requestOptions);
+                List<TestObject> results = new List<TestObject>();
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<TestObject> response = await iterator.ReadNextAsync();
+                    Assert.IsTrue(
+                        response.Diagnostics.ToString().Contains("|F4"),
+                        "The feed-range query should be routed through the thin-client proxy.");
+                    results.AddRange(response);
+                }
+
+                CollectionAssert.AreEquivalent(
+                    items.Where(item => item.Pk == targetPk && item.Other.StartsWith("match_", StringComparison.Ordinal))
+                        .Select(item => item.Id)
+                        .ToList(),
+                    results.Select(item => item.Id).ToList());
+                Assert.IsTrue(results.All(item => item.Pk == targetPk), "The query must not return items outside its EPK sub-range.");
+            }
+            finally
+            {
+                foreach (TestObject item in items)
+                {
+                    await this.container.DeleteItemAsync<TestObject>(item.Id, new PartitionKey(item.Pk));
+                }
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task FeedRangeChangeFeedReturnsOnlyItemsInRequestedRange()
+        {
+            string targetPk = "pk_changefeed_range_" + Guid.NewGuid().ToString("N");
+            string otherPk = "pk_changefeed_range_other_" + Guid.NewGuid().ToString("N");
+            List<TestObject> items = new List<TestObject>
+            {
+                new TestObject { Id = Guid.NewGuid().ToString(), Pk = targetPk, Other = "target_1" },
+                new TestObject { Id = Guid.NewGuid().ToString(), Pk = targetPk, Other = "target_2" },
+                new TestObject { Id = Guid.NewGuid().ToString(), Pk = otherPk, Other = "other" },
+            };
+
+            try
+            {
+                foreach (TestObject item in items)
+                {
+                    await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
+                }
+
+                FeedIterator<TestObject> iterator = this.container.GetChangeFeedIterator<TestObject>(
+                    ChangeFeedStartFrom.Beginning(FeedRange.FromPartitionKey(new PartitionKey(targetPk))),
+                    ChangeFeedMode.LatestVersion,
+                    new ChangeFeedRequestOptions { PageSizeHint = 10 });
+                List<TestObject> results = new List<TestObject>();
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<TestObject> response = await iterator.ReadNextAsync();
+                    if (response.StatusCode == HttpStatusCode.NotModified)
+                    {
+                        break;
+                    }
+
+                    Assert.IsTrue(
+                        response.Diagnostics.ToString().Contains("|F4"),
+                        "The feed-range change feed request should be routed through the thin-client proxy.");
+                    results.AddRange(response);
+                }
+
+                HashSet<string> expectedIds = new HashSet<string>(items.Where(item => item.Pk == targetPk).Select(item => item.Id));
+                HashSet<string> resultIds = new HashSet<string>(results.Select(item => item.Id));
+                Assert.IsTrue(expectedIds.IsSubsetOf(resultIds), "The requested EPK range should return all its created items.");
+                Assert.IsTrue(results.All(item => item.Pk == targetPk), "The change feed must not return items outside its EPK sub-range.");
+            }
+            finally
+            {
+                foreach (TestObject item in items)
+                {
+                    await this.container.DeleteItemAsync<TestObject>(item.Id, new PartitionKey(item.Pk));
+                }
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
         public async Task QueryItemsTestWithStrongConsistency()
         {
             CosmosClient localClient = null;
@@ -2221,6 +2376,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             return false;
+        }
+
+        private sealed class HierarchicalTestObject
+        {
+            [JsonPropertyName("id")]
+            public string Id { get; set; }
+
+            [JsonPropertyName("tenant")]
+            public string Tenant { get; set; }
+
+            [JsonPropertyName("user")]
+            public string User { get; set; }
+
+            [JsonPropertyName("session")]
+            public string Session { get; set; }
         }
 
         /// <summary>
