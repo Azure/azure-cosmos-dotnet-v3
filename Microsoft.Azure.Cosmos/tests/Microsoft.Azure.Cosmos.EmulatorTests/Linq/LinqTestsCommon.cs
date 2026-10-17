@@ -636,7 +636,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         public override string ToString()
         {
-            // simple cached serialization
+            // Simple cached serialization
             this.json ??= this.SerializeForTestBaseline();
             return this.json;
         }
