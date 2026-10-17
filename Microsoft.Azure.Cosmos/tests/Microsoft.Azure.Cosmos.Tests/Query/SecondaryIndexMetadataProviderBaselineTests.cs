@@ -251,6 +251,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 new Input("Literal slash and tilde in property names", "SELECT c[\"a/b\"], c[\"a~1b\"] FROM c"),
                 new Input("Literal slash versus nested path", "SELECT c[\"a/b\"], c.a.b FROM c"),
                 new Input("Literal star in property name", "SELECT c['*'] FROM c"),
+                new Input("Unfiltered materialized view", "SELECT c.id FROM c"),
             });
         }
 
@@ -261,8 +262,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             {
                 new Input("Empty query", ""),
                 new Input("Invalid query", "not a query"),
-                new Input("Wildcard with ROOT alias", "SELECT * FROM ROOT item"),
-                new Input("Wildcard with collection alias", "SELECT * FROM c AS item"),
                 new Input("SELECT VALUE", "SELECT VALUE c.id FROM c"),
                 new Input("Root object projection", "SELECT c FROM c"),
                 new Input("Arithmetic expression", "SELECT c.value + 1 AS value FROM c"),
@@ -279,28 +278,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 new Input("Conflicting leaf names in reverse order", "SELECT c.shipping.zip, c.billing.zip FROM c"),
                 new Input("Conflicting alias", "SELECT c.id, c.name AS id FROM c"),
                 new Input("Conflicting alias in reverse order", "SELECT c.name AS id, c.id FROM c"),
-            });
-        }
 
-        [TestMethod]
-        public void WildcardProjections()
-        {
-            this.ExecuteTestSuite(new[]
-            {
+                // Wildcard projections are unsupported regardless of alias or partition-key shape.
+                new Input("Wildcard with ROOT alias", "SELECT * FROM ROOT item"),
+                new Input("Wildcard with collection alias", "SELECT * FROM c AS item"),
                 new Input("Simple partition key", "SELECT * FROM c", "/tenantId"),
                 new Input("Nested partition key", "SELECT * FROM c", "/address/zip"),
                 new Input("Literal slash in partition key", "SELECT * FROM c", "/\"a/b\""),
                 new Input("Empty partition key segment", "SELECT * FROM c", "/\"\""),
                 new Input("Literal star partition key", "SELECT * FROM c", "/*"),
-            });
-        }
 
-        [TestMethod]
-        public void FilteredDefinitions()
-        {
-            this.ExecuteTestSuite(new[]
-            {
-                new Input("Unfiltered materialized view", "SELECT c.id FROM c"),
+                // Filtered materialized views are not eligible for routing.
                 new Input("Filtered materialized view", "SELECT c.id FROM c WHERE c.enabled = true"),
             });
         }

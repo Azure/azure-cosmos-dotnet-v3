@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
@@ -228,14 +227,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 return false;
             }
 
-            segments.Reverse();
-            if (!string.Equals(segments[0], rootCollectionIdentifier, StringComparison.Ordinal))
+            if (!string.Equals(segments[segments.Count - 1], rootCollectionIdentifier, StringComparison.Ordinal))
             {
                 sourcePathSegments = null;
                 return false;
             }
 
-            sourcePathSegments = segments.Skip(1).ToArray();
+            segments.RemoveAt(segments.Count - 1);
+            segments.Reverse();
+            sourcePathSegments = segments;
             return true;
         }
     }

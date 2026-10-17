@@ -265,4 +265,18 @@
       </Candidates>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description>Unfiltered materialized view</Description>
+      <Query>SELECT c.id FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"id":["id"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
 </Results>

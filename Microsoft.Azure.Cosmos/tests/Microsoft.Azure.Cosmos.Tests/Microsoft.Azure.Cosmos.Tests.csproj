@@ -90,12 +90,6 @@
     <None Update="BaselineTest\TestBaseline\SecondaryIndexMetadataProviderBaselineTests.RejectedDefinitions.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="BaselineTest\TestBaseline\SecondaryIndexMetadataProviderBaselineTests.WildcardProjections.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="BaselineTest\TestBaseline\SecondaryIndexMetadataProviderBaselineTests.FilteredDefinitions.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="BaselineTest\TestBaseline\ClientDistributionPlanBaselineTests.TestClientDistributionPlanDeserialization.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

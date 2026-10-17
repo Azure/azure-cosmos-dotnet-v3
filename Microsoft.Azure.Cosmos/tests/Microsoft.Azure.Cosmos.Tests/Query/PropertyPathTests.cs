@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.Query
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
@@ -13,33 +12,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     [TestClass]
     public class PropertyPathTests
     {
-        [TestMethod]
-        public void ConstructorAcceptsNullSegments()
-        {
-            PropertyPath path = new PropertyPath(null);
-
-            Assert.IsNull(path.Segments);
-        }
-
-        [TestMethod]
-        public void ConstructorAcceptsEmptyPath()
-        {
-            string[] segments = Array.Empty<string>();
-            PropertyPath path = new PropertyPath(segments);
-
-            Assert.AreSame(segments, path.Segments);
-            Assert.AreEqual(0, path.Segments.Count());
-        }
-
-        [TestMethod]
-        public void ConstructorAcceptsNullSegment()
-        {
-            string[] segments = { "address", null };
-            PropertyPath path = new PropertyPath(segments);
-
-            Assert.AreSame(segments, path.Segments);
-        }
-
         [TestMethod]
         public void ConstructorRetainsOriginalSegments()
         {

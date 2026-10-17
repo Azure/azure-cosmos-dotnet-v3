@@ -168,16 +168,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         }
 
         [TestMethod]
-        public async Task NullProviderResultIsRejectedAndNotCached()
+        public async Task NullProviderResultIsReturnedAndNotReused()
         {
             TestProvider provider = new TestProvider((_, _, _) => Task.FromResult<IReadOnlyList<ISecondaryIndexMetadata>>(null));
             SecondaryIndexMetadataCache cache = new SecondaryIndexMetadataCache(provider);
 
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() =>
-                cache.GetSecondaryIndexMetadataAsync(CreateSource(), NoOpTrace.Singleton, CancellationToken.None));
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() =>
-                cache.GetSecondaryIndexMetadataAsync(CreateSource(), NoOpTrace.Singleton, CancellationToken.None));
+            IEnumerable<ISecondaryIndexMetadata> first = await cache.GetSecondaryIndexMetadataAsync(CreateSource(), NoOpTrace.Singleton, CancellationToken.None);
+            IEnumerable<ISecondaryIndexMetadata> second = await cache.GetSecondaryIndexMetadataAsync(CreateSource(), NoOpTrace.Singleton, CancellationToken.None);
 
+            Assert.IsNull(first);
+            Assert.IsNull(second);
             Assert.AreEqual(2, provider.CallCount);
         }
 

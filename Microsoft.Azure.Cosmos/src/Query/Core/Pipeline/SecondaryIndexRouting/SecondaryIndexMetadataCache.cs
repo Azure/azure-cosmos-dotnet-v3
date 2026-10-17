@@ -33,22 +33,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 throw new ArgumentNullException(nameof(source));
             }
 
-            string sourceCollectionRid = source.ResourceId ?? throw new ArgumentException("The source container must have a resource identifier.", nameof(source));
-            cancellationToken.ThrowIfCancellationRequested();
+            if (source.ResourceId == null)
+            {
+                throw new ArgumentException("The source container must have a resource identifier.", nameof(source));
+            }
+
+            string sourceCollectionRid = source.ResourceId;
             return this.cache.GetAsync(
                 sourceCollectionRid,
                 obsoleteValue: null,
-                async () =>
-                {
-                    IEnumerable<ISecondaryIndexMetadata> metadata = 
-                        await this.provider.GetSecondaryIndexMetadataAsync(source, trace, cancellationToken);
-                    if (metadata == null)
-                    {
-                        throw new InvalidOperationException("Secondary index metadata providers must return an empty list when no candidates exist.");
-                    }
-
-                    return metadata;
-                },
+                () => this.provider.GetSecondaryIndexMetadataAsync(source, trace, cancellationToken),
                 cancellationToken,
                 forceRefresh);
         }
