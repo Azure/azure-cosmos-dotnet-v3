@@ -91,6 +91,7 @@ namespace Microsoft.Azure.Cosmos
                 (IComparer<Range<string>> minComparer, IComparer<Range<string>> maxComparer) =
                     RangeComparerProvider.GetComparers(useLengthAwareRangeComparer);
                 (FeedRange Original, Range<string> Range)[] entries = new (FeedRange, Range<string>)[feedRanges.Count];
+                Range<string> maximumBoundary = Range<string>.GetPointRange(PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey);
 
                 for (int i = 0; i < entries.Length; i++)
                 {
@@ -106,11 +107,9 @@ namespace Microsoft.Azure.Cosmos
                     {
                         converted = ConvertToFeedRangeInternal(original, nameof(feedRanges));
                     }
-                    catch (ArgumentException exception)
-                    {
-                        throw new ArgumentException("The list contains an invalid feed range representation.", nameof(feedRanges), exception);
-                    }
-                    catch (InvalidCastException exception)
+                    catch (Exception exception) when (
+                        exception is ArgumentException ||
+                        exception is InvalidCastException)
                     {
                         throw new ArgumentException("The list contains an invalid feed range representation.", nameof(feedRanges), exception);
                     }
@@ -121,14 +120,22 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     Range<string> range = epk.Range;
-                    if (range.Min == null || range.Max == null || !range.IsMinInclusive ||
-                        !IsEffectivePartitionKeyBoundary(range.Min) || !IsEffectivePartitionKeyBoundary(range.Max) ||
-                        minComparer.Compare(Range<string>.GetPointRange(range.Max), Range<string>.GetPointRange(PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey)) > 0)
+                    if (range.Min == null
+                        || range.Max == null
+                        || !range.IsMinInclusive
+                        || !IsEffectivePartitionKeyBoundary(range.Min)
+                        || !IsEffectivePartitionKeyBoundary(range.Max))
                     {
                         throw new ArgumentException("The list contains an invalid effective partition key range.", nameof(feedRanges));
                     }
 
-                    int boundaryComparison = minComparer.Compare(Range<string>.GetPointRange(range.Min), Range<string>.GetPointRange(range.Max));
+                    Range<string> maxPointRange = Range<string>.GetPointRange(range.Max);
+                    if (minComparer.Compare(maxPointRange, maximumBoundary) > 0)
+                    {
+                        throw new ArgumentException("The list contains an invalid effective partition key range.", nameof(feedRanges));
+                    }
+
+                    int boundaryComparison = minComparer.Compare(range, maxPointRange);
                     if (boundaryComparison > 0 || (boundaryComparison == 0 && !range.IsMaxInclusive))
                     {
                         throw new ArgumentException("The list contains an empty or inverted effective partition key range.", nameof(feedRanges));

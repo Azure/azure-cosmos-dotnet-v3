@@ -64,6 +64,24 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Assert.AreSame(lengthAware ? right : left, index.TryGetFeedRange(shortBoundary));
             Assert.AreSame(right, index.TryGetFeedRange(paddedBoundary));
             Assert.AreSame(right, index.TryGetFeedRange("0800000000000000000000000000000000000000000000000000000000000000"));
+
+            FeedRange unpaddedToPadded = CreateRange(shortBoundary, paddedBoundary);
+            if (lengthAware)
+            {
+                Assert.ThrowsException<ArgumentException>(
+                    () => ContainerCore.FeedRangeEpkIndex.Create(new[] { unpaddedToPadded }, lengthAware, default));
+            }
+            else
+            {
+                ContainerCore.FeedRangeEpkIndex unpaddedIndex = ContainerCore.FeedRangeEpkIndex.Create(new[] { unpaddedToPadded }, lengthAware, default);
+                Assert.AreSame(unpaddedToPadded, unpaddedIndex.TryGetFeedRange(shortBoundary));
+                Assert.IsNull(unpaddedIndex.TryGetFeedRange(paddedBoundary));
+            }
+
+            FeedRange inclusive = CreateRange(shortBoundary, paddedBoundary, maxInclusive: true);
+            ContainerCore.FeedRangeEpkIndex inclusiveIndex = ContainerCore.FeedRangeEpkIndex.Create(new[] { inclusive }, lengthAware, default);
+            Assert.AreSame(inclusive, inclusiveIndex.TryGetFeedRange(shortBoundary));
+            Assert.AreSame(inclusive, inclusiveIndex.TryGetFeedRange(paddedBoundary));
         }
 
         [TestMethod]
