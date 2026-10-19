@@ -669,6 +669,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
             }
         }
+
         [DataTestMethod]
         [DataRow(false, false)]
         [DataRow(false, true)]
@@ -687,6 +688,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             {
                 [ComponentScores] = scores,
             };
+
             if (includePayload)
             {
                 properties[Payload] = payload;
@@ -784,6 +786,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             bool useCompetitionRanking = false)
         {
             int[] actual = await RunRankScenarioAsync(firstComponentScores, useCompetitionRanking);
+
             if (!expected.SequenceEqual(actual))
             {
                 System.Diagnostics.Trace.WriteLine("Mismatch in rank results");

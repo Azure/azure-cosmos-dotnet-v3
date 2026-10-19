@@ -482,7 +482,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             for (int index = 0; index < componentScores.Count; ++index)
             {
                 ComponentRankingInfo component = componentRankingInfos[index];
-                componentScores[index].Sort(new ScoreTupleComparer(component.SortOrder));
+                componentScores[index].Sort(component.SortOrder == SortOrder.Ascending
+                    ? ScoreTupleComparer.Ascending
+                    : ScoreTupleComparer.Descending);
             }
 
             int[,] ranks = ComputeRanks(componentScores, isHybridSearchCompetitionRankingEnabled);
@@ -806,9 +808,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private sealed class ScoreTupleComparer : IComparer<ScoreTuple>
         {
+            public static ScoreTupleComparer Ascending { get; } = new ScoreTupleComparer(SortOrder.Ascending);
+
+            public static ScoreTupleComparer Descending { get; } = new ScoreTupleComparer(SortOrder.Descending);
+
             private SortOrder SortOrder { get; }
 
-            public ScoreTupleComparer(SortOrder sortOrder)
+            private ScoreTupleComparer(SortOrder sortOrder)
             {
                 this.SortOrder = sortOrder;
             }
