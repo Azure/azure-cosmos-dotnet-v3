@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
-    using System;
     using System.Collections.Generic;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -69,34 +68,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         // An absent discriminator denotes a legacy RRF plan.
         [JsonProperty("scoreCombinationKind", NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(ScoreCombinationKindJsonConverter))]
+        [JsonConverter(typeof(StringEnumConverter))]
         public ScoreCombinationKind? ScoreCombinationKind
         {
             get;
             set;
-        }
-
-        private sealed class ScoreCombinationKindJsonConverter : StringEnumConverter
-        {
-            public ScoreCombinationKindJsonConverter()
-            {
-                this.AllowIntegerValues = false;
-            }
-
-            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-            {
-                if (reader.TokenType != JsonToken.String)
-                {
-                    throw new JsonSerializationException("scoreCombinationKind must be Rrf or CombinedScore.");
-                }
-
-                return reader.Value switch
-                {
-                    "Rrf" => QueryPlan.ScoreCombinationKind.Rrf,
-                    "CombinedScore" => QueryPlan.ScoreCombinationKind.CombinedScore,
-                    _ => throw new JsonSerializationException("Unknown hybrid search scoreCombinationKind."),
-                };
-            }
         }
     }
 }

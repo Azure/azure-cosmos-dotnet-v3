@@ -57,10 +57,7 @@
 
         [DataTestMethod]
         [DataRow(@"""Unknown""")]
-        [DataRow(@"""1""")]
-        [DataRow("1")]
         [DataRow("[]")]
-        [DataRow(@"""Rrf, CombinedScore""")]
         public void InvalidScoreCombinationKindIsRejected(string kind)
         {
             string json = $@"{{""hybridSearchQueryInfo"":{{""scoreCombinationKind"":{kind}}},

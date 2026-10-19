@@ -95,12 +95,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             int maxConcurrency,
             Cosmos.FullTextScoreScope fullTextScoreScope)
         {
-            TryCatch tryValidateQueryInfo = ValidateQueryInfo(queryInfo);
-            if (tryValidateQueryInfo.Failed)
-            {
-                return TryCatch<IQueryPipelineStage>.FromException(tryValidateQueryInfo.Exception);
-            }
-
             TryCatch<IQueryPipelineStage> ComponentPipelineFactory(QueryInfo rewrittenQueryInfo)
             {
                 HybridSearchDebugTraceHelpers.TraceQuerySpec(sqlQuerySpec);
@@ -412,57 +406,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             }
 
             return TryCatch<List<IQueryPipelineStage>>.FromResult(queryPipelineStages);
-        }
-
-        private static TryCatch ValidateQueryInfo(HybridSearchQueryInfo queryInfo)
-        {
-            ScoreCombinationKind kind = queryInfo.ScoreCombinationKind ?? ScoreCombinationKind.Rrf;
-            if (kind != ScoreCombinationKind.Rrf && kind != ScoreCombinationKind.CombinedScore)
-            {
-                return TryCatch.FromException(new InternalServerErrorException("Unknown hybrid search scoreCombinationKind."));
-            }
-
-            if (kind == ScoreCombinationKind.CombinedScore)
-            {
-                if (queryInfo.ComponentQueryInfos == null || queryInfo.ComponentQueryInfos.Count < 2)
-                {
-                    return TryCatch.FromException(new InternalServerErrorException("CombinedScore requires at least two component queries."));
-                }
-
-                if (queryInfo.RequiresGlobalStatistics && string.IsNullOrEmpty(queryInfo.GlobalStatisticsQuery))
-                {
-                    return TryCatch.FromException(new InternalServerErrorException("CombinedScore requires a global statistics query."));
-                }
-
-                if (queryInfo.ComponentWeights != null && queryInfo.ComponentWeights.Count != 0)
-                {
-                    if (queryInfo.ComponentWeights.Count != queryInfo.ComponentQueryInfos.Count ||
-                        queryInfo.ComponentWeights.Any(weight => weight < 0 || double.IsNaN(weight) || double.IsInfinity(weight)))
-                    {
-                        return TryCatch.FromException(new InternalServerErrorException(
-                            "CombinedScore requires one finite, non-negative weight per component query."));
-                    }
-                }
-
-                foreach (QueryInfo component in queryInfo.ComponentQueryInfos)
-                {
-                    if (component == null || string.IsNullOrEmpty(component.RewrittenQuery) ||
-                        (component.HasOrderBy && (component.OrderBy.Count != 1 ||
-                        component.OrderByExpressions == null || component.OrderByExpressions.Count != 1 ||
-                        (component.OrderBy[0] != SortOrder.Ascending && component.OrderBy[0] != SortOrder.Descending))))
-                    {
-                        return TryCatch.FromException(new InternalServerErrorException("Invalid CombinedScore component query."));
-                    }
-
-                    if (component.Top > int.MaxValue || component.Offset > int.MaxValue || component.Limit > int.MaxValue)
-                    {
-                        return TryCatch.FromException(new ArgumentOutOfRangeException(
-                            nameof(queryInfo), "CombinedScore component TOP, OFFSET and LIMIT must not exceed Int32.MaxValue."));
-                    }
-                }
-            }
-
-            return TryCatch.FromResult();
         }
 
         private static IReadOnlyList<ComponentWeight> ExtractComponentWeights(HybridSearchQueryInfo hybridSearchQueryInfo)

@@ -1,6 +1,4 @@
 # File: templates/emulator-setup.yml
-# COMBINEDSCORE integration tests remain gated until both ServiceInterop and
-# the build supplied by EMULATORMSIURL support it; see docs/query/combinedscore.md.
 
 steps:
   - pwsh: |

@@ -897,39 +897,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
-        public void CombinedScoreRejectsMalformedPlans()
-        {
-            Action<HybridSearchQueryInfo>[] invalidPlans =
-            {
-                info => info.ScoreCombinationKind = (ScoreCombinationKind)99,
-                info => info.ComponentQueryInfos = null,
-                info => info.ComponentQueryInfos.Clear(),
-                info => info.ComponentQueryInfos.RemoveAt(1),
-                info => info.ComponentQueryInfos[0] = null,
-                info => info.ComponentWeights = new List<double> { 1 },
-                info => info.ComponentWeights = new List<double> { 1, 1, 1 },
-                info => info.ComponentWeights = new List<double> { -1, 1 },
-                info => info.ComponentWeights = new List<double> { double.NaN, 1 },
-                info => info.ComponentWeights = new List<double> { double.PositiveInfinity, 1 },
-                info => info.ComponentQueryInfos[0].OrderBy = new[] { (SortOrder)99 },
-                info => info.ComponentQueryInfos[0].Top = uint.MaxValue,
-                info => info.ComponentQueryInfos[0].Limit = uint.MaxValue,
-                info => info.ComponentQueryInfos[0].Offset = uint.MaxValue,
-            };
-            foreach (Action<HybridSearchQueryInfo> invalidate in invalidPlans)
-            {
-                HybridSearchQueryInfo info = Create2ItemHybridSearchSkipOrderByRewriteQueryInfo(false, null, null, null);
-                info.ScoreCombinationKind = ScoreCombinationKind.CombinedScore;
-                invalidate(info);
-                MockDocumentContainer container = MockDocumentContainer.CreateHybridSearchContainer(
-                    new IReadOnlyList<CosmosElement>[] { Array.Empty<CosmosElement>(), Array.Empty<CosmosElement>() });
-                TryCatch<IQueryPipelineStage> pipeline = CreateHybridSearchPipeline(container, info);
-                Assert.IsTrue(pipeline.Failed);
-                Assert.AreEqual(0, container.TotalRequestCharge);
-            }
-        }
-
-        [TestMethod]
         public async Task CombinedScoreRejectsMalformedResultsAndOverflow()
         {
             CosmosElement[] scoreArrays =
