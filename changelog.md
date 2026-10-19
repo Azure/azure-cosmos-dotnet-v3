@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
-- Added preview `Container.CreateFeedRangeSnapshot` and `Container.TryGetFeedRangeForPartitionKeyAsync` to capture feed range membership and boundaries for fast, repeated partition key ownership lookups, preserving original range instances without depending on the source list remaining unchanged. Snapshots can be shared by handles for the same database and container obtained from the same client.
+- Added preview `Container.TryGetFeedRangeForPartitionKeyAsync` to find the original feed range that owns a partition key within a caller-supplied list. Each call captures and validates the current ranges without reordering the list or consulting current physical partition ownership.
 
 #### Breaking Changes
 

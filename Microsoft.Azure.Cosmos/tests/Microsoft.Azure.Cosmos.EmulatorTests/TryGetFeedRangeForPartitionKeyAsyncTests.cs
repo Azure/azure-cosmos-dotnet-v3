@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(PartitionKeyDefinitionVersion.V1)]
         [DataRow(PartitionKeyDefinitionVersion.V2)]
-        public async Task ResolvesKeysInCallerSnapshot(PartitionKeyDefinitionVersion version)
+        public async Task ResolvesKeysInCallerRanges(PartitionKeyDefinitionVersion version)
         {
             Container container = await this.database.CreateContainerAsync(
                 new ContainerProperties(Guid.NewGuid().ToString(), "/pk")
@@ -53,15 +53,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 throughput: 20000);
             IReadOnlyList<FeedRange> ranges = (await container.GetFeedRangesAsync()).Reverse().ToArray();
             Assert.IsTrue(ranges.Count > 1);
-            FeedRangeSnapshot snapshot = container.CreateFeedRangeSnapshot(ranges);
-
             foreach (PartitionKey key in new[] { new PartitionKey("WA"), new PartitionKey(42), new PartitionKey(true), PartitionKey.Null, default, PartitionKey.None })
             {
-                FeedRange owner = await container.TryGetFeedRangeForPartitionKeyAsync(snapshot, key);
+                FeedRange owner = await container.TryGetFeedRangeForPartitionKeyAsync(ranges, key);
                 Assert.IsNotNull(owner);
                 Assert.IsTrue(ranges.Any(range => object.ReferenceEquals(range, owner)));
-                Assert.AreSame(owner, await container.TryGetFeedRangeForPartitionKeyAsync(container.CreateFeedRangeSnapshot(new[] { owner }), key));
-                Assert.IsNull(await container.TryGetFeedRangeForPartitionKeyAsync(container.CreateFeedRangeSnapshot(ranges.Where(range => !object.ReferenceEquals(range, owner)).ToArray()), key));
+                Assert.AreSame(owner, await container.TryGetFeedRangeForPartitionKeyAsync(new[] { owner }, key));
+                Assert.IsNull(await container.TryGetFeedRangeForPartitionKeyAsync(ranges.Where(range => !object.ReferenceEquals(range, owner)).ToArray(), key));
                 if (!key.IsNone)
                 {
                     Assert.IsTrue(await container.IsFeedRangePartOfAsync(owner, FeedRange.FromPartitionKey(key.InternalKey == null ? PartitionKey.Null : key)));
@@ -76,14 +74,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new ContainerProperties(Guid.NewGuid().ToString(), new List<string> { "/city", "/state" }),
                 throughput: 20000);
             IReadOnlyList<FeedRange> ranges = await container.GetFeedRangesAsync();
-            FeedRangeSnapshot snapshot = container.CreateFeedRangeSnapshot(ranges);
             PartitionKey key = new PartitionKeyBuilder().Add("Redmond").Add("WA").Build();
-            FeedRange owner = await container.TryGetFeedRangeForPartitionKeyAsync(snapshot, key);
+            FeedRange owner = await container.TryGetFeedRangeForPartitionKeyAsync(ranges, key);
             Assert.IsNotNull(owner);
             Assert.IsTrue(ranges.Any(range => object.ReferenceEquals(range, owner)));
             Assert.IsTrue(await container.IsFeedRangePartOfAsync(owner, FeedRange.FromPartitionKey(key)));
             await Assert.ThrowsExceptionAsync<ArgumentException>(
-                () => container.TryGetFeedRangeForPartitionKeyAsync(snapshot, new PartitionKey("Redmond")));
+                () => container.TryGetFeedRangeForPartitionKeyAsync(ranges, new PartitionKey("Redmond")));
         }
     }
 }

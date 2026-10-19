@@ -3,19 +3,12 @@
     "Microsoft.Azure.Cosmos.Container;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.FeedRangeSnapshot CreateFeedRangeSnapshot(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange], System.Threading.CancellationToken)[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.FeedRange] TryGetFeedRangeForPartitionKeyAsync(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange], Microsoft.Azure.Cosmos.PartitionKey, System.Threading.CancellationToken)[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]": {
           "Type": "Method",
           "Attributes": [
             "NullableContextAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRangeSnapshot CreateFeedRangeSnapshot(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.FeedRange] TryGetFeedRangeForPartitionKeyAsync(Microsoft.Azure.Cosmos.FeedRangeSnapshot, Microsoft.Azure.Cosmos.PartitionKey, System.Threading.CancellationToken)[System.Runtime.CompilerServices.NullableContextAttribute((Byte)1)]": {
-          "Type": "Method",
-          "Attributes": [
-            "NullableContextAttribute"
-          ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.FeedRange] TryGetFeedRangeForPartitionKeyAsync(Microsoft.Azure.Cosmos.FeedRangeSnapshot, Microsoft.Azure.Cosmos.PartitionKey, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.FeedRange] TryGetFeedRangeForPartitionKeyAsync(System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange], Microsoft.Azure.Cosmos.PartitionKey, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.SemanticRerankResult] SemanticRerankAsync(System.String, System.Collections.Generic.IEnumerable`1[System.String], System.Collections.Generic.IDictionary`2[System.String,System.Object], System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -1730,11 +1723,6 @@
           "MethodInfo": "Void set_SourcePaths(System.Collections.ObjectModel.Collection`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.FeedRangeSnapshot;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {},
       "NestedTypes": {}
     },
     "Microsoft.Azure.Cosmos.Fluent.ContainerBuilder;Microsoft.Azure.Cosmos.Fluent.ContainerDefinition`1[[Microsoft.Azure.Cosmos.Fluent.ContainerBuilder, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {

@@ -680,15 +680,8 @@ namespace Microsoft.Azure.Cosmos
 
 #if PREVIEW
 #nullable enable annotations
-        public override FeedRangeSnapshot CreateFeedRangeSnapshot(
-            IReadOnlyList<FeedRange> feedRanges,
-            CancellationToken cancellationToken = default)
-        {
-            return base.CreateFeedRangeSnapshot(feedRanges, cancellationToken);
-        }
-
         public override Task<FeedRange?> TryGetFeedRangeForPartitionKeyAsync(
-            FeedRangeSnapshot snapshot,
+            IReadOnlyList<FeedRange> feedRanges,
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default)
         {
@@ -698,7 +691,7 @@ namespace Microsoft.Azure.Cosmos
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: null,
-                task: (trace) => base.TryGetFeedRangeForPartitionKeyAsync(snapshot, partitionKey, trace, cancellationToken));
+                task: (trace) => base.TryGetFeedRangeForPartitionKeyAsync(feedRanges, partitionKey, trace, cancellationToken));
         }
 #nullable restore annotations
 #endif

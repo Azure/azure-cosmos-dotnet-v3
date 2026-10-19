@@ -1882,40 +1882,13 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW
 #nullable enable annotations
         /// <summary>
-        /// Creates a <see cref="FeedRangeSnapshot"/> for partition key ownership lookups.
+        /// Finds the <see cref="FeedRange"/> in the supplied list that owns the specified <see cref="PartitionKey"/> as an asynchronous operation.
         /// </summary>
         /// <param name="feedRanges">
         /// A list of non-overlapping effective partition key ranges belonging to this container.
-        /// Ranges returned by <see cref="Container.GetFeedRangesAsync(CancellationToken)"/>, including reordered lists,
-        /// subsets, and ranges restored from their JSON representations, are supported.
+        /// Supports ranges returned by <see cref="Container.GetFeedRangesAsync(CancellationToken)"/>,
+        /// subsets in any order, and ranges restored from their JSON representations.
         /// </param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="FeedRangeSnapshot"/> usable with handles for the same database and container obtained from the same client.</returns>
-        /// <remarks>
-        /// <para>
-        /// The method captures the original range objects and copies their boundaries. Do not modify the input while this method is running.
-        /// Changes to the source list or range representations after creation do not change the snapshot's membership or lookup boundaries.
-        /// The original range objects are not made immutable.
-        /// </para>
-        /// <para>
-        /// Creation requires O(N log N) time and O(N) storage and does not make service requests.
-        /// Use the same snapshot for repeated lookups, or create a new snapshot to capture updated ranges.
-        /// </para>
-        /// </remarks>
-        /// <exception cref="ArgumentNullException"><paramref name="feedRanges"/> is null.</exception>
-        /// <exception cref="ArgumentException">The list contains null, unsupported, invalid, or overlapping ranges.</exception>
-        /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
-        public virtual FeedRangeSnapshot CreateFeedRangeSnapshot(
-            IReadOnlyList<FeedRange> feedRanges,
-            CancellationToken cancellationToken = default)
-        {
-            throw new NotSupportedException("Deriving classes are expected to override this method with a valid implementation");
-        }
-
-        /// <summary>
-        /// Finds the <see cref="FeedRange"/> in the supplied snapshot that owns the specified <see cref="PartitionKey"/> as an asynchronous operation.
-        /// </summary>
-        /// <param name="snapshot">A snapshot created by <see cref="CreateFeedRangeSnapshot"/> for the same database and container using the same client.</param>
         /// <param name="partitionKey">
         /// The complete partition key to locate. Hierarchical partition key prefixes are not supported.
         /// <c>default(PartitionKey)</c> is treated as <see cref="PartitionKey.Null"/>.
@@ -1923,27 +1896,27 @@ namespace Microsoft.Azure.Cosmos
         /// </param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing the original <see cref="FeedRange"/> instance captured in <paramref name="snapshot"/> that owns the partition key,
-        /// or <see langword="null"/> if the snapshot contains no matching range.
+        /// A <see cref="Task"/> containing the original <see cref="FeedRange"/> instance from <paramref name="feedRanges"/> that owns the partition key,
+        /// or <see langword="null"/> if the list contains no matching range.
         /// </returns>
         /// <remarks>
         /// <para>
-        /// Ownership is determined using the boundaries captured when the snapshot was created, even if an original range object's representation changes later.
-        /// The snapshot may contain gaps and need not match the current physical partition layout.
-        /// The method does not refresh the routing map or replace snapshot ranges after partition splits.
+        /// Each call captures the current ranges and their boundaries without modifying the supplied list.
+        /// Later changes do not affect the captured boundaries. Avoid modifying the list or ranges until the operation completes.
         /// </para>
         /// <para>
-        /// Lookups take O(log N) time after resolving container metadata, without reading the source list or rebuilding the index.
+        /// Ownership is determined from the supplied ranges, which may contain gaps or predate partition splits.
+        /// The method does not refresh the ranges to match the current physical partitions.
         /// </para>
         /// </remarks>
-        /// <exception cref="ArgumentNullException"><paramref name="snapshot"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="feedRanges"/> is null.</exception>
         /// <exception cref="ArgumentException">
-        /// The snapshot was created using a different client or for a different database or container,
+        /// The list contains null, unsupported, invalid, or overlapping ranges,
         /// or the number of partition key components does not match the container's partition key definition.
         /// </exception>
         /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
         public virtual Task<FeedRange?> TryGetFeedRangeForPartitionKeyAsync(
-            FeedRangeSnapshot snapshot,
+            IReadOnlyList<FeedRange> feedRanges,
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default)
         {

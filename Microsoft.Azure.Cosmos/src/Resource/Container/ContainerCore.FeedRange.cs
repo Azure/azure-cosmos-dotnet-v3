@@ -18,49 +18,24 @@ namespace Microsoft.Azure.Cosmos
 
     internal abstract partial class ContainerCore
     {
-        public override FeedRangeSnapshot CreateFeedRangeSnapshot(
-            IReadOnlyList<FeedRange> feedRanges,
-            CancellationToken cancellationToken = default)
-        {
-            if (feedRanges == null)
-            {
-                throw new ArgumentNullException(nameof(feedRanges));
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-            FeedRangeEpkIndex index = FeedRangeEpkIndex.Create(
-                feedRanges,
-                this.ClientContext.ClientOptions.UseLengthAwareRangeComparer,
-                cancellationToken);
-            return new FeedRangeSnapshot(this, index);
-        }
-
         public override Task<FeedRange?> TryGetFeedRangeForPartitionKeyAsync(
-            FeedRangeSnapshot snapshot,
+            IReadOnlyList<FeedRange> feedRanges,
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default)
         {
-            return this.TryGetFeedRangeForPartitionKeyAsync(snapshot, partitionKey, NoOpTrace.Singleton, cancellationToken);
+            return this.TryGetFeedRangeForPartitionKeyAsync(feedRanges, partitionKey, NoOpTrace.Singleton, cancellationToken);
         }
 
         internal async Task<FeedRange?> TryGetFeedRangeForPartitionKeyAsync(
-            FeedRangeSnapshot snapshot,
+            IReadOnlyList<FeedRange> feedRanges,
             PartitionKey partitionKey,
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            if (snapshot == null)
-            {
-                throw new ArgumentNullException(nameof(snapshot));
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-            if (!object.ReferenceEquals(snapshot.ClientContext, this.ClientContext) ||
-                !string.Equals(snapshot.DatabaseId, this.Database.Id, StringComparison.Ordinal) ||
-                !string.Equals(snapshot.ContainerId, this.Id, StringComparison.Ordinal))
-            {
-                throw new ArgumentException("The snapshot must be created for the same database and container using the same client.", nameof(snapshot));
-            }
+            FeedRangeEpkIndex index = FeedRangeEpkIndex.Create(
+                feedRanges,
+                this.ClientContext.ClientOptions.UseLengthAwareRangeComparer,
+                cancellationToken);
 
             try
             {
@@ -78,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
 
                 string effectivePartitionKey = internalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
                 cancellationToken.ThrowIfCancellationRequested();
-                return snapshot.Index.TryGetFeedRange(effectivePartitionKey);
+                return index.TryGetFeedRange(effectivePartitionKey);
             }
             catch (DocumentClientException exception)
             {
@@ -123,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
                     FeedRange original = feedRanges[i];
                     if (original == null)
                     {
-                        throw new ArgumentException("The snapshot must contain only non-null effective partition key feed ranges.", nameof(feedRanges));
+                        throw new ArgumentException("The list must contain only non-null effective partition key feed ranges.", nameof(feedRanges));
                     }
 
                     FeedRangeInternal converted;
@@ -133,12 +108,16 @@ namespace Microsoft.Azure.Cosmos
                     }
                     catch (ArgumentException exception)
                     {
-                        throw new ArgumentException("The snapshot contains an invalid feed range representation.", nameof(feedRanges), exception);
+                        throw new ArgumentException("The list contains an invalid feed range representation.", nameof(feedRanges), exception);
+                    }
+                    catch (InvalidCastException exception)
+                    {
+                        throw new ArgumentException("The list contains an invalid feed range representation.", nameof(feedRanges), exception);
                     }
 
                     if (converted is not FeedRangeEpk epk)
                     {
-                        throw new ArgumentException("The snapshot must contain only effective partition key feed ranges.", nameof(feedRanges));
+                        throw new ArgumentException("The list must contain only effective partition key feed ranges.", nameof(feedRanges));
                     }
 
                     Range<string> range = epk.Range;
@@ -146,13 +125,13 @@ namespace Microsoft.Azure.Cosmos
                         !IsEffectivePartitionKeyBoundary(range.Min) || !IsEffectivePartitionKeyBoundary(range.Max) ||
                         minComparer.Compare(Range<string>.GetPointRange(range.Max), Range<string>.GetPointRange(PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey)) > 0)
                     {
-                        throw new ArgumentException("The snapshot contains an invalid effective partition key range.", nameof(feedRanges));
+                        throw new ArgumentException("The list contains an invalid effective partition key range.", nameof(feedRanges));
                     }
 
                     int boundaryComparison = minComparer.Compare(Range<string>.GetPointRange(range.Min), Range<string>.GetPointRange(range.Max));
                     if (boundaryComparison > 0 || (boundaryComparison == 0 && !range.IsMaxInclusive))
                     {
-                        throw new ArgumentException("The snapshot contains an empty or inverted effective partition key range.", nameof(feedRanges));
+                        throw new ArgumentException("The list contains an empty or inverted effective partition key range.", nameof(feedRanges));
                     }
 
                     // Copy boundaries so the index never depends on mutable range objects.
@@ -167,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
                     cancellationToken.ThrowIfCancellationRequested();
                     if (maxComparer.Compare(entries[i - 1].Range, Range<string>.GetPointRange(entries[i].Range.Min)) >= 0)
                     {
-                        throw new ArgumentException("The snapshot must not contain overlapping or duplicate effective partition key ranges.", nameof(feedRanges));
+                        throw new ArgumentException("The list must not contain overlapping or duplicate effective partition key ranges.", nameof(feedRanges));
                     }
                 }
 

@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         private CosmosClient client;
         private Container container;
         private IReadOnlyList<FeedRange> ranges;
-        private FeedRangeSnapshot snapshot;
         private PartitionKey partitionKey;
         private FeedRange logicalRange;
 
@@ -56,12 +55,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
 
             this.ranges = ranges;
-            this.snapshot = this.container.CreateFeedRangeSnapshot(this.ranges);
             FeedRange expected = this.Position == "Missing" ? null : ranges[ownerIndex];
-            if (!object.ReferenceEquals(expected, await this.container.TryGetFeedRangeForPartitionKeyAsync(this.snapshot, this.partitionKey)) ||
+            if (!object.ReferenceEquals(expected, await this.container.TryGetFeedRangeForPartitionKeyAsync(this.ranges, this.partitionKey)) ||
                 !object.ReferenceEquals(expected, await this.ContainmentScan()))
             {
-                throw new InvalidOperationException("Benchmark snapshot does not have the expected owner.");
+                throw new InvalidOperationException("Benchmark ranges do not have the expected owner.");
             }
         }
 
@@ -86,15 +84,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
-        public Task<FeedRange> WarmSnapshotLookup()
+        public Task<FeedRange> ListLookup()
         {
-            return this.container.TryGetFeedRangeForPartitionKeyAsync(this.snapshot, this.partitionKey);
-        }
-
-        [Benchmark]
-        public FeedRangeSnapshot CreateSnapshot()
-        {
-            return this.container.CreateFeedRangeSnapshot(this.ranges);
+            return this.container.TryGetFeedRangeForPartitionKeyAsync(this.ranges, this.partitionKey);
         }
     }
 }
