@@ -744,6 +744,51 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Description("A pre-cancelled execution sends no coordinator request and publishes no token, but still consumes a nonempty transaction instance.")]
+        public async Task CommitAsync_PreCancelled_DoesNotDispatchAndStillConsumesTransaction()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+            int invocationCount = 0;
+
+            Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
+            contextMock
+                .Setup(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<PartitionKey?>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(() =>
+                {
+                    invocationCount++;
+                    return Task.FromResult(BuildSuccessResponse(1));
+                });
+
+            DistributedWriteTransactionCore tx = new DistributedWriteTransactionCore(contextMock.Object);
+            tx.CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem());
+
+            OperationCanceledException cancellation = await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => tx.ExecuteTransactionAsync(cts.Token));
+
+            Assert.AreEqual(cts.Token, cancellation.CancellationToken);
+            Assert.AreEqual(Guid.Empty, tx.IdempotencyToken);
+            Assert.AreEqual(0, invocationCount, "A pre-cancelled execution must not reach coordinator transport.");
+
+            InvalidOperationException secondExecution = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => tx.ExecuteTransactionAsync(CancellationToken.None));
+
+            Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, secondExecution.Message);
+            Assert.AreEqual(0, invocationCount, "The consumed transaction must not dispatch on a second execution.");
+        }
+
+        [TestMethod]
         [Description("Verifies that user-initiated cancellation during commit still consumes the transaction instance.")]
         public async Task CommitAsync_CancelledDuringCommit_StillConsumesTransaction()
         {
@@ -969,12 +1014,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Description("When cancellation fires between attempts, ExecuteTransactionAsync throws OperationCanceledException but IdempotencyToken still exposes the latest token that reached dispatch — never Guid.Empty (spec §4.4).")]
-        public async Task IdempotencyToken_AfterCancellationBetweenAttempts_ExposesLatestDispatchedToken()
+        [Description("Cancellation before parsing a supplied success response still throws, retains the dispatched token, and prevents another execution of the same instance.")]
+        public async Task IdempotencyToken_AfterCancellationBeforeResponseParsing_ExposesDispatchedToken()
         {
             using (CancellationTokenSource cts = new CancellationTokenSource())
             {
                 List<string> capturedRequestTokens = new List<string>();
+                using ResponseMessage responseMessage = BuildSuccessResponse(1);
+                Stream responseContent = responseMessage.Content;
                 Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
                 contextMock
                     .Setup(c => c.ProcessResourceOperationStreamAsync(
@@ -992,7 +1039,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .Callback<string, ResourceType, OperationType, RequestOptions, ContainerInternal, PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
                         (_, _, _, _, _, _, _, _, enricher, _, _) =>
                         {
-                            RequestMessage request = new RequestMessage
+                            using RequestMessage request = new RequestMessage
                             {
                                 ResourceType = ResourceType.DistributedTransactionBatch,
                                 OperationType = OperationType.CommitDistributedTransaction,
@@ -1002,32 +1049,42 @@ namespace Microsoft.Azure.Cosmos.Tests
                         })
                     .Returns(() =>
                     {
-                        // Cancel once this attempt has reached dispatch, so cancellation is observed at the
-                        // next retry boundary (the backoff delay), never mid-dispatch.
                         cts.Cancel();
-                        return Task.FromResult(BuildRetriableAbortResponse());
+                        return Task.FromResult(responseMessage);
                     });
 
                 DistributedWriteTransactionCore tx = new DistributedWriteTransactionCore(contextMock.Object);
                 tx.CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem());
 
-                await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                OperationCanceledException cancellation = await Assert.ThrowsExceptionAsync<OperationCanceledException>(
                     () => tx.ExecuteTransactionAsync(cts.Token));
 
-                Assert.AreEqual(1, capturedRequestTokens.Count, "Exactly one attempt should reach dispatch before cancellation.");
+                Assert.AreEqual(cts.Token, cancellation.CancellationToken);
+                Assert.AreEqual(1, capturedRequestTokens.Count, "A cancelled success response must not trigger resubmission.");
                 Assert.AreNotEqual(Guid.Empty, tx.IdempotencyToken, "IdempotencyToken must survive cancellation.");
                 Assert.AreEqual(capturedRequestTokens[capturedRequestTokens.Count - 1], tx.IdempotencyToken.ToString(),
                     "IdempotencyToken must equal the last token that reached dispatch, even after cancellation.");
+                Assert.IsFalse(responseContent.CanRead, "The supplied response must be disposed when parsing is cancelled.");
+
+                InvalidOperationException secondExecution = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    () => tx.ExecuteTransactionAsync(CancellationToken.None));
+
+                Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, secondExecution.Message);
+                Assert.AreEqual(1, capturedRequestTokens.Count, "A second execution must not dispatch.");
             }
         }
 
-        [TestMethod]
-        [Description("When cancellation fires during an in-flight dispatch, ExecuteTransactionAsync throws OperationCanceledException but IdempotencyToken still exposes the token published before the awaited dispatch — proving the publish happens before the await (spec §4.4).")]
-        public async Task IdempotencyToken_AfterCancellationDuringInFlightDispatch_ExposesDispatchedToken()
+        [DataTestMethod]
+        [DataRow(false, DisplayName = "Cancellation without a modeled write effect")]
+        [DataRow(true, DisplayName = "Cancellation after a modeled write effect")]
+        [Description("A scripted transport can report cancellation with or without an accepted write effect; both retain the dispatched token and consume the instance.")]
+        public async Task CommitAsync_CancelledDuringDispatch_DoesNotDetermineWriteOutcome(bool applyWrite)
         {
             using (CancellationTokenSource cts = new CancellationTokenSource())
             {
                 string capturedRequestToken = null;
+                bool modeledWriteApplied = false;
+                int invocationCount = 0;
                 Mock<CosmosClientContext> contextMock = this.BuildContextSetup();
                 contextMock
                     .Setup(c => c.ProcessResourceOperationStreamAsync(
@@ -1045,7 +1102,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, PartitionKey?, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
                         (uri, resType, opType, opts, container, pk, itemId, stream, enricher, trace, ct) =>
                         {
-                            RequestMessage request = new RequestMessage
+                            invocationCount++;
+                            using RequestMessage request = new RequestMessage
                             {
                                 ResourceType = ResourceType.DistributedTransactionBatch,
                                 OperationType = OperationType.CommitDistributedTransaction,
@@ -1053,7 +1111,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                             enricher(request);
                             capturedRequestToken = request.Headers[HttpConstants.HttpHeaders.IdempotencyToken];
 
-                            // Cancellation observed while the dispatch is in flight: throw before any response.
+                            // Model the service outcome independently of whether the client receives a response.
+                            modeledWriteApplied = applyWrite;
                             cts.Cancel();
                             throw new OperationCanceledException(cts.Token);
                         });
@@ -1061,14 +1120,23 @@ namespace Microsoft.Azure.Cosmos.Tests
                 DistributedWriteTransactionCore tx = new DistributedWriteTransactionCore(contextMock.Object);
                 tx.CreateItem(BuildMockContainer(), new PartitionKey("pk"), "item-id", new TestItem());
 
-                await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                OperationCanceledException cancellation = await Assert.ThrowsExceptionAsync<OperationCanceledException>(
                     () => tx.ExecuteTransactionAsync(cts.Token));
 
+                Assert.AreEqual(cts.Token, cancellation.CancellationToken);
+                Assert.AreEqual(applyWrite, modeledWriteApplied, "Client cancellation must not be interpreted as undoing a modeled service write.");
+                Assert.AreEqual(1, invocationCount, "Cancellation must not automatically resubmit an uncertain write.");
                 Assert.IsNotNull(capturedRequestToken, "The attempt must reach dispatch before cancellation.");
                 Assert.AreNotEqual(Guid.Empty, tx.IdempotencyToken,
                     "Token published before the await must survive an in-flight cancellation.");
                 Assert.AreEqual(capturedRequestToken, tx.IdempotencyToken.ToString(),
                     "IdempotencyToken must equal the token published before the awaited dispatch.");
+
+                InvalidOperationException secondExecution = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    () => tx.ExecuteTransactionAsync(CancellationToken.None));
+
+                Assert.AreEqual(DistributedWriteTransactionCore.CommitAlreadyCalledMessage, secondExecution.Message);
+                Assert.AreEqual(1, invocationCount, "A second execution must not dispatch an uncertain write again.");
             }
         }
 
