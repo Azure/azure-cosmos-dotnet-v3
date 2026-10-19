@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -293,6 +294,86 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 trace: NoOpTrace.Singleton);
 
             CollectionAssert.AreEqual((List<string>)expectedExcludeRegions, (List<string>)actualExcludeRegions);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task CombinedScoreGatewayCapabilities(bool disableOptimization)
+        {
+            Mock<CosmosQueryClient> queryClient = new Mock<CosmosQueryClient>();
+            Mock<CosmosQueryContext> queryContext = new Mock<CosmosQueryContext>(
+                queryClient.Object, ResourceType.Document, OperationType.Query, typeof(object),
+                "dbs/db/colls/coll", Guid.NewGuid(), false, false, false, null);
+            PartitionedQueryExecutionInfo plan = new PartitionedQueryExecutionInfo
+            {
+                HybridSearchQueryInfo = new HybridSearchQueryInfo { ScoreCombinationKind = ScoreCombinationKind.CombinedScore },
+            };
+
+            queryContext.Setup(c => c.ExecuteQueryPlanRequestAsync(
+                It.IsAny<string>(), ResourceType.Document, OperationType.QueryPlan, It.IsAny<SqlQuerySpec>(),
+                It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>(),
+                It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .Callback<string, ResourceType, OperationType, SqlQuerySpec, Cosmos.PartitionKey?, string, IReadOnlyList<string>, ITrace, CancellationToken>(
+                    (_, __, ___, ____, _____, features, ______, _______, ________) =>
+                    {
+                        QueryFeatures supported = Enum.Parse<QueryFeatures>(features);
+                        Assert.IsTrue(supported.HasFlag(QueryFeatures.CombinedScore | QueryFeatures.HybridSearch));
+                        Assert.IsTrue(supported.HasFlag(QueryFeatures.WeightedRankFusion));
+                        Assert.AreEqual(!disableOptimization, supported.HasFlag(QueryFeatures.HybridSearchSkipOrderByRewrite));
+                        Assert.AreEqual(1UL << 18, (ulong)QueryFeatures.CombinedScore);
+                        QueryFeatures combinedScoreOnly = QueryFeatures.HybridSearch | QueryFeatures.CombinedScore;
+                        Assert.AreEqual("HybridSearch, CombinedScore", combinedScoreOnly.ToString());
+                        Assert.IsFalse(combinedScoreOnly.HasFlag(QueryFeatures.WeightedRankFusion));
+                        Assert.IsFalse((QueryFeatures.HybridSearch | QueryFeatures.WeightedRankFusion).HasFlag(QueryFeatures.CombinedScore));
+                    })
+                .ReturnsAsync(plan);
+
+            PartitionedQueryExecutionInfo result = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
+                queryContext.Object, new SqlQuerySpec("SELECT * FROM c"), "dbs/db/colls/coll",
+                partitionKey: null, isHybridSearchQueryPlanOptimizationDisabled: disableOptimization,
+                excludeRegions: null, trace: NoOpTrace.Singleton);
+            Assert.AreSame(plan, result);
+            queryContext.VerifyAll();
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        [Ignore("Requires a COMBINEDSCORE-capable ServiceInterop dependency; Direct 3.44.1 returns SC2005.")]
+        public async Task CombinedScoreNativeQueryPlan(bool disableOptimization)
+        {
+            using QueryPartitionProvider provider = new QueryPartitionProvider(DefaultQueryEngineConfiguration);
+            MockCosmosQueryClient client = new MockCosmosQueryClient(provider);
+            foreach (string suffix in new[] { "", ", [2, -1]", ", 3", ", @weights, @multiplier" })
+            {
+                SqlQuerySpec query = new SqlQuerySpec(
+                    "SELECT TOP 10 c.text FROM c ORDER BY RANK COMBINEDSCORE(" +
+                    "FullTextScore(c.text, 'swim'), FullTextScore(c.abstract, 'energy')" + suffix + ")",
+                    new SqlParameterCollection
+                    {
+                        new SqlParameter("@weights", new[] { 2, -1 }),
+                        new SqlParameter("@multiplier", 3),
+                    });
+                PartitionedQueryExecutionInfo plan = await QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
+                    client, query, ResourceType.Document, PartitionKeyDefinition, vectorEmbeddingPolicy: null,
+                    hasLogicalPartitionKey: false, geospatialType: Cosmos.GeospatialType.Geography,
+                    useSystemPrefix: false, isHybridSearchQueryPlanOptimizationDisabled: disableOptimization,
+                    trace: NoOpTrace.Singleton);
+                Assert.AreEqual(ScoreCombinationKind.CombinedScore, plan.HybridSearchQueryInfo.ScoreCombinationKind);
+                Assert.AreEqual(2, plan.HybridSearchQueryInfo.ComponentQueryInfos.Count);
+                Assert.AreEqual(10U, plan.HybridSearchQueryInfo.Take);
+                Assert.IsTrue(plan.HybridSearchQueryInfo.ComponentQueryInfos.All(component => component.HasOrderBy == disableOptimization));
+                if (suffix.Contains("-1") || suffix.Contains("@weights"))
+                {
+                    CollectionAssert.AreEqual(new[] { 2.0, 1.0 }, plan.HybridSearchQueryInfo.ComponentWeights);
+                    Assert.IsTrue(plan.HybridSearchQueryInfo.ComponentQueryInfos[1].RewrittenQuery.TrimEnd().EndsWith("ASC", StringComparison.Ordinal));
+                    if (disableOptimization)
+                    {
+                        Assert.AreEqual(SortOrder.Ascending, plan.HybridSearchQueryInfo.ComponentQueryInfos[1].OrderBy[0]);
+                    }
+                }
+            }
         }
 
         [TestMethod]
