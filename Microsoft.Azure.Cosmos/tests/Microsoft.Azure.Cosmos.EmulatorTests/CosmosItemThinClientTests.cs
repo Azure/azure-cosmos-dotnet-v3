@@ -2121,7 +2121,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     await hpkContainer.CreateItemAsync(
-                        new Dictionary<string, string> { { "id", "warmup" }, { "tenantId", "warmup" }, { "userId", "warmup" } },
+                        new HierarchicalItem { Id = "warmup", TenantId = "warmup", UserId = "warmup" },
                         new PartitionKeyBuilder().Add("warmup").Add("warmup").Build(),
                         cancellationToken: timeout.Token);
                     break;
@@ -2138,12 +2138,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 for (int user = 0; user < usersPerTenant; user++)
                 {
                     await hpkContainer.CreateItemAsync(
-                        new Dictionary<string, string>
-                        {
-                            { "id", $"{tenant}-{user}" },
-                            { "tenantId", tenant },
-                            { "userId", $"user{user}" }
-                        },
+                        new HierarchicalItem { Id = $"{tenant}-{user}", TenantId = tenant, UserId = $"user{user}" },
                         new PartitionKeyBuilder().Add(tenant).Add($"user{user}").Build(),
                         cancellationToken: timeout.Token);
                 }
@@ -2393,6 +2388,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// so the consistency-strategy value only appears in the request body, not in any
         /// <c>x-ms-*</c> header.
         /// </summary>
+        private sealed class HierarchicalItem
+        {
+            [JsonPropertyName("id")]
+            public string Id { get; set; }
+
+            [JsonPropertyName("tenantId")]
+            public string TenantId { get; set; }
+
+            [JsonPropertyName("userId")]
+            public string UserId { get; set; }
+        }
+
         private sealed class BodyCapturingHandler : DelegatingHandler
         {
             public ConcurrentQueue<byte[]> CapturedBodies { get; } = new ConcurrentQueue<byte[]>();
