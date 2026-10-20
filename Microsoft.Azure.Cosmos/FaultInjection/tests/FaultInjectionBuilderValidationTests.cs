@@ -149,6 +149,59 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         }
 
         [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests injection rate of NaN throws")]
+        public void ServerErrorResultBuilder_InjectionRateNaN_Throws()
+        {
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                FaultInjectionResultBuilder
+                    .GetResultBuilder(FaultInjectionServerErrorType.Gone)
+                    .WithInjectionRate(double.NaN));
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that the public server error result constructor rejects a NaN injection rate")]
+        public void ServerErrorResult_NaNInjectionRate_Throws()
+        {
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                new FaultInjectionServerErrorResult(
+                    FaultInjectionServerErrorType.Gone,
+                    times: 0,
+                    delay: TimeSpan.Zero,
+                    suppressServiceRequests: false,
+                    injectionRate: double.NaN));
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that the public server error result constructor rejects an injection rate of zero")]
+        public void ServerErrorResult_ZeroInjectionRate_Throws()
+        {
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                new FaultInjectionServerErrorResult(
+                    FaultInjectionServerErrorType.Gone,
+                    times: 0,
+                    delay: TimeSpan.Zero,
+                    suppressServiceRequests: false,
+                    injectionRate: 0));
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that the public server error result constructor rejects an injection rate above one")]
+        public void ServerErrorResult_AboveOneInjectionRate_Throws()
+        {
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                new FaultInjectionServerErrorResult(
+                    FaultInjectionServerErrorType.Gone,
+                    times: 0,
+                    delay: TimeSpan.Zero,
+                    suppressServiceRequests: false,
+                    injectionRate: 1.1));
+        }
+
+        [TestMethod]
         [Owner("nalutripician")]
         [Description("Tests injection rate of exactly 1 succeeds")]
         public void ServerErrorResultBuilder_InjectionRateExactlyOne_Succeeds()
@@ -434,6 +487,29 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 .WithInterval(TimeSpan.FromSeconds(-1)));
         }
 
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests connection error result threshold of NaN throws")]
+        public void ConnectionErrorResultBuilder_ThresholdNaN_Throws()
+        {
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                new FaultInjectionConnectionErrorResultBuilder(
+                    FaultInjectionConnectionErrorType.ReceiveStreamClosed)
+                .WithThreshold(double.NaN));
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that the public connection error result constructor rejects a NaN threshold")]
+        public void ConnectionErrorResult_NaNThreshold_Throws()
+        {
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                new FaultInjectionConnectionErrorResult(
+                    FaultInjectionConnectionErrorType.ReceiveStreamClosed,
+                    TimeSpan.FromSeconds(1),
+                    double.NaN));
+        }
+
         #endregion
 
         #region FaultInjectionCustomServerErrorResultBuilder Validation
@@ -470,6 +546,304 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
                 new FaultInjectionCustomServerErrorResultBuilder(404, 0)
                 .WithInjectionRate(0));
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests custom server error result injection rate of NaN throws")]
+        public void CustomServerErrorResultBuilder_InjectionRateNaN_Throws()
+        {
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                new FaultInjectionCustomServerErrorResultBuilder(404, 0)
+                .WithInjectionRate(double.NaN));
+        }
+
+        #endregion
+
+        #region Dynamic Injection Rate
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that the rule injection rate is seeded from the server error result")]
+        public void FaultInjectionRule_InjectionRate_DefaultsToServerErrorResultRate()
+        {
+            FaultInjectionRule rule = CreateServerErrorRule(0.25);
+
+            Assert.AreEqual(0.25, rule.GetInjectionRate());
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that the rule injection rate is seeded from the custom server error result")]
+        public void FaultInjectionRule_InjectionRate_DefaultsToCustomServerErrorResultRate()
+        {
+            FaultInjectionRule rule = new FaultInjectionRuleBuilder(
+                id: "customRateRule",
+                condition: new FaultInjectionConditionBuilder().Build(),
+                result: new FaultInjectionCustomServerErrorResultBuilder(429, 3200)
+                    .WithInjectionRate(0.75)
+                    .Build())
+                .Build();
+
+            Assert.AreEqual(0.75, rule.GetInjectionRate());
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that connection error rules report the default injection rate")]
+        public void FaultInjectionRule_InjectionRate_ConnectionErrorDefaultsToOne()
+        {
+            FaultInjectionRule rule = CreateConnectionErrorRule();
+
+            Assert.AreEqual(1, rule.GetInjectionRate());
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that SetInjectionRate rejects connection error rules, which have no injection rate")]
+        public void FaultInjectionRule_SetInjectionRate_ConnectionErrorRule_Throws()
+        {
+            FaultInjectionRule rule = CreateConnectionErrorRule();
+
+            Assert.ThrowsException<InvalidOperationException>(() => rule.SetInjectionRate(0.5));
+
+            // The argument is validated before the rule type, so an invalid rate throws ArgumentOutOfRangeException.
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => rule.SetInjectionRate(double.NaN));
+
+            Assert.AreEqual(1, rule.GetInjectionRate());
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that SetInjectionRate updates the rate reported by the rule")]
+        public void FaultInjectionRule_SetInjectionRate_UpdatesRate()
+        {
+            FaultInjectionRule rule = CreateServerErrorRule(1);
+
+            rule.SetInjectionRate(0.1);
+            Assert.AreEqual(0.1, rule.GetInjectionRate());
+
+            rule.SetInjectionRate(1);
+            Assert.AreEqual(1, rule.GetInjectionRate());
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that SetInjectionRate rejects rates outside of (0, 1] and leaves the rate unchanged")]
+        public void FaultInjectionRule_SetInjectionRate_InvalidRate_Throws()
+        {
+            FaultInjectionRule rule = CreateServerErrorRule(0.5);
+
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => rule.SetInjectionRate(0));
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => rule.SetInjectionRate(-0.5));
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => rule.SetInjectionRate(1.1));
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => rule.SetInjectionRate(double.NaN));
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => rule.SetInjectionRate(double.PositiveInfinity));
+
+            Assert.AreEqual(0.5, rule.GetInjectionRate());
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that SetInjectionRate reports the offending parameter name")]
+        public void FaultInjectionRule_SetInjectionRate_InvalidRate_ReportsParamName()
+        {
+            FaultInjectionRule rule = CreateServerErrorRule(0.5);
+
+            ArgumentOutOfRangeException exception = Assert.ThrowsException<ArgumentOutOfRangeException>(
+                () => rule.SetInjectionRate(1.1));
+
+            Assert.AreEqual("injectionRate", exception.ParamName);
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that SetInjectionRate propagates to the effective rule already registered with a client")]
+        public void FaultInjectionRule_SetInjectionRate_PropagatesToEffectiveRule()
+        {
+            FaultInjectionRule rule = CreateServerErrorRule(1);
+            FaultInjectionServerErrorRule effectiveRule = CreateEffectiveServerErrorRule(1);
+
+            rule.SetEffectiveFaultInjectionRule(effectiveRule);
+            rule.SetInjectionRate(0.2);
+
+            Assert.AreEqual(0.2, effectiveRule.GetResult().GetInjectionRate());
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that SetInjectionRate propagates to an effective custom server error rule")]
+        public void FaultInjectionRule_SetInjectionRate_PropagatesToEffectiveCustomServerErrorRule()
+        {
+            FaultInjectionRule rule = CreateCustomServerErrorRule(1);
+            FaultInjectionCustomServerErrorRule effectiveRule = CreateEffectiveCustomServerErrorRule(1);
+
+            rule.SetEffectiveFaultInjectionRule(effectiveRule);
+            rule.SetInjectionRate(0.2);
+
+            Assert.AreEqual(0.2, effectiveRule.GetResult().GetInjectionRate());
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that a rate set before client registration is replayed onto the effective rule")]
+        public void FaultInjectionRule_SetInjectionRate_BeforeRegistration_IsReplayed()
+        {
+            FaultInjectionRule rule = CreateServerErrorRule(1);
+            rule.SetInjectionRate(0.3);
+
+            // Mirrors an effective rule built before the rate was set, which the replay must correct.
+            FaultInjectionServerErrorRule effectiveRule = CreateEffectiveServerErrorRule(1);
+            rule.SetEffectiveFaultInjectionRule(effectiveRule);
+
+            Assert.AreEqual(0.3, effectiveRule.GetResult().GetInjectionRate());
+            Assert.AreEqual(0.3, rule.GetInjectionRate());
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that ToString reports the rate currently in effect rather than the build time rate")]
+        public void FaultInjectionRule_ToString_ReportsCurrentInjectionRate()
+        {
+            FaultInjectionRule rule = CreateServerErrorRule(1);
+            rule.SetInjectionRate(0.4);
+
+            StringAssert.Contains(rule.ToString(), "effectiveInjectionRate: 0.4");
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that a connection delay rule honors its injection rate on the connection delay code path")]
+        public void FaultInjectionServerErrorRule_ConnectionDelay_HonorsInjectionRate()
+        {
+            FaultInjectionServerErrorRule effectiveRule = new FaultInjectionServerErrorRule(
+                id: "connectionDelayRule",
+                enabled: true,
+                delay: TimeSpan.Zero,
+                duration: TimeSpan.MaxValue,
+                hitLimit: 0,
+                connectionType: FaultInjectionConnectionType.Direct,
+                condition: new FaultInjectionConditionInternal(null),
+                result: new FaultInjectionServerErrorResultInternal(
+                    serverErrorType: FaultInjectionServerErrorType.ConnectionDelay,
+                    times: 0,
+                    delay: TimeSpan.Zero,
+                    suppressServiceRequest: false,
+                    injectionRate: 0.5,
+                    applicationContext: new FaultInjectionApplicationContext(),
+                    globalEndpointManager: null));
+
+            Uri callUri = new Uri("rntbd://127.0.0.1:10250/");
+            using Microsoft.Azure.Documents.DocumentServiceRequest request = Microsoft.Azure.Documents.DocumentServiceRequest.Create(
+                Microsoft.Azure.Documents.OperationType.Read,
+                Microsoft.Azure.Documents.ResourceType.Document,
+                Microsoft.Azure.Documents.AuthorizationTokenType.PrimaryMasterKey);
+
+            int applied = 0;
+            for (int i = 0; i < 1000; i++)
+            {
+                if (effectiveRule.IsApplicable(callUri, request, Guid.NewGuid()))
+                {
+                    applied++;
+                }
+            }
+
+            // Binomial(1000, 0.5): mean 500, standard deviation ~15.8. [400, 600] is more than +/-6 standard
+            // deviations, so a passing run is not chance while a rule that ignores its rate (applies 1000x) is caught.
+            Assert.IsTrue(
+                applied >= 400 && applied <= 600,
+                $"ConnectionDelay rule did not honor its 0.5 injection rate: {applied}/1000 applied.");
+        }
+
+        [TestMethod]
+        [Owner("kundadebdatta")]
+        [Description("Tests that a disable set before client registration is replayed onto the effective rule")]
+        public void FaultInjectionRule_DisableBeforeRegistration_IsReplayed()
+        {
+            FaultInjectionRule rule = CreateServerErrorRule(1);
+            rule.Disable();
+
+            // The effective rule is built enabled; the replay must carry the disable across.
+            FaultInjectionServerErrorRule effectiveRule = CreateEffectiveServerErrorRule(1);
+            rule.SetEffectiveFaultInjectionRule(effectiveRule);
+
+            Assert.IsFalse(effectiveRule.IsValid());
+        }
+
+        private static FaultInjectionRule CreateServerErrorRule(double injectionRate)
+        {
+            return new FaultInjectionRuleBuilder(
+                id: "dynamicRateRule",
+                condition: new FaultInjectionConditionBuilder().Build(),
+                result: FaultInjectionResultBuilder
+                    .GetResultBuilder(FaultInjectionServerErrorType.Gone)
+                    .WithInjectionRate(injectionRate)
+                    .Build())
+                .Build();
+        }
+
+        private static FaultInjectionRule CreateCustomServerErrorRule(double injectionRate)
+        {
+            return new FaultInjectionRuleBuilder(
+                id: "dynamicRateCustomRule",
+                condition: new FaultInjectionConditionBuilder().Build(),
+                result: new FaultInjectionCustomServerErrorResultBuilder(429, 3200)
+                    .WithInjectionRate(injectionRate)
+                    .Build())
+                .Build();
+        }
+
+        private static FaultInjectionRule CreateConnectionErrorRule()
+        {
+            return new FaultInjectionRuleBuilder(
+                id: "connectionErrorRule",
+                condition: new FaultInjectionConditionBuilder().Build(),
+                result: new FaultInjectionConnectionErrorResultBuilder(
+                        FaultInjectionConnectionErrorType.ReceiveStreamClosed)
+                    .WithInterval(TimeSpan.FromSeconds(1))
+                    .WithThreshold(0.5)
+                    .Build())
+                .Build();
+        }
+
+        private static FaultInjectionServerErrorRule CreateEffectiveServerErrorRule(double injectionRate)
+        {
+            return new FaultInjectionServerErrorRule(
+                id: "dynamicRateRule",
+                enabled: true,
+                delay: TimeSpan.Zero,
+                duration: TimeSpan.MaxValue,
+                hitLimit: 0,
+                connectionType: FaultInjectionConnectionType.Direct,
+                condition: new FaultInjectionConditionInternal(null),
+                result: new FaultInjectionServerErrorResultInternal(
+                    serverErrorType: FaultInjectionServerErrorType.Gone,
+                    times: 0,
+                    delay: TimeSpan.Zero,
+                    suppressServiceRequest: false,
+                    injectionRate: injectionRate,
+                    applicationContext: new FaultInjectionApplicationContext(),
+                    globalEndpointManager: null));
+        }
+
+        private static FaultInjectionCustomServerErrorRule CreateEffectiveCustomServerErrorRule(double injectionRate)
+        {
+            return new FaultInjectionCustomServerErrorRule(
+                id: "dynamicRateCustomRule",
+                enabled: true,
+                delay: TimeSpan.Zero,
+                duration: TimeSpan.MaxValue,
+                hitLimit: 0,
+                connectionType: FaultInjectionConnectionType.Direct,
+                condition: new FaultInjectionConditionInternal(null),
+                result: new FaultInjectionCustomServerErrorResultInternal(
+                    statusCode: 429,
+                    subStatusCode: 3200,
+                    times: 0,
+                    delay: TimeSpan.Zero,
+                    suppressServiceRequest: false,
+                    injectionRate: injectionRate,
+                    applicationContext: new FaultInjectionApplicationContext()));
         }
 
         #endregion

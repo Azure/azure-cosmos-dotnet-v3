@@ -72,6 +72,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </remarks>
         internal event Action<bool, bool>? OnEnablePartitionLevelFailoverConfigChanged;
 
+        /// <summary>
+        /// reemits the user-agent feature flags so F4 reflects the current thin-client routing capability.
+        /// </summary>
+        internal event Action<bool>? OnThinClientAvailabilityChanged;
+
         public GlobalEndpointManager(
             IDocumentClientInternal owner,
             ConnectionPolicy connectionPolicy,
@@ -585,6 +590,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.GetLocation(endpoint);
         }
 
+        /// <summary>
+        /// Resolves only known regional endpoints without inferring a region for the global endpoint.
+        /// </summary>
+        internal virtual string GetExactLocation(Uri endpoint)
+        {
+            return this.locationCache.GetExactLocation(endpoint);
+        }
+
         public ReadOnlyCollection<Uri> GetApplicableEndpoints(DocumentServiceRequest request, bool isReadRequest)
         {
             return this.locationCache.GetApplicableEndpoints(request, isReadRequest);
@@ -924,7 +937,18 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(accountProperties);
 
+                bool hadThinClientLocations = this.locationCache.HasThinClientReadLocations
+                    || this.locationCache.HasThinClientWriteLocations;
+
                 this.locationCache.OnDatabaseAccountRead(accountProperties);
+
+                bool hasThinClientLocations = this.locationCache.HasThinClientReadLocations
+                    || this.locationCache.HasThinClientWriteLocations;
+
+                if (hadThinClientLocations != hasThinClientLocations)
+                {
+                    this.OnThinClientAvailabilityChanged?.Invoke(hasThinClientLocations);
+                }
 
                 // Probe the thin client regional endpoints after every account-topology refresh so the
                 // routing gate reflects the latest proxy connectivity health. Fire-and-forget (not awaited):

@@ -812,6 +812,86 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ValidateCachingIsolationAcrossCoexistingProviders()
+        {
+            // Two providers coexisting in one process must each honor their own DataEncryptionKeyCacheTimeToLive: a
+            // provider set to TimeSpan.Zero keeps unwrapping on every operation while another with a positive
+            // lifetime caches. Each gets its own key store provider so unwrap calls are counted independently.
+            string dekId = "coexistDek";
+            await CreateDekAsync(dualDekProvider, dekId);
+
+            TestEncryptionKeyStoreProvider cachingStoreProvider = new()
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.FromMinutes(30)
+            };
+            TestEncryptionKeyStoreProvider noRetentionStoreProvider = new()
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero
+            };
+
+            CosmosDataEncryptionKeyProvider cachingProvider = new(cachingStoreProvider);
+            await cachingProvider.InitializeAsync(database, keyContainer.Id);
+            CosmosDataEncryptionKeyProvider noRetentionProvider = new(noRetentionStoreProvider);
+            await noRetentionProvider.InitializeAsync(database, keyContainer.Id);
+
+            Container cachingContainer = itemContainer.WithEncryptor(new TestEncryptor(cachingProvider));
+            Container noRetentionContainer = itemContainer.WithEncryptor(new TestEncryptor(noRetentionProvider));
+
+            // Interleave operations so both providers stay active throughout.
+            for (int i = 0; i < 2; i++)
+            {
+                await CreateItemAsync(cachingContainer, dekId, TestDoc.PathsToEncrypt);
+                await CreateItemAsync(noRetentionContainer, dekId, TestDoc.PathsToEncrypt);
+            }
+
+            cachingStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int cachingUnwrapCount);
+            noRetentionStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int noRetentionUnwrapCount);
+
+            // Each create performs one encrypt plus one decrypt of the response, so the uncached provider unwraps four times.
+            Assert.AreEqual(1, cachingUnwrapCount, "Caching provider (30 min TTL) should unwrap the key exactly once.");
+            Assert.AreEqual(4, noRetentionUnwrapCount, "No-retention provider (TimeSpan.Zero) should unwrap on every operation, independently of the caching provider.");
+        }
+
+        [TestMethod]
+        public async Task ValidateProtectedDataEncryptionKeyCacheHonorsFiniteTtl()
+        {
+            // A finite DataEncryptionKeyCacheTimeToLive is applied as a real expiry: the key is reused within the
+            // window and re-unwrapped after it elapses, so the configured lifetime is not silently replaced by the
+            // MDE default. The window is generous so the warm operation cannot outrun it on a loaded agent.
+            TimeSpan cacheTtl = TimeSpan.FromSeconds(30);
+
+            string dekId = "finiteTtlDek";
+            await CreateDekAsync(dualDekProvider, dekId);
+
+            TestEncryptionKeyStoreProvider storeProvider = new()
+            {
+                DataEncryptionKeyCacheTimeToLive = cacheTtl
+            };
+
+            CosmosDataEncryptionKeyProvider dekProvider = new(storeProvider);
+            await dekProvider.InitializeAsync(database, keyContainer.Id);
+
+            Container container = itemContainer.WithEncryptor(new TestEncryptor(dekProvider));
+
+            // Cold operation populates the cache.
+            await CreateItemAsync(container, dekId, TestDoc.PathsToEncrypt);
+            storeProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int afterCold);
+            Assert.IsTrue(afterCold >= 1, "The first operation should unwrap the key at least once.");
+
+            // A second operation within the cache window reuses the cached key without unwrapping again.
+            await CreateItemAsync(container, dekId, TestDoc.PathsToEncrypt);
+            storeProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int afterWarm);
+            Assert.AreEqual(afterCold, afterWarm, "An operation within the cache window should not unwrap the key again.");
+
+            // After the cache window elapses, the entry expires and the next operation unwraps again.
+            await Task.Delay(cacheTtl + TimeSpan.FromSeconds(5));
+
+            await CreateItemAsync(container, dekId, TestDoc.PathsToEncrypt);
+            storeProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int afterExpiry);
+            Assert.IsTrue(afterExpiry > afterWarm, "An operation after the cache lifetime elapses should unwrap the key again.");
+        }
+
+        [TestMethod]
         public async Task EncryptionReadManyItemAsync()
         {
             TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);

@@ -132,8 +132,18 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
             }
 
+            // ThinClientStoreModel transparently falls back to the inherited gateway HTTP path when a request is
+            // not thin-client-routable (service withdrew thin endpoints, unsupported op, unhealthy region, ...).
+            // Label the diagnostics trace with the store model that actually serves the request so a gateway-served
+            // request never appears under ThinClientStoreModel and vice versa.
+            string storeModelName = storeProxy is ThinClientStoreModel thinClientStoreModel
+                ? (thinClientStoreModel.WillRouteToThinClient(serviceRequest)
+                    ? typeof(ThinClientStoreModel).FullName
+                    : typeof(GatewayStoreModel).FullName)
+                : storeProxy.GetType().FullName;
+
             using (ITrace processMessageAsyncTrace = request.Trace.StartChild(
-                            name: $"{storeProxy.GetType().FullName} Transport Request",
+                            name: $"{storeModelName} Transport Request",
                             component: TraceComponent.Transport,
                             level: Tracing.TraceLevel.Info))
             {

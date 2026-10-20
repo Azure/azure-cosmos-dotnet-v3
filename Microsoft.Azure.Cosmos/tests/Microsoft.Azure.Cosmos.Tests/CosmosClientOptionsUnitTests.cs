@@ -764,7 +764,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 if (appName)
                 {
                     Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
-                    cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.AppendFeatures(cosmosClientOptions.ApplicationName);
+
+                    // The application name reaches the container via the user-agent suffix (as it does in
+                    // production through ConnectionPolicy.UserAgentSuffix), not via AppendFeatures, which is
+                    // reserved for feature flags.
+                    cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.Suffix = cosmosClientOptions.ApplicationName;
                 }
                 else
                 {
@@ -801,6 +805,67 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
                 Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
             }
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public void UserAgentContainer_AppendFeatures_DynamicallyAddsReplacesAndRemovesFeatureFlag()
+        {
+            // No customer suffix: flag is added, replaced (incl. hex values), and removed cleanly, never duplicated.
+            Cosmos.UserAgentContainer noSuffix = new Cosmos.UserAgentContainer(clientId: 0);
+            noSuffix.AppendFeatures("F4");
+            Assert.IsTrue(noSuffix.UserAgent.EndsWith("F4"), noSuffix.UserAgent);
+
+            noSuffix.AppendFeatures("F4");
+            Assert.IsTrue(noSuffix.UserAgent.EndsWith("F4"), "Re-appending the same flag must not duplicate it: " + noSuffix.UserAgent);
+            Assert.IsFalse(noSuffix.UserAgent.Contains("F4|F4"), noSuffix.UserAgent);
+
+            noSuffix.AppendFeatures("FC");
+            Assert.IsTrue(noSuffix.UserAgent.EndsWith("FC"), "Hex feature flags must replace the previous flag: " + noSuffix.UserAgent);
+            Assert.IsFalse(noSuffix.UserAgent.Contains("F4"), noSuffix.UserAgent);
+
+            noSuffix.AppendFeatures(string.Empty);
+            Assert.IsFalse(noSuffix.UserAgent.Contains("FC"), "Empty features must remove the flag: " + noSuffix.UserAgent);
+
+            // Customer suffix (including hex-like and pipe-containing names) must be preserved verbatim.
+            foreach (string appName in new[] { "myApp", "Facade", "Face|X" })
+            {
+                Cosmos.UserAgentContainer withSuffix = new Cosmos.UserAgentContainer(clientId: 0)
+                {
+                    Suffix = appName
+                };
+
+                withSuffix.AppendFeatures("F4");
+                Assert.IsTrue(withSuffix.UserAgent.EndsWith(appName), withSuffix.UserAgent);
+                Assert.IsTrue(withSuffix.UserAgent.Contains("F4|" + appName), withSuffix.UserAgent);
+
+                withSuffix.AppendFeatures("FF");
+                Assert.IsTrue(withSuffix.UserAgent.EndsWith(appName), withSuffix.UserAgent);
+                Assert.IsTrue(withSuffix.UserAgent.Contains("FF|" + appName), withSuffix.UserAgent);
+                Assert.IsFalse(withSuffix.UserAgent.Contains("F4"), withSuffix.UserAgent);
+
+                withSuffix.AppendFeatures(string.Empty);
+                Assert.IsTrue(withSuffix.UserAgent.EndsWith(appName), "Customer suffix must survive flag removal: " + withSuffix.UserAgent);
+                Assert.IsFalse(withSuffix.UserAgent.Contains("FF|"), withSuffix.UserAgent);
+            }
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public void GetUserAgentFeatures_ThinClientFlag_RequiresLiveEndpointAvailability()
+        {
+            // Capable client, service currently advertising thin-client endpoints => F4 present.
+            using MockDocumentClient capableWithEndpoints = new MockDocumentClient(thinClient: true);
+            Assert.AreEqual("F4", capableWithEndpoints.GetUserAgentFeatures());
+
+            // Capable client, but service is not advertising thin-client endpoints => F4 absent.
+            capableWithEndpoints.thinClientEndpointsAvailable = false;
+            Assert.AreEqual(string.Empty, capableWithEndpoints.GetUserAgentFeatures());
+
+            // Not thin-capable: a stale availability flag must not surface F4.
+            using MockDocumentClient notCapable = new MockDocumentClient(thinClient: false);
+            notCapable.thinClientEndpointsAvailable = true;
+            Assert.AreEqual(string.Empty, notCapable.GetUserAgentFeatures());
         }
 
         [TestMethod]

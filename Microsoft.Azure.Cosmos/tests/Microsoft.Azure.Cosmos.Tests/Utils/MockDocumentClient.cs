@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             this.Init();
             this.isThinClientEnabled = thinClient;
+            this.thinClientEndpointsAvailable = thinClient;
         }
 
         public MockDocumentClient(Cosmos.ConsistencyLevel accountConsistencyLevel, ConnectionPolicy connectionPolicy = null)
