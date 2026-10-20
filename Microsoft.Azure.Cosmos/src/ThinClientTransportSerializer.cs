@@ -88,21 +88,13 @@ namespace Microsoft.Azure.Cosmos
                     { ThinClientConstants.EffectivePartitionKey, HexStringUtility.HexStringToBytes(epk) }
                 };
             }
-            else if (request.Headers[ThinClientConstants.ProxyStartEpk] != null)
+            else if (request.Headers[ThinClientConstants.ProxyStartEpk] != null
+                || request.Headers[ThinClientConstants.ProxyEndEpk] != null)
             {
-                // Re-add EPK headers removed by RequestInvokerHandler through Properties
-                request.Properties = new Dictionary<string, object>
-                {
-                    { WFConstants.BackendHeaders.StartEpkHash, HexStringUtility.HexStringToBytes(request.Headers[ThinClientConstants.ProxyStartEpk]) },
-                    { WFConstants.BackendHeaders.EndEpkHash,   HexStringUtility.HexStringToBytes(request.Headers[ThinClientConstants.ProxyEndEpk]) }
-                };
-
-                request.Headers.Add(HttpConstants.HttpHeaders.ReadFeedKeyType, RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString());
-                request.Headers.Add(HttpConstants.HttpHeaders.StartEpk, request.Headers[ThinClientConstants.ProxyStartEpk]);
-                request.Headers.Add(HttpConstants.HttpHeaders.EndEpk, request.Headers[ThinClientConstants.ProxyEndEpk]);
+                request.Properties = ThinClientTransportSerializer.ApplyEpkRangeHeaders(request.Headers);
             }
             request.ResourceId = collection.ResourceId;
-            request.Headers.Add(WFConstants.BackendHeaders.CollectionRid, collection.ResourceId);
+            request.Headers.Set(WFConstants.BackendHeaders.CollectionRid, collection.ResourceId);
 
             await request.EnsureBufferedBodyAsync();
 
@@ -135,6 +127,69 @@ namespace Microsoft.Azure.Cosmos
         public static string GetEffectivePartitionKeyHash(string partitionJson, PartitionKeyDefinition partitionKeyDefinition)
         {
             return Documents.PartitionKey.FromJsonString(partitionJson).InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
+        }
+
+        internal static Dictionary<string, object> ApplyEpkRangeHeaders(INameValueCollection headers)
+        {
+            if (headers == null)
+            {
+                throw new ArgumentNullException(nameof(headers));
+            }
+
+            string proxyStartEpk = headers[ThinClientConstants.ProxyStartEpk];
+            string proxyEndEpk = headers[ThinClientConstants.ProxyEndEpk];
+            if (proxyStartEpk == null || proxyEndEpk == null)
+            {
+                throw new InvalidOperationException("Both proxy EPK range bounds are required to serialize a feed request.");
+            }
+
+            if (StringComparer.Ordinal.Compare(proxyStartEpk, proxyEndEpk) >= 0)
+            {
+                throw new InvalidOperationException("The proxy EPK range must be non-empty.");
+            }
+
+            string startEpk = proxyStartEpk;
+            string endEpk = proxyEndEpk;
+
+            string readFeedKeyType = RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString();
+            string callerStartEpk = headers[HttpConstants.HttpHeaders.StartEpk];
+            string callerEndEpk = headers[HttpConstants.HttpHeaders.EndEpk];
+            bool hasCallerEpkSubRange =
+                string.Equals(
+                    headers[HttpConstants.HttpHeaders.ReadFeedKeyType],
+                    readFeedKeyType,
+                    StringComparison.OrdinalIgnoreCase);
+
+            if (hasCallerEpkSubRange)
+            {
+                if (callerStartEpk == null || callerEndEpk == null)
+                {
+                    throw new InvalidOperationException("Both requested EPK range bounds are required to serialize a feed request.");
+                }
+
+                bool isCallerRangeWithinProxyRange =
+                    StringComparer.Ordinal.Compare(callerStartEpk, proxyStartEpk) >= 0
+                    && StringComparer.Ordinal.Compare(callerStartEpk, callerEndEpk) < 0
+                    && StringComparer.Ordinal.Compare(callerEndEpk, proxyEndEpk) <= 0;
+
+                if (!isCallerRangeWithinProxyRange)
+                {
+                    throw new InvalidOperationException("The requested EPK range must be a non-empty sub-range of the proxy partition range.");
+                }
+
+                startEpk = callerStartEpk;
+                endEpk = callerEndEpk;
+            }
+
+            headers.Set(HttpConstants.HttpHeaders.ReadFeedKeyType, readFeedKeyType);
+            headers.Set(HttpConstants.HttpHeaders.StartEpk, startEpk);
+            headers.Set(HttpConstants.HttpHeaders.EndEpk, endEpk);
+
+            return new Dictionary<string, object>
+            {
+                { WFConstants.BackendHeaders.StartEpkHash, HexStringUtility.HexStringToBytes(startEpk) },
+                { WFConstants.BackendHeaders.EndEpkHash, HexStringUtility.HexStringToBytes(endEpk) }
+            };
         }
 
         /// <summary>
