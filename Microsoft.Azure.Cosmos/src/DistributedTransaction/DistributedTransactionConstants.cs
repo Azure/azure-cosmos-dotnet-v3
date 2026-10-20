@@ -20,6 +20,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal const SubStatusCodes AllOperationsNotModified = (SubStatusCodes)5425;
 
+        /// <summary>
+        /// Request header reporting whether the current dispatch of a distributed write transaction is
+        /// resending an idempotency token that has already been dispatched at least once.
+        /// </summary>
+        internal const string IsDtxRetry = "x-ms-cosmos-internal-is-dtx-retry";
+
+        /// <summary>
+        /// Request header reporting whether an idempotency token has crossed write regions or a retry
+        /// cannot be proven to target its original region. Once true, it stays true for that token.
+        /// </summary>
+        internal const string IsDtxCrossRegionRedirect = "x-ms-cosmos-internal-is-dtx-cross-region-redirect";
+
         internal static bool IsDistributedTransactionRequest(OperationType operationType, ResourceType resourceType)
         {
             return (operationType == OperationType.CommitDistributedTransaction

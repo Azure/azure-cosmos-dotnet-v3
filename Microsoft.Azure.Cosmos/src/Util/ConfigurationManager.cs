@@ -90,6 +90,12 @@ namespace Microsoft.Azure.Cosmos
         public static readonly string HybridSearchQueryPlanOptimizationDisabled = "AZURE_COSMOS_HYBRID_SEARCH_QUERYPLAN_OPTIMIZATION_DISABLED";
 
         /// <summary>
+        /// Environment variable name to restore standard competition ranking for hybrid search RRF component scores.
+        /// Ordinal ranking is used by default.
+        /// </summary>
+        public static readonly string HybridSearchUseCompetitionRanking = "AZURE_COSMOS_HYBRID_SEARCH_USE_COMPETITION_RANKING";
+
+        /// <summary>
         /// A read-only string containing the environment variable name for enabling hub region processing for read requests.
         /// When enabled (default), the SDK attaches a hub region header to read requests that encounter repeated 404/1002
         /// (ReadSessionNotAvailable) errors, allowing the hub region to process the request directly. When disabled, the
@@ -484,6 +490,17 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: HybridSearchQueryPlanOptimizationDisabled,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets whether hybrid search RRF component scores use standard competition ranking.
+        /// </summary>
+        public static bool IsHybridSearchCompetitionRankingEnabled(
+            bool defaultValue)
+        {
+            return ConfigurationManager.GetEnvironmentVariable(
+                variable: ConfigurationManager.HybridSearchUseCompetitionRanking,
+                defaultValue: defaultValue);
         }
 
         /// <summary>

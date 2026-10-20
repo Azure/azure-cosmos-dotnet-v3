@@ -286,7 +286,9 @@ namespace Microsoft.Azure.Cosmos
 
             // Deserialization of lease state (if any) is handled inside the manager
             // so that serialization and deserialization are co-located in the same layer.
-            this.LeaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory(leaseState);
+            // The monitored container is passed along so any restored lease missing a FeedRange
+            // can have it resolved and backfilled on acquire.
+            this.LeaseStoreManager = new DocumentServiceLeaseStoreManagerInMemory(leaseState, this.monitoredContainer);
             return this;
         }
 

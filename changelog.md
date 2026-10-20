@@ -1,6 +1,6 @@
 ## <a name="recommended-version"></a> Recommended version
 
-The **minimum recommended version is [3.57.0](#3.57.0)**.
+The **minimum recommended version is [3.62.0](#3.62.0)**.
 
 Make sure that your applications, when using the .NET V3 SDK, are using at least the version described here to have all the critical fixes. With the release of [3.47.0](#3.47.0), it is now best practice to include a cross regional hedging availability strategy when using the Azure Cosmos DB .NET SDK. For more information about cross regional hedging, see [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/main/docs/Cross%20Region%20Request%20Hedging.md).
 
@@ -19,32 +19,94 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
-- [6090](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6090) Throughput Bucketing: Promotes throughput bucketing to general availability (GA). `CosmosClientOptions.ThroughputBucket`, `RequestOptions.ThroughputBucket`, and `CosmosClientBuilder.WithThroughputBucket(int)` are now available in the official (GA) package. These APIs let you tag requests with a throughput bucket so the service can partition provisioned throughput across workloads. A bucket set at the request level takes precedence over one set at the client level, and is now also honored by `Container.ReadManyItemsAsync` via `ReadManyRequestOptions`. When bulk execution is enabled, a request-level throughput bucket is supported for all operation types except item point operations (which are batched into shared requests); setting it on a bulk item point operation now throws an `InvalidOperationException` instead of being silently ignored — set the bucket at the client level for those operations.
-- [5984](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5984) ReadConsistencyStrategy: Adds `ReadConsistencyStrategy` to the official (GA) package. The `ReadConsistencyStrategy` enum and the corresponding properties on `CosmosClientOptions`, `ItemRequestOptions`, `QueryRequestOptions`, `ChangeFeedRequestOptions`, `ReadManyRequestOptions`, and `CosmosClientBuilder.WithReadConsistencyStrategy` are now available in the public package (previously preview-only). This lets read and query operations request a read consistency strategy (for example `Eventual`, `Session`, `LatestCommitted`, or `GlobalStrong`) independent of the account's default consistency level.
+#### Breaking Changes
+
+- [6130](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6130) Hybrid search RRF now assigns a unique ordinal rank to every component result, including tied scores. Component score ties are broken by the decoded document ID portion of `_rid` in the component's sort direction, rather than by the encoded string. Final RRF score ties use decoded document IDs descending. Set `AZURE_COSMOS_HYBRID_SEARCH_USE_COMPETITION_RANKING=true` to restore the previous competition-ranking behavior.
+
+#### Bugs Fixed
+
+- [6151](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6151) Query: Updates query-plan deserialization to preserve vector embedding policy paths alongside embedding text and recognize optional hybrid-search score combination metadata. This schema update does not enable `GenerateEmbeddings` or `CombinedScore` execution.
+- [6139](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6139) Query: Fixes an issue where a query whose `OFFSET`, `LIMIT`, or `TOP` value was fractional or too large for a 64-bit integer threw an unexpected `ArgumentOutOfRangeException` during client-side query parsing. These queries are now treated as parse failures.
+- [6138](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6138) CosmosElements: Fixes an issue where parsing an empty, whitespace-only, or malformed JSON payload threw an unexpected `InvalidOperationException`, `ArgumentException`, or `IndexOutOfRangeException`. These payloads are now reported as JSON parse failures.
+- Bulk execution now honors server-provided retry delays for individually throttled operations without blocking other operations in the same batch.
+- [6144](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6144) Bulk execution now honors server-provided retry delays for individually throttled operations without blocking other operations in the same batch.
+
+#### Other Changes
+
+- [6154](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6154) Direct: Expands the available managed source with resource models, serialization, partition-key routing, session tokens, and their supporting types and unit tests. The SDK still uses the existing Direct package and native query-planning library; runtime behavior and public APIs are unchanged.
+- [6137](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6137) Direct: Begins making the managed Direct implementation available as source in this repository with a buildable foundation of 53 unchanged source files. The SDK continues to use the existing Direct package; runtime behavior and public APIs are unchanged.
+
+### <a name="3.64.0-preview.2"/> [3.64.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.2) - 2026-9-29
+
+#### Other Changes
+
+- [6086](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6086) Distributed Transactions (preview): Distinguishes write retries and possible cross-region replays from first submissions using token-scoped request headers. Cross-region signaling remains set until the token rotates; read transactions omit these headers.
+
+### <a name="3.63.2"/> [3.63.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.2) - 2026-9-29
+
+#### Features Added
+
+- [6129](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6129) Query: Support hybrid search queries that project or filter on `FullTextScore`.
+
+#### Other Changes
+
+- [6127](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6127) Direct: Updated the dependency to version 3.44.1, adding native query-planning support for `FullTextScore` expressions in the `SELECT` and `WHERE` clauses of hybrid search queries. Hybrid search query plans now also include the searched document paths and terms.
+- [6095](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6095) Diagnostics: Adds behavior-influencing distributed transaction request headers to `CosmosDiagnostics`. Traces now report `IsDtxRetry` and `IsDtxCrossRegionRedirect` on the `HttpResponseStats` entry. Traces for requests that do not carry these headers are unchanged.
+
+### <a name="3.64.0-preview.1"/> [3.64.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.1) - 2026-9-17
+
+### <a name="3.63.1"/> [3.63.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.1) - 2026-9-17
+
+#### Bugs Fixed
+
+- [6079](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6079) ChangeFeedProcessor: Fixes partition split/merge issues with in-memory leases: a `NullReferenceException` when a lease's `FeedRange` was missing after rehydration (now backfilled on acquire, with a routing-map fallback), and a continuation token being silently discarded when a split happened while the host was offline (the SDK now defers creating a post-split range's lease to its parent's own split handling when the parent lease still exists, instead of racing ahead with a fresh, continuation-less lease).
+
+### <a name="3.64.0-preview.0"/> [3.64.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.0) - 2026-9-8
+
+#### Features Added
+
 - [6059](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6059) DistributedTransaction (preview): Adds `DistributedTransactionResponse.ResponseMode`, which reports whether the coordinator applied `Standard` or `FastResponse` mode when processing the transaction. The value is parsed from the coordinator response and defaults to `Standard` when not reported.
-- [6053](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6053) VectorIndex Policy: Adds `QuantizerType` to the official (GA) package.
-- [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Upgraded Direct package to 3.44.0.
-- [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Direct: Adds barrier early yield on 429 — ConsistencyWriter and QuorumReader yield early with substatus 21013 (`Server_WriteBarrierThrottled`) when all replicas return 429 during barrier requests. Direct retries the 429 internally and surfaces a synthetic 408/21013 to the SDK when retries are exhausted. The SDK's `ClientRetryPolicy` recognizes this substatus and avoids marking the endpoint unavailable, preventing unnecessary cross-region failover. Adds internal opt-out flag and env-var kill switch (`AZURE_COSMOS_BARRIER_EARLY_YIELD_ON_429_ENABLED`).
-- [6049](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6049) Distributed Transactions: Adds a public `SessionToken` getter on `DistributedTransactionOperationResult`, letting callers read the per-operation session token returned by the coordinator and pass it back via `DistributedTransactionRequestOptions.SessionToken` to enforce read-your-writes session consistency.
+- [6049](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6049) Distributed Transactions (preview): Adds a public `SessionToken` getter on `DistributedTransactionOperationResult`, letting callers read the per-operation session token returned by the coordinator and pass it back via `DistributedTransactionRequestOptions.SessionToken` to enforce read-your-writes session consistency.
 - [6043](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6043) Distributed Transactions (preview): Adds `CosmosClientOptions.MaxRetryAttemptsOnAbortedTransactions` and `CosmosClientOptions.MaxRetryWaitTimeOnAbortedTransactions` to tune the automatic retry bounds (attempt-count cap and cumulative wait-time budget) applied when a distributed transaction commit is reported as aborted but retriable. Setting the attempt cap to 0 disables automatic abort retries; leaving the options unset applies the SDK defaults. Negative values are rejected with `ArgumentException`.
 
 #### Breaking Changes
 
-- [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Direct: The `GenerateEmbeddings` query plan rewrite (`embeddingParameterMap`) that was present in Direct 3.43.2 is not included in Direct 3.44.0. Queries using `GenerateEmbeddings` in Direct mode may produce different query plans. This exclusion was intentional for this release branch.
-- [6037](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6037) Distributed Transactions (preview): Renamed `DistributedTransaction.CommitTransactionAsync` to `ExecuteTransactionAsync` to reflect that, in Fast Response mode, the call executes the transaction and may return before the terminal commit/abort outcome. 
+- [6037](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6037) Distributed Transactions (preview): Renamed `DistributedTransaction.CommitTransactionAsync` to `ExecuteTransactionAsync` to reflect that, in Fast Response mode, the call executes the transaction and may return before the terminal commit/abort outcome.
 
 #### Bugs Fixed
 
+- [6077](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6077) Distributed Transactions (preview): Fixes distributed read transactions in which every operation returns `304 NotModified` losing their per-operation results. `DistributedTransactionResponse.StatusCode` is now `HttpStatusCode.NotModified` for this outcome, with every operation result intact.
+- [6036](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6036) Distributed Transactions (preview): Fixes the resource body returned by distributed-transaction reads so it is surfaced verbatim, exactly as received from the transaction service.
+
+#### Other Changes
+
+- [6054](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6054) Distributed Transactions (preview): Retries a commit or read on any coordinator-signaled retriable outcome, honoring the server's retry-after hint and a bounded retry budget (previously retried only when the transaction was also reported aborted).
+
+### <a name="3.63.0"/> [3.63.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.0) - 2026-9-8
+
+#### Features Added
+
+- [6090](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6090) Throughput Bucketing: Promotes throughput bucketing to general availability (GA). `CosmosClientOptions.ThroughputBucket`, `RequestOptions.ThroughputBucket`, and `CosmosClientBuilder.WithThroughputBucket(int)` are now available in the official (GA) package. These APIs let you tag requests with a throughput bucket so the service can partition provisioned throughput across workloads. A bucket set at the request level takes precedence over one set at the client level, and is now also honored by `Container.ReadManyItemsAsync` via `ReadManyRequestOptions`. When bulk execution is enabled, a request-level throughput bucket is supported for all operation types except item point operations (which are batched into shared requests); setting it on a bulk item point operation now throws an `InvalidOperationException` instead of being silently ignored — set the bucket at the client level for those operations.
+- [5984](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5984) ReadConsistencyStrategy: Adds `ReadConsistencyStrategy` to the official (GA) package. The `ReadConsistencyStrategy` enum and the corresponding properties on `CosmosClientOptions`, `ItemRequestOptions`, `QueryRequestOptions`, `ChangeFeedRequestOptions`, `ReadManyRequestOptions`, and `CosmosClientBuilder.WithReadConsistencyStrategy` are now available in the public package (previously preview-only). This lets read and query operations request a read consistency strategy (for example `Eventual`, `Session`, `LatestCommitted`, or `GlobalStrong`) independent of the account's default consistency level.
+- [6053](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6053) VectorIndex Policy: Adds `QuantizerType` to the official (GA) package.
+- [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Upgraded Direct package to 3.44.0.
+- [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Direct: Adds barrier early yield on 429 — ConsistencyWriter and QuorumReader yield early with substatus 21013 (`Server_WriteBarrierThrottled`) when all replicas return 429 during barrier requests. Direct retries the 429 internally and surfaces a synthetic 408/21013 to the SDK when retries are exhausted. The SDK's `ClientRetryPolicy` recognizes this substatus and avoids marking the endpoint unavailable, preventing unnecessary cross-region failover. Adds internal opt-out flag and env-var kill switch (`AZURE_COSMOS_BARRIER_EARLY_YIELD_ON_429_ENABLED`).
+
+#### Breaking Changes
+
+- [5976](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5976) Direct: The `GenerateEmbeddings` query plan rewrite (`embeddingParameterMap`) that was present in Direct 3.43.2 is not included in Direct 3.44.0. Queries using `GenerateEmbeddings` in Direct mode may produce different query plans. This exclusion was intentional for this release branch.
+
+#### Bugs Fixed
+
+- Query: Fixes reciprocal rank fusion using dense ranking for component scores. Component results now use standard competition ranking, so tied scores share a rank and the next distinct score's rank reflects its sorted position.
 - [6102](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/6102) Read Consistency Strategy: Fixes reads using `ReadConsistencyStrategy.LastCommittedSingleWriteRegion` hanging forever on single write region accounts when the client's application region is a read replica instead of the hub. After each `403/WriteForbidden` the SDK recorded a route to the hub region but never used it, so every retry went back to the same replica and the loop never finished. The retry now follows the recorded hub route and the read completes.
 - [6085](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6085) ThinClient: Fixes dynamic thin-client routing so a client switches between thin-client and gateway on account refresh without a restart, disposes both store models, labels diagnostics with the serving store model, accepts HTTP 401 on the connectivity probe, and reflects thin-client availability in the `F4` user-agent flag (see PR description for details).
 - [6069](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6069) Diagnostics: Fixes an unobserved `TaskScheduler.UnobservedTaskException` that could surface from a background address cache refresh failure.
 - [6100](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6100) Query: Fixes gateway query-plan requests not honoring `QueryRequestOptions.ExcludeRegions`. Previously, `ExcludeRegions` set on a query's request options was applied to the actual data query but silently dropped for the preceding gateway query-plan fetch (used when `ServiceInterop` is unavailable, e.g. non-Windows/.NET). This could route the query-plan call to an excluded region (typically the write region) even though the rest of the query correctly avoided it. `ExcludeRegions` is now propagated to the query-plan request as well, consistent with how it is already honored for the data query.
 - [6051](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6051) Cross Region Hedging: Fixes an `InvalidOperationException` ("A task may only be disposed if it is in a completion state") that could be thrown from `CrossRegionHedgingAvailabilityStrategy` when a hedged request completed at the same moment the application's `CancellationToken` was cancelled from another thread. The exception could surface instead of the operation's real result or cancellation, and was most visible in query workloads, where the pipeline cancels prefetch operations frequently.
-- [6077](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6077) Distributed Transactions (preview): Fixes distributed read transactions in which every operation returns `304 NotModified` losing their per-operation results. `DistributedTransactionResponse.StatusCode` is now `HttpStatusCode.NotModified` for this outcome, with every operation result intact.
 - [5623](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5623) Cross Region Hedging: Fixes a losing cross-region hedge request that is abandoned when another region produces the winning response being able to surface its fault as an unobserved `TaskScheduler.UnobservedTaskException`. When the winning region returns early, the still in-flight losing hedge tasks are now explicitly observed on every exit path, so a losing arm that completes faulted with a non-cancellation exception (for example a pre-dispatch failure on an abandoned arm) is handled internally and never leaks as an unobserved task exception, while the winning region's response is always returned unaffected. Note that a losing arm cancelled by the winning region completes in the Canceled state (which carries no exception) and was never the source of the leak. This is most relevant for accounts where hedging is implicitly enabled by Per-Partition Automatic Failover (PPAF), where the path is exercised with no explicit customer opt-in.
 - [4671](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4671) Client Initialization: Fixes an opaque `NullReferenceException` that could surface on the first request during client startup when the gateway account read completed without returning account properties. The SDK now fails initialization with a descriptive, actionable exception (which hints at a `Microsoft.Azure.Cosmos` / `Microsoft.Azure.Cosmos.Direct` package version mismatch as the most common cause) instead of a bare `NullReferenceException`, and continues to retry initialization on the next request so the client still self-heals.
 - [5987](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5987) ThinClient: Fixes an unobserved `TaskScheduler.UnobservedTaskException` (`Http2StreamException` "stream aborted") that could surface when an HTTP/2 thin-client gateway request was retried after an HTTP 408 (common while the emulator is cold and slow). The retriable response is now disposed before the SDK retries, so its underlying HTTP/2 stream is torn down deterministically instead of being left to garbage-collector finalization. The awaited call still surfaces the same cancellation/timeout/`503` result. Note: the orphaned task that the .NET HTTP/2 stack can leave when an in-flight request is cancelled mid-flight is a runtime behavior (see [dotnet/runtime#46961](https://github.com/dotnet/runtime/issues/46961)); to avoid it on older runtimes, run a current .NET runtime or pin the emulator client to HTTP/1.1.
-- [6036](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6036) Distributed Transactions (preview): Fixes the resource body returned by distributed-transaction reads so it is surfaced verbatim, exactly as received from the transaction service.
 - [6032](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6032) ThinClient: Fixes clients using resource-token (permission-scoped) authorization failing or misrouting when thin client mode is enabled by default. Such clients now always route data-plane requests through the Gateway store model, since thin client mode does not support resource-token authorization. Clients using primary/secondary key or Microsoft Entra ID (AAD) authorization are unaffected.
 - [6025](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6025) Fixed `RemotingException` in AppDomain-isolated test hosts by replacing `Type.GetType` with `Assembly.GetType` in `CosmosHttpClientCore.CreateHttpClientHandler` and `CreateSocketsHttpHandlerHelper`. `Type.GetType` fires `AppDomain.TypeResolve` when the type is not found on .NET Framework, which crashes if cross-domain `MarshalByRefObject` proxies have expired leases.
 - [5954](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5954) AsyncCacheNonBlocking: Fixes the address and partition-key routing caches potentially serving a stale entry when a transient (non-404) background-refresh failure preceded a genuine 404. The internal one-shot removal latch is now consumed only when an eviction is actually performed, so a NotFound background-refresh failure always removes the stale entry even after an earlier transient failure.

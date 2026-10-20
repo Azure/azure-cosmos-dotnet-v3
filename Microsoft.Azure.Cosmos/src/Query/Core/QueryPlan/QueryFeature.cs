@@ -35,5 +35,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         WeightedRankFusion = 1 << 15,
         HybridSearchSkipOrderByRewrite = 1 << 16,
         GenerateEmbeddings = 1 << 17,
+        CombinedScore = 1 << 18,
     }
 }

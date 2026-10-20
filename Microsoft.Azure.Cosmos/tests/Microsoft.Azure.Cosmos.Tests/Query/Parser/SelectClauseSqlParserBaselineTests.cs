@@ -5,6 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
 {
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Parser;
+    using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -35,6 +38,24 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
             };
 
             this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        [DataRow("SELECT TOP 5555555555555555555555555555555555555555 * FROM c", DisplayName = "TopOverflowsInt64")]
+        [DataRow("SELECT TOP 1.5 * FROM c", DisplayName = "TopNonInteger")]
+        public void Parse_InvalidCountLiteral_ReturnsFailed(string query)
+        {
+            TryCatch<SqlQuery> result = SqlQueryParser.Monadic.Parse(query);
+
+            Assert.IsTrue(result.Failed);
+            Assert.IsFalse(SqlQueryParser.TryParse(query, out SqlQuery _));
+        }
+
+        [TestMethod]
+        [DataRow("SELECT TOP 10 * FROM c")]
+        public void Parse_ValidCountLiteral_Succeeds(string query)
+        {
+            Assert.IsTrue(SqlQueryParser.Monadic.Parse(query).Succeeded);
         }
 
         public static SqlParserBaselineTestInput CreateInput(string description, string selectClause)

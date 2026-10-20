@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Text;
@@ -380,7 +381,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                                            resourceType,
                                                                            response,
                                                                            exception: null,
-                                                                           region: Convert.ToString(regionName)));
+                                                                           region: Convert.ToString(regionName),
+                                                                           requestMessage: request));
             }
         }
 
@@ -412,7 +414,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                                            resourceType,
                                                                            responseMessage: null,
                                                                            exception: exception,
-                                                                           region: Convert.ToString(regionName)));
+                                                                           region: Convert.ToString(regionName),
+                                                                           requestMessage: request));
             }
         }
 
@@ -515,7 +518,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 ResourceType resourceType,
                 HttpResponseMessage responseMessage,
                 Exception exception,
-                string region)
+                string region,
+                HttpRequestMessage requestMessage = null)
             {
                 this.RequestStartTime = requestStartTime;
                 this.Duration = requestEndTime - requestStartTime;
@@ -525,6 +529,26 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 this.HttpMethod = httpMethod;
                 this.RequestUri = requestUri;
                 this.Region = region;
+                this.IsDtxRetry = null;
+                this.IsDtxCrossRegionRedirect = null;
+
+                if (requestMessage != null)
+                {
+                    if (requestMessage.Headers.TryGetValues(
+                        DistributedTransactionConstants.IsDtxRetry,
+                        out IEnumerable<string> isDtxRetryValues))
+                    {
+                        this.IsDtxRetry = isDtxRetryValues.FirstOrDefault();
+                    }
+
+                    if (requestMessage.Headers.TryGetValues(
+                        DistributedTransactionConstants.IsDtxCrossRegionRedirect,
+                        out IEnumerable<string> isDtxCrossRegionRedirectValues))
+                    {
+                        this.IsDtxCrossRegionRedirect = isDtxCrossRegionRedirectValues.FirstOrDefault();
+                    }
+                }
+
                 this.ResponseContentLength = responseMessage?.Content?.Headers?.ContentLength;
                 if (responseMessage != null)
                 {
@@ -547,6 +571,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public Uri RequestUri { get; }
             public string ActivityId { get; }
             public long? ResponseContentLength { get; }
+            public string IsDtxRetry { get; }
+            public string IsDtxCrossRegionRedirect { get; }
         }
     }
 }

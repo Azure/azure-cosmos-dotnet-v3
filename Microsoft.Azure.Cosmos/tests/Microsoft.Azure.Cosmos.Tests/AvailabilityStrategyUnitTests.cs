@@ -61,6 +61,27 @@
                 OperationType = OperationType.Read
             };
         }
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void ShouldHedge_DistributedTransaction_RemainsExcluded(bool isRead)
+        {
+            using CosmosClient client = CreateMockClientWithRegions();
+            CrossRegionHedgingAvailabilityStrategy strategy = new(
+                threshold: TimeSpan.FromMilliseconds(100),
+                thresholdStep: TimeSpan.FromMilliseconds(50),
+                enableMultiWriteRegionHedge: true);
+            using RequestMessage documentRead = CreateReadRequest();
+            using RequestMessage transaction = new()
+            {
+                ResourceType = ResourceType.DistributedTransactionBatch,
+                OperationType = isRead ? OperationType.Read : OperationType.CommitDistributedTransaction
+            };
+
+            Assert.IsTrue(strategy.ShouldHedge(documentRead, client), "The control request must allow hedging.");
+            Assert.IsFalse(strategy.ShouldHedge(transaction, client));
+        }
+
         [TestMethod]
         public async Task RequestMessageCloneTests()
         {
