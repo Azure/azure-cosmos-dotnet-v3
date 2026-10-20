@@ -506,21 +506,24 @@
                     partitionKey: null,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized,
+                    useCompetitionRanking: true),
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
                     expectedResult: new List<int>{ 3, 1, 2 },
                     partitionKey: PartitionKey1,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized,
+                    useCompetitionRanking: true),
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
                     expectedResult: new List<int>{ 8, 7, 5, 6},
                     partitionKey: PartitionKey2,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized,
+                    useCompetitionRanking: true),
             };
 
             static Task RunTestsAsync(
@@ -874,6 +877,7 @@
                         PartitionKey = testCase.PartitionKey,
                         TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats()),
                         MaxConcurrency = MaxConcurrency,
+                        IsHybridSearchCompetitionRankingEnabled = testCase.UseCompetitionRanking,
                     };
 
                     if(testCase.EnableOptimisticDirectExecution.HasValue)
@@ -953,9 +957,17 @@
             PartitionKey? partitionKey,
             bool? enableOptimisticDirectExecution,
             int[] pageSizeOptions,
-            TestInjections.PipelineType expectedPipelineType)
+            TestInjections.PipelineType expectedPipelineType,
+            bool useCompetitionRanking = false)
         {
-            return new DirectExecutionTestCase(query, expectedResult, partitionKey, enableOptimisticDirectExecution, pageSizeOptions, expectedPipelineType);
+            return new DirectExecutionTestCase(
+                query,
+                expectedResult,
+                partitionKey,
+                enableOptimisticDirectExecution,
+                pageSizeOptions,
+                expectedPipelineType,
+                useCompetitionRanking);
         }
 
         private readonly struct DirectExecutionTestCase
@@ -966,6 +978,7 @@
             public bool? EnableOptimisticDirectExecution { get; }
             public int[] PageSizeOptions { get; }
             public TestInjections.PipelineType ExpectedPipelineType { get; }
+            public bool UseCompetitionRanking { get; }
 
             public DirectExecutionTestCase(
                 string query,
@@ -973,7 +986,8 @@
                 PartitionKey? partitionKey,
                 bool? enableOptimisticDirectExecution,
                 int[] pageSizeOptions,
-                TestInjections.PipelineType expectedPipelineType)
+                TestInjections.PipelineType expectedPipelineType,
+                bool useCompetitionRanking)
             {
                 this.Query = query;
                 this.ExpectedResult = expectedResult;
@@ -981,6 +995,7 @@
                 this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
                 this.PageSizeOptions = pageSizeOptions;
                 this.ExpectedPipelineType = expectedPipelineType;
+                this.UseCompetitionRanking = useCompetitionRanking;
             }
 
             public override string ToString()

@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- [6130](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6130) Hybrid search RRF now assigns a unique ordinal rank to every component result, including tied scores. Component score ties are broken by the decoded document ID portion of `_rid` in the component's sort direction, rather than by the encoded string. Final RRF score ties use decoded document IDs descending. Set `AZURE_COSMOS_HYBRID_SEARCH_USE_COMPETITION_RANKING=true` to restore the previous competition-ranking behavior.
+
 #### Bugs Fixed
 
 - [6160](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6160) Gateway V2 (thin client): Fixes an issue where queries and change feed reads scoped to part of a physical partition failed with `ArgumentException: The x-ms-read-key-type already exists in the collection`. The requested subrange is now honored.
