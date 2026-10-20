@@ -177,14 +177,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [TestMethod]
         public async Task DecryptProvidedOutput_StreamSelection_LegacyAlgorithm_FallsBackToNewtonsoft()
         {
-            List<Activity> capturedActivities = new ();
-            using ActivityListener listener = new ()
-            {
-                ShouldListenTo = source => source.Name == "Microsoft.Azure.Cosmos.Encryption.Custom",
-                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-                ActivityStarted = activity => capturedActivities.Add(activity),
-            };
-            ActivitySource.AddActivityListener(listener);
             TestDoc doc = TestDoc.Create();
             using Stream legacyEncrypted = await TestCommon.CreateLegacyEncryptedStreamAsync(
                 doc,
@@ -193,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             ItemRequestOptions opts = new() { Properties = new Dictionary<string, object> { { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" } } };
             CosmosDiagnosticsContext diag = CosmosDiagnosticsContext.Create(null);
-            MemoryStream output = new();
+            using MemoryStream output = new();
 
             DecryptionContext context = await EncryptionProcessor.DecryptAsync(
                 legacyEncrypted,
@@ -204,15 +196,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 CancellationToken.None);
 
             Assert.IsNotNull(context);
-            AssertLegacyDecryptionContext(context);
             Assert.AreEqual(0, output.Position);
             Assert.IsFalse(legacyEncrypted.CanRead);
-            TestDoc actual = TestCommon.FromStream<TestDoc>(output);
-            Assert.AreEqual(doc, actual);
-            Assert.IsTrue(capturedActivities.Any(activity =>
-                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Stream));
-            Assert.IsTrue(capturedActivities.Any(activity =>
-                activity.DisplayName == CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft));
+            Assert.AreEqual(doc, TestCommon.FromStream<TestDoc>(output));
         }
 
         [TestMethod]
@@ -264,45 +250,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(0, decrypted.Position);
             Assert.AreEqual(0, input.SynchronousReadCount);
             CollectionAssert.AreEqual(plaintext, input.ToArray());
-        }
-
-        [TestMethod]
-        public async Task DecryptProvidedOutput_StreamSelection_LegacyAlgorithm_RejectsNonSeekableOutputBeforeDecrypt()
-        {
-            Mock<Encryptor> encryptor = TestEncryptorFactory.CreateLegacy(DekId);
-            using Stream encrypted = await TestCommon.CreateLegacyEncryptedStreamAsync(
-                TestDoc.Create(),
-                encryptor.Object,
-                DekId);
-            encryptor.ResetCalls();
-            using NonSeekableWriteTrackingStream output = new ();
-
-            ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(
-                async () => await EncryptionProcessor.DecryptAsync(
-                    encrypted,
-                    output,
-                    encryptor.Object,
-                    new CosmosDiagnosticsContext(),
-                    new ItemRequestOptions
-                    {
-                        Properties = new Dictionary<string, object>
-                        {
-                            { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream },
-                        },
-                    },
-                    CancellationToken.None));
-
-            Assert.AreEqual("output", exception.ParamName);
-            Assert.AreEqual(0, output.BytesWritten);
-            encryptor.Verify(
-                e => e.DecryptAsync(
-                    It.IsAny<byte[]>(),
-                    It.IsAny<string>(),
-                    It.IsAny<string>(),
-                    It.IsAny<CancellationToken>()),
-                Times.Never);
-            Assert.IsTrue(encrypted.CanRead);
-            Assert.AreEqual(0, encrypted.Position);
         }
 
         [TestMethod]
@@ -601,61 +548,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
-        private sealed class NonSeekableWriteTrackingStream : Stream
-        {
-            private readonly MemoryStream inner = new ();
-
-            public int BytesWritten => checked((int)this.inner.Length);
-
-            public override bool CanRead => false;
-
-            public override bool CanSeek => false;
-
-            public override bool CanWrite => true;
-
-            public override long Length => this.inner.Length;
-
-            public override long Position
-            {
-                get => throw new NotSupportedException();
-                set => throw new NotSupportedException();
-            }
-
-            public override void Flush()
-            {
-                this.inner.Flush();
-            }
-
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                throw new NotSupportedException();
-            }
-
-            public override long Seek(long offset, SeekOrigin origin)
-            {
-                throw new NotSupportedException();
-            }
-
-            public override void SetLength(long value)
-            {
-                throw new NotSupportedException();
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                this.inner.Write(buffer, offset, count);
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    this.inner.Dispose();
-                }
-
-                base.Dispose(disposing);
-            }
-        }
 #endif
 
         [TestMethod]
@@ -687,38 +579,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task DecryptProvidedOutput_UnsupportedJsonProcessorWithLegacyCiphertext_ThrowsWithoutWriting()
-        {
-            using Stream encrypted = await TestCommon.CreateLegacyEncryptedStreamAsync(
-                TestDoc.Create(),
-                mockEncryptor.Object,
-                DekId);
-            using MemoryStream output = new();
-            ItemRequestOptions requestOptions = new()
-            {
-                Properties = new Dictionary<string, object>
-                {
-                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, (JsonProcessor)99 },
-                },
-            };
-
-            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(
-                async () => await EncryptionProcessor.DecryptAsync(
-                    encrypted,
-                    output,
-                    mockEncryptor.Object,
-                    new CosmosDiagnosticsContext(),
-                    requestOptions,
-                    CancellationToken.None));
-
-            StringAssert.Contains(exception.Message, "JsonProcessor");
-            Assert.AreEqual(0, output.Length);
-            Assert.IsTrue(encrypted.CanRead);
-            Assert.AreEqual(0, encrypted.Position);
-        }
-
-        [TestMethod]
-        public async Task DecryptProvidedOutput_Newtonsoft_RewindsInputBeforeParsing()
+        public async Task Decrypt_Newtonsoft_RewindsInputBeforeParsing()
         {
             TestDoc expected = TestDoc.Create();
             using Stream encrypted = await TestCommon.CreateLegacyEncryptedStreamAsync(
@@ -726,20 +587,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 mockEncryptor.Object,
                 DekId);
             encrypted.Position = encrypted.Length;
-            using MemoryStream output = new();
-
-            DecryptionContext context = await EncryptionProcessor.DecryptAsync(
+            (Stream decrypted, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(
                 encrypted,
-                output,
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
                 requestOptions: null,
                 CancellationToken.None);
 
-            Assert.IsNotNull(context);
-            AssertLegacyDecryptionContext(context);
-            Assert.AreEqual(0, output.Position);
-            Assert.AreEqual(expected, TestCommon.FromStream<TestDoc>(output));
+            using (decrypted)
+            {
+                Assert.IsNotNull(context);
+                AssertLegacyDecryptionContext(context);
+                Assert.AreEqual(0, decrypted.Position);
+                Assert.AreEqual(expected, TestCommon.FromStream<TestDoc>(decrypted));
+            }
         }
 
         [TestMethod]
@@ -869,41 +730,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     exception.InnerException is JsonException ||
                     exception.InnerException is System.Text.Json.JsonException);
             }
-            Assert.IsTrue(input.CanRead);
-        }
-
-        [TestMethod]
-        [DynamicData(nameof(RequiredObjectBodyCases))]
-        public async Task DecryptProvidedOutput_NonObjectBody_PreservesOutput(
-            string scenario,
-            string json,
-            bool parserFailure,
-            int jsonProcessorValue)
-        {
-            _ = scenario;
-            byte[] originalOutput = { 1, 2, 3 };
-            using MemoryStream input = new(System.Text.Encoding.UTF8.GetBytes(json));
-            using MemoryStream output = new(originalOutput.ToArray());
-            output.Position = 1;
-
-            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                async () => await EncryptionProcessor.DecryptAsync(
-                    input,
-                    output,
-                    mockEncryptor.Object,
-                    new CosmosDiagnosticsContext(),
-                    RequestOptionsOverrideHelper.Create((JsonProcessor)jsonProcessorValue),
-                    CancellationToken.None));
-
-            Assert.AreEqual("The response body must contain a JSON object.", exception.Message);
-            if (parserFailure)
-            {
-                Assert.IsTrue(
-                    exception.InnerException is JsonException ||
-                    exception.InnerException is System.Text.Json.JsonException);
-            }
-            Assert.AreEqual(1, output.Position);
-            CollectionAssert.AreEqual(originalOutput, output.ToArray());
             Assert.IsTrue(input.CanRead);
         }
 
@@ -1099,32 +925,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             StringAssert.Contains(exception.Message, "future-algorithm");
             Assert.IsTrue(input.CanRead);
-        }
-
-        [TestMethod]
-        public async Task DecryptProvidedOutput_Newtonsoft_LegacyAlgorithm_Succeeds()
-        {
-            TestDoc expected = TestDoc.Create();
-            using Stream encrypted = await TestCommon.CreateLegacyEncryptedStreamAsync(
-                expected,
-                mockEncryptor.Object,
-                DekId);
-            using MemoryStream output = new();
-
-            DecryptionContext context = await EncryptionProcessor.DecryptAsync(
-                encrypted,
-                output,
-                mockEncryptor.Object,
-                new CosmosDiagnosticsContext(),
-                requestOptions: null,
-                CancellationToken.None);
-
-            Assert.IsNotNull(context);
-            AssertLegacyDecryptionContext(context);
-            Assert.AreEqual(0, output.Position);
-            Assert.IsFalse(encrypted.CanRead);
-            TestDoc actual = TestCommon.FromStream<TestDoc>(output);
-            Assert.AreEqual(expected, actual);
         }
 
         [TestMethod]

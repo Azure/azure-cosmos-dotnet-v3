@@ -321,18 +321,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             foreach (Encryptor implementation in new[] { encryptor.Object, new CosmosEncryptor(keyProvider.Object) })
             {
                 using MemoryStream input = new(payload);
-                using MemoryStream output = new(new byte[] { 1, 2, 3, 4 });
-                output.Position = 2;
                 InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
                     async () => await EncryptionProcessor.DecryptAsync(
-                        input, output, implementation, new CosmosDiagnosticsContext(),
+                        input, implementation, new CosmosDiagnosticsContext(),
                         RequestOptionsOverrideHelper.Create((JsonProcessor)processor), CancellationToken.None));
                 Assert.AreEqual(EncryptionMetadataClassifier.InvalidMetadataMessage, exception.Message);
                 Assert.IsTrue(input.CanRead);
                 Assert.AreEqual(0, input.Position);
                 CollectionAssert.AreEqual(payload, input.ToArray());
-                Assert.AreEqual(2, output.Position);
-                CollectionAssert.AreEqual(new byte[] { 1, 2, 3, 4 }, output.ToArray());
             }
 
             encryptor.Verify(instance => instance.DecryptAsync(

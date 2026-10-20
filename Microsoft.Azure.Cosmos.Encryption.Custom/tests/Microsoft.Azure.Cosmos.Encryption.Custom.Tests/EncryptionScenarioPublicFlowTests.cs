@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [DataTestMethod]
         [DynamicData(nameof(LateFailureRows), DynamicDataSourceType.Method)]
-        public async Task ProvidedOutput_LateSecondPropertyFailure_PreservesNonemptyDestination(bool cancel, int processor)
+        public async Task Decrypt_LateSecondPropertyFailure_PreservesInput(bool cancel, int processor)
         {
             JObject item = H.MdeItem();
             item["Other"] = Convert.ToBase64String(new byte[] { 2 }.Concat(Encoding.UTF8.GetBytes("other")).ToArray());
@@ -134,11 +134,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             };
             using MemoryStream input = H.Stream(item.ToString(Formatting.None));
             byte[] inputBefore = input.ToArray();
-            using MemoryStream output = H.Output();
-            byte[] outputBefore = output.ToArray();
-
             Exception failure = await H.CaptureExceptionAsync(async () =>
-                await EncryptionProcessor.DecryptAsync(input, output, encryptor, new CosmosDiagnosticsContext(),
+                await EncryptionProcessor.DecryptAsync(input, encryptor, new CosmosDiagnosticsContext(),
                     RequestOptionsOverrideHelper.Create((JsonProcessor)processor), cancellation.Token));
 
             if (cancel)
@@ -154,8 +151,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(2, encryptor.DecryptCalls);
             Assert.IsTrue(input.CanRead);
             CollectionAssert.AreEqual(inputBefore, input.ToArray());
-            CollectionAssert.AreEqual(outputBefore, output.ToArray());
-            Assert.AreEqual(2L, output.Position);
         }
 
         public static IEnumerable<object[]> LateFailureRows()

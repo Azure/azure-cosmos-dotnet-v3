@@ -67,19 +67,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [DataTestMethod]
         [DynamicData(nameof(MalformedCipherCases), DynamicDataSourceType.Method)]
-        public async Task MalformedLegacyCipher_RejectsBeforeCryptoAndPreservesProvidedOutput(int processor, string data)
+        public async Task MalformedLegacyCipher_RejectsBeforeCryptoAndPreservesInput(int processor, string data)
         {
             byte[] payload = Payload(data);
             Mock<Encryptor> encryptor = new (MockBehavior.Strict);
             using MemoryStream input = new (payload);
-            using MemoryStream output = new ();
-            output.Write(new byte[] { 1, 2, 3, 4 }, 0, 4);
-            output.Position = 2;
             Exception failure = null;
             try
             {
                 await EncryptionProcessor.DecryptAsync(
-                    input, output, encryptor.Object, new CosmosDiagnosticsContext(),
+                    input, encryptor.Object, new CosmosDiagnosticsContext(),
                     RequestOptionsOverrideHelper.Create((JsonProcessor)processor), CancellationToken.None);
             }
             catch (Exception exception)
@@ -96,7 +93,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 message = failure.Message,
                 innerError = failure.InnerException?.GetType().FullName,
                 inputPosition = input.Position,
-                outputPosition = output.Position,
             }));
             // Legacy conversion errors come from the Newtonsoft fallback.
             Assert.IsTrue(
@@ -105,8 +101,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsTrue(input.CanRead);
             Assert.AreEqual(0, input.Position);
             CollectionAssert.AreEqual(payload, input.ToArray());
-            CollectionAssert.AreEqual(new byte[] { 1, 2, 3, 4 }, output.ToArray());
-            Assert.AreEqual(2, output.Position);
             encryptor.VerifyNoOtherCalls();
         }
 

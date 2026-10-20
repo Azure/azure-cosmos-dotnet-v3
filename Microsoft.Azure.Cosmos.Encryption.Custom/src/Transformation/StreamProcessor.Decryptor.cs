@@ -383,6 +383,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             ArgumentNullException.ThrowIfNull(encryptor);
             ArgumentNullException.ThrowIfNull(properties);
             _ = diagnosticsContext;
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde)
             {
@@ -398,10 +399,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 properties.EncryptionAlgorithm,
                 this.Encryptor,
                 cancellationToken).ConfigureAwait(false);
-            if (cryptoOperationAdapter.UsesPublicEncryptor)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-            }
+            cancellationToken.ThrowIfCancellationRequested();
 
             List<string> pathsDecrypted = new (encryptedPathCount);
             using Utf8JsonWriter writer = new (outputBufferWriter);
@@ -444,7 +442,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         ref decryptPropertyName,
                         ref pendingCryptoOperation,
                         ref pendingTypeMarker,
-                        ref pendingDecryptPropertyName);
+                        ref pendingDecryptPropertyName,
+                        cancellationToken);
                     int remaining = dataSize - (int)bytesConsumed;
 
                     if (pendingCryptoOperation != null)
@@ -477,6 +476,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 }
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             writer.Flush();
 
             return EncryptionProcessor.CreateDecryptionContext(pathsDecrypted, properties.DataEncryptionKeyId);
@@ -524,7 +524,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             ref string decryptPropertyName,
             ref Task<MdeCryptoResult> pendingCryptoOperation,
             ref TypeMarker pendingTypeMarker,
-            ref string pendingDecryptPropertyName)
+            ref string pendingDecryptPropertyName,
+            CancellationToken cancellationToken)
         {
             Utf8JsonReader reader = new (buffer, isFinalBlock, state);
 
@@ -540,6 +541,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     }
 
                     continue;
+                }
+
+                if (decryptPropertyName != null &&
+                    tokenType != JsonTokenType.String &&
+                    tokenType != JsonTokenType.Null)
+                {
+                    throw new InvalidOperationException("An encrypted property must contain a ciphertext string or null.");
                 }
 
                 switch (tokenType)
@@ -596,6 +604,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     case JsonTokenType.PropertyName:
                         if (reader.CurrentDepth == 1)
                         {
+                            cancellationToken.ThrowIfCancellationRequested();
                             string matchedPath = null;
                             for (int i = 0; i < encryptedPathsTable.Length; i++)
                             {

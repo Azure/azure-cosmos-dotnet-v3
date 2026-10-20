@@ -25,10 +25,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CancellationToken token,
             bool replacePlaintextEncryptionMetadata)
         {
-            if (encryptor is not IDataEncryptionKeyAccessor)
-            {
-                token.ThrowIfCancellationRequested();
-            }
+            token.ThrowIfCancellationRequested();
 
             JObject itemJObj = NewtonsoftJsonObjectReader.Read(input, resetBeforeRead: false);
             if (replacePlaintextEncryptionMetadata)
@@ -68,10 +65,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             using ArrayPoolManager arrayPoolManager = new ();
 
             bool useDataEncryptionKeyDirectly = encryptor is IDataEncryptionKeyAccessor;
-            if (!useDataEncryptionKeyDirectly)
-            {
-                token.ThrowIfCancellationRequested();
-            }
+            token.ThrowIfCancellationRequested();
 
             DataEncryptionKey encryptionKey = useDataEncryptionKeyDirectly
                 ? await ((IDataEncryptionKeyAccessor)encryptor).GetEncryptionKeyAsync(
@@ -82,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
+                token.ThrowIfCancellationRequested();
                 string propertyName = pathToEncrypt.Substring(1);
                 if (!input.TryGetValue(propertyName, out JToken propertyValue))
                 {
@@ -117,10 +112,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 pathsEncrypted.Add(pathToEncrypt);
             }
 
-            if (!useDataEncryptionKeyDirectly)
-            {
-                token.ThrowIfCancellationRequested();
-            }
+            token.ThrowIfCancellationRequested();
 
             EncryptionProperties encryptionProperties = new (
                 encryptionFormatVersion: EncryptionFormatVersion.Mde,
@@ -152,10 +144,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             using ArrayPoolManager<char> charPoolManager = new ();
 
             bool useDataEncryptionKeyDirectly = encryptor is IDataEncryptionKeyAccessor;
-            if (!useDataEncryptionKeyDirectly)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-            }
+            cancellationToken.ThrowIfCancellationRequested();
 
             DataEncryptionKey encryptionKey = useDataEncryptionKeyDirectly
                 ? await ((IDataEncryptionKeyAccessor)encryptor).GetEncryptionKeyAsync(
@@ -168,6 +157,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             foreach (string path in encryptionProperties.EncryptedPaths)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 string propertyName = path.Substring(1);
 
                 if (!document.TryGetValue(propertyName, out JToken propertyValue))
@@ -210,10 +200,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 pathsDecrypted.Add(path);
             }
 
-            if (!useDataEncryptionKeyDirectly)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-            }
+            cancellationToken.ThrowIfCancellationRequested();
 
             DecryptionContext decryptionContext = EncryptionProcessor.CreateDecryptionContext(
                 pathsDecrypted,

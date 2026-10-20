@@ -29,12 +29,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         {
             using MemoryStream input = H.Stream("{\"id\":\"i\",\"PK\":\"p\",\"Sensitive\":\"AA==\",\"_ei\":" + metadata + "}");
             byte[] before = input.ToArray();
-            using MemoryStream output = H.Output();
-            byte[] outputBefore = output.ToArray();
             H.PublicEncryptor encryptor = new();
 
             InvalidOperationException failure = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                async () => await EncryptionProcessor.DecryptAsync(input, output, encryptor, new CosmosDiagnosticsContext(),
+                async () => await EncryptionProcessor.DecryptAsync(input, encryptor, new CosmosDiagnosticsContext(),
                     RequestOptionsOverrideHelper.Create((JsonProcessor)processor), CancellationToken.None));
 
             Assert.AreEqual(EncryptionMetadataClassifier.InvalidMetadataMessage, failure.Message, scenario);
@@ -43,8 +41,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsTrue(input.CanRead);
             Assert.AreEqual(0L, input.Position);
             CollectionAssert.AreEqual(before, input.ToArray());
-            CollectionAssert.AreEqual(outputBefore, output.ToArray());
-            Assert.AreEqual(2L, output.Position);
         }
 
         public static IEnumerable<object[]> InvalidEnvelopeRows()
@@ -100,12 +96,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             item["_ei"]["_ed"] = transport;
             using MemoryStream input = H.Stream(item.ToString(Formatting.None));
             byte[] before = input.ToArray();
-            using MemoryStream output = H.Output();
-            byte[] outputBefore = output.ToArray();
             H.PublicEncryptor encryptor = new();
 
             Exception failure = await H.CaptureExceptionAsync(async () =>
-                await EncryptionProcessor.DecryptAsync(input, output, encryptor, new CosmosDiagnosticsContext(),
+                await EncryptionProcessor.DecryptAsync(input, encryptor, new CosmosDiagnosticsContext(),
                     RequestOptionsOverrideHelper.Create((JsonProcessor)processor), CancellationToken.None));
 
             Assert.IsNotNull(failure, "Malformed base64 transport must not be accepted.");
@@ -114,8 +108,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsTrue(input.CanRead);
             Assert.AreEqual(0L, input.Position);
             CollectionAssert.AreEqual(before, input.ToArray());
-            CollectionAssert.AreEqual(outputBefore, output.ToArray());
-            Assert.AreEqual(2L, output.Position);
             this.TestContext.WriteLine($"E02 transport={transport}; processor={processor}; error={failure.GetType().FullName}");
         }
 
@@ -199,19 +191,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             JObject item = algorithm == H.Legacy ? H.LegacyItem() : H.MdeItem();
             item["_ei"]["_ef"] = version;
             using MemoryStream input = H.Stream(item.ToString(Formatting.None));
-            using MemoryStream output = H.Output();
-            byte[] before = output.ToArray();
             H.PublicEncryptor encryptor = new();
 
             NotSupportedException failure = await Assert.ThrowsExceptionAsync<NotSupportedException>(async () =>
-                await EncryptionProcessor.DecryptAsync(input, output, encryptor, new CosmosDiagnosticsContext(),
+                await EncryptionProcessor.DecryptAsync(input, encryptor, new CosmosDiagnosticsContext(),
                     RequestOptionsOverrideHelper.Create((JsonProcessor)processor), CancellationToken.None));
 
             StringAssert.Contains(failure.Message, "Unknown encryption format version");
             Assert.AreEqual(0, encryptor.KeyCalls);
             Assert.AreEqual(0, encryptor.DecryptCalls);
-            CollectionAssert.AreEqual(before, output.ToArray());
-            Assert.AreEqual(2L, output.Position);
             Assert.IsTrue(input.CanRead);
         }
 
@@ -282,18 +270,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             item["Sensitive"] = value;
             using MemoryStream input = H.Stream(item.ToString(Formatting.None));
             byte[] inputBefore = input.ToArray();
-            using MemoryStream output = H.Output();
-            byte[] before = output.ToArray();
             H.PublicEncryptor encryptor = new();
             Exception failure = await H.CaptureExceptionAsync(async () =>
-                await EncryptionProcessor.DecryptAsync(input, output, encryptor, new CosmosDiagnosticsContext(),
+                await EncryptionProcessor.DecryptAsync(input, encryptor, new CosmosDiagnosticsContext(),
                     RequestOptionsOverrideHelper.Create((JsonProcessor)processor), CancellationToken.None));
             Assert.IsNotNull(failure);
             Assert.AreEqual(0, encryptor.DecryptCalls);
             Assert.IsTrue(input.CanRead);
             CollectionAssert.AreEqual(inputBefore, input.ToArray());
-            CollectionAssert.AreEqual(before, output.ToArray());
-            Assert.AreEqual(2L, output.Position);
             this.TestContext.WriteLine($"E10 value={value}; processor={processor}; error={failure.GetType().FullName}");
         }
 
@@ -317,17 +301,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             JObject item = H.LegacyItem();
             using MemoryStream input = H.Stream(item.ToString(Formatting.None));
             byte[] inputBefore = input.ToArray();
-            using MemoryStream output = H.Output();
-            byte[] before = output.ToArray();
             Exception failure = await H.CaptureExceptionAsync(async () =>
-                await EncryptionProcessor.DecryptAsync(input, output, encryptor, new CosmosDiagnosticsContext(),
+                await EncryptionProcessor.DecryptAsync(input, encryptor, new CosmosDiagnosticsContext(),
                     RequestOptionsOverrideHelper.Create((JsonProcessor)processor), CancellationToken.None));
             Assert.IsNotNull(failure);
             Assert.AreEqual(1, encryptor.DecryptCalls);
             Assert.IsTrue(input.CanRead);
             CollectionAssert.AreEqual(inputBefore, input.ToArray());
-            CollectionAssert.AreEqual(before, output.ToArray());
-            Assert.AreEqual(2L, output.Position);
             Assert.AreEqual("legacy", (string)item["id"]);
             this.TestContext.WriteLine($"E08 plaintext={plaintext}; processor={processor}; error={failure.GetType().FullName}");
         }

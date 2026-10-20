@@ -266,20 +266,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 },
             };
             using MemoryStream input = H.Stream(item.ToString(Formatting.None));
-            using MemoryStream output = H.Output();
-            byte[] before = output.ToArray();
+            byte[] before = input.ToArray();
+            Stream result = null;
             Exception failure = await H.CaptureExceptionAsync(async () =>
-                await EncryptionProcessor.DecryptAsync(input, output, encryptor, new CosmosDiagnosticsContext(),
+                (result, _) = await EncryptionProcessor.DecryptAsync(input, encryptor, new CosmosDiagnosticsContext(),
                     RequestOptionsOverrideHelper.Create((JsonProcessor)processor), CancellationToken.None));
+            byte[] output = Array.Empty<byte>();
+            if (result != null)
+            {
+                using (result)
+                using (MemoryStream copy = new())
+                {
+                    await result.CopyToAsync(copy);
+                    output = copy.ToArray();
+                }
+            }
+
+            CollectionAssert.AreEqual(before, input.ToArray());
             if (failure != null)
             {
-                CollectionAssert.AreEqual(before, output.ToArray());
-                Assert.AreEqual(2L, output.Position);
                 Assert.IsTrue(input.CanRead);
             }
 
             this.Record(scenario == "GUID transport" ? "E02" : "E08", scenario + "; receivedCipherLength=" + receivedLength,
-                processor, failure, encryptor.DecryptCalls, output.ToArray(), null);
+                processor, failure, encryptor.DecryptCalls, output, null);
         }
 
         public static IEnumerable<object[]> LegacyDecisionRows()

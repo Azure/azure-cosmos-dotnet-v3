@@ -158,31 +158,50 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
-            streamPayload = await EncryptionProcessor.EncryptAsync(
-                streamPayload,
-                this.Encryptor,
-                encryptionItemRequestOptions,
-                diagnosticsContext,
-                cancellationToken,
-                replacePlaintextEncryptionMetadata);
-
-            ResponseMessage responseMessage = await this.container.CreateItemStreamAsync(
-                streamPayload,
-                partitionKey,
-                requestOptions,
-                cancellationToken);
-
-            if (decryptResponse)
+            using BorrowedPointWriteStream borrowedInput = new (streamPayload);
+            Stream encryptedPayload = null;
+            ResponseMessage responseMessage = null;
+            try
             {
-                (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
-                    responseMessage.Content,
+                encryptedPayload = await EncryptionProcessor.EncryptAsync(
+                    borrowedInput,
                     this.Encryptor,
+                    encryptionItemRequestOptions,
                     diagnosticsContext,
+                    cancellationToken,
+                    replacePlaintextEncryptionMetadata);
+
+                bool transformed = !ReferenceEquals(encryptedPayload, borrowedInput);
+                responseMessage = await this.container.CreateItemStreamAsync(
+                    transformed ? encryptedPayload : streamPayload,
+                    partitionKey,
                     requestOptions,
                     cancellationToken);
-            }
 
-            return responseMessage;
+                if (decryptResponse)
+                {
+                    (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
+                        responseMessage.Content,
+                        this.Encryptor,
+                        diagnosticsContext,
+                        requestOptions,
+                        cancellationToken);
+                }
+
+                await encryptedPayload.DisposeCompatAsync();
+                encryptedPayload = null;
+                if (transformed && responseMessage.IsSuccessStatusCode)
+                {
+                    await streamPayload.DisposeCompatAsync();
+                }
+
+                return responseMessage;
+            }
+            catch
+            {
+                await DisposePointOperationOnFailureAsync(responseMessage, encryptedPayload);
+                throw;
+            }
         }
 
         public override Task<ItemResponse<T>> DeleteItemAsync<T>(
@@ -287,18 +306,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 requestOptions,
                 cancellationToken);
 
-            if (decryptResponse)
+            try
             {
-                (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
-                    responseMessage.Content,
-                    this.Encryptor,
-                    requestOptions.GetJsonProcessor(this.DefaultJsonProcessor),
-                    legacyFallback: true,
-                    diagnosticsContext,
-                    cancellationToken);
-            }
+                if (decryptResponse)
+                {
+                    (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
+                        responseMessage.Content,
+                        this.Encryptor,
+                        requestOptions.GetJsonProcessor(this.DefaultJsonProcessor),
+                        legacyFallback: true,
+                        diagnosticsContext,
+                        cancellationToken);
+                }
 
-            return responseMessage;
+                return responseMessage;
+            }
+            catch
+            {
+                await DecryptedResponseMessage.DisposeOnFailureAsync(responseMessage, responseMessage.Content);
+                throw;
+            }
         }
 
         public override async Task<ItemResponse<T>> ReplaceItemAsync<T>(
@@ -422,32 +449,51 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
-            streamPayload = await EncryptionProcessor.EncryptAsync(
-                streamPayload,
-                this.Encryptor,
-                encryptionItemRequestOptions,
-                diagnosticsContext,
-                cancellationToken,
-                replacePlaintextEncryptionMetadata);
-
-            ResponseMessage responseMessage = await this.container.ReplaceItemStreamAsync(
-                streamPayload,
-                id,
-                partitionKey,
-                requestOptions,
-                cancellationToken);
-
-            if (decryptResponse)
+            using BorrowedPointWriteStream borrowedInput = new (streamPayload);
+            Stream encryptedPayload = null;
+            ResponseMessage responseMessage = null;
+            try
             {
-                (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
-                    responseMessage.Content,
+                encryptedPayload = await EncryptionProcessor.EncryptAsync(
+                    borrowedInput,
                     this.Encryptor,
+                    encryptionItemRequestOptions,
                     diagnosticsContext,
+                    cancellationToken,
+                    replacePlaintextEncryptionMetadata);
+
+                bool transformed = !ReferenceEquals(encryptedPayload, borrowedInput);
+                responseMessage = await this.container.ReplaceItemStreamAsync(
+                    transformed ? encryptedPayload : streamPayload,
+                    id,
+                    partitionKey,
                     requestOptions,
                     cancellationToken);
-            }
 
-            return responseMessage;
+                if (decryptResponse)
+                {
+                    (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
+                        responseMessage.Content,
+                        this.Encryptor,
+                        diagnosticsContext,
+                        requestOptions,
+                        cancellationToken);
+                }
+
+                await encryptedPayload.DisposeCompatAsync();
+                encryptedPayload = null;
+                if (transformed && responseMessage.IsSuccessStatusCode)
+                {
+                    await streamPayload.DisposeCompatAsync();
+                }
+
+                return responseMessage;
+            }
+            catch
+            {
+                await DisposePointOperationOnFailureAsync(responseMessage, encryptedPayload);
+                throw;
+            }
         }
 
         public override async Task<ItemResponse<T>> UpsertItemAsync<T>(
@@ -561,31 +607,130 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
-            streamPayload = await EncryptionProcessor.EncryptAsync(
-                streamPayload,
-                this.Encryptor,
-                encryptionItemRequestOptions,
-                diagnosticsContext,
-                cancellationToken,
-                replacePlaintextEncryptionMetadata);
-
-            ResponseMessage responseMessage = await this.container.UpsertItemStreamAsync(
-                streamPayload,
-                partitionKey,
-                requestOptions,
-                cancellationToken);
-
-            if (decryptResponse)
+            using BorrowedPointWriteStream borrowedInput = new (streamPayload);
+            Stream encryptedPayload = null;
+            ResponseMessage responseMessage = null;
+            try
             {
-                (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
-                    responseMessage.Content,
+                encryptedPayload = await EncryptionProcessor.EncryptAsync(
+                    borrowedInput,
                     this.Encryptor,
+                    encryptionItemRequestOptions,
                     diagnosticsContext,
+                    cancellationToken,
+                    replacePlaintextEncryptionMetadata);
+
+                bool transformed = !ReferenceEquals(encryptedPayload, borrowedInput);
+                responseMessage = await this.container.UpsertItemStreamAsync(
+                    transformed ? encryptedPayload : streamPayload,
+                    partitionKey,
                     requestOptions,
                     cancellationToken);
+
+                if (decryptResponse)
+                {
+                    (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
+                        responseMessage.Content,
+                        this.Encryptor,
+                        diagnosticsContext,
+                        requestOptions,
+                        cancellationToken);
+                }
+
+                await encryptedPayload.DisposeCompatAsync();
+                encryptedPayload = null;
+                if (transformed && responseMessage.IsSuccessStatusCode)
+                {
+                    await streamPayload.DisposeCompatAsync();
+                }
+
+                return responseMessage;
+            }
+            catch
+            {
+                await DisposePointOperationOnFailureAsync(responseMessage, encryptedPayload);
+                throw;
+            }
+        }
+
+        private static async Task DisposePointOperationOnFailureAsync(ResponseMessage response, Stream encryptedPayload)
+        {
+            if (response != null)
+            {
+                await DecryptedResponseMessage.DisposeOnFailureAsync(response, response.Content);
             }
 
-            return responseMessage;
+            if (encryptedPayload != null)
+            {
+                try
+                {
+                    await encryptedPayload.DisposeCompatAsync();
+                }
+                catch (Exception cleanupFailure)
+                {
+                    try
+                    {
+                        System.Diagnostics.Trace.TraceWarning(
+                            "Failed to release an encrypted point request after processing failed ({0}).",
+                            cleanupFailure.GetType().Name);
+                    }
+                    catch (Exception)
+                    {
+                        // A trace listener must not replace the processing exception.
+                    }
+                }
+            }
+        }
+
+        private sealed class BorrowedPointWriteStream : Stream
+        {
+            private readonly Stream inner;
+
+            public BorrowedPointWriteStream(Stream inner)
+            {
+                this.inner = inner;
+            }
+
+            public override bool CanRead => this.inner.CanRead;
+
+            public override bool CanSeek => this.inner.CanSeek;
+
+            public override bool CanWrite => this.inner.CanWrite;
+
+            public override long Length => this.inner.Length;
+
+            public override long Position
+            {
+                get => this.inner.Position;
+                set => this.inner.Position = value;
+            }
+
+            public override void Flush() => this.inner.Flush();
+
+            public override int Read(byte[] buffer, int offset, int count) => this.inner.Read(buffer, offset, count);
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+                => this.inner.ReadAsync(buffer, offset, count, cancellationToken);
+
+            public override long Seek(long offset, SeekOrigin origin) => this.inner.Seek(offset, origin);
+
+            public override void SetLength(long value) => this.inner.SetLength(value);
+
+            public override void Write(byte[] buffer, int offset, int count) => this.inner.Write(buffer, offset, count);
+
+#if NET8_0_OR_GREATER
+            public override int Read(Span<byte> buffer) => this.inner.Read(buffer);
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+                => this.inner.ReadAsync(buffer, cancellationToken);
+
+            public override ValueTask DisposeAsync() => default;
+#endif
+
+            protected override void Dispose(bool disposing)
+            {
+                // Local transformation must not dispose the caller's stream before the service outcome.
+            }
         }
 
         public override TransactionalBatch CreateTransactionalBatch(

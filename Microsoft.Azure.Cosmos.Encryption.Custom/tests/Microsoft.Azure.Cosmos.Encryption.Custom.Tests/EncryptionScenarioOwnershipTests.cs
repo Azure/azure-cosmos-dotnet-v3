@@ -24,6 +24,252 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     public class EncryptionScenarioOwnershipTests
     {
         [DataTestMethod]
+        [DynamicData(nameof(PointPassThroughRows), DynamicDataSourceType.Method)]
+        public async Task PointWrite_EmptyPaths_PreservesOriginalStreamIdentity(int operation, int processor, bool serviceFails)
+        {
+            H.PublicEncryptor encryptor = new();
+            Container container = H.Container(encryptor, out Mock<Container> inner, out _);
+            using MemoryStream input = H.Stream(H.PlainItem().ToString(Formatting.None));
+            EncryptionItemRequestOptions options = H.Options(processor);
+            options.EncryptionOptions.PathsToEncrypt = Array.Empty<string>();
+            IOException primary = new("service failure");
+            using ResponseMessage raw = new(HttpStatusCode.OK);
+            Stream sent = null;
+            SetupPointService(inner, operation, (payload, _) =>
+            {
+                sent = payload;
+                return serviceFails ? Task.FromException<ResponseMessage>(primary) : Task.FromResult(raw);
+            });
+
+            Exception failure = await H.CaptureExceptionAsync(async () =>
+            {
+                ResponseMessage returned = await InvokePointAsync(container, operation, input, options, CancellationToken.None);
+                Assert.AreSame(raw, returned);
+            });
+
+            Assert.AreSame(serviceFails ? primary : null, failure);
+            Assert.AreSame(input, sent, "An untransformed request must retain the original SDK pass-through stream.");
+            Assert.IsTrue(input.CanRead, "No transformed output was created, so input ownership must stay with the caller.");
+            Assert.AreEqual(0, encryptor.EncryptCalls);
+        }
+
+        public static IEnumerable<object[]> PointPassThroughRows()
+        {
+            foreach (int processor in H.Processors)
+            {
+                for (int operation = 0; operation < 3; operation++)
+                {
+                    yield return new object[] { operation, processor, false };
+                    yield return new object[] { operation, processor, true };
+                }
+            }
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(PointWriteRows), DynamicDataSourceType.Method)]
+        public async Task PointWrite_ServiceOutcome_RespectsStreamOwnership(int operation, int processor, string algorithm, int outcome)
+        {
+            H.PublicEncryptor encryptor = new();
+            Container container = H.Container(encryptor, out Mock<Container> inner, out _);
+            using CancellationTokenSource cancellation = new();
+            Exception primary = outcome == 1
+                ? new OperationCanceledException(cancellation.Token)
+                : new IOException("service failure");
+            using MemoryStream input = H.Stream(H.PlainItem().ToString(Formatting.None));
+            Stream sent = null;
+            bool readableDuringService = false;
+            ResponseMessage raw = new(outcome == 2 ? HttpStatusCode.BadRequest : HttpStatusCode.OK);
+            Task<ResponseMessage> Service(Stream payload, CancellationToken token)
+            {
+                sent = payload;
+                readableDuringService = input.CanRead;
+                Assert.IsTrue(payload.CanRead);
+                Assert.AreEqual(cancellation.Token, token);
+                if (outcome == 1)
+                {
+                    cancellation.Cancel();
+                }
+
+                return outcome < 2 ? Task.FromException<ResponseMessage>(primary) : Task.FromResult(raw);
+            }
+
+            SetupPointService(inner, operation, Service);
+            ResponseMessage returned = null;
+            try
+            {
+                Exception failure = await H.CaptureExceptionAsync(async () =>
+                    returned = await InvokePointAsync(container, operation, input, H.Options(processor, algorithm), cancellation.Token));
+                if (outcome < 2)
+                {
+                    Assert.AreSame(primary, failure);
+                }
+                else
+                {
+                    Assert.IsNull(failure);
+                    Assert.AreSame(raw, returned);
+                }
+
+                Assert.IsTrue(readableDuringService, "The processor must not close borrowed input before the service outcome.");
+                Assert.AreEqual(outcome != 3, input.CanRead, "Only a successful write transfers the original processor success-disposal behavior.");
+                Assert.IsNotNull(sent);
+                Assert.AreNotSame(input, sent);
+                Assert.IsFalse(sent.CanRead, "Transformed output must be released before harness cleanup.");
+            }
+            finally
+            {
+                raw.Dispose();
+                sent?.Dispose();
+            }
+        }
+
+        public static IEnumerable<object[]> PointWriteRows()
+        {
+            foreach (int processor in H.Processors)
+            {
+                foreach (string algorithm in new[] { H.Mde, H.Legacy })
+                {
+                    if (algorithm == H.Legacy && processor != (int)JsonProcessor.Newtonsoft)
+                    {
+                        continue;
+                    }
+
+                    for (int operation = 0; operation < 3; operation++)
+                    {
+                        for (int outcome = 0; outcome < 4; outcome++)
+                        {
+                            yield return new object[] { operation, processor, algorithm, outcome };
+                        }
+                    }
+                }
+            }
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(PointResponseFailureRows), DynamicDataSourceType.Method)]
+        public async Task PointResponse_TransformFailure_ReleasesUnreturnedResponse(int operation, int processor, bool canceled, bool cleanupThrows)
+        {
+            using CancellationTokenSource cancellation = new();
+            Exception primary = canceled ? new OperationCanceledException(cancellation.Token) : new IOException("decrypt failure");
+            H.PublicEncryptor encryptor = new()
+            {
+                OnDecrypt = (_, _, token) =>
+                {
+                    Assert.AreEqual(cancellation.Token, token);
+                    if (canceled)
+                    {
+                        cancellation.Cancel();
+                    }
+
+                    return Task.FromException<byte[]>(primary);
+                },
+            };
+            Container container = H.Container(encryptor, out Mock<Container> inner, out _);
+            using MemoryStream input = H.Stream(H.PlainItem().ToString(Formatting.None));
+            using MemoryStream content = H.Stream(H.MdeItem().ToString(Formatting.None));
+            TrackingPointResponse raw = new(cleanupThrows) { Content = content };
+            Stream sent = null;
+            SetupPointService(inner, operation, (payload, _) =>
+            {
+                sent = payload;
+                return Task.FromResult<ResponseMessage>(raw);
+            });
+            try
+            {
+                Exception failure = await H.CaptureExceptionAsync(async () =>
+                    await InvokePointAsync(container, operation, input, H.Options(processor), cancellation.Token));
+                Assert.AreSame(primary, failure, "Cleanup must preserve the processing exception and cancellation token.");
+                Assert.IsTrue(raw.Disposed, "Acquired response must be released before harness cleanup.");
+                Assert.IsFalse(content.CanRead);
+                if (sent != null)
+                {
+                    Assert.IsFalse(sent.CanRead, "Transformed request must be released before harness cleanup.");
+                }
+            }
+            finally
+            {
+                raw.ThrowOnDispose = false;
+                raw.Dispose();
+                sent?.Dispose();
+            }
+        }
+
+        public static IEnumerable<object[]> PointResponseFailureRows()
+        {
+            foreach (int processor in H.Processors)
+            {
+                for (int operation = 0; operation < 4; operation++)
+                {
+                    foreach (bool canceled in new[] { false, true })
+                    {
+                        foreach (bool cleanupThrows in new[] { false, true })
+                        {
+                            yield return new object[] { operation, processor, canceled, cleanupThrows };
+                        }
+                    }
+                }
+            }
+        }
+
+        private static Task<ResponseMessage> InvokePointAsync(Container container, int operation, Stream input,
+            ItemRequestOptions options, CancellationToken token)
+        {
+            return operation switch
+            {
+                0 => container.CreateItemStreamAsync(input, new PartitionKey("p"), options, token),
+                1 => container.ReplaceItemStreamAsync(input, "i", new PartitionKey("p"), options, token),
+                2 => container.UpsertItemStreamAsync(input, new PartitionKey("p"), options, token),
+                _ => container.ReadItemStreamAsync("i", new PartitionKey("p"), options, token),
+            };
+        }
+
+        private static void SetupPointService(Mock<Container> inner, int operation, Func<Stream, CancellationToken, Task<ResponseMessage>> service)
+        {
+            if (operation == 0)
+            {
+                inner.Setup(c => c.CreateItemStreamAsync(It.IsAny<Stream>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                    .Returns((Stream input, PartitionKey _, ItemRequestOptions _, CancellationToken token) => service(input, token));
+            }
+            else if (operation == 1)
+            {
+                inner.Setup(c => c.ReplaceItemStreamAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                    .Returns((Stream input, string _, PartitionKey _, ItemRequestOptions _, CancellationToken token) => service(input, token));
+            }
+            else if (operation == 2)
+            {
+                inner.Setup(c => c.UpsertItemStreamAsync(It.IsAny<Stream>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                    .Returns((Stream input, PartitionKey _, ItemRequestOptions _, CancellationToken token) => service(input, token));
+            }
+            else
+            {
+                inner.Setup(c => c.ReadItemStreamAsync(It.IsAny<string>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                    .Returns((string _, PartitionKey _, ItemRequestOptions _, CancellationToken token) => service(null, token));
+            }
+        }
+
+        private sealed class TrackingPointResponse : ResponseMessage
+        {
+            internal TrackingPointResponse(bool throwOnDispose)
+                : base(HttpStatusCode.OK)
+            {
+                this.ThrowOnDispose = throwOnDispose;
+            }
+
+            internal bool Disposed { get; private set; }
+
+            internal bool ThrowOnDispose { get; set; }
+
+            protected override void Dispose(bool disposing)
+            {
+                this.Disposed = true;
+                base.Dispose(disposing);
+                if (this.ThrowOnDispose)
+                {
+                    throw new IOException("response cleanup failure");
+                }
+            }
+        }
+
+        [DataTestMethod]
         [DynamicData(nameof(LazyReaderRows), DynamicDataSourceType.Method)]
         public async Task Lazy_UnsupportedEnvelope_RetainsOriginalCiphertextForRecovery(int processor)
         {
@@ -74,31 +320,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         [DataTestMethod]
         [DynamicData(nameof(RawDepthRows), DynamicDataSourceType.Method)]
-        public async Task Decrypt_RawObjectDepthBoundary_PreservesInputAndProvidedOutput(int depth, int processor)
+        public async Task Decrypt_RawObjectDepthBoundary_PreservesInput(int depth, int processor)
         {
             string json = string.Concat(Enumerable.Repeat("{\"n\":", depth)) + "0" + new string('}', depth);
             using MemoryStream input = H.Stream(json);
             byte[] before = input.ToArray();
-            using MemoryStream output = H.Output();
-            byte[] outputBefore = output.ToArray();
             H.PublicEncryptor encryptor = new();
             if (depth == 64)
             {
-                DecryptionContext context = await EncryptionProcessor.DecryptAsync(input, output, encryptor,
+                (Stream result, DecryptionContext context) = await EncryptionProcessor.DecryptAsync(input, encryptor,
                     new CosmosDiagnosticsContext(), RequestOptionsOverrideHelper.Create((JsonProcessor)processor), CancellationToken.None);
+                Assert.AreSame(input, result);
                 Assert.IsNull(context);
             }
             else
             {
                 InvalidOperationException failure = await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () =>
-                    await EncryptionProcessor.DecryptAsync(input, output, encryptor, new CosmosDiagnosticsContext(),
+                    await EncryptionProcessor.DecryptAsync(input, encryptor, new CosmosDiagnosticsContext(),
                         RequestOptionsOverrideHelper.Create((JsonProcessor)processor), CancellationToken.None));
                 Assert.AreEqual("The response body must contain a JSON object.", failure.Message);
             }
 
             CollectionAssert.AreEqual(before, input.ToArray());
-            CollectionAssert.AreEqual(outputBefore, output.ToArray());
-            Assert.AreEqual(2L, output.Position);
             Assert.IsTrue(input.CanRead);
             Assert.AreEqual(0L, input.Position);
             Assert.AreEqual(0, encryptor.DecryptCalls);

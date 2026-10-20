@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CancellationToken cancellationToken,
             bool replacePlaintextEncryptionMetadata = false)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             List<string> pathsEncrypted = new (encryptionOptions.PathsToEncrypt is ICollection<string> c ? c.Count : 0);
 
             using PooledMemoryStream bufferedInput = replacePlaintextEncryptionMetadata &&
@@ -77,10 +78,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 encryptionOptions.EncryptionAlgorithm,
                 this.Encryptor,
                 cancellationToken).ConfigureAwait(false);
-            if (cryptoOperationAdapter.UsesPublicEncryptor)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-            }
+            cancellationToken.ThrowIfCancellationRequested();
 
             using PooledMemoryStream publicFallbackOutput = cryptoOperationAdapter.UsesPublicEncryptor
                 ? new PooledMemoryStream()
@@ -157,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     }
                 }
 
-                await inputStream.DisposeAsync();
+                cancellationToken.ThrowIfCancellationRequested();
             }
             finally
             {
@@ -183,10 +181,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             writer.WriteEndObject();
 
             writer.Flush();
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (publicFallbackOutput != null)
             {
-                cancellationToken.ThrowIfCancellationRequested();
                 if (publicFallbackOutput.TryGetBuffer(out ArraySegment<byte> encryptedDocument) &&
                     encryptedDocument.Count > 0)
                 {
@@ -199,6 +197,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             outputStream.Position = 0;
+            await inputStream.DisposeAsync();
 
             long TransformEncryptBuffer(ReadOnlySpan<byte> buffer)
             {
@@ -356,6 +355,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         case JsonTokenType.PropertyName:
                             if (reader.CurrentDepth == 1)
                             {
+                                cancellationToken.ThrowIfCancellationRequested();
+
                                 // Reject a pre-existing top-level _ei up front. The Newtonsoft
                                 // default rejects the same case incidentally (JObject.Add throws
                                 // ArgumentException on the duplicate key); we throw a deliberate

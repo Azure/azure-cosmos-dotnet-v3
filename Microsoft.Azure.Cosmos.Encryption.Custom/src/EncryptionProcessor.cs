@@ -171,39 +171,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            JsonProcessor jsonProcessor = requestOptions.GetJsonProcessor();
-            ValidateJsonProcessor(jsonProcessor);
-
-            if (input == null)
-            {
-                return null;
-            }
-
-            ValidateOutputForDecrypt(output);
-
-            if (jsonProcessor == JsonProcessor.Newtonsoft)
-            {
-                using (diagnosticsContext.CreateScope(
-                    CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft))
-                {
-                    return await DecryptNewtonsoftAsync(
-                        input,
-                        output,
-                        encryptor,
-                        diagnosticsContext,
-                        cancellationToken);
-                }
-            }
-
             try
             {
-                return await MdeEncryptionProcessor.DecryptAsync(
-                    input,
-                    output,
-                    encryptor,
-                    diagnosticsContext,
-                    requestOptions,
-                    cancellationToken);
+                return await MdeEncryptionProcessor.DecryptAsync(input, output, encryptor, diagnosticsContext, requestOptions, cancellationToken);
             }
             catch (NotSupportedException)
             {
@@ -216,11 +186,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     input,
                     out JObject legacyDocument,
                     out JObject legacyEncryptionProperties);
-                if (status == LegacyEncryptionDocumentStatus.MissingAlgorithm)
-                {
-                    return null;
-                }
-
                 if (status != LegacyEncryptionDocumentStatus.Legacy)
                 {
                     throw;
@@ -229,14 +194,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 using (diagnosticsContext.CreateScope(
                     CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + JsonProcessor.Newtonsoft))
                 {
-                    return await DecryptParsedDocumentAsync(
-                        input,
-                        output,
-                        legacyDocument,
-                        legacyEncryptionProperties,
+                    DecryptionContext context = await DecryptInternalAsync(
                         encryptor,
                         diagnosticsContext,
+                        legacyDocument,
+                        legacyEncryptionProperties,
                         cancellationToken);
+                    BaseSerializer.WriteToStream(legacyDocument, output);
+                    output.Position = 0;
+                    await input.DisposeCompatAsync();
+                    return context;
                 }
             }
         }
@@ -395,54 +362,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return (BaseSerializer.ToStream(document), context);
         }
 
-        private static async Task<DecryptionContext> DecryptParsedDocumentAsync(
-            Stream input,
-            Stream output,
-            JObject document,
-            JObject encryptionProperties,
-            Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            DecryptionContext context = await DecryptInternalAsync(
-                encryptor,
-                diagnosticsContext,
-                document,
-                encryptionProperties,
-                cancellationToken);
-            BaseSerializer.WriteToStream(document, output);
-            output.Position = 0;
-            await input.DisposeCompatAsync();
-            return context;
-        }
-
-        private static async Task<DecryptionContext> DecryptNewtonsoftAsync(
-            Stream input,
-            Stream output,
-            Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            JObject document = NewtonsoftJsonObjectReader.Read(input);
-            EncryptionMetadataDisposition disposition = ClassifyEncryptionMetadata(
-                document,
-                out JObject encryptionProperties);
-            if (disposition == EncryptionMetadataDisposition.None ||
-                disposition == EncryptionMetadataDisposition.Plaintext)
-            {
-                return null;
-            }
-
-            return await DecryptParsedDocumentAsync(
-                input,
-                output,
-                document,
-                encryptionProperties,
-                encryptor,
-                diagnosticsContext,
-                cancellationToken);
-        }
-
         /// <remarks>
         /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
         /// Else input stream will be disposed, and a new stream is returned.
@@ -543,20 +462,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new NotSupportedException(
                     $"JsonProcessor '{jsonProcessor}' is not supported on this platform. " +
                     $"Supported processors: {string.Join(", ", Enum.GetNames(typeof(JsonProcessor)))}");
-            }
-        }
-
-        private static void ValidateOutputForDecrypt(Stream output)
-        {
-            ArgumentValidation.ThrowIfNull(output);
-            if (!output.CanWrite)
-            {
-                throw new ArgumentException("Output stream must be writable.", nameof(output));
-            }
-
-            if (!output.CanSeek)
-            {
-                throw new ArgumentException("Output stream must be seekable.", nameof(output));
             }
         }
 
