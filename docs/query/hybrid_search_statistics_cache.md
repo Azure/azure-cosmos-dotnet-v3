@@ -1,7 +1,7 @@
 # Hybrid search full-text statistics cache
 
-**Status:** Cache design proposed. Phase 1 exposes and verifies query-plan
-path/term metadata; statistics caching itself is not implemented.
+**Status:** Phases 1 and 2 expose query-plan path/term metadata and validated
+configuration. Statistics-cache storage and execution are not implemented.
 
 ## 1. Recommendation and agreed scope
 
@@ -17,12 +17,13 @@ Decisions confirmed for this design:
   checks. There is no new service-side validation request.
 - The query plan includes query terms as well as optional full-text paths.
   Use this metadata directly; do not recover terms by parsing SQL.
-- Caching is opt-in and supports both `FullTextScoreScope.Global` and `Local`.
+- Caching is opt-in per client and supports both `FullTextScoreScope.Global`
+  and `Local`. There is no per-query cache-age override.
 
 The central invariant is:
 
 > Reuse only a complete statistics result for the same statistics computation
-> over the same scoring corpus, within the caller's accepted cache age.
+> over the same scoring corpus, within the client's configured cache age.
 
 A path alone is not a sufficient key. The existing result contains
 query-dependent term hit counts as well as document and word counts. The plan's
@@ -120,7 +121,8 @@ not required to skip statistics collection for matching requirements.
 
 ## 4. Public opt-in and freshness semantics
 
-Propose one request option rather than an enable flag plus a separate TTL:
+Phase 2 adds one public `CosmosClientOptions` property in both GA and preview,
+rather than an enable flag plus a separate TTL:
 
 ```csharp
 public TimeSpan? FullTextStatisticsCacheMaxAge { get; set; }
@@ -129,24 +131,38 @@ public TimeSpan? FullTextStatisticsCacheMaxAge { get; set; }
 Example:
 
 ```csharp
-new QueryRequestOptions
+CosmosClientOptions clientOptions = new CosmosClientOptions
 {
-    FullTextScoreScope = FullTextScoreScope.Local,
     FullTextStatisticsCacheMaxAge = TimeSpan.FromSeconds(30)
+};
+
+using CosmosClient client = new CosmosClient(accountEndpoint, authKey, clientOptions);
+QueryRequestOptions queryOptions = new QueryRequestOptions
+{
+    FullTextScoreScope = FullTextScoreScope.Local
 };
 ```
 
-The example is not a recommended universal TTL.
+The example is not a recommended universal TTL. The option currently stores and
+validates the allowance; it does not yet change query execution. The lookup and
+admission semantics below apply when the cache is integrated.
 
 | Value | Behavior |
 |---|---|
 | `null` or zero | Disabled: neither consume nor populate the cache. |
 | Positive | Allow reuse within this age; permit admission of successful results. |
-| Negative, including an infinite-timeout sentinel | Reject through normal request-option argument validation. |
+| Negative, including an infinite-timeout sentinel | Reject immediately in the client-option setter. |
 
-Snapshot the option into `InputParameters`; preserve it in
-`WithContinuationToken` and other relevant option-copy paths. Do not send it as
-a service header. Unsupported execution modes, including server-managed
+The option is preserved by `CosmosClientOptions.Clone` and applies to eligible
+hybrid queries using that client. There is no equivalent on
+`QueryRequestOptions`; use a separate client for a different age policy.
+During cache-lifetime implementation, capture the age and entry-count policy
+at client construction, even if cache allocation is deferred. Later mutation of
+options must not change the running cache's policy.
+
+Obtain the policy through the existing client context; do not thread a cache-age
+value through `QueryIterator` or `InputParameters`, and do not send it as a
+service header. Unsupported execution modes, including server-managed
 distributed query execution, bypass the SDK cache.
 
 ### What freshness means
@@ -157,14 +173,14 @@ collection**, not insertion time or last access:
 ```text
 age = now - collectionStartedAt
 usable = age >= 0
-         AND age < callerMaxAge
-         AND now < entryAbsoluteExpiry
+         AND age < clientMaxAge
 ```
 
-Use an absolute, non-sliding expiry. Hits never extend it. Set entry expiry from
-the population request's age allowance. A later request with a shorter allowance
-can reject an entry still usable by other callers; it must not extend or shorten
-that entry's stored expiry.
+Use the cache's immutable client-wide age policy to enforce absolute,
+non-sliding expiry from collection start. Hits never extend it. All queries
+sharing a cache use the same allowance, so no caller-specific age check or
+per-entry population allowance is needed. Clients with different policies have
+separate caches.
 
 Starting the clock before collection prevents a slow fan-out from appearing
 newly fresh when it completes. If collection has already consumed the allowance,
@@ -186,17 +202,17 @@ consistency handling; that does not make cached ranking inputs session-current.
 In particular, an implicit session advance or a write by another client does
 not automatically invalidate this cache.
 
-For the initial release, recommend bypassing caching for effective Strong or
-Bounded Staleness consistency, `GlobalStrong`, and explicitly supplied session
-tokens. Resolve eligibility from existing request/client options and cached
-account information; if it cannot be established locally, bypass rather than
-make a new metadata request. Reuse existing consistency-resolution rules rather
-than creating a competing precedence scheme.
+All consistency levels may opt in, including Strong, Bounded Staleness,
+`GlobalStrong`, and requests carrying explicit session tokens. None of those
+settings is a cache-bypass condition. The SDK's normal request-consistency
+validation still applies: enabling statistics reuse does not make an invalid
+consistency combination valid.
 
-Session, Consistent Prefix, and Eventual requests may opt in, with the stale
-ranking limitation documented. This conservative eligibility policy and the
-public option name require API review; they are proposed guardrails, not
-existing SDK behavior.
+Cache reuse does not prove that statistics reflect a new session token or a
+current strong read. The opt-in accepts potentially stale scoring inputs,
+including their effect on score-based predicates and projections. Actual
+service requests retain their original consistency settings and session tokens.
+No additional account read is needed to establish consistency eligibility.
 
 ## 5. Query-plan contract and cache identity
 
@@ -326,8 +342,7 @@ The current query properties do not carry a container ETag. Add it to
 
 Use exact bytes/strings for equality, not `GetHashCode`, a SQL string alone, or
 a delimiter-joined representation. A digest may accelerate lookup, but matching
-digests must still compare the full identity. Include key memory in admission
-limits.
+digests must still compare the full identity.
 
 ### Serialization and parameter safety
 
@@ -369,7 +384,7 @@ Perform the following checks when the iterator first needs statistics:
 | Recognized complete statistics identity or conservative request guard | Bypass cache if neither is available. |
 | Required RID, ETag, and range identity available | Bypass cache. |
 | Exact key present | Otherwise miss. |
-| Caller age allowance and entry absolute expiry both pass | Otherwise fetch; remove only absolutely expired entries. |
+| Entry age is within the client-wide allowance | Otherwise remove the expired entry and fetch. |
 | Complete, structurally valid immutable result | Otherwise remove that entry and fetch, recording an invariant failure. |
 
 All identity checks use metadata already resolved by normal query setup.
@@ -401,6 +416,7 @@ external writes and would not establish strict freshness.
 
 ```text
 ClientContextCore
+    captures client-wide age and entry-count policy
     owns one HybridSearchStatisticsCache
                     |
 QueryIterator -> InputParameters
@@ -427,8 +443,8 @@ HybridSearchCrossPartitionQueryPipelineStage
 Add an internal `HybridSearchStatisticsCache` with a deliberately small surface:
 
 ```text
-TryGet(bindingKey, callerMaxAge) -> hit/miss decision and statistics
-TryAdd(bindingKey, statistics, collectionStartedAt, populationMaxAge)
+TryGet(bindingKey) -> hit/miss decision and statistics
+TryAdd(bindingKey, statistics, collectionStartedAt)
 Clear/Dispose
 ```
 
@@ -436,8 +452,9 @@ Nested immutable `StatisticsRequirement`, `Key`, `Entry`, `Binding`, and decisio
 types are sufficient; they need not become separate services or public
 abstractions.
 
-The binding carries the cache reference, immutable key, and request age
-allowance. It does not hold a pipeline, response, `ITrace`, cancellation token,
+The cache captures the client-wide maximum age and entry-count limit at
+construction. The binding carries only the cache reference and immutable key.
+It does not hold a pipeline, response, `ITrace`, cancellation token,
 or a reference back to the iterator. The frozen statistics request is an
 iterator-owned input, not a cache entry.
 
@@ -456,27 +473,32 @@ tests can pass no binding; cache-aware tests can inject a real small cache.
 
 Own the cache lazily in `ClientContextCore` so multiple `GetContainer` handles
 share it without creating process-wide state. Clear it and reject new admission
-when the client is disposed.
+when the client is disposed. Lazy allocation must use the policy captured at
+client construction, not mutable options read at first query execution.
 
 ### Storage and concurrency
 
 Use a small `Dictionary<Key, Entry>` behind one short lock. Never serialize,
 copy large payloads, execute I/O, or await while holding it.
 
-Suggested initial internal limits, to be tuned before release:
+Phase 2 adds one internal `CosmosClientOptions` capacity setting:
+`FullTextStatisticsCacheMaxEntries`, defaulting to 256 entries per client.
+The setter rejects zero or negative values immediately, leaving the previous
+value unchanged. Client construction clones the options without a separate
+validation pass. Changing the original options after constructing a client does
+not change that client's setting. Internal callers and tests can override it;
+there are no public capacity options, environment variables, or global mutable
+test settings.
+The cache will consume this setting when its storage/lifetime is implemented.
 
-- At most 256 entries per client.
-- A 4 MiB accounted key-and-value budget.
-- A 64 KiB accounted per-entry admission limit.
-
-Accounting includes retained path/term descriptors, range metadata, count
-arrays, and any serialized request guard. It is a conservative retained-size
-estimate, not a claim about exact process RSS.
+Use only the entry-count limit. Do not add byte-size limits, retained-size
+accounting, or size-based admission. This bounds the number of retained entries,
+not their combined memory footprint; unusually large entries can still consume
+substantial memory.
 
 Remove absolutely expired entries during insertion. If necessary, evict the
 oldest collected entry by scanning the bounded dictionary. No LRU list, access
-timestamp writes, timer, or background eviction loop is needed. Oversized
-results execute normally without admission.
+timestamp writes, timer, or background eviction loop is needed.
 
 When concurrent misses complete for the same key, prefer the entry with the
 later collection start. A slow older fetch must not replace a newer sample or
@@ -539,7 +561,7 @@ up or populates statistics.
 
 ### Errors and cancellation
 
-Eligibility misses, expiry, and capacity rejection are expected optimization
+Eligibility misses, expiry, and capacity-driven eviction are expected optimization
 decisions and must have explicit trace reasons. They are not exceptions.
 
 Failures from actual statistics execution, required response parsing, or
@@ -564,7 +586,7 @@ propagate normally. No caller can cancel another caller's fetch.
 Dispose only pipelines actually created by the iterator. Cache eviction or
 client disposal must not mutate the bundle already selected by a query.
 
-## 9. Cached value ownership and accounting
+## 9. Cached value ownership and RU accounting
 
 Reuse `GlobalFullTextSearchStatistics` and `FullTextStatistics`, but defensively
 copy the outer statistics collection and every hit-count array before
@@ -577,8 +599,6 @@ Store only:
 Entry
     immutable statistics
     collectionStartedAt
-    absoluteExpiry
-    accountedSize
     diagnosticEntryId
 ```
 
@@ -604,13 +624,13 @@ low-cardinality fields:
 | Field | Examples |
 |---|---|
 | `Decision` | `Hit`, `Miss`, `Bypass` |
-| `Reason` | `NotFound`, `Expired`, `CallerMaxAgeExceeded`, `Disabled`, `MissingPaths`, `MissingTerms`, `InvalidRequirements`, `UnknownSlotMapping`, `MissingIdentity`, `UnsupportedExecutionContext`, `InvalidCachedShape` |
+| `Reason` | `NotFound`, `Expired`, `Disabled`, `MissingPaths`, `MissingTerms`, `InvalidRequirements`, `UnknownSlotMapping`, `MissingIdentity`, `UnsupportedExecutionContext`, `InvalidCachedShape` |
 | `Scope` | `Global`, `Local` |
 | `IdentityContract` | `CompleteDescriptors`, `GuardedRequest` |
 | `RequirementCount`, `TermDescriptorCount`, `StatisticsRangeCount` | Counts, not paths, terms, or boundaries. |
-| `MaxAgeMs`, `EntryAgeMs` | Explain freshness decisions; entry age only if an entry was found. |
+| `MaxAgeMs`, `EntryAgeMs` | Client-wide allowance and entry age; entry age only if an entry was found. |
 | `EntryId` | Opaque cache-local identifier for matching a hit to a population event. |
-| `PopulationDecision` | `Stored`, `TooOld`, `Oversized`, `Superseded`, `IdentityChanged`, `DescriptorMismatch`, `ClientDisposed` |
+| `PopulationDecision` | `Stored`, `TooOld`, `Superseded`, `IdentityChanged`, `DescriptorMismatch`, `ClientDisposed` |
 
 If the full key changes, the result may simply be `NotFound`. Do not claim to
 know whether terms, a RID, an ETag, or ranges changed without evidence, and do not
@@ -635,8 +655,9 @@ Use an injected monotonic elapsed-time delegate, following the existing
 testability pattern in `WebExceptionRetryPolicy`, rather than sleeping.
 
 Cover exact expiry boundaries, collection duration exceeding the allowance,
-non-sliding hits, stricter versus looser callers, defensive copies, size/count
-limits, eviction, disposal, and out-of-order concurrent publication.
+non-sliding hits, isolated clients with different age policies, defensive
+copies, the entry-count limit, eviction, disposal, and out-of-order concurrent
+publication.
 
 ### Key and plan compatibility tests
 
@@ -675,7 +696,8 @@ Extend the existing mock and statistics-range/request-charge assertions in
 | Same descriptors, different statistics-side filters or matching semantics | Different identity or explicit bypass, never a false hit. |
 | Missing terms, unresolved bindings, or unknown slot mapping | Explicit bypass with normal statistics execution. |
 | Optional descriptor/result shape mismatch | Skip admission; no incompatible bundle can later be reused. |
-| Expired entry or shorter caller allowance | Normal fresh statistics request. |
+| Expired entry | Normal fresh statistics request. |
+| Clients with different age allowances | Independent cache policy and storage; no per-query override. |
 | Global with different component target ranges | Reuse only if global statistics identity is identical. |
 | Local with different effective statistics ranges | No cross-corpus reuse. |
 | Global versus Local over otherwise equal ranges | Separate cache identities. |
@@ -687,7 +709,8 @@ Extend the existing mock and statistics-range/request-charge assertions in
 | Valid empty-corpus statistics | Normal zero-count handling; no invented values. |
 | Skip/take, singleton, weighted RRF, and multi-page reads | Existing ranking and paging behavior on a frozen corpus. |
 | Long-lived iterator crossing TTL | Same selected statistics throughout that iterator. |
-| Unsupported consistency/context or distributed execution | Explicit bypass with normal execution. |
+| Strong, Bounded Staleness, GlobalStrong, or explicit session tokens | Eligible for opt-in caching; retain original service request semantics. |
+| Unsupported execution context or distributed execution | Explicit bypass with normal execution. |
 | Diagnostic inspection | Correct decisions and charges; no raw search content or old response metadata. |
 
 ### Emulator and acceptance criteria
@@ -719,13 +742,14 @@ the real producer already emits it.
    descriptors fully identify statistics filters and matching semantics; use
    the request guard until completeness is established. No new tokenization
    logic belongs here.
-2. **Review the public semantics.** Approve the request option, consistency
+2. **Review the public semantics.** Approve the client option, consistency
    bypass policy, and bounded-staleness documentation. Keep the default off.
 3. **Add the passive cache and tests.** Keep key/entry types nested and retain
    the existing statistics result classes.
-4. **Wire identity and options.** Update `QueryRequestOptions`, `QueryIterator`,
-   `InputParameters` and its copy path, `ContainerQueryProperties`,
-   `CosmosQueryClient`/`CosmosQueryClientCore`, and client-context ownership.
+4. **Wire identity and options.** Capture the `CosmosClientOptions` policy in
+   client-context ownership; update `ContainerQueryProperties`,
+   `CosmosQueryClient`/`CosmosQueryClientCore`, and query-factory bindings.
+   Do not add cache-age fields to request options or `InputParameters`.
 5. **Integrate the hybrid stage.** Add the optional binding to factories, lazy
    statistics pipeline creation, hit selection, completed-result admission, and
    trace decisions. Leave ranking algorithms and transport retries alone.

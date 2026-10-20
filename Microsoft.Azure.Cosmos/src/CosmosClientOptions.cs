@@ -60,6 +60,8 @@ namespace Microsoft.Azure.Cosmos
         /// Default request timeout
         /// </summary>
         private int gatewayModeMaxConnectionLimit;
+        private int fullTextStatisticsCacheMaxEntries = 256;
+        private TimeSpan? fullTextStatisticsCacheMaxAge;
         private int? maxRetryAttemptsOnAbortedTransactions;
         private TimeSpan? maxRetryWaitTimeOnAbortedTransactions;
         private CosmosSerializationOptions serializerOptions;
@@ -628,6 +630,62 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is 'true'.
         /// </summary>
         internal bool EnableAsyncCacheExceptionNoSharing { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the maximum age of cached full-text statistics that hybrid search queries using this client can reuse.
+        /// </summary>
+        /// <value>
+        /// The default is <see langword="null"/>. A null or zero value disables statistics-cache lookup and population.
+        /// A positive value permits reuse within the specified age.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// The age is measured from the start of statistics collection, not from the last cache access.
+        /// This client-wide option applies to both <see cref="FullTextScoreScope.Global"/> and <see cref="FullTextScoreScope.Local"/>.
+        /// It does not cache documents or query results and has no per-query override.
+        /// Set it before creating the client; subsequent changes to the options do not affect the existing client.
+        /// </para>
+        /// <para>
+        /// Reusing statistics can affect FullTextScore values, ranking, and score-based predicates and projections.
+        /// Opting in permits stale statistics regardless of the consistency level, read consistency strategy, or session token.
+        /// Actual service requests retain their normal consistency handling; cached statistics are not guaranteed to
+        /// reflect the latest writes or the supplied session token.
+        /// </para>
+        /// <para>
+        /// This option currently stores and validates the age allowance. Statistics-cache execution is not yet enabled.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+        public TimeSpan? FullTextStatisticsCacheMaxAge
+        {
+            get => this.fullTextStatisticsCacheMaxAge;
+            set
+            {
+                if (value.HasValue && value.Value < TimeSpan.Zero)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.FullTextStatisticsCacheMaxAge), value, "The maximum statistics cache age cannot be negative.");
+                }
+
+                this.fullTextStatisticsCacheMaxAge = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the maximum number of completed full-text statistics entries retained per client.
+        /// </summary>
+        internal int FullTextStatisticsCacheMaxEntries
+        {
+            get => this.fullTextStatisticsCacheMaxEntries;
+            set
+            {
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.FullTextStatisticsCacheMaxEntries), value, "The maximum entry count must be positive.");
+                }
+
+                this.fullTextStatisticsCacheMaxEntries = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the boolean flag to skip converting a text stream to binary and vice versa. When enabled, the request and response stream
