@@ -2,12 +2,18 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Text;
+    using System.Xml.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
+    using XmlWriter = System.Xml.XmlWriter;
 
     [TestClass]
     public class QueryPartitionProviderTests
@@ -63,6 +69,151 @@
                             geospatialType: Cosmos.GeospatialType.Geography);
 
             Assert.IsTrue(tryGetQueryPlan.Succeeded);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void TestFullTextSearchTermsFromServiceInterop(bool hybridSearchSkipOrderByRewrite)
+        {
+            Dictionary<string, object> configuration = QueryPartitionProviderTestInstance.DefaultQueryEngineConfiguration
+                .ToDictionary(entry => entry.Key, entry => entry.Value);
+            configuration["queryEnableFullTextPreviewFeatures"] = true;
+
+            using QueryPartitionProvider provider = new QueryPartitionProvider(configuration);
+
+            (SqlQuerySpec Query, string Expected)[] testCases =
+            {
+                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, 'swim', 'run')"),
+                    @"[{""path"":[""text""],""terms"":[{""term"":""swim""},{""term"":""run""}]}]"),
+                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.author.bio, 'energy')"),
+                    @"[{""path"":[""author"",""bio""],""terms"":[{""term"":""energy""}]}]"),
+                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[""author""][""bio""], 'energy')"),
+                    @"[{""path"":[""author"",""bio""],""terms"":[{""term"":""energy""}]}]"),
+                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.tags[0], 'energy')"),
+                    @"[{""path"":[""tags"",""[0]""],""terms"":[{""term"":""energy""}]}]"),
+                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[""a/b""], 'energy')"),
+                    @"[{""path"":[""a/b""],""terms"":[{""term"":""energy""}]}]"),
+                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.text, 'swim'), FullTextScore(c.text, 'run'))"),
+                    @"[{""path"":[""text""],""terms"":[{""term"":""swim""}]},{""path"":[""text""],""terms"":[{""term"":""run""}]}]"),
+                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.title, 'energy'), FullTextScore(c.text, 'swim', 'run'), VectorDistance(c.image, [1, 2, 3]))"),
+                    @"[{""path"":[""title""],""terms"":[{""term"":""energy""}]},{""path"":[""text""],""terms"":[{""term"":""swim""},{""term"":""run""}]}]"),
+                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, {'term': 'swim', 'distance': 2}, 'run')"),
+                    @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2},{""term"":""run""}]}]"),
+                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, 'run', 'swim', 'run', 'United States')"),
+                    @"[{""path"":[""text""],""terms"":[{""term"":""run""},{""term"":""swim""},{""term"":""run""},{""term"":""United States""}]}]"),
+                (new SqlQuerySpec(
+                    @"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[@path], @needle, @plain)",
+                    new SqlParameterCollection
+                    {
+                        new SqlParameter("@path", "text"),
+                        new SqlParameter("@needle", new { term = "swim", distance = 2 }),
+                        new SqlParameter("@plain", "run"),
+                    }),
+                    @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2},{""term"":""run""}]}]"),
+                (new SqlQuerySpec(@"SELECT TOP 10 FullTextScore(c.text, 'swim') AS score FROM c WHERE FullTextScore(c.text, 'swim') > 0 ORDER BY RANK FullTextScore(c.text, 'swim')"),
+                    @"[{""path"":[""text""],""terms"":[{""term"":""swim""}]}]"),
+                (new SqlQuerySpec(@"SELECT TOP 10 FullTextScore(c.title, 'energy') AS score FROM c WHERE FullTextScore(c.text, 'swim') > 0 ORDER BY RANK FullTextScore(c.title, 'energy')"),
+                    @"[{""path"":[""title""],""terms"":[{""term"":""energy""}]},{""path"":[""text""],""terms"":[{""term"":""swim""}]}]"),
+                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK RRF(VectorDistance(c.image, [1, 2, 3]), VectorDistance(c.backup, [3, 2, 1]))"),
+                    @"[]"),
+            };
+
+            foreach ((SqlQuerySpec query, string expected) in testCases)
+            {
+                TryCatch<PartitionedQueryExecutionInfoInternal> result = provider.TryGetPartitionedQueryExecutionInfoInternal(
+                    querySpecJsonString: JsonConvert.SerializeObject(query),
+                    partitionKeyDefinition: PartitionKeyDefinition,
+                    vectorEmbeddingPolicy: null,
+                    requireFormattableOrderByQuery: true,
+                    isContinuationExpected: false,
+                    allowNonValueAggregateQuery: true,
+                    hasLogicalPartitionKey: false,
+                    allowDCount: true,
+                    useSystemPrefix: false,
+                    hybridSearchSkipOrderByRewrite: hybridSearchSkipOrderByRewrite,
+                    geospatialType: Cosmos.GeospatialType.Geography);
+
+                Assert.IsTrue(result.Succeeded, $"{query.QueryText}: {(result.Failed ? result.Exception.ToString() : string.Empty)}");
+                Assert.IsNotNull(result.Result.HybridSearchQueryInfo, query.QueryText);
+                JToken actual = result.Result.HybridSearchQueryInfo.FullTextSearchTerms;
+                Assert.IsNotNull(actual, $"ServiceInterop did not emit fullTextSearchTerms for {query.QueryText}.");
+                JArray expectedMetadata = JArray.Parse(expected);
+                Assert.IsTrue(
+                    JToken.DeepEquals(expectedMetadata, actual),
+                    $"{query.QueryText}{Environment.NewLine}Expected: {expected}{Environment.NewLine}Actual: {actual}");
+
+                PartitionedQueryExecutionInfo converted = provider.ConvertPartitionedQueryExecutionInfo(result.Result, PartitionKeyDefinition);
+                Assert.IsTrue(PartitionedQueryExecutionInfo.TryParse(converted.ToString(), out PartitionedQueryExecutionInfo roundTripped));
+                Assert.IsTrue(JToken.DeepEquals(actual, roundTripped.HybridSearchQueryInfo.FullTextSearchTerms));
+
+                StringBuilder xml = new StringBuilder();
+                using (XmlWriter writer = XmlWriter.Create(xml))
+                {
+                    new QueryPlanBaselineTestPositiveOutput(result.Result).SerializeAsXml(writer);
+                }
+
+                XElement metadataXml = XElement.Parse(xml.ToString())
+                    .Element(nameof(HybridSearchQueryInfo))
+                    .Element(nameof(HybridSearchQueryInfo.FullTextSearchTerms));
+                Assert.IsNotNull(metadataXml);
+                XElement[] entries = metadataXml.Elements("Entry").ToArray();
+                Assert.AreEqual(expectedMetadata.Count, entries.Length);
+                for (int index = 0; index < entries.Length; index++)
+                {
+                    CollectionAssert.AreEqual(
+                        expectedMetadata[index]["path"].Values<string>().ToArray(),
+                        entries[index].Element("Path").Elements("Segment").Select(segment => segment.Value).ToArray());
+                    JToken[] expectedTerms = expectedMetadata[index]["terms"].ToArray();
+                    XElement[] terms = entries[index].Element("Terms").Elements("Term").ToArray();
+                    Assert.AreEqual(expectedTerms.Length, terms.Length);
+                    for (int termIndex = 0; termIndex < terms.Length; termIndex++)
+                    {
+                        Assert.AreEqual(expectedTerms[termIndex]["term"].Value<string>(), terms[termIndex].Element("Text").Value);
+                        Assert.AreEqual(expectedTerms[termIndex]["distance"]?.ToString(Formatting.None), terms[termIndex].Element("Distance")?.Value);
+                    }
+                }
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(null)]
+        [DataRow("null")]
+        [DataRow("[]")]
+        [DataRow("42")]
+        [DataRow(@"""unsupported""")]
+        [DataRow(@"{""future"":true}")]
+        [DataRow(@"[{""path"":""not-an-array"",""terms"":null}]")]
+        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2}],""future"":true}]")]
+        [DataRow(@"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00""}]}]")]
+        public void TestFullTextSearchTermsDeserialization(string metadata)
+        {
+            const string statisticsQuery = "SELECT COUNT(1) AS documentCount FROM c";
+            string property = metadata == null ? string.Empty : $",\"fullTextSearchTerms\":{metadata}";
+            string queryPlan = $"{{\"hybridSearchQueryInfo\":{{\"globalStatisticsQuery\":\"{statisticsQuery}\",\"requiresGlobalStatistics\":true{property}}}}}";
+
+            Assert.IsTrue(PartitionedQueryExecutionInfo.TryParse(queryPlan, out PartitionedQueryExecutionInfo parsed));
+            using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(queryPlan));
+            PartitionedQueryExecutionInfo gatewayPlan = new CosmosSerializerCore().FromStream<PartitionedQueryExecutionInfo>(stream);
+            PartitionedQueryExecutionInfoInternal internalPlan = JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(queryPlan);
+
+            foreach (HybridSearchQueryInfo hybridPlan in new[] { parsed.HybridSearchQueryInfo, gatewayPlan.HybridSearchQueryInfo, internalPlan.HybridSearchQueryInfo })
+            {
+                Assert.AreEqual(statisticsQuery, hybridPlan.GlobalStatisticsQuery);
+                Assert.IsTrue(hybridPlan.RequiresGlobalStatistics);
+                if (metadata == null || metadata == "null")
+                {
+                    Assert.IsNull(hybridPlan.FullTextSearchTerms);
+                    Assert.IsFalse(JsonConvert.SerializeObject(hybridPlan).Contains("fullTextSearchTerms"));
+                }
+                else
+                {
+                    Assert.AreEqual(metadata, hybridPlan.FullTextSearchTerms.ToString(Formatting.None));
+                    string serialized = JsonConvert.SerializeObject(hybridPlan);
+                    HybridSearchQueryInfo roundTripped = JsonConvert.DeserializeObject<HybridSearchQueryInfo>(serialized);
+                    Assert.IsTrue(JToken.DeepEquals(hybridPlan.FullTextSearchTerms, roundTripped.FullTextSearchTerms));
+                }
+            }
         }
 
         [TestMethod]

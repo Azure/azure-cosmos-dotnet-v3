@@ -16,6 +16,7 @@
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Tests for <see cref="QueryPartitionProvider"/>.
@@ -1514,6 +1515,48 @@
         }
 
         [TestMethod]
+        public void FullTextSearchTerms()
+        {
+            this.ExecuteTestSuite(new[]
+            {
+                Hash(
+                    "Ordered terms",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, 'swim', 'run')",
+                    "/id"),
+                Hash(
+                    "Nested string indexers",
+                    @"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[""author""][""bio""], 'energy')",
+                    "/id"),
+                Hash(
+                    "Path segment containing a separator",
+                    @"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[""a/b""], 'energy')",
+                    "/id"),
+                Hash(
+                    "Numeric indexer",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.tags[0], 'energy')",
+                    "/id"),
+                Hash(
+                    "Repeated path with different terms",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.text, 'swim'), FullTextScore(c.text, 'run'))",
+                    "/id"),
+                Hash(
+                    "Multiple paths and components",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.title, 'energy'), FullTextScore(c.text, 'swim', 'run'))",
+                    "/id"),
+                Hash(
+                    "Resolved path and term parameters",
+                    new SqlQuerySpec(
+                        "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[@path], @term)",
+                        new SqlParameterCollection
+                        {
+                            new SqlParameter("@path", "text"),
+                            new SqlParameter("@term", "swim"),
+                        }),
+                    "/id"),
+            });
+        }
+
+        [TestMethod]
         [Owner("ndeshpan")]
         public void VectorSearch()
         {
@@ -1983,6 +2026,39 @@
             if (hybridsearchQueryInfo.GlobalStatisticsQuery != null)
             {
                 writer.WriteElementString(nameof(hybridsearchQueryInfo.GlobalStatisticsQuery), hybridsearchQueryInfo.GlobalStatisticsQuery);
+            }
+
+            if (hybridsearchQueryInfo.FullTextSearchTerms != null)
+            {
+                writer.WriteStartElement(nameof(hybridsearchQueryInfo.FullTextSearchTerms));
+                foreach (JToken requirement in hybridsearchQueryInfo.FullTextSearchTerms)
+                {
+                    writer.WriteStartElement("Entry");
+                    writer.WriteStartElement("Path");
+                    foreach (JToken segment in requirement["path"])
+                    {
+                        writer.WriteElementString("Segment", segment.Value<string>());
+                    }
+
+                    writer.WriteEndElement();
+                    writer.WriteStartElement("Terms");
+                    foreach (JToken term in requirement["terms"])
+                    {
+                        writer.WriteStartElement("Term");
+                        writer.WriteElementString("Text", term["term"].Value<string>());
+                        if (term["distance"] != null)
+                        {
+                            writer.WriteElementString("Distance", term["distance"].ToString(Newtonsoft.Json.Formatting.None));
+                        }
+
+                        writer.WriteEndElement();
+                    }
+
+                    writer.WriteEndElement();
+                    writer.WriteEndElement();
+                }
+
+                writer.WriteEndElement();
             }
 
             if (hybridsearchQueryInfo.ComponentQueryInfos != null)
