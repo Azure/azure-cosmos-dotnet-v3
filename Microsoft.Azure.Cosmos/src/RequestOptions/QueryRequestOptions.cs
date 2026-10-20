@@ -268,6 +268,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool IsHybridSearchQueryPlanOptimizationDisabled { get; set; } = ConfigurationManager.IsHybridSearchQueryPlanOptimizationDisabled(defaultValue: false);
 
+        internal bool IsHybridSearchCompetitionRankingEnabled { get; set; } = ConfigurationManager.IsHybridSearchCompetitionRankingEnabled(defaultValue: false);
+
         // This is a temporary flag to enable the distributed query gateway mode.
         // This flag will be removed once we have a way for the client to determine
         // that we are talking to a distributed query gateway.
