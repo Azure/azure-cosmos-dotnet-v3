@@ -39,6 +39,138 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public TestContext TestContext { get; set; }
 
         [DataTestMethod]
+        [DataRow("read-many", false)]
+        [DataRow("read-many", true)]
+        [DataRow("feed", false)]
+        [DataRow("feed", true)]
+        [DataRow("lazy-feed", false)]
+        [DataRow("lazy-feed", true)]
+        [DataRow("callback", false)]
+        [DataRow("callback", true)]
+        [DataRow("checkpoint-callback", false)]
+        [DataRow("checkpoint-callback", true)]
+        public async Task NewtonsoftFeed_PublicPaths_AcceptNonSeekableContent(string operation, bool canSeek)
+        {
+            ConsumerEncryptor encryptor = new (true) { ExpectedAlgorithm = Legacy };
+            Container container = CreateContainer(encryptor, out Mock<Container> inner);
+            string json = "{\"Documents\":[" + ReleasedLegacyJson + "," + PlainJson + "],\"_count\":2,\"extra\":\"preserved\"}";
+            using FeedContent source = new (json, canSeek);
+            if (canSeek)
+            {
+                source.Position = source.Length;
+            }
+
+            using CancellationTokenSource cancellation = new ();
+            QueryDefinition query = new ("SELECT * FROM c");
+            Mock<FeedIterator> feed = new ();
+            feed.Setup(iterator => iterator.ReadNextAsync(cancellation.Token))
+                .ReturnsAsync(() => new ResponseMessage(HttpStatusCode.OK) { Content = source });
+            inner.Setup(value => value.GetItemQueryStreamIterator(query, null, null)).Returns(feed.Object);
+            IReadOnlyList<(string id, PartitionKey partitionKey)> ids = new[] { ("released-legacy", new PartitionKey("p")) };
+            inner.Setup(value => value.ReadManyItemsStreamAsync(ids, null, cancellation.Token))
+                .ReturnsAsync(() => new ResponseMessage(HttpStatusCode.OK) { Content = source });
+
+            if (operation == "lazy-feed")
+            {
+                using FeedIterator<DecryptableItem> iterator = container.GetItemQueryIterator<DecryptableItem>(query);
+                FeedResponse<DecryptableItem> response = await iterator.ReadNextAsync(cancellation.Token);
+                Assert.AreEqual(2, response.Count);
+                DecryptableItem[] items = response.ToArray();
+                Assert.AreEqual(0, encryptor.DecryptCalls, "Materialization must remain deferred.");
+                (JObject legacy, _) = await items[0].GetItemAsync<JObject>();
+                (JObject plain, _) = await items[1].GetItemAsync<JObject>();
+                Assert.IsTrue(JToken.DeepEquals(Parse(FixturePlainJson), legacy));
+                Assert.IsTrue(JToken.DeepEquals(Parse(PlainJson), plain));
+            }
+            else if (operation == "read-many" || operation == "feed")
+            {
+                using FeedIterator iterator = operation == "feed" ? container.GetItemQueryStreamIterator(query) : null;
+                using ResponseMessage response = operation == "feed"
+                    ? await iterator.ReadNextAsync(cancellation.Token)
+                    : await container.ReadManyItemsStreamAsync(ids, cancellationToken: cancellation.Token);
+                AssertPage(await ReadTextAsync(response.Content));
+            }
+            else
+            {
+                Container.ChangeFeedStreamHandler automatic = null;
+                Container.ChangeFeedStreamHandlerWithManualCheckpoint manual = null;
+                inner.Setup(value => value.GetChangeFeedProcessorBuilder("nonseekable",
+                    It.IsAny<Container.ChangeFeedStreamHandler>()))
+                    .Callback<string, Container.ChangeFeedStreamHandler>((_, handler) => automatic = handler)
+                    .Returns((ChangeFeedProcessorBuilder)null);
+                inner.Setup(value => value.GetChangeFeedProcessorBuilderWithManualCheckpoint("nonseekable",
+                    It.IsAny<Container.ChangeFeedStreamHandlerWithManualCheckpoint>()))
+                    .Callback<string, Container.ChangeFeedStreamHandlerWithManualCheckpoint>((_, handler) => manual = handler)
+                    .Returns((ChangeFeedProcessorBuilder)null);
+                ChangeFeedProcessorContext context = new Mock<ChangeFeedProcessorContext>().Object;
+                bool invoked = false;
+                bool checkpointed = false;
+                Func<Task> checkpoint = () => { checkpointed = true; return Task.CompletedTask; };
+                async Task Consume(ChangeFeedProcessorContext actualContext, Stream content, CancellationToken token)
+                {
+                    Assert.AreSame(context, actualContext);
+                    Assert.AreEqual(cancellation.Token, token);
+                    using (content)
+                    {
+                        AssertPage(await ReadTextAsync(content));
+                    }
+
+                    invoked = true;
+                }
+
+                if (operation == "callback")
+                {
+                    container.GetChangeFeedProcessorBuilder("nonseekable", Consume);
+                    await automatic(context, source, cancellation.Token);
+                }
+                else
+                {
+                    container.GetChangeFeedProcessorBuilderWithManualCheckpoint("nonseekable",
+                        async (actualContext, content, actualCheckpoint, token) =>
+                        {
+                            Assert.AreSame(checkpoint, actualCheckpoint);
+                            await Consume(actualContext, content, token);
+                            await actualCheckpoint();
+                        });
+                    await manual(context, source, checkpoint, cancellation.Token);
+                    Assert.IsTrue(checkpointed);
+                }
+
+                Assert.IsTrue(invoked);
+            }
+
+            Assert.AreEqual(1, encryptor.DecryptCalls);
+
+            static void AssertPage(string text)
+            {
+                JObject page = Parse(text);
+                Assert.AreEqual(2, (int)page["_count"]);
+                Assert.AreEqual("preserved", (string)page["extra"]);
+                Assert.IsTrue(JToken.DeepEquals(Parse(FixturePlainJson), page["Documents"][0]));
+                Assert.IsTrue(JToken.DeepEquals(Parse(PlainJson), page["Documents"][1]));
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow("[]")]
+        [DataRow("{\"Documents\":[]} {}")]
+        public async Task NewtonsoftFeed_NonSeekableContent_PreservesStrictBodyValidation(string json)
+        {
+            ConsumerEncryptor encryptor = new ();
+            Container container = CreateContainer(encryptor, out Mock<Container> inner);
+            using FeedContent content = new (json, canSeek: false);
+            using ResponseMessage raw = new (HttpStatusCode.OK) { Content = content };
+            inner.Setup(value => value.ReadManyItemsStreamAsync(
+                It.IsAny<IReadOnlyList<(string, PartitionKey)>>(), null, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(raw);
+            InvalidOperationException failure = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() =>
+                container.ReadManyItemsStreamAsync(new[] { ("id", new PartitionKey("p")) }));
+            Assert.AreEqual("The response body must contain a JSON object.", failure.Message);
+            Assert.IsFalse(content.CanRead, "Acquired content must be disposed before test cleanup.");
+            Assert.AreEqual(0, encryptor.DecryptCalls);
+        }
+
+        [DataTestMethod]
         [DynamicData(nameof(ServiceErrorCases), DynamicDataSourceType.Method)]
         public async Task ReadMany_PublicStatusHandler_CanInspectErrorThenReadEncryptedSuccess(int status, bool noBody, string processor)
         {
@@ -841,6 +973,45 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
 
             public override Stream ToStream<T>(T input) => Utf8(JsonConvert.SerializeObject(input));
+        }
+
+        private sealed class FeedContent : Stream
+        {
+            private readonly MemoryStream inner;
+            private readonly bool canSeek;
+
+            public FeedContent(string json, bool canSeek)
+            {
+                this.inner = Utf8(json);
+                this.canSeek = canSeek;
+            }
+
+            public override bool CanRead => this.inner.CanRead;
+            public override bool CanSeek => this.canSeek;
+            public override bool CanWrite => false;
+            public override long Length => this.canSeek ? this.inner.Length : throw new NotSupportedException();
+            public override long Position
+            {
+                get => this.canSeek ? this.inner.Position : throw new NotSupportedException();
+                set
+                {
+                    if (!this.canSeek) { throw new NotSupportedException(); }
+                    this.inner.Position = value;
+                }
+            }
+
+            public override int Read(byte[] buffer, int offset, int count) => this.inner.Read(buffer, offset, count);
+            public override long Seek(long offset, SeekOrigin origin) =>
+                this.canSeek ? this.inner.Seek(offset, origin) : throw new NotSupportedException();
+            public override void Flush() => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing) { this.inner.Dispose(); }
+                base.Dispose(disposing);
+            }
         }
 
         private sealed class ConsumerEncryptor : Encryptor

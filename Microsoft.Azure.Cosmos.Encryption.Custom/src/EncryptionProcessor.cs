@@ -566,7 +566,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             CosmosSerializer cosmosSerializer)
         {
-            JObject contentJObj = NewtonsoftJsonObjectReader.Read(content);
+            JObject contentJObj = NewtonsoftJsonObjectReader.Read(content, resetBeforeRead: content.CanSeek);
 
             if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is not JArray documents)
             {
@@ -616,7 +616,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private static async Task<Stream> DecryptJsonArrayNewtonsoftAsync(Stream content, Encryptor encryptor, CancellationToken cancellationToken)
         {
-            JObject contentJObj = NewtonsoftJsonObjectReader.Read(content);
+            JObject contentJObj = NewtonsoftJsonObjectReader.Read(content, resetBeforeRead: content.CanSeek);
 
             if (contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is not JArray documents)
             {
