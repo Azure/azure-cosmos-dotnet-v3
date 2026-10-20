@@ -9,7 +9,7 @@ The `net8.0` Encryption.Custom emulator tests build two isolated workers:
 
 Processor evidence is captured separately for writes, typed reads, and stream reads. A Stream request is recorded independently from the processor that actually completed the read; filtered queries may report Newtonsoft when the SDK supplies a response stream that cannot support in-place Stream processing.
 
-The workers are built automatically by `Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests.csproj`; no local package feed, custom NuGet configuration, or standalone launcher is required. The emulator account key is supplied to child processes through the `COSMOS_COMPAT_MATRIX_KEY` environment variable rather than command-line arguments.
+The workers are built automatically by `Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests.csproj` and are registered in `Microsoft.Azure.Cosmos.sln` under `Encryption.Custom`. Their solution configuration mappings match the emulator tests so that Release solution builds produce the Release worker paths recorded in `CompatMatrix.Workers.txt`. No local package feed, custom NuGet configuration, or standalone launcher is required. The emulator account key is supplied to child processes through the `COSMOS_COMPAT_MATRIX_KEY` environment variable rather than command-line arguments.
 
 ```powershell
 dotnet test ..\EmulatorTests\Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests.csproj `

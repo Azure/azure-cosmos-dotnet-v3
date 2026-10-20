@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             }
         }
 
-        private static async Task<WorkerInvocation> RunWorkerAsync(
+        private async Task<WorkerInvocation> RunWorkerAsync(
             string workerPath,
             CancellationToken matrixCancellationToken,
             params string[] arguments)
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 arguments);
         }
 
-        private static async Task<WorkerInvocation> RunAuthenticatedWorkerAsync(
+        private async Task<WorkerInvocation> RunAuthenticatedWorkerAsync(
             string workerPath,
             CancellationToken matrixCancellationToken,
             string accountKey,
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 arguments);
         }
 
-        private static async Task<WorkerInvocation> RunWorkerCoreAsync(
+        private async Task<WorkerInvocation> RunWorkerCoreAsync(
             string workerPath,
             CancellationToken matrixCancellationToken,
             string accountKey,
@@ -265,6 +265,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                     $"Compatibility worker failed with exit code {process.ExitCode}.{Environment.NewLine}{standardOutput}");
             }
 
+            this.TestContext.WriteLine(standardOutput);
             return new WorkerInvocation(workerPath, records);
         }
 
@@ -376,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             return Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assemblyPath)));
         }
 
-        private static async Task DeleteDatabaseAsync(string databaseId, string endpoint, string key)
+        private async Task DeleteDatabaseAsync(string databaseId, string endpoint, string key)
         {
             using CosmosClient client = new(
                 endpoint,
@@ -402,9 +403,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                     throw new InvalidOperationException(
                         $"Compatibility database cleanup failed with {response.StatusCode}: {response.ErrorMessage}");
                 }
+
+                this.TestContext.WriteLine($"Compatibility database cleanup: {databaseId}; status={(int)response.StatusCode}.");
             }
             catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
             {
+                this.TestContext.WriteLine($"Compatibility database cleanup: {databaseId}; status=404.");
             }
         }
 
