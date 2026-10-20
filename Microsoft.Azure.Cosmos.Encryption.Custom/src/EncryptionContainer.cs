@@ -243,6 +243,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 if (typeof(T) == typeof(DecryptableItem))
                 {
+#if NET8_0_OR_GREATER
+                    JsonProcessor jsonProcessor = requestOptions.GetJsonProcessor(this.DefaultJsonProcessor);
+#endif
                     responseMessage = await this.ReadItemHelperAsync(
                         id,
                         partitionKey,
@@ -251,14 +254,53 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         diagnosticsContext,
                         cancellationToken);
 
-                    DecryptableItemCore decryptableItem = new (
-                        EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
-                        this.Encryptor,
-                        this.CosmosSerializer);
+                    Stream content = responseMessage.Content;
+                    Stream lazyContent = null;
+                    try
+                    {
+                        DecryptableItem decryptableItem;
+#if NET8_0_OR_GREATER
+                        if (jsonProcessor == JsonProcessor.Stream)
+                        {
+                            lazyContent = content;
+                            if (content != null && !content.CanSeek)
+                            {
+                                lazyContent = new PooledMemoryStream();
+                                await content.CopyToAsync(lazyContent, cancellationToken).ConfigureAwait(false);
+                                lazyContent.Position = 0;
+                            }
 
-                    return new EncryptionItemResponse<T>(
-                        responseMessage,
-                        (T)(object)decryptableItem);
+                            cancellationToken.ThrowIfCancellationRequested();
+                            decryptableItem = new StreamDecryptableItem(
+                                lazyContent,
+                                this.Encryptor,
+                                this.CosmosSerializer);
+                            if (!ReferenceEquals(lazyContent, content))
+                            {
+                                await content.DisposeAsync().ConfigureAwait(false);
+                            }
+
+                            responseMessage.Content = null;
+                        }
+                        else
+#endif
+                        {
+                            decryptableItem = new DecryptableItemCore(
+                                EncryptionProcessor.BaseSerializer.FromStream<JObject>(content),
+                                this.Encryptor,
+                                this.CosmosSerializer);
+                        }
+
+                        return new EncryptionItemResponse<T>(
+                            responseMessage,
+                            (T)(object)decryptableItem);
+                    }
+                    catch
+                    {
+                        await DecryptedResponseMessage.DisposeOnFailureAsync(
+                            responseMessage, content, lazyContent).ConfigureAwait(false);
+                        throw;
+                    }
                 }
 
                 responseMessage = await this.ReadItemHelperAsync(
@@ -1057,8 +1099,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         this.DefaultJsonProcessor,
                         cancellationToken);
 
-                    // Call the original passed in delegate
-                    await onChangesDelegate(context, decryptedChanges, cancellationToken);
+                    try
+                    {
+                        await onChangesDelegate(context, decryptedChanges, cancellationToken);
+                    }
+                    finally
+                    {
+                        if (!ReferenceEquals(decryptedChanges, changes))
+                        {
+                            await decryptedChanges.DisposeCompatAsync().ConfigureAwait(false);
+                        }
+                    }
                 });
         }
 
@@ -1080,8 +1131,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         this.DefaultJsonProcessor,
                         cancellationToken);
 
-                    // Call the original passed in delegate
-                    await onChangesDelegate(context, decryptedChanges, tryCheckpointAsync, cancellationToken);
+                    try
+                    {
+                        await onChangesDelegate(context, decryptedChanges, tryCheckpointAsync, cancellationToken);
+                    }
+                    finally
+                    {
+                        if (!ReferenceEquals(decryptedChanges, changes))
+                        {
+                            await decryptedChanges.DisposeCompatAsync().ConfigureAwait(false);
+                        }
+                    }
                 });
         }
 
@@ -1207,13 +1267,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return responseMessage;
             }
 
-            Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
-                responseMessage.Content,
-                this.Encryptor,
-                jsonProcessor,
-                cancellationToken);
+            Stream content = responseMessage.Content;
+            Stream decryptedContent = null;
+            try
+            {
+                decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
+                    content,
+                    this.Encryptor,
+                    jsonProcessor,
+                    cancellationToken);
 
-            return new DecryptedResponseMessage(responseMessage, decryptedContent);
+                return new DecryptedResponseMessage(responseMessage, decryptedContent);
+            }
+            catch
+            {
+                await DecryptedResponseMessage.DisposeOnFailureAsync(
+                    responseMessage, content, decryptedContent).ConfigureAwait(false);
+                throw;
+            }
         }
 
         private async Task<List<T>> DecryptChangeFeedDocumentsAsync<T>(

@@ -413,14 +413,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             try
             {
-                await foreach (Stream itemStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(content, cancellationToken).ConfigureAwait(false))
+                await foreach (Stream itemStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(
+                    content,
+                    cancellationToken,
+                    includeNonObjectItems: true).ConfigureAwait(false))
                 {
-                    StreamDecryptableItem item = new (
-                        itemStream,
-                        encryptor,
-                        cosmosSerializer);
+                    try
+                    {
+                        // The splitter starts each item at its first token, without envelope whitespace.
+                        bool isJsonObject = itemStream.ReadByte() == '{';
+                        itemStream.Position = 0;
 
-                    decryptableItems.Add(item);
+                        StreamDecryptableItem item = new (
+                            itemStream,
+                            encryptor,
+                            cosmosSerializer,
+                            isJsonObject);
+
+                        decryptableItems.Add(item);
+                    }
+                    catch
+                    {
+                        await itemStream.DisposeAsync().ConfigureAwait(false);
+                        throw;
+                    }
                 }
 
                 return decryptableItems;

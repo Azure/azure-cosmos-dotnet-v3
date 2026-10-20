@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task ReadNextAsync_StreamProcessor_CancelledAdaptationDoesNotDisposeSource()
+        public async Task ReadNextAsync_StreamProcessor_CancelledAdaptationReleasesOwnedSource()
         {
             const string rawPayload = "{\"Documents\":[{\"id\":\"doc1\"}],\"_count\":1}";
             TrackingReadOnlyStream responseContent = new (Encoding.UTF8.GetBytes(rawPayload), canSeek: false);
@@ -185,7 +185,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             await Assert.ThrowsExceptionAsync<OperationCanceledException>(
                 () => feedIterator.ReadNextAsync(cancellation.Token));
 
-            Assert.IsFalse(responseContent.IsDisposed);
+            Assert.IsTrue(responseContent.IsDisposed);
+            Assert.IsNull(response.Content);
             response.Dispose();
             Assert.IsTrue(responseContent.IsDisposed);
         }

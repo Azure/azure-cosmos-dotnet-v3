@@ -198,6 +198,149 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
 #if NET8_0_OR_GREATER
+        [DataTestMethod]
+        [DataRow("Newtonsoft", 4096)]
+        [DataRow("Stream", 4096)]
+        [DataRow("Stream", 1)]
+        public async Task QueryLazyProjection_PreservesValuesAndOrderWithPlainLegacyAndMdeControls(
+            string processorName,
+            int maxBytesPerRead)
+        {
+            CompatibilityFixture[] fixtures = CreateFixtures();
+            FixedKeyEncryptor encryptor = new ();
+            ContainerHarness harness = CreateHarness(fixtures, encryptor);
+            const string projections = "42,\"selected\\nvalue\",true,false,null,[],[1,null,{\"_ei\":{\"_ea\":\"UnknownEncryptionAlgorithm\"}}],{}";
+            string trailingValue = JsonConvert.SerializeObject(new string('x', 4100));
+            string rawPayload = "{\"Documents\":[" + projections + "," +
+                string.Join(",", fixtures.Select(fixture => fixture.RawStoredJson)) +
+                "," + trailingValue + "],\"_count\":13}";
+            JArray expected = JArray.Parse("[" + projections + "," +
+                string.Join(",", fixtures.Select(fixture => fixture.ExpectedPlaintext)) +
+                "," + trailingValue + "]");
+            FeedIterator<DecryptableItem> iterator = CreateProjectionQueryIterator(
+                harness, rawPayload, processorName, maxBytesPerRead, out Stream responseContent);
+
+            FeedResponse<DecryptableItem> page = await iterator.ReadNextAsync();
+            try
+            {
+                Assert.AreEqual(13, page.Count, $"{processorName} dropped a SELECT VALUE result.");
+                List<DecryptableItem> items = page.Resource.ToList();
+                Assert.AreEqual(13, items.Count);
+                Assert.AreEqual(0, encryptor.KeyAccessCount, "Page publication must not decrypt lazy items.");
+                Assert.IsFalse(responseContent.CanRead, "Lazy items must outlive the disposed raw response.");
+
+                for (int index = 0; index < items.Count; index++)
+                {
+                    int accessesBefore = encryptor.KeyAccessCount;
+                    (JToken value, DecryptionContext context) = await items[index].GetItemAsync<JToken>();
+                    Assert.IsTrue(JToken.DeepEquals(expected[index], value), $"{processorName}, item {index}: {value}");
+                    if (index >= 9 && index <= 11)
+                    {
+                        Assert.IsNotNull(context);
+                        Assert.AreEqual(DekId, context.DecryptionInfoList[0].DataEncryptionKeyId);
+                        Assert.IsTrue(encryptor.KeyAccessCount > accessesBefore);
+                    }
+                    else
+                    {
+                        Assert.IsNull(context);
+                        Assert.AreEqual(accessesBefore, encryptor.KeyAccessCount, "Plain values must not access a key.");
+                    }
+
+                    int accessesAfter = encryptor.KeyAccessCount;
+                    (object repeated, _) = await items[index].GetItemAsync<object>();
+                    JToken repeatedToken = repeated == null ? JValue.CreateNull() : JToken.FromObject(repeated);
+                    Assert.IsTrue(JToken.DeepEquals(expected[index], repeatedToken), $"Repeated item {index} changed value.");
+                    Assert.AreEqual(accessesAfter, encryptor.KeyAccessCount, "Repeated consumption must not decrypt again.");
+                }
+
+                (int scalar, _) = await items[0].GetItemAsync<int>();
+                (string selected, _) = await items[1].GetItemAsync<string>();
+                (string nullValue, _) = await items[4].GetItemAsync<string>();
+                (JArray array, _) = await items[6].GetItemAsync<JArray>();
+                Assert.AreEqual(42, scalar);
+                Assert.AreEqual("selected\nvalue", selected);
+                Assert.IsNull(nullValue);
+                Assert.IsTrue(JToken.DeepEquals(expected[6], array));
+            }
+            finally
+            {
+                await ((IAsyncDisposable)page).DisposeAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task QueryLazyProjection_NonObjectOnlyPage_DisposesConsumedAndSkippedItems()
+        {
+            Mock<Encryptor> encryptor = new (MockBehavior.Strict);
+            ContainerHarness harness = CreateHarness(Array.Empty<CompatibilityFixture>(), encryptor.Object);
+            FeedIterator<DecryptableItem> iterator = CreateProjectionQueryIterator(
+                harness,
+                "{\"Documents\":[42,null,[1,2],[],\"selected\",true,false],\"_count\":7}",
+                "Stream",
+                maxBytesPerRead: 1,
+                out Stream responseContent);
+            FeedResponse<DecryptableItem> page = await iterator.ReadNextAsync();
+            List<DecryptableItem> items = page.Resource.ToList();
+            try
+            {
+                Assert.AreEqual(7, page.Count, "A scalar-only page must not become an empty page.");
+                Assert.AreEqual(7, items.Count);
+                Assert.IsFalse(responseContent.CanRead);
+                (int first, _) = await items[0].GetItemAsync<int>();
+                (string nullValue, _) = await items[1].GetItemAsync<string>();
+                Assert.AreEqual(42, first);
+                Assert.IsNull(nullValue);
+                await items[0].DisposeAsync();
+            }
+            finally
+            {
+                await ((IAsyncDisposable)page).DisposeAsync();
+                await ((IAsyncDisposable)page).DisposeAsync();
+            }
+
+            foreach (DecryptableItem item in items)
+            {
+                await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => item.GetItemAsync<JToken>());
+            }
+        }
+
+        private static FeedIterator<DecryptableItem> CreateProjectionQueryIterator(
+            ContainerHarness harness,
+            string rawPayload,
+            string processorName,
+            int maxBytesPerRead,
+            out Stream responseContent)
+        {
+            responseContent = new ShortReadFeedStream(rawPayload, maxBytesPerRead);
+            ResponseMessage response = new (HttpStatusCode.OK) { Content = responseContent };
+            Mock<FeedIterator> innerIterator = new ();
+            innerIterator.Setup(iterator => iterator.ReadNextAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(response);
+            harness.Inner.Setup(container => container.GetItemQueryStreamIterator(
+                It.IsAny<QueryDefinition>(), It.IsAny<string>(), It.IsAny<QueryRequestOptions>()))
+                .Returns(innerIterator.Object);
+
+            return harness.Container.GetItemQueryIterator<DecryptableItem>(
+                new QueryDefinition("SELECT VALUE c.projection FROM c"),
+                requestOptions: CreateQueryOptions(processorName));
+        }
+
+        private sealed class ShortReadFeedStream : MemoryStream
+        {
+            private readonly int maxBytesPerRead;
+
+            public ShortReadFeedStream(string payload, int maxBytesPerRead)
+                : base(Encoding.UTF8.GetBytes(payload), writable: false)
+            {
+                this.maxBytesPerRead = maxBytesPerRead;
+            }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                return base.ReadAsync(buffer, offset, Math.Min(count, this.maxBytesPerRead), cancellationToken);
+            }
+        }
+
         [TestMethod]
         public async Task QueryStreamPage_StreamSelectionDoesNotSilentlySubstituteNewtonsoft()
         {
@@ -983,6 +1126,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     candidate => string.Equals(candidate, encryptionAlgorithm, StringComparison.Ordinal));
             }
 
+            public int KeyAccessCount => this.keyAccessAlgorithms.Count;
+
             public override Task<byte[]> EncryptAsync(
                 byte[] plainText,
                 string dataEncryptionKeyId,
@@ -1000,6 +1145,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 CancellationToken cancellationToken = default)
             {
                 Assert.AreEqual(DekId, dataEncryptionKeyId);
+                this.keyAccessAlgorithms.Add(encryptionAlgorithm);
                 return Task.FromResult(this.GetKey(encryptionAlgorithm).DecryptData(cipherText));
             }
 

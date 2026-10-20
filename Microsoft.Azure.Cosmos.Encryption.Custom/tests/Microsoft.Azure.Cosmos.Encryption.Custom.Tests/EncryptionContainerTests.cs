@@ -790,6 +790,204 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 #endif
 
+        [DataTestMethod]
+        [DataRow(false, null, false)]
+        [DataRow(false, "Newtonsoft", false)]
+#if NET8_0_OR_GREATER
+        [DataRow(false, "Stream", true)]
+        [DataRow(true, null, true)]
+        [DataRow(true, "Newtonsoft", false)]
+#endif
+        public async Task ReadItemAsync_LazyPointPreservesProcessorAndContentOwnership(
+            bool useStreamDefault,
+            string requestProcessor,
+            bool expectStream)
+        {
+#if NET8_0_OR_GREATER
+            if (useStreamDefault)
+            {
+                this.encryptionContainer.UseStreamingJsonProcessingByDefault();
+            }
+#endif
+            using TrackingPointContent content = new ("{\"id\":\"doc1\"}");
+            using ResponseMessage innerResponse = new (HttpStatusCode.OK) { Content = content };
+            ItemRequestOptions callerOptions = requestProcessor == null
+                ? null
+                : new ItemRequestOptions
+                {
+                    Properties = new Dictionary<string, object>
+                    {
+                        { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, requestProcessor },
+                        { "unrelated", 42 },
+                    },
+                };
+            ItemRequestOptions forwardedOptions = null;
+            this.innerContainerMock
+                .Setup(container => container.ReadItemStreamAsync(
+                    "doc1", new PartitionKey("pk1"), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                .Callback<string, PartitionKey, ItemRequestOptions, CancellationToken>(
+                    (_, _, options, _) => forwardedOptions = options)
+                .ReturnsAsync(innerResponse);
+            this.serializerMock.Setup(serializer => serializer.FromStream<JObject>(It.IsAny<Stream>()))
+                .Returns<Stream>(stream => TestCommon.FromStream<JObject>(stream));
+
+            ItemResponse<DecryptableItem> response = await this.encryptionContainer.ReadItemAsync<DecryptableItem>(
+                "doc1", new PartitionKey("pk1"), callerOptions);
+            DecryptableItem item = response.Resource;
+            try
+            {
+#if NET8_0_OR_GREATER
+                Assert.AreEqual(expectStream, item is StreamDecryptableItem);
+                if (expectStream)
+                {
+                    Assert.IsFalse(content.IsDisposed);
+                    Assert.AreEqual(0L, content.Position, "Stream point content must remain lazy.");
+                    Assert.IsNull(innerResponse.Content, "The item must own the transferred content.");
+                    innerResponse.Dispose();
+                    Assert.IsFalse(content.IsDisposed, "The response envelope no longer owns the item content.");
+                }
+#endif
+                if (callerOptions == null)
+                {
+                    Assert.IsNull(forwardedOptions);
+                }
+                else
+                {
+                    AssertSanitizedRequestOptions(callerOptions, forwardedOptions);
+                }
+
+                (JObject first, _) = await item.GetItemAsync<JObject>();
+                (JObject repeated, _) = await item.GetItemAsync<JObject>();
+                Assert.AreEqual("doc1", first["id"].Value<string>());
+                Assert.IsTrue(JToken.DeepEquals(first, repeated));
+                this.encryptorMock.Verify(encryptor => encryptor.DecryptAsync(
+                    It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+                    Times.Never);
+                Assert.IsTrue(content.IsDisposed);
+            }
+            finally
+            {
+                await item.DisposeAsync();
+            }
+        }
+
+#if NET8_0_OR_GREATER
+        [TestMethod]
+        public async Task ReadItemAsync_UnmaterializedLazyStreamPointReleasesOwnedContent()
+        {
+            this.encryptionContainer.UseStreamingJsonProcessingByDefault();
+            using TrackingPointContent content = new ("{\"id\":\"doc1\"}");
+            using ResponseMessage innerResponse = new (HttpStatusCode.OK) { Content = content };
+            this.innerContainerMock.Setup(container => container.ReadItemStreamAsync(
+                "doc1", new PartitionKey("pk1"), null, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(innerResponse);
+
+            ItemResponse<DecryptableItem> response = await this.encryptionContainer.ReadItemAsync<DecryptableItem>(
+                "doc1", new PartitionKey("pk1"));
+            Assert.IsFalse(content.IsDisposed);
+            await response.Resource.DisposeAsync();
+            Assert.IsTrue(content.IsDisposed, "Item disposal must release unread content before harness cleanup.");
+            await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => response.Resource.GetItemAsync<JObject>());
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ReadItemAsync_LazyStreamPointAdaptationFailureReleasesOwnedResponse(bool cancel)
+        {
+            this.encryptionContainer.UseStreamingJsonProcessingByDefault();
+            using CancellationTokenSource cancellation = new ();
+            Exception primaryFailure = cancel
+                ? new OperationCanceledException(cancellation.Token)
+                : new IOException("response read failed");
+            using TrackingPointContent content = new ("{\"id\":\"doc1\"}", canSeek: false)
+            {
+                ReadFailure = primaryFailure,
+            };
+            using ResponseMessage innerResponse = new (HttpStatusCode.OK) { Content = content };
+            this.innerContainerMock.Setup(container => container.ReadItemStreamAsync(
+                "doc1", new PartitionKey("pk1"), null, cancellation.Token))
+                .ReturnsAsync(innerResponse);
+
+            try
+            {
+                await this.encryptionContainer.ReadItemAsync<DecryptableItem>(
+                    "doc1", new PartitionKey("pk1"), cancellationToken: cancellation.Token);
+                Assert.Fail("The input failure must be propagated.");
+            }
+            catch (Exception failure) when (ReferenceEquals(failure, primaryFailure))
+            {
+                Assert.IsTrue(content.IsDisposed, "Acquired response cleanup must precede harness cleanup.");
+                Assert.IsNull(innerResponse.Content);
+                if (failure is OperationCanceledException cancellationFailure)
+                {
+                    Assert.AreEqual(cancellation.Token, cancellationFailure.CancellationToken);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task ReadItemAsync_LazyStreamPointAdaptsNonSeekableContent()
+        {
+            this.encryptionContainer.UseStreamingJsonProcessingByDefault();
+            using TrackingPointContent content = new ("{\"id\":\"doc1\"}", canSeek: false);
+            using ResponseMessage innerResponse = new (HttpStatusCode.OK) { Content = content };
+            this.innerContainerMock.Setup(container => container.ReadItemStreamAsync(
+                "doc1", new PartitionKey("pk1"), null, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(innerResponse);
+            this.serializerMock.Setup(serializer => serializer.FromStream<JObject>(It.IsAny<Stream>()))
+                .Returns<Stream>(stream => TestCommon.FromStream<JObject>(stream));
+
+            ItemResponse<DecryptableItem> response = await this.encryptionContainer.ReadItemAsync<DecryptableItem>(
+                "doc1", new PartitionKey("pk1"));
+            DecryptableItem item = response.Resource;
+            try
+            {
+                Assert.IsInstanceOfType(item, typeof(StreamDecryptableItem));
+                Assert.IsTrue(content.IsDisposed, "The response input must be released after adaptation.");
+                Assert.IsNull(innerResponse.Content);
+                (JObject document, _) = await item.GetItemAsync<JObject>();
+                Assert.AreEqual("doc1", document["id"].Value<string>());
+            }
+            finally
+            {
+                await item.DisposeAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task ReadItemAsync_LazyStreamPointDefersAndPreservesMaterializationFailure()
+        {
+            this.encryptionContainer.UseStreamingJsonProcessingByDefault();
+            using TrackingPointContent content = new ("{\"id\":\"doc1\"}");
+            using ResponseMessage innerResponse = new (HttpStatusCode.OK) { Content = content };
+            this.innerContainerMock.Setup(container => container.ReadItemStreamAsync(
+                "doc1", new PartitionKey("pk1"), null, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(innerResponse);
+            InvalidOperationException primaryFailure = new ("serializer failed");
+            this.serializerMock.Setup(serializer => serializer.FromStream<JObject>(It.IsAny<Stream>()))
+                .Throws(primaryFailure);
+
+            ItemResponse<DecryptableItem> response = await this.encryptionContainer.ReadItemAsync<DecryptableItem>(
+                "doc1", new PartitionKey("pk1"));
+            DecryptableItem item = response.Resource;
+            try
+            {
+                Assert.IsInstanceOfType(item, typeof(StreamDecryptableItem));
+                Assert.IsFalse(content.IsDisposed);
+                EncryptionException failure = await Assert.ThrowsExceptionAsync<EncryptionException>(
+                    () => item.GetItemAsync<JObject>());
+                Assert.AreSame(primaryFailure, failure.InnerException);
+                Assert.IsTrue(content.IsDisposed, "Failure cleanup must precede harness cleanup.");
+                await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => item.GetItemAsync<JObject>());
+            }
+            finally
+            {
+                await item.DisposeAsync();
+            }
+        }
+#endif
+
         [TestMethod]
         public async Task ReadManyItemsStreamAsync_SanitizesOptionsAndPreservesErrorResponses()
         {
@@ -1020,6 +1218,144 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
 #endif
+
+        [DataTestMethod]
+        [DynamicData(nameof(GetChangeFeedCallbackLifetimeData), DynamicDataSourceType.Method)]
+        public async Task ChangeFeedStreamCallback_ReleasesOnlyGeneratedOutput(
+            bool manualCheckpoint,
+            string completion,
+            string processorMode)
+        {
+#if NET8_0_OR_GREATER
+            if (processorMode.StartsWith("Stream", StringComparison.Ordinal))
+            {
+                this.encryptionContainer.UseStreamingJsonProcessingByDefault();
+            }
+#endif
+            Container.ChangeFeedStreamHandler capturedHandler = null;
+            Container.ChangeFeedStreamHandlerWithManualCheckpoint capturedManualHandler = null;
+            this.innerContainerMock
+                .Setup(container => container.GetChangeFeedProcessorBuilder(
+                    "processor", It.IsAny<Container.ChangeFeedStreamHandler>()))
+                .Callback<string, Container.ChangeFeedStreamHandler>((_, handler) => capturedHandler = handler)
+                .Returns((ChangeFeedProcessorBuilder)null);
+            this.innerContainerMock
+                .Setup(container => container.GetChangeFeedProcessorBuilderWithManualCheckpoint(
+                    "processor", It.IsAny<Container.ChangeFeedStreamHandlerWithManualCheckpoint>()))
+                .Callback<string, Container.ChangeFeedStreamHandlerWithManualCheckpoint>(
+                    (_, handler) => capturedManualHandler = handler)
+                .Returns((ChangeFeedProcessorBuilder)null);
+            using CancellationTokenSource cancellation = new ();
+            Exception primaryFailure = completion == "success"
+                ? null
+                : completion == "cancel"
+                    ? new OperationCanceledException(cancellation.Token)
+                    : new InvalidOperationException("callback failed");
+            using Stream changes = processorMode == "StreamInPlace"
+                ? new MemoryStream(Encoding.UTF8.GetBytes(CreateFeedPayload()))
+                : new TrackingPointContent(CreateFeedPayload(), canSeek: processorMode == "Newtonsoft");
+            ChangeFeedProcessorContext context = Mock.Of<ChangeFeedProcessorContext>();
+            int checkpointCalls = 0;
+            Func<Task> checkpoint = () =>
+            {
+                checkpointCalls++;
+                return Task.CompletedTask;
+            };
+            Stream delivered = null;
+            bool inputReadableAtCallback = false;
+            byte[] pooledBuffer = null;
+
+            async Task OnChanges(
+                ChangeFeedProcessorContext actualContext,
+                Stream content,
+                Func<Task> actualCheckpoint,
+                CancellationToken token)
+            {
+                Assert.AreSame(context, actualContext);
+                Assert.AreEqual(cancellation.Token, token);
+                delivered = content;
+                inputReadableAtCallback = changes.CanRead;
+                Assert.IsTrue(content.CanRead, "Generated content must remain readable throughout the callback.");
+                if (content is PooledMemoryStream pooled)
+                {
+                    Assert.IsTrue(pooled.TryGetBuffer(out ArraySegment<byte> buffer));
+                    pooledBuffer = buffer.Array;
+                }
+
+                using StreamReader reader = new (content, Encoding.UTF8, false, 1024, leaveOpen: true);
+                StringAssert.Contains(await reader.ReadToEndAsync(), "doc1");
+                if (primaryFailure != null)
+                {
+                    throw primaryFailure;
+                }
+
+                if (manualCheckpoint)
+                {
+                    Assert.AreSame(checkpoint, actualCheckpoint);
+                    await actualCheckpoint();
+                }
+            }
+
+            if (manualCheckpoint)
+            {
+                this.encryptionContainer.GetChangeFeedProcessorBuilderWithManualCheckpoint(
+                    "processor",
+                    (actualContext, content, actualCheckpoint, token) =>
+                        OnChanges(actualContext, content, actualCheckpoint, token));
+            }
+            else
+            {
+                this.encryptionContainer.GetChangeFeedProcessorBuilder(
+                    "processor",
+                    (actualContext, content, token) => OnChanges(actualContext, content, null, token));
+            }
+
+            Func<Task> invoke = manualCheckpoint
+                ? () => capturedManualHandler(context, changes, checkpoint, cancellation.Token)
+                : () => capturedHandler(context, changes, cancellation.Token);
+            try
+            {
+                if (primaryFailure == null)
+                {
+                    await invoke();
+                }
+                else
+                {
+                    try
+                    {
+                        await invoke();
+                        Assert.Fail("The callback failure must be propagated.");
+                    }
+                    catch (Exception failure) when (ReferenceEquals(failure, primaryFailure))
+                    {
+                        if (failure is OperationCanceledException cancellationFailure)
+                        {
+                            Assert.AreEqual(cancellation.Token, cancellationFailure.CancellationToken);
+                        }
+                    }
+                }
+
+                Assert.IsNotNull(delivered);
+                bool aliasesInput = ReferenceEquals(changes, delivered);
+                Assert.AreEqual(processorMode == "StreamInPlace", aliasesInput);
+                Assert.AreEqual(aliasesInput, delivered.CanRead,
+                    "Owned output must be disposed before harness cleanup; borrowed input must not be disposed.");
+                Assert.AreEqual(inputReadableAtCallback, changes.CanRead,
+                    "Callback cleanup must not change the processor's existing raw-input ownership.");
+                Assert.AreEqual(manualCheckpoint && primaryFailure == null ? 1 : 0, checkpointCalls);
+                if (pooledBuffer != null)
+                {
+                    Assert.IsTrue(pooledBuffer.All(value => value == 0), "Generated plaintext must be cleared on return.");
+                }
+            }
+            finally
+            {
+                if (delivered != null && !ReferenceEquals(delivered, changes))
+                {
+                    await delivered.DisposeCompatAsync();
+                }
+            }
+        }
 
         [DataTestMethod]
         [DataRow("Create")]
@@ -1284,6 +1620,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(42, forwardedOptions.Properties["unrelated"]);
         }
 
+        public static IEnumerable<object[]> GetChangeFeedCallbackLifetimeData()
+        {
+            string[] modes =
+            {
+                "Newtonsoft",
+#if NET8_0_OR_GREATER
+                "StreamCopy",
+                "StreamInPlace",
+#endif
+            };
+            foreach (bool manualCheckpoint in new[] { false, true })
+            {
+                foreach (string completion in new[] { "success", "fault", "cancel" })
+                {
+                    foreach (string mode in modes)
+                    {
+                        yield return new object[] { manualCheckpoint, completion, mode };
+                    }
+                }
+            }
+        }
+
         public static IEnumerable<object[]> GetSupportedJsonProcessorsData()
         {
 #if NET8_0_OR_GREATER
@@ -1295,6 +1653,74 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         private static string CreateFeedPayload()
         {
             return "{\"Documents\":[{\"id\":\"doc1\"}]}";
+        }
+
+        private sealed class TrackingPointContent : Stream
+        {
+            private readonly MemoryStream inner;
+            private readonly bool canSeek;
+
+            public TrackingPointContent(string json, bool canSeek = true)
+            {
+                this.inner = new MemoryStream(Encoding.UTF8.GetBytes(json), writable: false);
+                this.canSeek = canSeek;
+            }
+
+            public bool IsDisposed { get; private set; }
+
+            public Exception ReadFailure { get; set; }
+
+            public override bool CanRead => this.inner.CanRead;
+
+            public override bool CanSeek => this.canSeek && this.inner.CanSeek;
+
+            public override bool CanWrite => false;
+
+            public override long Length => this.inner.Length;
+
+            public override long Position
+            {
+                get => this.CanSeek ? this.inner.Position : throw new NotSupportedException();
+                set
+                {
+                    if (!this.CanSeek)
+                    {
+                        throw new NotSupportedException();
+                    }
+
+                    this.inner.Position = value;
+                }
+            }
+
+            public override int Read(byte[] buffer, int offset, int count) => this.ReadFailure == null
+                ? this.inner.Read(buffer, offset, count)
+                : throw this.ReadFailure;
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+                this.ReadFailure == null
+                    ? this.inner.ReadAsync(buffer, offset, count, cancellationToken)
+                    : Task.FromException<int>(this.ReadFailure);
+
+            public override long Seek(long offset, SeekOrigin origin) => this.CanSeek
+                ? this.inner.Seek(offset, origin)
+                : throw new NotSupportedException();
+
+            public override void Flush() => throw new NotSupportedException();
+
+            public override void SetLength(long value) => throw new NotSupportedException();
+
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    this.IsDisposed = true;
+                    this.inner.Dispose();
+                }
+
+                base.Dispose(disposing);
+            }
         }
 
         private static MemoryStream CreateItemStream()
