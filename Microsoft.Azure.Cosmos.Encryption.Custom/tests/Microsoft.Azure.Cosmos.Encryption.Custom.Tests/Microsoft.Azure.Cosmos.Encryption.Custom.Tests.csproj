@@ -44,7 +44,7 @@
       PrivateAssets="all" />
   </ItemGroup>
 
-  <Target Name="CopyPreview07CompatibilityFixture" AfterTargets="Build">
+  <Target Name="CopyPreview07CompatibilityFixture" AfterTargets="Build" Condition="'$(TargetFramework)' != ''">
     <Copy
       SourceFiles="..\Microsoft.Azure.Cosmos.Encryption.Custom.Preview07Compatibility\bin\$(Configuration)\netstandard2.0\Microsoft.Azure.Cosmos.Encryption.Custom.Preview07Compatibility.dll"
       DestinationFolder="$(TargetDir)" />
