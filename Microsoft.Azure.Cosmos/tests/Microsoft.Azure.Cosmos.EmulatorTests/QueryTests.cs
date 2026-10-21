@@ -849,7 +849,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
                     };
 
-                    await testDocumentSQL("doc00", "simple", null);
+                    await testDocumentSQL("doc00", "Simple", null);
                     await testDocumentSQL("doc10", "\uD83D\uDE03", @"\uD83D\uDE03");
                     await testDocumentSQL("doc20", "\uD83D\uDE03\t\u0005\uD83D\uDE03", @"\uD83D\uDE03\t\u0005\uD83D\uDE03");
                     await testDocumentSQL("doc30", "Små ord", null);
@@ -2224,7 +2224,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 });
             }
 
-            // simple validations - existence - yes & no
+            // Simple validations - existence - yes & no
             DocumentFeedResponse<dynamic> result = await this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync();
             Assert.IsNull(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics], "Expected no metrics headers for query");
             Assert.IsNull(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization], "Expected no index utilization headers for query");
