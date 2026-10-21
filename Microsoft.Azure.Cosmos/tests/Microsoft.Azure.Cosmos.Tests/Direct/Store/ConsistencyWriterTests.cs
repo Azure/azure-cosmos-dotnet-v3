@@ -1240,6 +1240,7 @@ namespace Microsoft.Azure.Cosmos.Test
 
         [TestMethod]
         [Owner("cosmosdbcomputeteam")]
+        [Ignore("Exceptionless barrier flag propagation is intentionally not included in the v3 migration.")]
         public async Task ConsistencyWriter_BarrierRequest_PropagatesExceptionlessFlagsAsync()
         {
             // Arrange
@@ -1297,6 +1298,7 @@ namespace Microsoft.Azure.Cosmos.Test
 
         [TestMethod]
         [Owner("cosmosdbcomputeteam")]
+        [Ignore("Exceptionless barrier flag propagation is intentionally not included in the v3 migration.")]
         public async Task ConsistencyWriter_BarrierRequest_PropagatesAllExceptionlessFlagsAsync()
         {
             // Arrange
