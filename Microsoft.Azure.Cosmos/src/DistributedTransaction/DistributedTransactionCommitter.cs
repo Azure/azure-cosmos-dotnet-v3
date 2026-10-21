@@ -317,15 +317,16 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            RequestNameValueCollection headers = new RequestNameValueCollection();
+            List<(int operationIndex, string collectionResourceId, string collectionFullName, string sessionToken)> tokensToMerge =
+                new List<(int operationIndex, string collectionResourceId, string collectionFullName, string sessionToken)>();
+            List<string> validationFailures = new List<string>();
 
             for (int i = 0; i < response.Count; i++)
             {
                 DistributedTransactionOperationResult result = response[i];
 
                 string collectionFullName = null;
-                string failureReason = null;
-                Exception failureCause = null;
+                string malformedTokenDetails = null;
 
                 try
                 {
@@ -351,42 +352,82 @@ namespace Microsoft.Azure.Cosmos
 
                     if (DistributedTransactionCommitter.TryValidateSessionToken(result.SessionToken, out string validationFailure))
                     {
-                        headers.Clear();
-                        headers[HttpConstants.HttpHeaders.SessionToken] = result.SessionToken;
-
-                        sessionContainer.SetSessionToken(
+                        tokensToMerge.Add((
+                            result.Index,
                             operation.CollectionResourceId,
                             collectionFullName,
-                            headers);
+                            result.SessionToken));
                     }
                     else
                     {
-                        failureReason = $"{validationFailure} Token: '{TruncateForLog(result.SessionToken)}'.";
+                        malformedTokenDetails = $"{validationFailure} Token: '{TruncateForLog(result.SessionToken)}'.";
                     }
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    failureCause = ex;
-                    failureReason = ex.Message;
+                    string message = DistributedTransactionCommitter.TraceSessionTokenFailure(
+                        result.Index,
+                        collectionFullName,
+                        ex.Message);
+
+                    throw new InvalidOperationException(message, ex);
                 }
 
-                if (failureReason == null)
+                if (malformedTokenDetails != null)
                 {
-                    continue;
+                    validationFailures.Add(DistributedTransactionCommitter.TraceSessionTokenFailure(
+                        result.Index,
+                        collectionFullName,
+                        malformedTokenDetails));
                 }
-
-                string collectionScope = collectionFullName == null
-                    ? string.Empty
-                    : $" for collection '{collectionFullName}'";
-
-                string message = $"Session token for operation index {result.Index} could not be recorded{collectionScope}: {failureReason}";
-
-                // Keep server-supplied braces out of the format string.
-                DefaultTrace.TraceWarning("{0} Session token was not recorded.", message);
-
-                // Stop at the first failure; later tokens are intentionally not recorded.
-                throw new InvalidOperationException(message, failureCause);
             }
+
+            if (validationFailures.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Session tokens could not be recorded because one or more tokens were malformed: {string.Join(" ", validationFailures)}");
+            }
+
+            RequestNameValueCollection headers = new RequestNameValueCollection();
+
+            foreach ((int operationIndex, string collectionResourceId, string collectionFullName, string sessionToken) token in tokensToMerge)
+            {
+                try
+                {
+                    headers.Clear();
+                    headers[HttpConstants.HttpHeaders.SessionToken] = token.sessionToken;
+
+                    sessionContainer.SetSessionToken(
+                        token.collectionResourceId,
+                        token.collectionFullName,
+                        headers);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    string message = DistributedTransactionCommitter.TraceSessionTokenFailure(
+                        token.operationIndex,
+                        token.collectionFullName,
+                        ex.Message);
+
+                    throw new InvalidOperationException(message, ex);
+                }
+            }
+        }
+
+        private static string TraceSessionTokenFailure(
+            int operationIndex,
+            string collectionFullName,
+            string failureDetails)
+        {
+            string collectionScope = collectionFullName == null
+                ? string.Empty
+                : $" for collection '{collectionFullName}'";
+
+            string message = $"Session token for operation index {operationIndex} could not be recorded{collectionScope}: {failureDetails}";
+
+            // Keep server-supplied braces out of the format string.
+            DefaultTrace.TraceWarning("{0} Session token was not recorded.", message);
+            return message;
         }
 
         private static bool TryValidateSessionToken(string sessionToken, out string failureReason)

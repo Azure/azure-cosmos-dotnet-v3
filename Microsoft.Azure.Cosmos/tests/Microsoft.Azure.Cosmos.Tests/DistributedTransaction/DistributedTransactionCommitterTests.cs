@@ -604,9 +604,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         // ─── Retry / Spec-Compliance Tests ─────────────────────────────────────
 
         [TestMethod]
-        [Description("m8: In a multi-operation response, tokens recorded before a malformed one are preserved while " +
-                     "the malformed operation surfaces and is never merged.")]
-        public async Task ExecuteTransactionAsync_MultiOp_PreservesEarlierTokens_WhenLaterOpHasMissingPkRangeId()
+        [Description("m8: In a multi-operation response, no token is recorded when any capture-eligible token is malformed.")]
+        public async Task ExecuteTransactionAsync_MultiOp_DoesNotRecordAnyToken_WhenLaterOpHasMissingPkRangeId()
         {
             const string lsnOnly = "1#9#4=8#5=7";
             const string pkRangeId = "0";
@@ -686,8 +685,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     collectionRid1,
                     DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName),
                     It.Is<INameValueCollection>(h => h[HttpConstants.HttpHeaders.SessionToken] == assembledToken)),
-                Times.Once,
-                "Tokens recorded before the malformed one must be preserved.");
+                Times.Never,
+                "No token may be recorded when another capture-eligible token is malformed.");
 
             mockSessionContainer.Verify(
                 s => s.SetSessionToken(
@@ -917,8 +916,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("When several operations carry malformed tokens, the failure surfaces on the first one and names that index.")]
-        public async Task ExecuteTransactionAsync_ThrowsOnFirstMalformedToken_WhenSeveralAreMalformed()
+        [Description("When several operations carry malformed tokens, one exception reports every malformed value and no token is recorded.")]
+        public async Task ExecuteTransactionAsync_ThrowsWithAllMalformedTokens_WhenSeveralAreMalformed()
         {
             const string container0 = "Container0";
             const string container1 = "Container1";
@@ -959,13 +958,18 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             StringAssert.Contains(exception.Message, "index 1",
                 "The failure must name the first malformed operation.");
             StringAssert.Contains(exception.Message, "malformedfirst");
-            Assert.IsFalse(exception.Message.Contains("malformedsecond"),
-                "Validation must stop at the first malformed token rather than accumulating every failure.");
+            StringAssert.Contains(exception.Message, "index 2",
+                "The failure must name the second malformed operation.");
+            StringAssert.Contains(exception.Message, "malformedsecond");
+            Assert.IsTrue(
+                exception.Message.IndexOf("malformedfirst", StringComparison.Ordinal)
+                    < exception.Message.IndexOf("malformedsecond", StringComparison.Ordinal),
+                "Malformed tokens must be reported in response order.");
 
-            Assert.AreEqual(
-                "0:1#3#4=2",
-                sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, container0)),
-                "Operations validated before the failure keep the progress they already recorded.");
+            Assert.IsTrue(
+                string.IsNullOrEmpty(sessionContainer.GetSessionToken(
+                    DistributedTransactionConstants.GetCollectionFullName(DatabaseName, container0))),
+                "No valid token may be recorded when another capture-eligible token is malformed.");
 
             Assert.IsTrue(
                 string.IsNullOrEmpty(sessionContainer.GetSessionToken(
@@ -975,7 +979,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             Assert.IsTrue(
                 string.IsNullOrEmpty(sessionContainer.GetSessionToken(
                     DistributedTransactionConstants.GetCollectionFullName(DatabaseName, container2))),
-                "Validation stops at the first failure, so collections after it are never reached.");
+                "The collection carrying the second malformed token must not be recorded.");
         }
 
         [DataTestMethod]
@@ -2927,8 +2931,8 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [TestMethod]
-        [Description("Verifies that capture stops at the first malformed token: tokens recorded before it survive, and later operations' valid tokens are deliberately not recorded. The session guarantee is already broken at that point, so a partially advanced token would read no more correctly than the abandoned one.")]
-        public async Task ExecuteTransactionAsync_ThrowsAtFirstMalformedToken_AndDoesNotRecordLaterTokens()
+        [Description("Verifies that one malformed token prevents valid tokens before and after it from being recorded.")]
+        public async Task ExecuteTransactionAsync_DoesNotRecordAnyToken_WhenOneTokenIsMalformed()
         {
             SessionContainer sessionContainer = new SessionContainer("testhost");
 
@@ -2956,10 +2960,9 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             string recorded = sessionContainer.GetSessionToken(
                 DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));
 
-            StringAssert.Contains(recorded, "0:1#5",
-                "A token already recorded before the failure must not be rolled back.");
-            Assert.IsFalse(recorded.Contains("2:1#9"),
-                "Capture must stop at the first malformed token; a later operation's token is deliberately abandoned.");
+            Assert.IsTrue(
+                string.IsNullOrEmpty(recorded),
+                "No token may be recorded when another capture-eligible token is malformed.");
         }
 
         [TestMethod]
