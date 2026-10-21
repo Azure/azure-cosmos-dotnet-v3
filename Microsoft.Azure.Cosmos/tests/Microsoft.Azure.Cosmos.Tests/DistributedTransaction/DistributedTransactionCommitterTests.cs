@@ -871,11 +871,13 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [DataTestMethod]
         [Description("A malformed session token on a committed operation surfaces to the caller " +
                      "instead of silently degrading the collection to eventual consistency.")]
-        [DataRow("1#9#4=8#5=7", null, "1#9#4=8#5=7", "missing the partitionKeyRangeId prefix", DisplayName = "bare LSN with no partitionKeyRangeId to prefix it")]
-        [DataRow("5", null, "5", "missing the partitionKeyRangeId prefix", DisplayName = "bare number with no partitionKeyRangeId to prefix it")]
+        [DataRow("1#9#4=8#5=7", null, "1#9#4=8#5=7", "missing a usable partitionKeyRangeId prefix", DisplayName = "bare LSN with no partitionKeyRangeId to prefix it")]
+        [DataRow("5", null, "5", "missing a usable partitionKeyRangeId prefix", DisplayName = "bare number with no partitionKeyRangeId to prefix it")]
         [DataRow("garbage", "0", "garbage", "could not be parsed", DisplayName = "unparsable token alongside a valid partitionKeyRangeId")]
         [DataRow("0:garbage", null, "0:garbage", "could not be parsed", DisplayName = "valid partitionKeyRangeId with an unparsable LSN segment")]
         [DataRow("0:1#5,1:1#7", null, "0:1#5,1:1#7", "could not be parsed", DisplayName = "compound multi-partition token in a partition-local slot")]
+        [DataRow(" :1#5", null, " :1#5", "missing a usable partitionKeyRangeId prefix", DisplayName = "whitespace-only embedded partitionKeyRangeId")]
+        [DataRow("0,1:1#5", null, "0,1:1#5", "must not contain ','", DisplayName = "comma-containing embedded partitionKeyRangeId")]
         public async Task ExecuteTransactionAsync_ThrowsOnMalformedToken_WhenCommitted(
             string sessionToken,
             string partitionKeyRangeId,
@@ -2458,9 +2460,13 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 $"token2 must appear in request body. Body: {bodyJson}");
         }
 
-        [TestMethod]
+        [DataTestMethod]
+        [DataRow("not-a-token", "could not be parsed", DisplayName = "unparseable token")]
+        [DataRow("1:500", "current protocol version", DisplayName = "legacy simple payload rejected by the current-version parser")]
         [Description("Verifies that one malformed token prevents valid tokens before and after it from being recorded.")]
-        public async Task ExecuteTransactionAsync_DoesNotRecordAnyToken_WhenOneTokenIsMalformed()
+        public async Task ExecuteTransactionAsync_DoesNotRecordAnyToken_WhenOneTokenIsMalformed(
+            string malformedSessionToken,
+            string expectedFailureReason)
         {
             SessionContainer sessionContainer = new SessionContainer("testhost");
 
@@ -2470,7 +2476,7 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     new[]
                     {
                         (statusCode: 201, sessionToken: "0:1#5"),
-                        (statusCode: 201, sessionToken: "not-a-token"),
+                        (statusCode: 201, sessionToken: malformedSessionToken),
                         (statusCode: 201, sessionToken: "2:1#9"),
                     }),
                 statusCode: HttpStatusCode.OK,
@@ -2484,6 +2490,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
             StringAssert.Contains(exception.Message, "index 1",
                 "The first malformed token must be the one reported.");
+            StringAssert.Contains(exception.Message, malformedSessionToken,
+                "The incompatible token must be included in the aggregate failure.");
+            StringAssert.Contains(exception.Message, expectedFailureReason,
+                "The aggregate failure must identify the validation stage that rejected the token.");
 
             string recorded = sessionContainer.GetSessionToken(
                 DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName));

@@ -426,9 +426,28 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // TryParse accepts a bare LSN, but the session container requires the range id.
-            if (string.IsNullOrEmpty(partitionKeyRangeId))
+            if (string.IsNullOrWhiteSpace(partitionKeyRangeId))
             {
-                failureReason = "the token is missing the partitionKeyRangeId prefix.";
+                failureReason = "the token is missing a usable partitionKeyRangeId prefix.";
+                return false;
+            }
+
+            if (partitionKeyRangeId.IndexOf(',') >= 0)
+            {
+                failureReason = "the partitionKeyRangeId prefix must not contain ','.";
+                return false;
+            }
+
+            try
+            {
+                Common.SessionContainer.ParseSessionToken(
+                    sessionToken,
+                    out string _,
+                    out ISessionToken _);
+            }
+            catch (InternalServerErrorException)
+            {
+                failureReason = "the token payload is not valid for the current protocol version.";
                 return false;
             }
 
