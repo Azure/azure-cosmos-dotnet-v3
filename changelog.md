@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [5991](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5991) TargetReplicaSetSize : Updated address cache logic to use partition-specific target replica set size when available, falling back to the user replication policy value.
 - [6081](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6081) Distributed Transactions (preview): Fixes per-operation session tokens being captured from erroneous sub-operations with error codes scoped to 409s, 412s and 404s which don't map to read/write session not available errors. 
-- [6082](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6082) Distributed Transactions (preview): Malformed per-operation session tokens now surface as an `InvalidOperationException` instead of being silently discarded.
+- [6082](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6082) Distributed Transactions (preview): Malformed per-operation session tokens now surface as an `InvalidOperationException` instead of being silently discarded, and valid tokens from the same response are recorded only when every capture-eligible token is valid.
 
 ### <a name="3.63.0-preview.1"/> [3.63.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.0-preview.1) - 2026-8-5
 
