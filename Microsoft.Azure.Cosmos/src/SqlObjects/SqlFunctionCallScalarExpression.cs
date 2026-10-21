@@ -122,6 +122,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.RegexExtract, Identifiers.RegexExtract },
             { Names.RegexExtractAll, Identifiers.RegexExtractAll },
             { Names.RegexMatch, Identifiers.RegexMatch },
+            { Names.RegexReplace, Identifiers.RegexReplace },
+            { Names.RegexReplaceAll, Identifiers.RegexReplaceAll },
             { Names.Replace, Identifiers.Replace },
             { Names.Replicate, Identifiers.Replicate },
             { Names.Reverse, Identifiers.Reverse },
@@ -375,6 +377,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string RegexExtract = "RegexExtract";
             public const string RegexExtractAll = "RegexExtractAll";
             public const string RegexMatch = "RegexMatch";
+            public const string RegexReplace = "RegexReplace";
+            public const string RegexReplaceAll = "RegexReplaceAll";
             public const string Replace = "REPLACE";
             public const string Replicate = "REPLICATE";
             public const string Reverse = "REVERSE";
@@ -557,6 +561,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier RegexExtract = SqlIdentifier.Create(Names.RegexExtract);
             public static readonly SqlIdentifier RegexExtractAll = SqlIdentifier.Create(Names.RegexExtractAll);
             public static readonly SqlIdentifier RegexMatch = SqlIdentifier.Create(Names.RegexMatch);
+            public static readonly SqlIdentifier RegexReplace = SqlIdentifier.Create(Names.RegexReplace);
+            public static readonly SqlIdentifier RegexReplaceAll = SqlIdentifier.Create(Names.RegexReplaceAll);
             public static readonly SqlIdentifier Replace = SqlIdentifier.Create(Names.Replace);
             public static readonly SqlIdentifier Replicate = SqlIdentifier.Create(Names.Replicate);
             public static readonly SqlIdentifier Reverse = SqlIdentifier.Create(Names.Reverse);
