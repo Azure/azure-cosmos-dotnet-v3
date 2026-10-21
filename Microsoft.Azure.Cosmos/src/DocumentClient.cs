@@ -1665,6 +1665,20 @@ namespace Microsoft.Azure.Cosmos
             return (ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel;
         }
 
+        /// <summary>
+        /// Whether document operations on this account may be written to more than one region.
+        /// </summary>
+        /// <remarks>
+        /// Callers that hold a <see cref="DocumentServiceRequest"/> should use
+        /// <see cref="GlobalEndpointManager.CanUseMultipleWriteLocations(DocumentServiceRequest)"/> instead.
+        /// This overload exists for the distributed-transaction path, which classifies each sub-operation
+        /// before any request is built.
+        /// </remarks>
+        internal virtual bool CanUseMultipleWriteLocations()
+        {
+            return this.GlobalEndpointManager.CanUseMultipleWriteLocations();
+        }
+
         internal Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync()
         {
             return Task.FromResult<Documents.ConsistencyLevel?>(this.desiredConsistencyLevel);

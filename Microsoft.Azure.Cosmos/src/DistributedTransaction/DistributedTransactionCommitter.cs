@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
 
     internal class DistributedTransactionCommitter
     {
@@ -96,9 +96,25 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await DistributedTransactionCommitterUtils.ResolveCollectionRidsAsync(
+
+                DistributedTransactionSessionTokenHelper.ValidateUserSuppliedSessionTokens(this.operations);
+
+                // Resolved before routing to decide which sub-operations receive an automatic session token.
+                ConsistencyLevel? accountConsistencyLevel = await DistributedTransactionSessionTokenHelper.ResolveAccountConsistencyLevelAsync(
+                    this.clientContext);
+
+                IReadOnlyDictionary<string, ContainerProperties> containerPropertiesByCollection = await DistributedTransactionCommitterUtils.ResolveCollectionRidsAsync(
                     this.operations,
                     this.clientContext,
+                    cancellationToken);
+
+                // Reuse this cache after dispatch; reacquiring it then could turn a committed result into a failure.
+                PartitionKeyRangeCache partitionKeyRangeCache = await DistributedTransactionSessionTokenHelper.ResolveOperationSessionTokensAsync(
+                    this.operations,
+                    containerPropertiesByCollection,
+                    this.clientContext,
+                    accountConsistencyLevel,
+                    trace,
                     cancellationToken);
 
                 DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
@@ -108,17 +124,18 @@ namespace Microsoft.Azure.Cosmos
                     // Read transactions have no commit state requiring write-dispatch signals.
                     tracksDispatch: this.operationType == OperationType.CommitDistributedTransaction);
 
-                return await this.ExecuteCommitWithRetryAsync(serverRequest, trace, cancellationToken);
+                return await this.ExecuteCommitWithRetryAsync(serverRequest, partitionKeyRangeCache, trace, cancellationToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                DefaultTrace.TraceError($"Distributed transaction failed: {ex.Message}");
+                DefaultTrace.TraceError($"Distributed transaction failed: {FormatForLog(ex.Message)}");
                 throw;
             }
         }
 
         private async Task<DistributedTransactionResponse> ExecuteCommitWithRetryAsync(
             DistributedTransactionServerRequest serverRequest,
+            PartitionKeyRangeCache partitionKeyRangeCache,
             ITrace parentTrace,
             CancellationToken cancellationToken)
         {
@@ -135,7 +152,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                DistributedTransactionResponse response = await this.ExecuteCommitAsync(serverRequest, rotateIdempotencyToken, parentTrace, cancellationToken);
+                DistributedTransactionResponse response = await this.ExecuteCommitAsync(
+                    serverRequest, partitionKeyRangeCache, rotateIdempotencyToken, parentTrace, cancellationToken);
 
                 if (response.IsSuccessStatusCode || !response.IsRetriable)
                 {
@@ -147,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     DefaultTrace.TraceWarning(
                         $"Distributed transaction isRetriable retry budget exhausted after {attempt} attempts " +
-                            $"(StatusCode={response.StatusCode}, DiagnosticString={TruncateForLog(response.DiagnosticString)}). Returning last response.");
+                            $"(StatusCode={response.StatusCode}, DiagnosticString={FormatForLog(response.DiagnosticString)}). Returning last response.");
                     response.Diagnostics = diagnostics;
                     return response;
                 }
@@ -174,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
                             $"(cumulativeDelayMs={(int)cumulativeRetryDelay.TotalMilliseconds}, " +
                             $"maxDelayMs={(int)this.maxCumulativeRetryDelay.TotalMilliseconds}, " +
                             $"attempt={attempt}, StatusCode={response.StatusCode}, " +
-                            $"DiagnosticString={TruncateForLog(response.DiagnosticString)}). Returning last response.");
+                                $"DiagnosticString={FormatForLog(response.DiagnosticString)}). Returning last response.");
                     response.Diagnostics = diagnostics;
                     return response;
                 }
@@ -192,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
                     (int)delay.TotalMilliseconds,
                     (int)cumulativeRetryDelay.TotalMilliseconds,
                     serverRequest.IdempotencyToken,
-                    TruncateForLog(response.DiagnosticString));
+                    FormatForLog(response.DiagnosticString));
 
                 response.Dispose();
                 attempt++;
@@ -200,9 +218,8 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        // Caps server-controlled diagnostic strings before they enter SDK trace logs to prevent
-        // log bloat and avoid newline-driven log-line interleaving.
-        private static string TruncateForLog(string value)
+        // Bounds and escapes external text before it enters SDK trace logs.
+        internal static string FormatForLog(string value)
         {
             const int MaxLogLength = 256;
             if (string.IsNullOrEmpty(value))
@@ -210,13 +227,18 @@ namespace Microsoft.Azure.Cosmos
                 return value;
             }
 
-            return value.Length <= MaxLogLength
+            string boundedValue = value.Length <= MaxLogLength
                 ? value
                 : value.Substring(0, MaxLogLength) + "...[truncated]";
+
+            return boundedValue
+                .Replace("\r", "\\r")
+                .Replace("\n", "\\n");
         }
 
         private async Task<DistributedTransactionResponse> ExecuteCommitAsync(
             DistributedTransactionServerRequest serverRequest,
+            PartitionKeyRangeCache partitionKeyRangeCache,
             bool rotateIdempotencyToken,
             ITrace parentTrace,
             CancellationToken cancellationToken)
@@ -266,10 +288,12 @@ namespace Microsoft.Azure.Cosmos
 
                         try
                         {
-                            DistributedTransactionCommitter.MergeSessionTokens(
+                            await DistributedTransactionSessionTokenHelper.MergeSessionTokensAsync(
                                 response,
                                 serverRequest,
-                                this.clientContext.DocumentClient?.sessionContainer);
+                                this.clientContext.DocumentClient?.sessionContainer,
+                                partitionKeyRangeCache,
+                                attemptTrace);
                         }
                         catch
                         {
@@ -300,153 +324,5 @@ namespace Microsoft.Azure.Cosmos
             requestMessage.DistributedTransactionDispatchTracker = dispatchTracker;
         }
 
-        internal static void MergeSessionTokens(
-            DistributedTransactionResponse response,
-            DistributedTransactionServerRequest serverRequest,
-            ISessionContainer sessionContainer)
-        {
-            // Mirror the pattern used by GatewayStoreModel.CaptureSessionTokenAndHandleSplitAsync.
-            // after a response is received, store each operation's session token in the SessionContainer
-            // so that subsequent Session-consistency reads on the affected collections can use the latest token
-            // without getting ReadSessionNotAvailable.
-            //
-            // DTC spans multiple collections so the server embeds per-operation session tokens in the JSON body.
-            // Capture is gated per sub-operation on the same statuses point operations capture on.
-            if (response == null || response.Count == 0 || serverRequest == null || sessionContainer == null)
-            {
-                return;
-            }
-
-            List<(int operationIndex, string collectionResourceId, string collectionFullName, string sessionToken)> tokensToMerge =
-                new List<(int operationIndex, string collectionResourceId, string collectionFullName, string sessionToken)>();
-            List<string> validationFailures = new List<string>();
-
-            for (int i = 0; i < response.Count; i++)
-            {
-                DistributedTransactionOperationResult result = response[i];
-
-                string collectionFullName = null;
-                string malformedTokenDetails = null;
-
-                try
-                {
-                    DistributedTransactionOperation operation = serverRequest.Operations[result.Index];
-
-                    if (string.IsNullOrEmpty(result.SessionToken) || string.IsNullOrEmpty(operation.CollectionResourceId))
-                    {
-                        continue;
-                    }
-
-                    // Gated per sub-operation rather than on the envelope: status promotion only happens
-                    // for MultiStatus, so a partially failed transaction carries meaningful individual
-                    // statuses. Every status below 400 is captured, which is what the gateway does: it
-                    // reaches its capture call for any such response, 304 included. A rolled back
-                    // FailedDependency sub-operation left no durable write to read back.
-                    if ((int)result.StatusCode >= (int)StatusCodes.StartingErrorCode
-                        && !GatewayStoreModel.IsSessionTokenCapturableErrorStatus(result.StatusCode, result.SubStatusCode))
-                    {
-                        continue;
-                    }
-
-                    collectionFullName = DistributedTransactionConstants.GetCollectionFullName(operation.Database, operation.Container);
-
-                    if (DistributedTransactionCommitter.TryValidateSessionToken(result.SessionToken, out string validationFailure))
-                    {
-                        tokensToMerge.Add((
-                            result.Index,
-                            operation.CollectionResourceId,
-                            collectionFullName,
-                            result.SessionToken));
-                    }
-                    else
-                    {
-                        malformedTokenDetails = $"{validationFailure} Token: '{TruncateForLog(result.SessionToken)}'.";
-                    }
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    string message = DistributedTransactionCommitter.TraceSessionTokenFailure(
-                        result.Index,
-                        collectionFullName,
-                        ex.Message);
-
-                    throw new InvalidOperationException(message, ex);
-                }
-
-                if (malformedTokenDetails != null)
-                {
-                    validationFailures.Add(DistributedTransactionCommitter.TraceSessionTokenFailure(
-                        result.Index,
-                        collectionFullName,
-                        malformedTokenDetails));
-                }
-            }
-
-            if (validationFailures.Count > 0)
-            {
-                throw new InvalidOperationException(
-                    $"Session tokens could not be recorded because one or more tokens were malformed: {string.Join(" ", validationFailures)}");
-            }
-
-            RequestNameValueCollection headers = new RequestNameValueCollection();
-
-            foreach ((int operationIndex, string collectionResourceId, string collectionFullName, string sessionToken) token in tokensToMerge)
-            {
-                try
-                {
-                    headers.Clear();
-                    headers[HttpConstants.HttpHeaders.SessionToken] = token.sessionToken;
-
-                    sessionContainer.SetSessionToken(
-                        token.collectionResourceId,
-                        token.collectionFullName,
-                        headers);
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    string message = DistributedTransactionCommitter.TraceSessionTokenFailure(
-                        token.operationIndex,
-                        token.collectionFullName,
-                        ex.Message);
-
-                    throw new InvalidOperationException(message, ex);
-                }
-            }
-        }
-
-        private static string TraceSessionTokenFailure(
-            int operationIndex,
-            string collectionFullName,
-            string failureDetails)
-        {
-            string collectionScope = collectionFullName == null
-                ? string.Empty
-                : $" for collection '{collectionFullName}'";
-
-            string message = $"Session token for operation index {operationIndex} could not be recorded{collectionScope}: {failureDetails}";
-
-            // Keep server-supplied braces out of the format string.
-            DefaultTrace.TraceWarning("{0} Session token was not recorded.", message);
-            return message;
-        }
-
-        private static bool TryValidateSessionToken(string sessionToken, out string failureReason)
-        {
-            if (!SessionTokenHelper.TryParse(sessionToken, out string partitionKeyRangeId, out ISessionToken _))
-            {
-                failureReason = "the token could not be parsed.";
-                return false;
-            }
-
-            // TryParse accepts a bare LSN, but the session container requires the range id.
-            if (string.IsNullOrEmpty(partitionKeyRangeId))
-            {
-                failureReason = "the token is missing the partitionKeyRangeId prefix.";
-                return false;
-            }
-
-            failureReason = null;
-            return true;
-        }
     }
 }
