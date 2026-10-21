@@ -27,6 +27,12 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class CosmosHttpClientCoreTests
     {
+#if INTERNAL
+        private const int ControlPlaneRetriableHotPathAttemptCount = 2;
+#else
+        private const int ControlPlaneRetriableHotPathAttemptCount = 3;
+#endif
+
         [TestMethod]
         [Owner("aavasthy")]
         public async Task ClientIdHeaderIsSentOnGetDatabaseAccountCallAsync()
@@ -218,9 +224,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }},
                 {HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,  new List<TimeSpan>()
                 {
+#if INTERNAL
+                    TimeSpan.FromSeconds(6),
+                    TimeSpan.FromSeconds(66)
+#else
                     TimeSpan.FromSeconds(2),
                     TimeSpan.FromSeconds(6),
                     TimeSpan.FromSeconds(66)
+#endif
                 }},
             };
 
@@ -231,23 +242,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     count++;
 
-                    if (count == 1)
+                    if (count < currentTimeoutPolicy.Value.Count)
                     {
                         Assert.IsFalse(cancellationToken.IsCancellationRequested);
-                        await Task.Delay(currentTimeoutPolicy.Value[0]);
+                        await Task.Delay(currentTimeoutPolicy.Value[count - 1]);
                         cancellationToken.ThrowIfCancellationRequested();
                         Assert.Fail("Cancellation token should be canceled");
                     }
 
-                    if (count == 2)
-                    {
-                        Assert.IsFalse(cancellationToken.IsCancellationRequested);
-                        await Task.Delay(currentTimeoutPolicy.Value[1]);
-                        cancellationToken.ThrowIfCancellationRequested();
-                        Assert.Fail("Cancellation token should be canceled");
-                    }
-
-                    if (count == 3)
+                    if (count == currentTimeoutPolicy.Value.Count)
                     {
                         return new HttpResponseMessage(HttpStatusCode.OK);
                     }
@@ -311,13 +314,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 count++;
 
-                if (count <= 2)
+                if (count < CosmosHttpClientCoreTests.ControlPlaneRetriableHotPathAttemptCount)
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(10));
                     return new HttpResponseMessage(HttpStatusCode.RequestTimeout);
                 }
 
-                if (count == 3)
+                if (count == CosmosHttpClientCoreTests.ControlPlaneRetriableHotPathAttemptCount)
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(10));
                     return new HttpResponseMessage(HttpStatusCode.OK);
@@ -553,7 +556,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 count++;
                 retry.MoveNext();
 
-                if (count <= 2)
+                if (count < CosmosHttpClientCoreTests.ControlPlaneRetriableHotPathAttemptCount)
                 {
                     Assert.IsFalse(cancellationToken.IsCancellationRequested);
                     await Task.Delay(retry.Current.requestTimeout + TimeSpan.FromSeconds(1));
@@ -561,7 +564,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Assert.Fail("Cancellation token should be canceled");
                 }
 
-                if (count == 3)
+                if (count == CosmosHttpClientCoreTests.ControlPlaneRetriableHotPathAttemptCount)
                 {
                     return new HttpResponseMessage(HttpStatusCode.OK);
                 }
@@ -780,7 +783,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     isPartitionLevelFailoverEnabled: false,
                     isThinClientEnabled: true),
                 expectedException: typeof(CosmosException),
+#if INTERNAL
+                expectedNumberOfRetrys: 2);
+#else
                 expectedNumberOfRetrys: 3);
+#endif
         }
 
         [TestMethod]
