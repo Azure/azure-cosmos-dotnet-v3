@@ -4,11 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
-    using System;
     using System.Collections.Generic;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
-    using Newtonsoft.Json.Linq;
 
     internal sealed class HybridSearchQueryInfo
     {
@@ -69,8 +67,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         }
 
         [JsonProperty("fullTextSearchTerms", NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(FullTextSearchTermsConverter))]
-        public JToken FullTextSearchTerms
+        public List<FullTextSearchTerms> FullTextSearchTerms
         {
             get;
             set;
@@ -83,33 +80,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         {
             get;
             set;
-        }
-
-        private sealed class FullTextSearchTermsConverter : JsonConverter
-        {
-            public override bool CanWrite => false;
-
-            public override bool CanConvert(Type objectType) => objectType == typeof(JToken);
-
-            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-            {
-                DateParseHandling dateParseHandling = reader.DateParseHandling;
-                try
-                {
-                    // Paths and search terms that resemble dates must remain exact strings.
-                    reader.DateParseHandling = DateParseHandling.None;
-                    return JToken.Load(reader);
-                }
-                finally
-                {
-                    reader.DateParseHandling = dateParseHandling;
-                }
-            }
-
-            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-            {
-                throw new NotSupportedException();
-            }
         }
     }
 }
