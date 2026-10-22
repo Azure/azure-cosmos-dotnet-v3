@@ -165,6 +165,92 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             JsonProcessor result = ro.GetJsonProcessor(JsonProcessor.Stream);
             Assert.AreEqual(JsonProcessor.Stream, result);
         }
+
+        [TestMethod]
+        public void SelectAndSanitize_UsesCurrentValueWithoutMutatingCaller()
+        {
+            EncryptionItemRequestOptions requestOptions = new ()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" },
+                    { "unrelated", 123 },
+                },
+            };
+
+            EncryptionItemRequestOptions sanitized = requestOptions.SelectAndSanitizeJsonProcessor(
+                JsonProcessor.Newtonsoft,
+                out JsonProcessor firstProcessor,
+                out bool firstHasOverride);
+
+            Assert.IsTrue(firstHasOverride);
+            Assert.AreEqual(JsonProcessor.Stream, firstProcessor);
+            Assert.AreNotSame(requestOptions, sanitized);
+            Assert.IsTrue(requestOptions.Properties.ContainsKey(JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey));
+            Assert.IsFalse(sanitized.Properties.ContainsKey(JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey));
+            Assert.AreEqual(123, sanitized.Properties["unrelated"]);
+
+            requestOptions.Properties = new Dictionary<string, object>
+            {
+                { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Newtonsoft" },
+            };
+            requestOptions.SelectAndSanitizeJsonProcessor(
+                JsonProcessor.Stream,
+                out JsonProcessor secondProcessor,
+                out _);
+
+            Assert.AreEqual(JsonProcessor.Newtonsoft, secondProcessor);
+        }
+
+        [TestMethod]
+        public void SelectAndSanitize_NoHiddenProperty_ReturnsOriginalOptions()
+        {
+            ItemRequestOptions requestOptions = new ()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { "unrelated", 123 },
+                },
+            };
+
+            ItemRequestOptions sanitized = requestOptions.SelectAndSanitizeJsonProcessor(
+                JsonProcessor.Stream,
+                out JsonProcessor processor,
+                out bool hasOverride);
+
+            Assert.AreSame(requestOptions, sanitized);
+            Assert.AreEqual(JsonProcessor.Stream, processor);
+            Assert.IsFalse(hasOverride);
+        }
+
+        [TestMethod]
+        public void CreateJsonProcessorRequestOptions_DoesNotMutateEitherSourceOptions()
+        {
+            EncryptionItemRequestOptions callerOptions = new ()
+            {
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, "Stream" },
+                    { "unrelated", 123 },
+                },
+            };
+            EncryptionItemRequestOptions sanitizedOptions = callerOptions.SelectAndSanitizeJsonProcessor(
+                JsonProcessor.Newtonsoft,
+                out _,
+                out _);
+
+            EncryptionItemRequestOptions processorOptions =
+                sanitizedOptions.CreateJsonProcessorRequestOptions(JsonProcessor.Stream);
+
+            Assert.AreNotSame(sanitizedOptions, processorOptions);
+            Assert.IsFalse(sanitizedOptions.Properties.ContainsKey(
+                JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey));
+            Assert.AreEqual(JsonProcessor.Stream, processorOptions.Properties[
+                JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey]);
+            Assert.AreEqual(123, processorOptions.Properties["unrelated"]);
+            Assert.AreEqual("Stream", callerOptions.Properties[
+                JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey]);
+        }
     }
 }
 #endif

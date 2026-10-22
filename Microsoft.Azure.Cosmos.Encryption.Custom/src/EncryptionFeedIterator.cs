@@ -43,13 +43,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
                 {
-                    Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
-                        responseMessage.Content,
-                        this.encryptor,
-                        this.jsonProcessor,
-                        cancellationToken);
+                    Stream content = responseMessage.Content;
+                    Stream decryptedContent = null;
+                    try
+                    {
+                        decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
+                            content,
+                            this.encryptor,
+                            this.jsonProcessor,
+                            cancellationToken);
 
-                    return new DecryptedResponseMessage(responseMessage, decryptedContent);
+                        return new DecryptedResponseMessage(responseMessage, decryptedContent);
+                    }
+                    catch
+                    {
+                        await DecryptedResponseMessage.DisposeOnFailureAsync(
+                            responseMessage, content, decryptedContent).ConfigureAwait(false);
+                        throw;
+                    }
                 }
 
                 return responseMessage;
