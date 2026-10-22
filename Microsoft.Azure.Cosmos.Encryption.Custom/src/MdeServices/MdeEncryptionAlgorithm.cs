@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// <summary>
     /// Encryption Algorithm provided by MDE Encryption Package.
     /// </summary>
-    internal sealed class MdeEncryptionAlgorithm : DataEncryptionKey
+    internal sealed class MdeEncryptionAlgorithm : DataEncryptionKey, IDataEncryptionKeyBuffer
     {
         private const byte Version = 1;
 
