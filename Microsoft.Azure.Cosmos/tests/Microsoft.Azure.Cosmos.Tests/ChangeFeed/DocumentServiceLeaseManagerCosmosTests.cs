@@ -87,6 +87,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             RequestOptionsFactory requestOptionsFactory = GetRequestOptionsFactory(factoryType);
             string continuation = Guid.NewGuid().ToString();
+            DateTime startTime = DateTime.UtcNow.AddMinutes(-5);
             DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
             {
                 HostName = Guid.NewGuid().ToString()
@@ -110,12 +111,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 options,
                 requestOptionsFactory);
 
-            DocumentServiceLease afterAcquire = await documentServiceLeaseManagerCosmos.CreateLeaseIfNotExistAsync(feedRangeEpk, continuation);
+            DocumentServiceLease afterAcquire = await documentServiceLeaseManagerCosmos.CreateLeaseIfNotExistAsync(feedRangeEpk, continuation, startTime);
 
             DocumentServiceLeaseCoreEpk epkBasedLease = (DocumentServiceLeaseCoreEpk)afterAcquire;
 
             Assert.IsNotNull(epkBasedLease);
             Assert.AreEqual(continuation, afterAcquire.ContinuationToken);
+            Assert.AreEqual(startTime, afterAcquire.StartTime);
             Assert.AreEqual(feedRangeEpk.Range.Min, ((FeedRangeEpk)epkBasedLease.FeedRange).Range.Min);
             Assert.AreEqual(feedRangeEpk.Range.Max, ((FeedRangeEpk)epkBasedLease.FeedRange).Range.Max);
             ValidateRequestOptionsFactory(requestOptionsFactory, epkBasedLease);
@@ -129,6 +131,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             RequestOptionsFactory requestOptionsFactory = GetRequestOptionsFactory(factoryType);
             string continuation = Guid.NewGuid().ToString();
+            DateTime startTime = DateTime.UtcNow.AddMinutes(-5);
             DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
             {
                 HostName = Guid.NewGuid().ToString()
@@ -157,12 +160,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 options,
                 requestOptionsFactory);
 
-            DocumentServiceLease afterAcquire = await documentServiceLeaseManagerCosmos.CreateLeaseIfNotExistAsync(partitionKeyRange, continuation);
+            DocumentServiceLease afterAcquire = await documentServiceLeaseManagerCosmos.CreateLeaseIfNotExistAsync(partitionKeyRange, continuation, startTime);
 
             DocumentServiceLeaseCore pkRangeBasedLease = (DocumentServiceLeaseCore)afterAcquire;
 
             Assert.IsNotNull(pkRangeBasedLease);
             Assert.AreEqual(continuation, afterAcquire.ContinuationToken);
+            Assert.AreEqual(startTime, afterAcquire.StartTime);
             Assert.AreEqual(partitionKeyRange.Id, pkRangeBasedLease.CurrentLeaseToken);
             ValidateRequestOptionsFactory(requestOptionsFactory, pkRangeBasedLease);
         }

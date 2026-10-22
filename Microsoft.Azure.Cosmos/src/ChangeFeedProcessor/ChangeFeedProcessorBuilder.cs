@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// This is only used when:
-        /// (1) Lease store is not initialized and is ignored if a lease exists and has continuation token.
+        /// (1) Lease store is not initialized and is ignored if a lease exists and has a continuation token.
         /// (2) StartContinuation is not specified.
         /// (3) StartTime is not specified.
         /// </remarks>
@@ -144,14 +144,18 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Sets the time (exclusive) to start looking for changes after.
+        /// The start time is persisted in the lease document so that it is honored across processor restarts.
         /// </summary>
         /// <remarks>
-        /// This is only used when:
-        /// (1) Lease store is not initialized and is ignored if a lease exists and has continuation token.
-        /// (2) StartContinuation is not specified.
-        /// If this is specified, StartFromBeginning is ignored.
+        /// The start time is persisted in the lease and sent as the If-Modified-Since header alongside the
+        /// continuation token on subsequent change feed requests. This ensures documents are returned after
+        /// the specified time even after partition merges.
+        /// Passing <see cref="DateTime.MinValue"/> clears the persisted start time from the lease document.
+        /// After it is cleared, a lease without a continuation starts from the current time unless
+        /// <see cref="WithStartFromBeginning"/> is also configured.
+        /// A non-MinValue start time takes precedence over StartFromBeginning.
         /// </remarks>
-        /// <param name="startTime">Date and time when to start looking for changes.</param>
+        /// <param name="startTime">Date and time when to start looking for changes. Use <see cref="DateTime.MinValue"/> to clear a previously persisted start time.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public ChangeFeedProcessorBuilder WithStartTime(DateTime startTime)
         {
@@ -160,12 +164,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException($"Using the '{nameof(WithStartTime)}' option with ChangeFeedProcessor is not supported with {ChangeFeedMode.AllVersionsAndDeletes} mode.");
             }
 
-            if (startTime == null)
-            {
-                throw new ArgumentNullException(nameof(startTime));
-            }
-
-            this.changeFeedProcessorOptions.StartTime = startTime;
+            // DateTime.MinValue is the explicit opt-out for a start time persisted by an earlier run.
+            this.changeFeedProcessorOptions.StartTime = startTime == DateTime.MinValue ? null : startTime;
+            this.changeFeedProcessorOptions.IsStartTimeUserExplicit = true;
             return this;
         }
 

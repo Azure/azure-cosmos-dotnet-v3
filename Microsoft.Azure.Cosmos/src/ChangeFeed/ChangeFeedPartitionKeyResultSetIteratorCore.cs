@@ -59,13 +59,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 container: container,
                 mode: mode,
                 changeFeedStartFrom: startFrom,
-                options: requestOptions);
+                options: requestOptions,
+                startTime: startTime);
         }
 
         private readonly CosmosClientContext clientContext;
 
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly ChangeFeedMode mode;
+        private readonly DateTime? startTime;
 
         private ChangeFeedStartFrom changeFeedStartFrom;
         private bool hasMoreResultsInternal;
@@ -74,13 +76,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ContainerInternal container,
             ChangeFeedMode mode,
             ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedRequestOptions options)
+            ChangeFeedRequestOptions options,
+            DateTime? startTime = null)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.mode = mode;
             this.changeFeedStartFrom = changeFeedStartFrom ?? throw new ArgumentNullException(nameof(changeFeedStartFrom));
             this.clientContext = this.container.ClientContext;
             this.changeFeedOptions = options;
+            this.startTime = startTime;
 
             this.operationName = OpenTelemetryConstants.Operations.QueryChangeFeed;
         }
@@ -118,6 +122,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     // Set time headers if any
                     ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(requestMessage);
                     this.changeFeedStartFrom.Accept(visitor);
+
+                    // When a merge happens, the child partition will contain documents ordered by LSN but the _ts/creation time
+                    // of the documents may not be sequential. So when reading the change feed by LSN, it is possible to encounter
+                    // documents with lower _ts. In order to guarantee we always get the documents after the customer's point start
+                    // time, we need to always pass the start time in the header alongside the continuation token.
+                    if (this.startTime.HasValue
+                        && this.startTime.Value != DateTime.MinValue.ToUniversalTime()
+                        && this.changeFeedStartFrom is ChangeFeedStartFromContinuationAndFeedRange)
+                    {
+                        requestMessage.Headers.Add(
+                            HttpConstants.HttpHeaders.IfModifiedSince,
+                            this.startTime.Value.ToString("r", CultureInfo.InvariantCulture));
+                    }
 
                     if (this.changeFeedOptions.PageSizeHint.HasValue)
                     {
