@@ -80,18 +80,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             Debug.Assert(buffer2Index > -1 && buffer2Index < buffer2.Length, "invalid index");
 
-            // Length/index checks are on non-secret sizes, so returning early here leaks no timing
-            // about the compared bytes. Requiring both buffers to hold the full lengthToCompare also
-            // closes a footgun where a shorter buffer1 previously matched on a prefix.
             if (buffer2Index < 0 || buffer1.Length < lengthToCompare || (buffer2.Length - buffer2Index) < lengthToCompare)
             {
                 return false;
             }
 
-            // Constant-time comparison: accumulate every byte difference with no early exit so the
-            // running time is independent of where the first mismatch occurs. This method backs
-            // legacy AEAD authentication-tag verification (see AeadAes256CbcHmac256Algorithm), where a
-            // data-dependent early return would be a MAC-verification timing side channel.
+            // Compare every authentication-tag byte without a data-dependent early exit.
             int accumulatedDifference = 0;
             for (int index = 0; index < lengthToCompare; ++index)
             {
