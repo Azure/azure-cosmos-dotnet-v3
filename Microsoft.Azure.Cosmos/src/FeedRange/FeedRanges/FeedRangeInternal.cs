@@ -29,7 +29,8 @@ namespace Microsoft.Azure.Cosmos
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
-            ITrace trace);
+            ITrace trace,
+            CancellationToken cancellationToken = default);
 
         internal abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             IRoutingMapProvider routingMapProvider,

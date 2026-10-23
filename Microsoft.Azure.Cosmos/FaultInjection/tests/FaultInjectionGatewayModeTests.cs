@@ -226,7 +226,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [Description("Test Unautharized rule filtering")]
         [Owner("ntripician")]
         public async Task FIGatewayUnautharizedTest()
-        {            //403 is retried across regions, so the rule is applied once per region attempt and the total
+        {
+            //403 is retried across regions, so the rule is applied once per region attempt and the total
             //hit count depends on how many regions the test account has. Assert it was applied at least once.
             //create fault injection rule for unauthorized requests
             string unauthorizedRuleId = "unauthorizedRule-" + Guid.NewGuid().ToString();
@@ -709,6 +710,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.Timeout, (int)StatusCodes.RequestTimeout, (int)SubStatusCodes.Unknown, DisplayName = "Timeout")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.PartitionIsMigrating, (int)StatusCodes.Gone, (int)SubStatusCodes.CompletingPartitionMigration, DisplayName = "PartitionIsMigrating")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.PartitionIsSplitting, (int)StatusCodes.Gone, (int)SubStatusCodes.CompletingSplit, DisplayName = "PartitionIsSplitting")]
+        [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.LeaseNotFound, (int)StatusCodes.Gone, (int)SubStatusCodes.LeaseNotFound, DisplayName = "LeaseNotFound")]
+        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.Gone, (int)StatusCodes.Gone, (int)SubStatusCodes.ServerGenerated410, DisplayName = "Gone - write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.InternalServerError, (int)StatusCodes.InternalServerError, (int)SubStatusCodes.Unknown, DisplayName = "InternalServerError - write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.RetryWith, (int)StatusCodes.RetryWith, (int)SubStatusCodes.Unknown, DisplayName = "RetryWith - write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.TooManyRequests, (int)StatusCodes.TooManyRequests, (int)SubStatusCodes.RUBudgetExceeded, DisplayName = "TooManyRequests - write")]
@@ -716,6 +719,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.Timeout, (int)StatusCodes.RequestTimeout, (int)SubStatusCodes.Unknown, DisplayName = "Timeout - write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.PartitionIsMigrating, (int)StatusCodes.Gone, (int)SubStatusCodes.CompletingPartitionMigration, DisplayName = "PartitionIsMigrating - write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.PartitionIsSplitting, (int)StatusCodes.Gone, (int)SubStatusCodes.CompletingSplit, DisplayName = "PartitionIsSplitting - write")]
+        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.LeaseNotFound, (int)StatusCodes.Gone, (int)SubStatusCodes.LeaseNotFound, DisplayName = "LeaseNotFound - write")]
         public async Task FIGatewayServerResponse(
             FaultInjectionOperationType faultInjectionOperationType, 
             FaultInjectionServerErrorType faultInjectionServerErrorType,
