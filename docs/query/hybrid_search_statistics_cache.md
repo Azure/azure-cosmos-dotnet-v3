@@ -1,36 +1,38 @@
 # Hybrid search full-text statistics cache
 
-**Status:** Phases 1 and 2 expose query-plan path/term metadata and validated
-configuration. Statistics-cache storage and execution are not implemented.
+**Status:** Phases 1-4 expose query-plan metadata, validated configuration,
+and hierarchical storage of independently aged
+document, path-word, and term-hit counts. Client ownership and query-pipeline integration
+are not implemented; queries do not yet reuse cached statistics.
 
 ## 1. Recommendation and agreed scope
 
-Add a small, client-owned cache of completed `GlobalFullTextSearchStatistics`
-bundles. An opted-in hybrid query can skip its statistics fan-out when its
-plan-derived path-and-term requirements, corpus identity, and freshness
-requirements match a cached bundle. Otherwise, run the existing statistics
-pipeline.
+Add a small, client-owned cache of independently bounded-age counts. Reconstruct
+`GlobalFullTextSearchStatistics` for the current plan only when every required
+document, path-word, and term-hit count is present, live, and numerically
+compatible. Otherwise, run the existing complete statistics query.
 
 Decisions confirmed for this design:
 
-- Freshness is bounded by a TTL and available container/index/routing identity
+- Freshness is bounded by a TTL and available container/index identity
   checks. There is no new service-side validation request.
 - The query plan includes query terms as well as optional full-text paths.
   Use this metadata directly; do not recover terms by parsing SQL.
-- Caching is opt-in per client and supports both `FullTextScoreScope.Global`
-  and `Local`. There is no per-query cache-age override.
+- Caching is opt-in per client and supports only `FullTextScoreScope.Global`.
+  Local queries keep their existing uncached statistics flow. There is no
+  per-query cache-age override.
 
 The central invariant is:
 
-> Reuse only a complete statistics result for the same statistics computation
-> over the same scoring corpus, within the client's configured cache age.
+> Return a complete, correctly ordered statistics result assembled from counts
+> for the same scoring corpus, each within the client's configured cache age.
 
 A path alone is not a sufficient key. The existing result contains
 query-dependent term hit counts as well as document and word counts. The plan's
 terms let the SDK represent those dependencies explicitly as ordered
 path-and-term requirements.
 
-For v1, deliberately avoid background refresh, partial-path assembly, SQL
+For v1, deliberately avoid background refresh, partial statistics requests, SQL
 parsing, and shared in-flight queries. Reuse the existing statistics models,
 fan-out pipeline, aggregation, query rewriting, tracing, and retry behavior.
 
@@ -40,11 +42,11 @@ Paths below are relative to `Microsoft.Azure.Cosmos\src`.
 
 | Surface | Current behavior | Design consequence |
 |---|---|---|
-| `Query\Core\QueryPlan\HybridSearchQueryInfo.cs` | Retains optional `fullTextSearchTerms` as a JSON token, alongside `GlobalStatisticsQuery` and `RequiresGlobalStatistics`. | Normalize the retained metadata into ordered statistics requirements when implementing cache identity. |
-| `Query\Core\Pipeline\CosmosQueryExecutionContextFactory.cs` | Resolves container properties, target ranges, and all ranges before constructing the pipeline. | Capture cache identity here, using information already needed by execution. |
-| `Query\Core\Pipeline\PipelineFactory.cs` | Dispatches hybrid plans and wraps them with skip/take stages. | Thread an optional cache binding through; do not move ranking or paging logic. |
-| `Query\Core\Pipeline\CrossPartition\HybridSearch\HybridSearchCrossPartitionQueryPipelineStage.cs` | Creates a parallel statistics pipeline, gathers its results, rewrites component queries, then executes them. | Perform lookup immediately before statistics gathering and create the statistics pipeline lazily on a miss. |
-| `Query\Core\Pipeline\CrossPartition\HybridSearch\GlobalFullTextSearchStatistics.cs` | Holds one document count and an ordered list of full-text statistics. | Cache this existing representation, with defensive copying. |
+| `Query\Core\QueryPlan\HybridSearchQueryInfo.cs` | Exposes optional `List<FullTextSearchTerms>` using the existing Newtonsoft serializer. | Use the models to identify scalar counts and reconstruct their required order; no separate statistics-requirement model is needed. |
+| `Query\Core\Pipeline\CosmosQueryExecutionContextFactory.cs` | Resolves metadata and converts both all ranges and target ranges to EPK ranges. | During cache integration, create bindings only for Global scope; keys do not need routing ranges. |
+| `Query\Core\Pipeline\PipelineFactory.cs` | Passes both range lists and `FullTextScoreScope` to the hybrid stage and wraps it with skip/take stages. | Thread the optional Global-only cache binding when needed, without a range-selection refactor. |
+| `Query\Core\Pipeline\CrossPartition\HybridSearch\HybridSearchCrossPartitionQueryPipelineStage.cs` | Selects all ranges for Global or target ranges for Local, gathers statistics, rewrites component queries, then executes them. | Use the cache only for Global. Leave Local collection unchanged; Global misses still fan out over all ranges. |
+| `Query\Core\Pipeline\CrossPartition\HybridSearch\GlobalFullTextSearchStatistics.cs` | Holds one document count and an ordered list of full-text statistics. | Return this existing representation as a per-lookup snapshot, rather than storing query-shaped bundles. |
 | `Query\Core\Pipeline\CrossPartition\HybridSearch\FullTextStatistics.cs` | Holds `TotalWordCount` and ordered `HitCounts`. | Preserve array order and term-specific identity. |
 | `Query\v3Query\CosmosQueryClientCore.cs` | Has access to the client context and the query-spec serializer; retrieves cached container properties. | Bind plan requirements to serialized parameter values and expose the client-owned cache to execution. |
 | `Resource\ClientContextCore.cs` | Owns client-wide services and their lifetime. | Own the cache here, not on each `Container` handle or iterator. |
@@ -52,9 +54,11 @@ Paths below are relative to `Microsoft.Azure.Cosmos\src`.
 Important existing details:
 
 1. `Global` gathers statistics over `allRanges`; `Local` uses `targetRanges`.
-   The statistics stage currently passes `partitionKey: null`. This design
-   preserves that behavior. It does not redefine Local as an exact logical
-   tenant filter.
+   Selection currently occurs in the hybrid stage, which receives both range
+   lists and `FullTextScoreScope`. The statistics query passes `partitionKey: null`,
+   preserving the supplied EPK ranges. This does not redefine Local as an
+   exact logical tenant filter. Only Global statistics are cacheable in this
+   implementation; Local queries must neither consume nor populate the cache.
 2. `GatherStatisticsAsync` aggregates counts across all statistics pages and
    emits an empty `QueryPage` containing the actual request charge and response
    metadata.
@@ -63,61 +67,37 @@ Important existing details:
 4. Hybrid queries currently do not support externally resumable continuation
    tokens. The cache does not change that contract.
 
-## 3. Why cache bundles rather than individual paths?
+## 3. Cache scalar dependencies, not query-shaped bundles
 
-For example, statistics for `/text` used by:
+The generated statistics query computes independent aggregates:
 
-```sql
-FullTextScore(c.text, "swim", "run")
-```
+| Count | Expression | Cache identity |
+|---|---|---|
+| Document count | `COUNT(1)` | Container RID/ETag |
+| Total word count | `SUM(_FullTextWordCount(c.text))` | Document path within the container revision |
+| Term hit count | `COUNTIF(FullTextContains(c.text, "swim"))` | Path and complete term descriptor, including optional fuzzy distance |
 
-cannot supply the hit-count array for:
+A hit count is a matching-document count, not the number of term occurrences.
+The generated plan emits a separate count for each term argument. Repeated
+paths repeat the same word-count aggregate, so storage need not repeat it.
 
-```sql
-FullTextScore(c.text, "energy")
-```
+Store document count once per container revision, word count once per path,
+and hit count once per `(path, term, distance)` identity. Each scalar carries
+its own collection-start timestamp. Different live samples may be combined;
+they need not originate from the same statistics query.
 
-even though the path is identical. `DocumentCount` and `TotalWordCount` may be
-reusable, but `HitCounts` are not. Because the plan includes the terms, the SDK
-can distinguish these requests without parsing `GlobalStatisticsQuery`.
+`GlobalFullTextSearchStatistics` remains the query-shaped result. At lookup,
+walk the plan's metadata in order and reconstruct each `FullTextStatistics`
+and its `HitCounts` array. Preserve repeated paths, duplicate terms, and exact
+array positions, even though storage deduplicates their counts.
+For example, counts collected for `["swim", "run"]` can serve `["run"]`,
+`["run", "swim", "run"]`, or separate scoring components on the same path.
 
-Represent each statistics requirement as the path and its ordered term
-descriptors. Preserve the association between a requirement and its statistics
-slot; the same path can appear more than once with different term lists.
-For example, the normalized requirements for two slots could be:
-
-```text
-slot 0: /text     -> ["swim", "run"]
-slot 1: /abstract -> ["energy"]
-
-ordered requirements + scoring corpus + statistics semantics
-    -> one complete GlobalFullTextSearchStatistics bundle
-```
-
-This makes a per-path-and-term cache possible, but v1 deliberately retains
-complete bundles. That is a simplicity choice, not a limitation caused by
-missing terms: there is one document count, one collection time, one TTL
-decision, and no assembly/remapping of values collected by different queries.
-The cache is not a `Dictionary<Path, FullTextStatistics>`.
-
-Consequences:
-
-- All required statistics are hit or all are fetched. No partial requests.
-- Counts from different collection times are never assembled into one bundle.
-- Existing result ordering and query rewriting remain unchanged.
-- With a complete producer contract, changing projection, top count, vector
-  ranking, SQL formatting, or unrelated parameters can still hit when the
-  ordered path-and-term requirements and scoring corpus are identical.
-- Different resolved terms, term order, path order, or statistics-affecting
-  parameters produce different keys. Do not sort terms and then accidentally
-  apply their hit counts to the original order.
-- If the producer metadata does not describe all statistics-affecting inputs,
-  retain the exact statistics-request guard described in section 5. That
-  conservative guard can reduce reuse, but prevents false hits.
-
-Term-subset, term-permutation, and path-subset/superset reuse are explicitly
-deferred. Available term metadata can support those extensions later; they are
-not required to skip statistics collection for matching requirements.
+All required counts must be present and live before returning a snapshot.
+A missing or incompatible count causes a normal complete statistics query,
+not a partial request or a fabricated zero. Successful complete responses
+populate all their scalar counts after metadata/result validation. No SQL
+parsing or partial-statistics SQL generation is introduced.
 
 ## 4. Public opt-in and freshness semantics
 
@@ -139,7 +119,7 @@ CosmosClientOptions clientOptions = new CosmosClientOptions
 using CosmosClient client = new CosmosClient(accountEndpoint, authKey, clientOptions);
 QueryRequestOptions queryOptions = new QueryRequestOptions
 {
-    FullTextScoreScope = FullTextScoreScope.Local
+    FullTextScoreScope = FullTextScoreScope.Global
 };
 ```
 
@@ -154,7 +134,9 @@ admission semantics below apply when the cache is integrated.
 | Negative, including an infinite-timeout sentinel | Reject immediately in the client-option setter. |
 
 The option is preserved by `CosmosClientOptions.Clone` and applies to eligible
-hybrid queries using that client. There is no equivalent on
+Global-scoped hybrid queries using that client. Local scope always bypasses
+lookup and admission, even if its current ranges cover the whole container.
+There is no equivalent on
 `QueryRequestOptions`; use a separate client for a different age policy.
 During cache-lifetime implementation, capture the age and entry-count policy
 at client construction, even if cache allocation is deferred. Later mutation of
@@ -177,7 +159,9 @@ usable = age >= 0
 ```
 
 Use the cache's immutable client-wide age policy to enforce absolute,
-non-sliding expiry from collection start. Hits never extend it. All queries
+non-sliding expiry from each count's collection start. Hits never extend it.
+Refreshing document count, a path's word count, or one term must not renew
+other term counts. All queries
 sharing a cache use the same allowance, so no caller-specific age check or
 per-entry population allowance is needed. Clients with different policies have
 separate caches.
@@ -189,6 +173,12 @@ use the fetched result for the current query but do not admit it for reuse.
 This is a bound on reuse age, **not** a proof of current index contents or a
 bound on service indexing/replication lag. Collection itself is the existing
 cross-partition operation, not a new atomic corpus snapshot.
+
+The user explicitly accepts independently aged counts from different
+collections. Even when every count is live, this does not establish a common
+sampling generation. Reject numerically impossible assembled results, such as
+a hit count greater than document count or nonzero word count with zero
+documents, and fall back to a complete statistics query. Never clamp counts.
 
 Once selected, a bundle is pinned for that iterator. Do not refresh statistics
 between pages or between ranking components. The allowance is checked when
@@ -258,120 +248,161 @@ Normalization must not become a query analyzer:
   also defines which terms belong to which path/statistics slot.
 - Use resolved plan values for parameterized terms. If a future contract
   introduces explicit parameter references, support it only with an explicit
-  binding to frozen serialized values; a parameter name alone is never a term
+  producer-defined resolution to stable execution values; a parameter name alone is never a term
   identity.
 - Do not infer slot or term associations by parsing SQL. Unknown associations
   make the plan ineligible for caching.
-- Missing, null, empty, unsupported, or malformed required path/term metadata
+- Missing, null, empty, or incomplete path/term metadata
   bypasses caching; the original statistics flow still works. A termless slot
   is eligible only if the producer explicitly defines its count-array shape.
 
-Phase 1 retains the optional field as a Newtonsoft `JToken` and omits null or
-absent metadata during serialization. Field-local deserialization disables
-automatic date parsing, so date-like paths and terms remain exact strings
-without changing how other plan fields are read. Unknown metadata shapes are
-retained without making an otherwise executable legacy plan fail.
+The optional field is `List<FullTextSearchTerms>`, mirroring the producer's
+managed query-plan model. Each entry has `List<string> Path` and
+`List<FullTextSearchTerm> Terms`; each term has `string Term` and optional
+`int? Distance`. These are ordinary Newtonsoft-annotated properties, just like
+the other query-plan fields. Null metadata and null distances are omitted
+during serialization. Date-like paths/terms remain strings through their
+declared string types.
 
-The validating accessor and immutable `StatisticsRequirement` normalization
-belong to the cache-identity implementation. Until then, metadata retention
-alone does not enable caching. Errors in required plan fields still follow
-normal query-plan error handling.
+There is no custom converter, DOM normalization step, or separate
+`StatisticsRequirement` class. Missing fields are optional, not deserialization
+errors. Unknown fields and value conversions use normal JSON.NET behavior;
+incompatible JSON shapes or out-of-range integers follow existing query-plan
+error handling rather than being swallowed. QueryPlan does not depend on
+Cosmos elements. The cache reads the typed models and constructs independent
+path and term identities without a JSON-library bridge or serialize/reparse step.
 
-### Semantic identity and completeness
+The obsolete whole-query `HybridSearchStatisticsCacheKey` is removed.
+Cache `TryGet` and `TryAdd` return Boolean outcomes. Missing/null/empty paths
+and terms, negative distances, or unneeded statistics bypass caching without
+failing the query. A null query-info argument remains a programming error and
+throws `ArgumentNullException`.
+Individual empty strings remain distinct string values.
+Absent/null distance differs from a present zero distance. The cache does not
+retain the mutable lists or model instances.
+Future cache binding can trace a generic bypass/miss without repeating
+validation to recover a more detailed reason.
 
-Use the normalized path-and-term requirements as the primary query-dependent
-identity. `GlobalStatisticsQuery` remains the execution recipe on a miss; its
-text need not be the identity when the producer contract completely describes
-the statistics computation.
+The helpers are not yet wired into query execution. Errors in required plan
+fields still follow normal query-plan error handling.
 
-Terms alone do not prove completeness. Document count, word counts, and term
-counts may also depend on statistics-side filters, matching semantics, or
-analyzer settings. Component-query filters matter here only when they alter the
-statistics corpus, not merely the returned documents.
+### Extracted-metadata identity
 
-At the producer-contract review, establish which supported plan shapes describe
-all these inputs:
+Use the normalized extracted paths, resolved terms, and fuzzy distances as the
+query-dependent identity, together with the container/index identity and
+effective scoring corpus. Do not include SQL text, SQL formatting,
+compatibility fields, or the serialized parameter collection.
 
-- For a known complete contract, use the descriptors plus corpus and semantic
-  context. Omit the full SQL text and unrelated parameters from the key.
-- For a contract with known path/term mappings but unrepresented statistics
-  dependencies, add the exact serialized statistics `SqlQuerySpec` as a
-  conservative identity guard. This captures filters and parameter values
-  without a new SQL parser.
-- If the execution semantics or metadata association are unsupported, bypass
-  caching rather than guessing.
+`GlobalStatisticsQuery` is an execution recipe for a cache miss, not an input to
+key creation. Different projections, top counts, vector parameters, or unused
+parameters must not prevent reuse when extracted full-text requirements and
+scoring scope are unchanged. A changed full-text term still changes the key
+through the producer's resolved metadata.
 
-This is an internal compatibility decision for recognized plan contracts, not
-a customer option or a new cache service. Include the identity-contract kind
-in the key so guarded and complete-contract entries cannot match each other.
-The presence of paths and terms by itself must not select the complete-contract
-case.
+Missing or incomplete metadata retains its explicit bypass behavior. Request
+options and custom-handler presence are not key inputs or key-creation
+eligibility checks. There is no serialized-query fallback or alternate guarded
+identity mode.
 
-### Key
+### Container-revision buckets and search-term keys
 
-Use an immutable structured key, with structural equality over:
+Separate container identity from query identity:
 
-| Field | Purpose |
-|---|---|
-| Internal key-format version and identity-contract kind | Explicit contract; distinguish complete semantic identity from guarded identity. |
-| Container resource ID | Prevent reuse across container deletion/recreation, even at the same name. |
-| Observed container ETag | Conservative container/full-text/index-policy identity. |
-| `FullTextScoreScope` | Keep Global and Local scoring separate. |
-| Exact statistics range descriptors | Identify the corpus actually sent to the statistics pipeline. |
-| Observed physical range IDs and boundaries | Conservatively reject observed split/merge/layout changes. |
-| Ordered `StatisticsRequirement` sequence | Preserve each path, its ordered resolved terms/count expressions, and its statistics-slot association. |
-| Statistics semantics/corpus descriptor, where present | Include statistics-side filters and matching/analyzer/language choices not already represented by the container ETag and scope. |
-| Exact serialized statistics `SqlQuerySpec`, only for guarded identity | Cover statistics-affecting inputs not represented in the recognized metadata contract. |
-| Supported semantic request context | Distinguish eligible consistency/read-strategy settings and any supported option that affects statistics execution. |
+```text
+Client-owned cache
+    (container RID, observed ETag)
+        DocumentCount -> (value, collectionStartedAt)
+        path key
+            TotalWordCount -> (value, collectionStartedAt)
+            term key -> (hitCount, collectionStartedAt)
+```
+
+| Level | Identity | Purpose |
+|---|---|---|
+| Container dictionary | Container RID and observed ETag | Isolate containers and revisions; hold document count once. |
+| Path dictionary | Ordered path segments | Hold total word count once per path. |
+| Hit-count dictionary | Exact term text and optional fuzzy distance | Reuse individual counts across subsets, permutations, and different scoring components. |
+
+Different revisions use different buckets rather than mutating an existing
+bucket's ETag or clearing it when another query observes different metadata.
+ETags are opaque; do not attempt to order revisions. A late fetch for an older
+revision cannot replace the newer revision's entry. Old buckets are reclaimed
+through normal expiration and eviction.
 
 Client ownership implicitly partitions by account, client configuration, and
 credential context; never share this cache statically across clients.
 
-For Global, statistics range identity comes from `allRanges`, not the ranges
-used by component queries. For Local, it comes from the actual `targetRanges`.
-Capture physical identities before the factory converts `PartitionKeyRange`
-objects into `FeedRangeEpk` values. Sort range descriptors deterministically,
-preserving boundaries and inclusivity; do not merge adjacent ranges in v1.
-Where logical partition/feed-range restrictions affect the effective request,
-include their serialized identity as well.
+The scoring corpus is always the entire container, so the key needs no
+statistics ranges, partition IDs, EPK boundaries, feed ranges, or partition-key
+options. Global queries with the same container identity and extracted
+requirements can reuse statistics regardless of their component-query ranges.
+
+The caller must check `FullTextScoreScope.Global` before creating a cache
+binding. Do not reintroduce request options or a scope argument into the key.
+Keep existing range selection in the hybrid stage: Global misses execute over
+`allRanges`, and Local queries continue over `targetRanges` without caching.
 
 The current query properties do not carry a container ETag. Add it to
 `ContainerQueryProperties`, populated alongside the already fetched RID in
 `GetCachedContainerQueryPropertiesAsync`. Do not hash mutable
 `ContainerProperties` instances or retain them in entries.
 
-Use exact bytes/strings for equality, not `GetHashCode`, a SQL string alone, or
+Use exact metadata values for equality, not `GetHashCode` alone or
 a delimiter-joined representation. A digest may accelerate lookup, but matching
 digests must still compare the full identity.
 
-### Serialization and parameter safety
+Path keys are `CosmosObject` values containing a `path` segment array.
+Term keys are `CosmosObject` values containing `term` and nullable `distance`.
+Do not join path segments, split phrase strings, or normalize case. No version
+or kind discriminator is needed. RID and ETag belong only to the outer map.
 
-Reuse `CosmosSerializerCore.ToStreamSqlQuerySpec` and the existing
+Equality and hashing use Cosmos element structural semantics. Object-property
+order is irrelevant, while path-segment order remains significant. Hashes are
+only dictionary accelerators, not equality substitutes. There is no
+serialized identity string or Newtonsoft DOM processing in the cache-key
+layer. It constructs the `Microsoft.Azure.Cosmos.Json`-backed identity from
+the typed CLR models; later mutations of query-plan models cannot
+change existing keys. Never emit raw key objects in diagnostics.
+
+Key creation takes only the hybrid-plan metadata.
+It takes no statistics ranges, `SqlQuerySpec`, serializer,
+`QueryRequestOptions`, or handler-state flag and does not read
+`GlobalStatisticsQuery`.
+
+Cache lookup and admission take captured RID/ETag and the hybrid plan.
+Missing RID or ETag returns false without creating a bucket. Future query
+bindings must retain that pair and an owned snapshot of the ordered path/term
+metadata used by the fetch; never reinterpret old results using a newer plan
+or container revision at publication.
+
+Consistency/read strategy, session tokens, scan/precision flags, excluded
+regions, and custom handlers do not partition the cache or reject key creation.
+The existing request pipeline remains responsible for request validation and
+execution. This does not change the opt-in acceptance of potentially stale
+statistics or the consistency settings used by actual service requests.
+
+### Serialization and parameter stability
+
+For plan and data requests, reuse `CosmosSerializerCore.ToStreamSqlQuerySpec` and the existing
 `CosmosSqlQuerySpecJsonConverter` behavior, including custom serialization and
 `SerializedParameterValue`. Do not use `ToString()` or an unrelated JSON
-serializer to fingerprint parameter objects.
+serializer to reinterpret parameter objects.
 
-On the eligible opt-in path, freeze serialized parameters once at deferred
-pipeline initialization, before plan generation. Use that snapshot for the plan,
-statistics request, and component requests. The existing
-`SerializedParameterValue` representation can preserve the captured raw JSON
-without invoking the user's serializer again.
+The cache relies on parameter values and serialization output remaining stable
+during iterator execution. Use the existing query specification and parameter
+serialization path for planning, statistics collection, component queries, and
+retries. Do not add query-spec snapshots, parameter freezing, extra serialization
+passes, or mutation guards for caching.
 
-This is important both for mutable parameter objects and for custom serializers:
-the identity must describe the actual statistics request. Do not create a key
-from one serialization and populate it using a second, potentially different
-serialization. Keep the disabled path unchanged.
+This assumption keeps resolved plan metadata aligned with parameterized
+statistics requests. Mutating parameter values or changing serializer output
+mid-iterator is outside this cache's guarantees. Cache identities still use
+only resolved paths and terms; cached keys/counts retain neither parameter
+objects nor serialized query payloads. Existing pre-serialized parameter
+handling remains unchanged.
 
-For a complete descriptor contract, key only the resolved values referenced by
-the plan's statistics descriptors. A change to an unrelated projection/vector
-parameter must not invalidate otherwise matching statistics.
-
-For guarded identity, serialize the complete statistics query spec, including
-all its parameters, rather than building a dependency analyzer for SQL.
-Unknown/custom request overrides capable of changing request semantics should
-cause an explicit unsupported-context bypass unless their effect is covered by
-the key. Do not silently treat arbitrary `Properties` or injected headers as
-irrelevant.
+The key does not inspect request options or execute request-header callbacks.
+Query execution continues to use its existing options and handler pipeline.
 
 ## 6. Liveness checks and invalidation
 
@@ -379,12 +410,13 @@ Perform the following checks when the iterator first needs statistics:
 
 | Check | Failure behavior |
 |---|---|
-| Option enabled; hybrid plan requires statistics; supported execution context | Bypass cache. |
-| Usable path-and-term requirements, known slot associations, and a nonempty statistics query | Bypass cache. |
-| Recognized complete statistics identity or conservative request guard | Bypass cache if neither is available. |
-| Required RID, ETag, and range identity available | Bypass cache. |
+| Option enabled and an SDK-managed hybrid plan requires statistics | Otherwise the SDK cache is not used. |
+| `FullTextScoreScope.Global` | Local scope bypasses both lookup and admission. |
+| Usable extracted path-and-term requirements and known slot associations | Bypass cache. |
+| Required RID and ETag available | Bypass cache. |
 | Exact key present | Otherwise miss. |
-| Entry age is within the client-wide allowance | Otherwise remove the expired entry and fetch. |
+| Every selected count is within the client-wide allowance | Otherwise remove expired counts and fetch. |
+| Assembled counts satisfy numeric invariants | Otherwise fetch; do not clamp or return partial results. |
 | Complete, structurally valid immutable result | Otherwise remove that entry and fetch, recording an invariant failure. |
 
 All identity checks use metadata already resolved by normal query setup.
@@ -393,19 +425,19 @@ document count query, or synthetic "liveness query" on a hit.
 
 Consequently:
 
-- An **observed** policy/ETag or routing change produces a different key.
+- An **observed** container policy/ETag change selects a different bucket.
 - A refreshed container RID cannot consume the old container's entry.
 - An unobserved metadata change or document mutation is not detected by these
   checks. TTL only limits reuse of the sampled statistics.
 - Container ETags do not change for every item write and are not corpus versions.
-- Splits do not inherently make aggregated counts invalid, but invalidating on
-  an observed topology change is a simple, conservative v1 policy.
+- Partition splits/merges alone do not change the container-wide identity.
+  A miss still uses the existing fan-out and partition-retry behavior.
 - Ordinary name-cache-stale retry still refreshes metadata and reconstructs the
   pipeline. The reconstructed pipeline gets a new binding; do not carry the
   original cached statistics across that retry.
 
 Publish a fetched result under the identity captured for that fetch, never
-under a newer RID/ETag/routing identity. If a relevant identity change is
+under a newer RID/ETag identity. If a relevant identity change is
 explicitly observed during collection, skip admission. Otherwise, a subsequent
 query with refreshed metadata naturally cannot hit the old identity.
 
@@ -418,6 +450,7 @@ external writes and would not establish strict freshness.
 ClientContextCore
     captures client-wide age and entry-count policy
     owns one HybridSearchStatisticsCache
+        (RID, ETag) -> document count + path word counts + per-term hit counts
                     |
 QueryIterator -> InputParameters
                     |
@@ -440,22 +473,28 @@ HybridSearchCrossPartitionQueryPipelineStage
 
 ### One new service, not a cache framework
 
-Add an internal `HybridSearchStatisticsCache` with a deliberately small surface:
+Phase 4 adds an internal `HybridSearchStatisticsCache` with a small surface:
 
 ```text
-TryGet(bindingKey) -> hit/miss decision and statistics
-TryAdd(bindingKey, statistics, collectionStartedAt)
+GetElapsedTime() -> monotonic time used to capture collection start
+TryGet(containerRID, containerETag, hybridPlan, out statistics) -> bool
+TryAdd(containerRID, containerETag, hybridPlan, statistics, collectionStartedAt) -> bool
 Clear/Dispose
 ```
 
-Nested immutable `StatisticsRequirement`, `Key`, `Entry`, `Binding`, and decision
-types are sufficient; they need not become separate services or public
-abstractions.
+The service consumes existing typed query-plan models and returns the existing
+statistics classes. Private container/path dictionaries and an immutable
+`CachedCount` value hold only the scalar and its timestamp. No whole-query key,
+statistics-requirement class, or general cache framework is needed.
 
-The cache captures the client-wide maximum age and entry-count limit at
-construction. The binding carries only the cache reference and immutable key.
+The cache captures maximum age and the client-wide entry-count limit at
+construction. Lookup builds a new independent statistics snapshot in plan
+order, without renewing any count's age. `Count` reports retained hit-count
+entries; `ContainerRevisionCount` reports nonempty container buckets.
+The future binding carries the cache reference, captured RID/ETag, and an
+owned snapshot of the hybrid plan's ordered path/term metadata.
 It does not hold a pipeline, response, `ITrace`, cancellation token,
-or a reference back to the iterator. The frozen statistics request is an
+or a reference back to the iterator. The statistics request is an
 iterator-owned input, not a cache entry.
 
 Responsibilities:
@@ -478,32 +517,54 @@ client construction, not mutable options read at first query execution.
 
 ### Storage and concurrency
 
-Use a small `Dictionary<Key, Entry>` behind one short lock. Never serialize,
-copy large payloads, execute I/O, or await while holding it.
+Use one outer container-revision dictionary, nested path dictionaries, and
+per-path hit-count dictionaries behind one short lock. The limit applies to
+the total number of distinct hit-count entries across all paths and containers.
+Remove empty path and container parents; do not retain document/word counts
+without any descendant terms. Thus parent counts are bounded by term capacity.
+Misses do not create storage.
+
+Prepare immutable keys and validate/copy incoming scalar values outside the
+lock. Allocate lookup result buffers outside the lock, read selected counts
+under one lock, then construct the returned statistics objects outside it.
+Never execute I/O or await while holding the lock. Use a monotonic clock with
+an injected elapsed-time delegate for deterministic tests.
 
 Phase 2 adds one internal `CosmosClientOptions` capacity setting:
-`FullTextStatisticsCacheMaxEntries`, defaulting to 256 entries per client.
+`FullTextStatisticsCacheMaxEntries`, defaulting to 256 term hit counts per client.
 The setter rejects zero or negative values immediately, leaving the previous
 value unchanged. Client construction clones the options without a separate
 validation pass. Changing the original options after constructing a client does
 not change that client's setting. Internal callers and tests can override it;
 there are no public capacity options, environment variables, or global mutable
 test settings.
-The cache will consume this setting when its storage/lifetime is implemented.
+The storage constructor accepts the captured entry limit; phase 5 must wire
+the existing client option into construction without adding per-container limits.
 
 Use only the entry-count limit. Do not add byte-size limits, retained-size
 accounting, or size-based admission. This bounds the number of retained entries,
 not their combined memory footprint; unusually large entries can still consume
 substantial memory.
 
-Remove absolutely expired entries during insertion. If necessary, evict the
-oldest collected entry by scanning the bounded dictionary. No LRU list, access
-timestamp writes, timer, or background eviction loop is needed.
+Remove expired counts during insertion. If necessary, evict the oldest
+collected hit counts by bounded scan, preserving already-cached terms needed
+by the incoming publication. Deduplicate repeated `(path, term, distance)`
+slots for capacity accounting. If a complete response exceeds total term
+capacity, skip its admission without evicting existing data. No LRU list,
+access timestamp writes, timers, or background eviction is needed.
 
-When concurrent misses complete for the same key, prefer the entry with the
-later collection start. A slow older fetch must not replace a newer sample or
-reset its freshness. All callers still use the statistics they independently
-fetched for their own iteration.
+For each individual counter, prefer the later collection start. A slow older
+fetch may fill missing terms but must not replace newer document, word, or hit
+counts. Equal timestamps retain the existing counter. Only counters actually
+present in a successful response are updated; unrelated terms keep their ages.
+All callers still use their independently fetched result on a miss.
+
+Age is checked again under the lock after copying, so a slow copy cannot admit
+an expired entry. The cache also rejects future collection-start times.
+Disposal clears all dictionary levels and prohibits lookup/admission,
+including publication already copying a snapshot when disposal occurs.
+Clearing alone removes retained entries but allows subsequent admission.
+Neither operation mutates a snapshot already selected by an iterator.
 
 ### Why not reuse `AsyncCache`?
 
@@ -546,8 +607,9 @@ service activity ID, or response header set.
    and concurrency behavior used today.
 2. Capture the monotonic collection start before the first network operation.
 3. Run the existing `GatherStatisticsAsync`.
-4. On complete success, make an immutable cache snapshot and attempt admission
-   if this query is eligible. Do not publish partial aggregates.
+4. On complete success, pass the valid aggregate to `TryAdd` under the captured
+   RID/ETag and ordered plan metadata. The cache validates and distributes its
+   scalar values; do not publish partial aggregates or fetch only missing terms.
 5. Create component stages using the same gathered statistics.
 6. Return the existing statistics `QueryPage`, including its actual request
    charge, then execute components on subsequent moves as today.
@@ -588,18 +650,18 @@ client disposal must not mutate the bundle already selected by a query.
 
 ## 9. Cached value ownership and RU accounting
 
-Reuse `GlobalFullTextSearchStatistics` and `FullTextStatistics`, but defensively
-copy the outer statistics collection and every hit-count array before
-publication. Their current constructors accept externally owned collections or
-arrays; read-only exposure alone does not ensure immutable backing storage.
+Reuse `GlobalFullTextSearchStatistics` and `FullTextStatistics` as input/output
+models. Admission copies scalar values, never retaining input arrays, lists,
+or mutable plan objects. Lookup creates an independent read-only outer list
+and new hit-count arrays; eviction, refresh, and disposal cannot alter a
+snapshot already selected by an iterator.
 
 Store only:
 
 ```text
-Entry
-    immutable statistics
+CachedCount
+    value
     collectionStartedAt
-    diagnosticEntryId
 ```
 
 Do not store `QueryPage`, `QueryPageParameters`, headers, session tokens, query
@@ -624,16 +686,16 @@ low-cardinality fields:
 | Field | Examples |
 |---|---|
 | `Decision` | `Hit`, `Miss`, `Bypass` |
-| `Reason` | `NotFound`, `Expired`, `Disabled`, `MissingPaths`, `MissingTerms`, `InvalidRequirements`, `UnknownSlotMapping`, `MissingIdentity`, `UnsupportedExecutionContext`, `InvalidCachedShape` |
-| `Scope` | `Global`, `Local` |
-| `IdentityContract` | `CompleteDescriptors`, `GuardedRequest` |
-| `RequirementCount`, `TermDescriptorCount`, `StatisticsRangeCount` | Counts, not paths, terms, or boundaries. |
-| `MaxAgeMs`, `EntryAgeMs` | Client-wide allowance and entry age; entry age only if an entry was found. |
-| `EntryId` | Opaque cache-local identifier for matching a hit to a population event. |
+| `Reason` | `NotFound`, `Expired`, `Disabled`, `IneligibleMetadata`, `UnsupportedExecutionContext`, `InvalidCachedShape` |
+| `Scope` | `Global` for cache operations; `Local` may be traced as a scope bypass. |
+| `PathSlotCount`, `TermSlotCount`, `StatisticsRangeCount` | Counts, not paths, terms, or boundaries. |
+| `MaxAgeMs` | Client-wide allowance applied independently to every selected count. |
 | `PopulationDecision` | `Stored`, `TooOld`, `Superseded`, `IdentityChanged`, `DescriptorMismatch`, `ClientDisposed` |
 
-If the full key changes, the result may simply be `NotFound`. Do not claim to
-know whether terms, a RID, an ETag, or ranges changed without evidence, and do not
+There is no single cached-entry ID or collection time for an assembled result.
+Do not assign one counter's age to the entire snapshot. If a required path or
+term is absent, the result may simply be `NotFound`. Do not claim to
+know whether terms, a RID, or an ETag changed without evidence, and do not
 maintain a second history index just to classify misses.
 
 Nest real statistics execution beneath an existing query trace or a clearly
@@ -642,8 +704,8 @@ network subtree.
 
 Do not log raw SQL, parameters, full-text paths, terms, hit counts, full keys,
 or hashes derived from low-entropy search terms. Existing query-text opt-ins
-remain separate. An opaque entry ID gives useful correlation without making
-cache diagnostics a new customer-data channel.
+remain separate. Use the existing iterator trace relationships for correlation
+without making cache diagnostics a new customer-data channel.
 
 No new public metrics or custom trace-datum hierarchy is required for v1.
 
@@ -656,24 +718,27 @@ testability pattern in `WebExceptionRetryPolicy`, rather than sleeping.
 
 Cover exact expiry boundaries, collection duration exceeding the allowance,
 non-sliding hits, isolated clients with different age policies, defensive
-copies, the entry-count limit, eviction, disposal, and out-of-order concurrent
-publication.
+copies, the global term-count limit, eviction, disposal, and out-of-order
+concurrent publication. Verify independent per-counter timestamps, no renewal
+of old terms when shared counts refresh, numeric-compatibility misses, exact
+metadata/result dimensions, conflicting duplicates, and oversized batch bypass.
 
 ### Key and plan compatibility tests
 
-Cover absent/null/empty/malformed paths and terms, path-to-term association,
+Cover absent/null/empty/incomplete paths and terms, normal Newtonsoft parsing
+and error behavior for incompatible JSON, path-to-term association,
 path and term order/case, repeated paths with different term groups, duplicate
 terms, phrases versus separate words, matching/analyzer choices, and output-slot
 mapping. Include parameter-bound terms, custom serializers,
-`SerializedParameterValue`, mutable parameter snapshots, and exact equality
+`SerializedParameterValue`, stable execution parameters, and exact equality
 even when lookup hashes collide.
 
-For complete descriptors, verify that equivalent literal and parameter-bound
+Verify that equivalent literal and parameter-bound
 requirements share identity when their resolved values and semantics match,
-and that unrelated parameter changes do not cause misses. For guarded identity,
-verify exact statistics query/parameter matching and separation from
-complete-contract entries. The same terms over different statistics filters
-must never collide.
+and that unrelated parameter changes do not cause misses. Use real native plans
+with different projections, vector values, parameter ordering, and unused
+parameters to verify cross-query reuse. Different containers/revisions must
+select different buckets; Local scoring remains uncached.
 
 Exercise both gateway-deserialized and locally generated plans. Confirm that
 older producers without metadata execute normally and that unfamiliar optional
@@ -687,21 +752,25 @@ Extend the existing mock and statistics-range/request-charge assertions in
 | Scenario | Required observation |
 |---|---|
 | Disabled or missing metadata | Existing statistics requests and result behavior. |
-| First eligible query | Full statistics fan-out; one complete admitted bundle. |
+| First eligible query | Full statistics fan-out; admit document, path-word, and per-term hit counts. |
 | Same key while live | Zero statistics backend requests; unchanged frozen-corpus results. |
-| Same path, different terms | Miss, with no reuse of the previous hit-count array. |
+| Same path, an uncached term | Full miss; never reuse another term's hit count. |
 | Same terms assigned to different paths | Miss; no cross-path count reuse. |
-| Same path, reordered or repeated terms | Preserve slot order; no sorting/deduplication-based false hit. |
-| Same descriptors, different projection/vector-only parameters | Hit under the complete contract; guarded identity may conservatively miss. |
-| Same descriptors, different statistics-side filters or matching semantics | Different identity or explicit bypass, never a false hit. |
+| Same path, reordered/subset/repeated terms | Reuse individual counts and reconstruct the exact requested order and duplicates. |
+| Requested counts collected by different queries | Hit if every selected scalar is live and the assembled counts are numerically compatible. |
+| Refreshed document/word count with an expired old term | Miss; parent refresh does not renew the term. |
+| Live old hit count exceeds a newer document count | Miss and fetch the complete statistics query; do not clamp values. |
+| Same descriptors, different projection/vector-only or unused parameters | Global cache hit when container identity matches. |
+| Different supported path/term/distance values or scoring corpus | Different identity or explicit bypass, never a false hit. |
 | Missing terms, unresolved bindings, or unknown slot mapping | Explicit bypass with normal statistics execution. |
 | Optional descriptor/result shape mismatch | Skip admission; no incompatible bundle can later be reused. |
 | Expired entry | Normal fresh statistics request. |
 | Clients with different age allowances | Independent cache policy and storage; no per-query override. |
-| Global with different component target ranges | Reuse only if global statistics identity is identical. |
-| Local with different effective statistics ranges | No cross-corpus reuse. |
-| Global versus Local over otherwise equal ranges | Separate cache identities. |
-| Observed RID, ETag, range ID, or boundary change | Miss; no reuse under the refreshed identity. |
+| Global with different component target ranges or original routing inputs | Reuse the same container-wide statistics. |
+| Local scope, including ranges covering the whole container | No cache lookup or admission; preserve existing statistics requests. |
+| Local after an equivalent Global query warms the cache | Still collect Local statistics; do not consume the Global entry. |
+| Observed RID or ETag change | Miss; no reuse under the refreshed identity. |
+| Partition topology change with otherwise unchanged identity | No topology discriminator in the Global key. |
 | Name-cache-stale pipeline reconstruction | New binding; preserved existing retry behavior. |
 | Partial statistics failure or cancellation | No partial admission and no stale fallback. |
 | Concurrent cold misses | Independent cancellation, responses, and RU accounting. |
@@ -710,13 +779,14 @@ Extend the existing mock and statistics-range/request-charge assertions in
 | Skip/take, singleton, weighted RRF, and multi-page reads | Existing ranking and paging behavior on a frozen corpus. |
 | Long-lived iterator crossing TTL | Same selected statistics throughout that iterator. |
 | Strong, Bounded Staleness, GlobalStrong, or explicit session tokens | Eligible for opt-in caching; retain original service request semantics. |
-| Unsupported execution context or distributed execution | Explicit bypass with normal execution. |
+| Server-managed distributed execution | Remains outside this SDK statistics pipeline. |
 | Diagnostic inspection | Correct decisions and charges; no raw search content or old response metadata. |
 
 ### Emulator and acceptance criteria
 
-Extend existing hybrid-search emulator coverage, including both scoring scopes
-and multiple physical partitions. Use injected time for expiry tests.
+Extend existing hybrid-search emulator coverage with Global cache scenarios
+across multiple physical partitions and Local uncached regressions. Use injected
+time for expiry tests.
 
 On a frozen corpus, a warm eligible query must:
 
@@ -730,7 +800,7 @@ not claim index freshness before the emulator/service has actually exposed the
 write.
 
 Measure warm first-result latency, actual RU totals, hit rate, and retained
-memory under high-cardinality terms and many Local scopes. Do not assert a
+memory under high-cardinality terms and many containers. Do not assert a
 universal percentage improvement or simulate an engine field as evidence that
 the real producer already emits it.
 
@@ -738,17 +808,19 @@ the real producer already emits it.
 
 1. **Confirm the producer contract.** Obtain actual path-and-term payloads from
    gateway and ServiceInterop plans, including repeated paths, phrases,
-   parameterized terms, and statistics-slot mappings. Establish whether the
-   descriptors fully identify statistics filters and matching semantics; use
-   the request guard until completeness is established. No new tokenization
-   logic belongs here.
+   parameterized terms, and statistics-slot mappings. Use extracted metadata
+   as the query-dependent key; do not reintroduce serialized SQL or parameter
+   guards. No new tokenization logic belongs here.
 2. **Review the public semantics.** Approve the client option, consistency
    bypass policy, and bounded-staleness documentation. Keep the default off.
-3. **Add the passive cache and tests.** Keep key/entry types nested and retain
-   the existing statistics result classes.
+3. **Add the passive cache and tests.** Cache scalar counts under path and term
+   identities, reconstruct the existing statistics result classes in plan order,
+   and rely on stable parameters and serialization during iterator execution.
 4. **Wire identity and options.** Capture the `CosmosClientOptions` policy in
    client-context ownership; update `ContainerQueryProperties`,
    `CosmosQueryClient`/`CosmosQueryClientCore`, and query-factory bindings.
+   Gate cache bindings on Global scope; leave the existing statistics range
+   selection and Local execution in the hybrid stage.
    Do not add cache-age fields to request options or `InputParameters`.
 5. **Integrate the hybrid stage.** Add the optional binding to factories, lazy
    statistics pipeline creation, hit selection, completed-result admission, and
@@ -768,7 +840,7 @@ unsupported metadata must reduce cache coverage, not block query execution.
 
 | Alternative | Why not v1 |
 |---|---|
-| Per-path or per-term cache assembly | Terms are available, but assembly adds partial coverage, slot remapping, and multiple collection times/TTLs; complete bundles keep v1 smaller. |
+| Common-generation-only statistics | Not selected: the user accepts independently bounded-age counts. Numeric compatibility is still checked before returning a result. |
 | Query-text parsing to extract dependencies | Duplicates engine knowledge about expressions, tokenization, language, filters, and parameter use. |
 | In-flight query coalescing | Adds cancellation, pipeline lifetime, trace ownership, and RU-attribution decisions. |
 | Background refresh or stale-on-error | More lifecycle work and a less obvious freshness/failure contract. |
@@ -776,10 +848,6 @@ unsupported metadata must reduce cache coverage, not block query execution.
 | Process-wide or persistent cache | Cross-client isolation, lifecycle, and invalidation complexity without a demonstrated requirement. |
 | Granular write/index invalidation | SDK writes are only one source of change and do not establish index visibility. |
 
-If workloads show poor whole-bundle hit rates, use the existing path-and-term
-metadata to evaluate subset/permutation reuse or entries keyed by an individual
-`StatisticsRequirement`. First define result-slot remapping, shared document
-count ownership, and the treatment of independently collected values. Confirm
-any analyzer/corpus dependencies not already covered by the producer contract.
-Term availability enables that extension; simplicity and snapshot ownership are
-the reasons to defer it, not an assumption that terms are missing.
+Subset, permutation, repeated-slot, and cross-query count reuse are implemented.
+Generating narrower statistics queries for only missing terms remains deferred:
+every miss continues using the existing complete statistics query.

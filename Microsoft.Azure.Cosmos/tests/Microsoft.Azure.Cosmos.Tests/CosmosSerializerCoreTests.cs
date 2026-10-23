@@ -19,6 +19,23 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class CosmosSerializerCoreTests
     {
         [TestMethod]
+        public void SerializedQueryParametersBypassCustomSerializer()
+        {
+            const string raw = "{ \"precise\": 9007199254740993.123456789, \"date\": \"2026-10-20T12:00:00+01:00\" }";
+            CosmosSerializerCore serializer = new CosmosSerializerCore(new CosmosSerializerHelper(
+                null,
+                _ => Assert.Fail("Unexpected deserialization."),
+                _ => Assert.Fail("Pre-serialized parameters must not invoke the custom serializer.")));
+            using MemoryStream parameterStream = new MemoryStream(Encoding.UTF8.GetBytes(raw));
+            QueryDefinition query = new QueryDefinition("SELECT * FROM c").WithParameterStream("@raw", parameterStream);
+            using Stream stream = serializer.ToStreamSqlQuerySpec(query.ToSqlQuerySpec(), ResourceType.Document);
+            using StreamReader reader = new StreamReader(stream);
+            Assert.AreEqual(
+                "{\"query\":\"SELECT * FROM c\",\"parameters\":[{\"name\":\"@raw\",\"value\":" + raw + "}]}",
+                reader.ReadToEnd());
+        }
+
+        [TestMethod]
         public void ValidateSqlQuerySpecSerialization()
         {
             int toCount = 0;
