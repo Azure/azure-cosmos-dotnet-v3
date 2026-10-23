@@ -38,6 +38,25 @@ using (FeedIterator<dynamic> feedIterator = container.GetItemQueryIterator<dynam
 
 For available versions, see [SDK versioning](./docs/versioning.md).
 
+### Opt-in local query planning on Linux
+
+On Linux x64 and ARM64, set `AZURE_COSMOS_USE_QUERY_INTEROP=true` before starting
+the application to generate query plans locally using the bundled
+`Microsoft.Azure.Cosmos.QueryPlanInterop.Linux` native library. Publish with
+`linux-x64` or `linux-arm64` to include the matching native asset; RID-independent
+NuGet builds retain both assets under `runtimes`.
+
+The default remains gateway query planning on Linux. Windows keeps its existing
+ServiceInterop behavior. `AZURE_COSMOS_BYPASS_QUERY_PARSING=true` overrides the
+opt-in and forces gateway planning. If the native library or its dependencies
+cannot load, the SDK logs the failure and uses gateway planning. Availability
+is checked once per process; restart after fixing native dependencies.
+This option changes query-plan generation only, not the client's Direct/Gateway
+connection mode. Queries that can already skip query planning continue to do so.
+Linux musl distributions are not supported by these glibc native assets.
+The native libraries require glibc 2.17 or later and `libatomic.so.1` (for example,
+the `libatomic1` package on Ubuntu).
+
 ## Useful links
 
 - [Get Started APP](https://docs.microsoft.com/azure/cosmos-db/sql-api-get-started)

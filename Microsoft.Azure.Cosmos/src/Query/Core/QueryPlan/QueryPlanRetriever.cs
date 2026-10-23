@@ -52,7 +52,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         public static bool BypassQueryParsing()
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return ConfigurationManager.ForceBypassQueryParsing()
+                    || BypassQueryParsingOnLinux(
+                        ConfigurationManager.GetEnvironmentVariable(ConfigurationManager.UseQueryInterop, defaultValue: false),
+                        RuntimeInformation.ProcessArchitecture,
+                        QueryPlanInterop.LinuxLibraryAvailable);
+            }
+
             return Documents.CustomTypeExtensions.ByPassQueryParsing() || ConfigurationManager.ForceBypassQueryParsing();
+        }
+
+        internal static bool BypassQueryParsingOnLinux(bool enabled, Architecture architecture, Lazy<bool> libraryAvailable)
+        {
+            return !QueryPlanInterop.SupportsLinuxPlanning(OSPlatform.Linux, architecture, enabled)
+                || !libraryAvailable.Value;
         }
 
         public static async Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(
@@ -145,10 +160,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             using (ITrace gatewayQueryPlanTrace = trace.StartChild("Gateway QueryPlan", TraceComponent.Query, TraceLevel.Info))
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                if ((RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                             && Documents.ServiceInteropWrapper.Is64BitProcess)
+                    || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && QueryPlanInterop.SupportsLinuxPlanning(
+                        OSPlatform.Linux,
+                        RuntimeInformation.ProcessArchitecture,
+                        ConfigurationManager.GetEnvironmentVariable(ConfigurationManager.UseQueryInterop, defaultValue: false))))
                 {
-                    // It's Windows and x64, should have loaded the DLL
+                    // Native planning is supported or opted into, but the gateway path was selected.
                     gatewayQueryPlanTrace.AddDatum("ServiceInterop unavailable", true);
                 }
                 
