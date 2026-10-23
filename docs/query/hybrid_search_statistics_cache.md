@@ -1,9 +1,9 @@
 # Hybrid search full-text statistics cache
 
-**Status:** Phases 1-4 expose query-plan metadata, validated configuration,
-and hierarchical storage of independently aged
-document, path-word, and term-hit counts. Client ownership and query-pipeline integration
-are not implemented; queries do not yet reuse cached statistics.
+**Status:** Phases 1-5 expose query-plan metadata, validated configuration,
+hierarchical storage of independently aged counts, and constructor-injected client-owned
+cache lifetime. Query binding and pipeline integration are not implemented;
+queries do not yet reuse cached statistics.
 
 ## 1. Recommendation and agreed scope
 
@@ -48,8 +48,8 @@ Paths below are relative to `Microsoft.Azure.Cosmos\src`.
 | `Query\Core\Pipeline\CrossPartition\HybridSearch\HybridSearchCrossPartitionQueryPipelineStage.cs` | Selects all ranges for Global or target ranges for Local, gathers statistics, rewrites component queries, then executes them. | Use the cache only for Global. Leave Local collection unchanged; Global misses still fan out over all ranges. |
 | `Query\Core\Pipeline\CrossPartition\HybridSearch\GlobalFullTextSearchStatistics.cs` | Holds one document count and an ordered list of full-text statistics. | Return this existing representation as a per-lookup snapshot, rather than storing query-shaped bundles. |
 | `Query\Core\Pipeline\CrossPartition\HybridSearch\FullTextStatistics.cs` | Holds `TotalWordCount` and ordered `HitCounts`. | Preserve array order and term-specific identity. |
-| `Query\v3Query\CosmosQueryClientCore.cs` | Has access to the client context and the query-spec serializer; retrieves cached container properties. | Bind plan requirements to serialized parameter values and expose the client-owned cache to execution. |
-| `Resource\ClientContextCore.cs` | Owns client-wide services and their lifetime. | Own the cache here, not on each `Container` handle or iterator. |
+| `Query\v3Query\CosmosQueryClientCore.cs` | Exposes the client context's nullable `HybridSearchStatisticsCache` property; retrieves cached container properties. | Query binding can use the injected cache after checking Global/hybrid eligibility, without reading mutable options. |
+| `Resource\ClientContextCore.cs` | Accepts a configured cache or null through its constructor and owns its lifetime. | The factory configures the cache; the context stores only the readonly dependency, not separate age/capacity fields. |
 
 Important existing details:
 
@@ -138,9 +138,10 @@ Global-scoped hybrid queries using that client. Local scope always bypasses
 lookup and admission, even if its current ranges cover the whole container.
 There is no equivalent on
 `QueryRequestOptions`; use a separate client for a different age policy.
-During cache-lifetime implementation, capture the age and entry-count policy
-at client construction, even if cache allocation is deferred. Later mutation of
-options must not change the running cache's policy.
+The existing client-context factory constructs a cache from these options when
+the age is positive, or passes null when disabled. The cache captures its own
+age/capacity policy. Later mutation of options does not reconfigure or replace
+the injected dependency.
 
 Obtain the policy through the existing client context; do not thread a cache-age
 value through `QueryIterator` or `InputParameters`, and do not send it as a
@@ -510,10 +511,30 @@ Pass an optional binding through `PipelineFactory` to the hybrid stage. Keep
 `IDocumentContainer` and transport interfaces unchanged. Existing pipeline
 tests can pass no binding; cache-aware tests can inject a real small cache.
 
-Own the cache lazily in `ClientContextCore` so multiple `GetContainer` handles
-share it without creating process-wide state. Clear it and reject new admission
-when the client is disposed. Lazy allocation must use the policy captured at
-client construction, not mutable options read at first query execution.
+Phase 5 uses constructor injection. The existing `ClientContextCore.Create`
+factory configures a `HybridSearchStatisticsCache` from the cloned client
+options for a positive age; otherwise it passes null. The context constructor
+accepts either and stores only a readonly cache reference. It has no separate
+cache age/capacity fields and performs no lazy creation.
+
+The nullable `HybridSearchStatisticsCache` properties on `CosmosClientContext`
+and `CosmosQueryClient` expose that same dependency. Enabled clients allocate
+one empty cache during construction, not on first query. Disabled clients
+allocate none. Creating containers or reading the property never creates a
+replacement. Changes to supplied or exposed options cannot change cache policy.
+
+The context owns disposal through its existing cleanup flow, with a null-safe
+cache disposal call before the other resources. There is no additional context
+disposal lock or change to when its disposed flag is set. CosmosClient already
+guards the normal disposal entry point, and the cache's own lock synchronizes
+lookup/admission with cache disposal. After disposal, property access throws the
+normal ObjectDisposedException and held cache references reject new admission.
+Selected statistics remain independent of disposal.
+
+During phase-6 integration, use the cache property after query-level eligibility
+checks; null means disabled. Do not introduce another factory/get-or-create
+accessor or re-read mutable ClientOptions to decide enablement. Global/Local
+binding and statistics request-skipping remain pending.
 
 ### Storage and concurrency
 
@@ -538,8 +559,8 @@ validation pass. Changing the original options after constructing a client does
 not change that client's setting. Internal callers and tests can override it;
 there are no public capacity options, environment variables, or global mutable
 test settings.
-The storage constructor accepts the captured entry limit; phase 5 must wire
-the existing client option into construction without adding per-container limits.
+The client owner passes the captured entry limit into the storage constructor.
+There are no per-container limits.
 
 Use only the entry-count limit. Do not add byte-size limits, retained-size
 accounting, or size-based admission. This bounds the number of retained entries,

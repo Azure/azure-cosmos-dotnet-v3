@@ -18,6 +18,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQuery;
@@ -1286,6 +1287,8 @@
         }
 
         public override Action<IQueryable> OnExecuteScalarQueryCallback => throw new NotImplementedException();
+
+        public override HybridSearchStatisticsCache HybridSearchStatisticsCache => null;
 
         public override bool BypassQueryParsing()
         {
