@@ -27,11 +27,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### <a name="3.64.0-preview.3"/> [3.64.0-preview.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.3) - 2026-10-22
 
-#### Bugs Fixed
-
-- [6160](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6160) Gateway V2 (thin client): Fixes duplicate range-header exceptions for queries and incremental change feed reads scoped to part of a physical partition, while preserving the requested subrange.
-- [6144](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6144) Bulk: Honors server-provided retry delays for individually throttled operations without blocking other operations in the same batch.
-
 ### <a name="3.63.3"/> [3.63.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.3) - 2026-10-22
 
 #### Bugs Fixed
