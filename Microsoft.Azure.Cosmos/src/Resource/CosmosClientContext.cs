@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -39,6 +40,8 @@ namespace Microsoft.Azure.Cosmos
         internal abstract CosmosClientOptions ClientOptions { get; }
 
         internal abstract string UserAgent { get; }
+
+        internal abstract HybridSearchStatisticsCache HybridSearchStatisticsCache { get; }
 
         internal abstract BatchAsyncContainerExecutor GetExecutorForContainer(
             ContainerInternal container);

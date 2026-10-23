@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -17,6 +18,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     internal abstract class CosmosQueryClient
     {
         public abstract Action<IQueryable> OnExecuteScalarQueryCallback { get; }
+
+        public abstract HybridSearchStatisticsCache HybridSearchStatisticsCache { get; }
 
         public abstract Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(
             string containerLink,

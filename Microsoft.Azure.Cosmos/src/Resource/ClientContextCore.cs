@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -34,6 +35,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly RequestInvokerHandler requestHandler;
         private readonly CosmosClientOptions clientOptions;
+        private readonly HybridSearchStatisticsCache hybridSearchStatisticsCache;
 
         private readonly string userAgent;
         private bool isDisposed = false;
@@ -47,10 +49,12 @@ namespace Microsoft.Azure.Cosmos
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             string userAgent,
-            BatchAsyncContainerExecutorCache batchExecutorCache)
+            BatchAsyncContainerExecutorCache batchExecutorCache,
+            HybridSearchStatisticsCache hybridSearchStatisticsCache)
         {
             this.client = client;
             this.clientOptions = clientOptions;
+            this.hybridSearchStatisticsCache = hybridSearchStatisticsCache;
             this.serializerCore = serializerCore;
             this.responseFactory = cosmosResponseFactory;
             this.requestHandler = requestHandler;
@@ -149,6 +153,10 @@ namespace Microsoft.Azure.Cosmos
             clientOptions.SetSerializerIfNotConfigured(serializerCore.GetCustomOrDefaultSerializer());
 
             CosmosResponseFactoryInternal responseFactory = new CosmosResponseFactoryCore(serializerCore);
+            HybridSearchStatisticsCache hybridSearchStatisticsCache =
+                clientOptions.FullTextStatisticsCacheMaxAge is TimeSpan maxAge && maxAge > TimeSpan.Zero
+                    ? new HybridSearchStatisticsCache(maxAge, clientOptions.FullTextStatisticsCacheMaxEntries)
+                    : null;
 
             return new ClientContextCore(
                 client: cosmosClient,
@@ -158,7 +166,8 @@ namespace Microsoft.Azure.Cosmos
                 requestHandler: requestInvokerHandler,
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
-                batchExecutorCache: new BatchAsyncContainerExecutorCache());
+                batchExecutorCache: new BatchAsyncContainerExecutorCache(),
+                hybridSearchStatisticsCache: hybridSearchStatisticsCache);
         }
 
         /// <summary>
@@ -179,6 +188,8 @@ namespace Microsoft.Azure.Cosmos
         internal override CosmosClientOptions ClientOptions => this.ThrowIfDisposed(this.clientOptions);
 
         internal override string UserAgent => this.ThrowIfDisposed(this.userAgent);
+
+        internal override HybridSearchStatisticsCache HybridSearchStatisticsCache => this.ThrowIfDisposed(this.hybridSearchStatisticsCache);
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -526,6 +537,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (disposing)
                 {
+                    this.hybridSearchStatisticsCache?.Dispose();
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();
                     this.inferenceService?.Dispose();
