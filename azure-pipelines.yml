@@ -39,7 +39,7 @@ jobs:
     inputs:
       command: test
       projects: Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Microsoft.Azure.Cosmos.Tests.csproj
-      arguments: '-c Release /p:OS=Linux --filter "FullyQualifiedName~QueryPlanInteropTests|FullyQualifiedName~QueryPartitionProviderTests|FullyQualifiedName~CosmosTargetsInteropPublishTests"'
+      arguments: '-c Release /p:OS=Linux --filter "FullyQualifiedName~QueryPlanInteropTests|FullyQualifiedName~QueryPartitionProviderTests|FullyQualifiedName~CosmosTargetsInteropPublishTests|FullyQualifiedName~QueryPlanBaselineTests|FullyQualifiedName~OptimisticDirectExecutionQueryBaselineTests|FullyQualifiedName~FullPipelineTests|FullyQualifiedName~PageSizeFactorForTopTests|FullyQualifiedName~QueryPlanRetrieverTests|FullyQualifiedName~PartitionRoutingHelperTest|FullyQualifiedName~SubpartitionTests"'
       publishTestResults: true
 
 - template:  templates/static-tools.yml
