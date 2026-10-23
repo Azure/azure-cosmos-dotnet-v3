@@ -26,9 +26,9 @@ Copyright (C) Microsoft Corporation. All rights reserved.
 	    Currently on win-x64 only, but this allows for future expansion for win-arm64.
   -->
   <ItemGroup Condition="'$(RuntimeIdentifier)' == '' OR $(RuntimeIdentifier.StartsWith('win'))">
-    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Microsoft.Azure.Cosmos.ServiceInterop.dll">
+    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>Microsoft.Azure.Cosmos.ServiceInterop.dll</TargetPath>
+      <TargetPath>%(Filename)%(Extension)</TargetPath>
       <Visible>False</Visible>
     </ContentWithTargetPath>
   </ItemGroup>

@@ -36,22 +36,24 @@ new public NuGet package. It retains the 3.44.1 assembly identity, signing key,
 internal namespaces, friend assemblies and resource name. The upstream generated
 `AssemblyVersionInfo` type is generated locally from `DirectVersion`.
 
-Native query planning uses `Microsoft.Azure.Cosmos.QueryPlanInterop.Windows`
-**1.0.5**, acquired exclusively through NuGet. Only its Windows x64 DLL is used,
-renamed to `Microsoft.Azure.Cosmos.ServiceInterop.dll` for the existing P/Invoke
-contract. No `.lib`, `.pdb`, CRTCompat or Visual C++ runtime DLL is copied from
-CosmosDB. Existing platform-selection logic is unchanged: supported Windows
+Native query planning uses `Microsoft.Azure.Cosmos.ServiceInterop`
+**1.0.5**, acquired exclusively through NuGet. Its five Windows x64 native DLLs
+are copied and packaged together, including CRTCompat and the Visual C++ runtime
+dependencies. `Microsoft.Azure.Cosmos.ServiceInterop.dll` already matches the
+existing P/Invoke contract; no renaming is needed. No native binaries are copied
+from CosmosDB. Existing platform-selection logic is unchanged: supported Windows
 processes use native planning; other platforms use the existing service query-plan
 path. Copying the x64 asset for a Windows RID does not add ARM64 or x86 native
 support.
 
-The SDK package contains these DLLs; the project-reference refactor adds none:
+The SDK package contains these DLLs:
 
 | DLL | Source |
 | --- | --- |
 | `Microsoft.Azure.Cosmos.Client.dll` | Existing Client project |
 | `Microsoft.Azure.Cosmos.Direct.dll` | Local Direct project, replacing the managed Direct NuGet payload |
-| `Microsoft.Azure.Cosmos.ServiceInterop.dll` | `Cosmos.QueryPlanInterop.dll` from QueryPlanInterop.Windows 1.0.5, renamed |
+| `Microsoft.Azure.Cosmos.ServiceInterop.dll` | Microsoft.Azure.Cosmos.ServiceInterop 1.0.5 |
+| `Cosmos.CRTCompat.dll`, `msvcp140.dll`, `vcruntime140.dll`, `vcruntime140_1.dll` | Native dependencies from the same ServiceInterop package |
 | `Microsoft.Azure.Cosmos.Core.dll` | Existing Microsoft.HybridRow NuGet dependency |
 | `Microsoft.Azure.Cosmos.Serialization.HybridRow.dll` | Existing Microsoft.HybridRow NuGet dependency |
 
@@ -89,33 +91,28 @@ to Direct; broadening repository-wide analyzer rules is also not equivalent.
 
 ## Native compatibility validation
 
-Native package 1.0.5 passes 19 of the 21 targeted query-plan and ODE validity
-tests in both Debug and Release preview builds. This includes `NonValueAggregates`,
-`GroupBy`, `Negative`, `PointRange`, `Spatial` and
-`TestQueryValidityCheckWithODEAsync`, which failed with 1.0.2.
-
-`QueryPlanBaselineTests.Top` and `OffsetLimit` still fail exact-output comparison.
-The only differences are the added default-valued `embeddingParameterMap: null`
-and `requiresExtendedQueryPlan: 0` fields in native plan JSON embedded in
-out-of-range exceptions. Query rewrites, ranges, exception types and
-`fullTextSearchTerms` match the existing expectations. Expected baselines and
-test exclusions have not been changed; these differences still require explicit
-disposition before calling the migration regression-free. Emulator/live-account
-coverage remains a separate release requirement.
+After changing the native package, run the query-plan baseline, query-plan
+retriever, LINQ, and emulator query suites, including ODE validity, spatial,
+aggregate, GROUP BY, full-text, and hybrid-search scenarios. Verify output and
+packaged DLL hashes against the restored ServiceInterop package before testing.
+Do not suppress baseline differences or use gateway fallback to conceal native
+planning failures. Emulator/live-account coverage remains a separate release
+requirement.
 
 ## Provider selection and packaging
 
 The Client, FaultInjection, tests and source-consuming tools declare explicit
 `ProjectReference` entries to the local Direct project. Public builds always use
-that source and the QueryPlanInterop NuGet; there is no original Direct package
+that source and the ServiceInterop NuGet; there is no original Direct package
 or native DLL fallback. Reference selection and RID handling remain visible in
 each consuming project.
 The SDK package bundles the
-locally resolved Direct DLL; it does not expose Direct or QueryPlanInterop as
+locally resolved Direct DLL; it does not expose Direct or ServiceInterop as
 consumer NuGet dependencies. Native packing reads directly from the restored
 NuGet asset, independently of the host OS, RID or stale output files.
-The original Direct third-party notice is retained in the package under
-`ThirdPartyNotices/Microsoft.Azure.Cosmos.Direct.txt`.
+The Direct and native ServiceInterop third-party notices are retained under
+`ThirdPartyNotices/Microsoft.Azure.Cosmos.Direct.txt` and
+`ThirdPartyNotices/Microsoft.Azure.Cosmos.ServiceInterop.txt`.
 
 Encryption projects built with `SdkProjectRef=true` also reference local Direct
 explicitly. Their test and performance consumers explicitly reference HybridRow
@@ -123,8 +120,10 @@ in this mode because the SDK's private packaging dependencies do not flow throug
 source project references. These additions do not apply to internal OSS builds.
 
 The packaging provenance gate requires the locally built Direct assembly and
-the QueryPlanInterop native payload. Legacy Direct-package DLLs and CRT payloads
-are not packaged or copied by the SDK's consumer targets.
+the five ServiceInterop native DLLs. All native assets come from the new
+ServiceInterop package, never the original Direct package or a CosmosDB checkout.
+The SDK's consumer targets copy those native assets only for Windows or no-RID
+builds.
 
 For internal OSS builds, `ProjectRef=True` suppresses both public providers and
 the public native package. The existing outer OSS `Directory.Build.targets`

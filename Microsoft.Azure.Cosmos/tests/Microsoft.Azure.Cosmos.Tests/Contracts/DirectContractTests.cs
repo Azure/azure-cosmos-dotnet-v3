@@ -124,8 +124,15 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 "The SDK must not reference the original Direct package.");
             Assert.IsTrue(
                 project.Descendants("Import")
-                    .Any(import => (string)import.Attribute("Project") == @"..\Direct\QueryPlanInterop.props"),
-                "The native implementation must come from the QueryPlanInterop package.");
+                    .Any(import => (string)import.Attribute("Project") == @"..\Direct\ServiceInterop.props"),
+                "The native implementation must come from the ServiceInterop package.");
+
+            XDocument nativeProps = XDocument.Load(Path.Combine(Directory.GetCurrentDirectory(), "ServiceInterop.props"));
+            XElement nativeReference = nativeProps.Descendants("PackageReference").Single();
+            Assert.AreEqual("Microsoft.Azure.Cosmos.ServiceInterop", (string)nativeReference.Attribute("Include"));
+            Assert.AreEqual("1.0.5", (string)nativeReference.Attribute("Version"));
+            Assert.AreEqual("All", (string)nativeReference.Attribute("PrivateAssets"));
+            Assert.AreEqual("All", (string)nativeReference.Attribute("ExcludeAssets"));
         }
 
         [TestMethod]

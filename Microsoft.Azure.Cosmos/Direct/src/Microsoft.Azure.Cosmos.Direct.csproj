@@ -37,11 +37,11 @@
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
   </ItemGroup>
 
-  <Import Project="..\QueryPlanInterop.props" />
+  <Import Project="..\ServiceInterop.props" />
   <ItemGroup Condition="'$(RuntimeIdentifier)' == '' or $(RuntimeIdentifier.StartsWith('win'))">
-    <None Include="$(QueryPlanInteropNativePath)"
-          Link="Microsoft.Azure.Cosmos.ServiceInterop.dll"
-          TargetPath="Microsoft.Azure.Cosmos.ServiceInterop.dll"
+    <None Include="@(ServiceInteropNative)"
+          Link="%(Filename)%(Extension)"
+          TargetPath="%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 

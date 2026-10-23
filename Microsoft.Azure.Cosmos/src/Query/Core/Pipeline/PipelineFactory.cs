@@ -264,9 +264,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (queryInfo.HasLimit)
             {
-                Debug.Assert(queryInfo.Limit.Value <= int.MaxValue, "PipelineFactory Assert!", "Limit value must be <= int.MaxValue");
-
-                int limitCount = (int)queryInfo.Limit.Value;
+                long limitCount = queryInfo.Limit.Value;
 
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateLimitStage(
@@ -277,9 +275,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (queryInfo.HasTop)
             {
-                Debug.Assert(queryInfo.Top.Value <= int.MaxValue, "PipelineFactory Assert!", "Top value must be <= int.MaxValue");
-
-                int topCount = (int)queryInfo.Top.Value;
+                long topCount = queryInfo.Top.Value;
 
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateTopStage(
@@ -321,23 +317,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             long optimalPageSize = maxItemCount;
             if (queryInfo.HasOrderBy)
             {
-                uint top;
+                long top;
                 if (queryInfo.HasTop && (queryInfo.Top.Value > 0))
                 {
                     top = queryInfo.Top.Value;
                 }
                 else if (queryInfo.HasLimit && (queryInfo.Limit.Value > 0))
                 {
-                    top = Math.Min((queryInfo.Offset ?? 0) + queryInfo.Limit.Value, int.MaxValue);
+                    top = Math.Min((long)(queryInfo.Offset ?? 0) + queryInfo.Limit.Value, int.MaxValue);
                 }
                 else
                 {
                     top = 0;
-                }
-
-                if (top > int.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(queryInfo.Top.Value));
                 }
 
                 if (top > 0)

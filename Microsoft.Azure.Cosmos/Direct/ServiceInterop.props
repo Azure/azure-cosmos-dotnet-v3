@@ -1,0 +1,16 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.Cosmos.ServiceInterop" Version="1.0.5"
+                      PrivateAssets="All" ExcludeAssets="All" GeneratePathProperty="true" />
+  </ItemGroup>
+  <PropertyGroup>
+    <ServiceInteropNativeDirectory>$(PkgMicrosoft_Azure_Cosmos_ServiceInterop)\runtimes\win-x64\native</ServiceInteropNativeDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <ServiceInteropNative Include="$(ServiceInteropNativeDirectory)\Microsoft.Azure.Cosmos.ServiceInterop.dll" />
+    <ServiceInteropNative Include="$(ServiceInteropNativeDirectory)\Cosmos.CRTCompat.dll" />
+    <ServiceInteropNative Include="$(ServiceInteropNativeDirectory)\msvcp140.dll" />
+    <ServiceInteropNative Include="$(ServiceInteropNativeDirectory)\vcruntime140.dll" />
+    <ServiceInteropNative Include="$(ServiceInteropNativeDirectory)\vcruntime140_1.dll" />
+  </ItemGroup>
+</Project>

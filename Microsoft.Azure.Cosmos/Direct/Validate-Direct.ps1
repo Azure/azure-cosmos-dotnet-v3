@@ -23,7 +23,7 @@ foreach ($file in $manifest.files) {
 }
 
 $evaluation = & dotnet msbuild $project -nologo "-p:Configuration=$Configuration" `
-    '-getItem:Compile,EmbeddedResource' '-getProperty:TargetPath,QueryPlanInteropNativePath'
+    '-getItem:Compile,EmbeddedResource,ServiceInteropNative' '-getProperty:TargetPath,PkgMicrosoft_Azure_Cosmos_ServiceInterop'
 if ($LASTEXITCODE -ne 0) {
     throw "Direct project evaluation failed ($LASTEXITCODE)."
 }
@@ -73,8 +73,12 @@ $archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path -LiteralPath 
 try {
     $payload = @{
         'lib/netstandard2.0/Microsoft.Azure.Cosmos.Direct.dll' = $evaluated.Properties.TargetPath
-        'runtimes/win-x64/native/Microsoft.Azure.Cosmos.ServiceInterop.dll' = $evaluated.Properties.QueryPlanInteropNativePath
         'ThirdPartyNotices/Microsoft.Azure.Cosmos.Direct.txt' = Join-Path $PSScriptRoot 'ThirdPartyNotice.txt'
+        'ThirdPartyNotices/Microsoft.Azure.Cosmos.ServiceInterop.txt' = Join-Path $evaluated.Properties.PkgMicrosoft_Azure_Cosmos_ServiceInterop 'ThirdPartyNotice.txt'
+    }
+    foreach ($native in $evaluated.Items.ServiceInteropNative) {
+        $name = [System.IO.Path]::GetFileName($native.FullPath)
+        $payload["runtimes/win-x64/native/$name"] = $native.FullPath
     }
     foreach ($name in $payload.Keys) {
         $entries = @($archive.Entries | Where-Object FullName -EQ $name)
@@ -95,8 +99,8 @@ try {
         }
     }
     $nativeEntries = @($archive.Entries | Where-Object { $_.FullName -like 'runtimes/*/native/*' })
-    if ($nativeEntries.Count -ne 1) {
-        throw "Source-mode package must contain only the QueryPlanInterop native DLL."
+    if ($nativeEntries.Count -ne 5 -or $evaluated.Items.ServiceInteropNative.Count -ne 5) {
+        throw "Source-mode package must contain exactly the five ServiceInterop native DLLs."
     }
     $nuspecs = @($archive.Entries | Where-Object { $_.FullName -like '*.nuspec' })
     if ($nuspecs.Count -ne 1) {
@@ -105,7 +109,7 @@ try {
     $reader = [System.IO.StreamReader]::new($nuspecs[0].Open())
     try {
         [xml]$nuspec = $reader.ReadToEnd()
-        $forbidden = $nuspec.SelectNodes("//*[local-name()='dependency' and (@id='Microsoft.Azure.Cosmos.Direct' or @id='Microsoft.Azure.Cosmos.QueryPlanInterop.Windows')]")
+        $forbidden = $nuspec.SelectNodes("//*[local-name()='dependency' and (@id='Microsoft.Azure.Cosmos.Direct' or @id='Microsoft.Azure.Cosmos.ServiceInterop' or @id='Microsoft.Azure.Cosmos.QueryPlanInterop.Windows')]")
         if ($forbidden.Count -ne 0) {
             throw "Bundled Direct/native implementation must not become a consumer NuGet dependency."
         }

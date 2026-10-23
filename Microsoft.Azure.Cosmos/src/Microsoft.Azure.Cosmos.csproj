@@ -123,7 +123,7 @@
 	<ItemGroup Condition="'$(ProjectRef)' != 'True'">
 		<ProjectReference Include="..\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" PrivateAssets="All" />
 	</ItemGroup>
-	<Import Project="..\Direct\QueryPlanInterop.props" Condition="'$(ProjectRef)' != 'True'" />
+	<Import Project="..\Direct\ServiceInterop.props" Condition="'$(ProjectRef)' != 'True'" />
 
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
 		<PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
@@ -159,7 +159,8 @@
   </ItemGroup>	
 
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-		<None Include="$(QueryPlanInteropNativePath)" Pack="true" PackagePath="runtimes\win-x64\native\Microsoft.Azure.Cosmos.ServiceInterop.dll" />
+		<None Include="@(ServiceInteropNative)" Pack="true" PackagePath="runtimes\win-x64\native" />
+		<None Include="$(PkgMicrosoft_Azure_Cosmos_ServiceInterop)\ThirdPartyNotice.txt" Pack="true" PackagePath="ThirdPartyNotices\Microsoft.Azure.Cosmos.ServiceInterop.txt" />
 		<None Include="..\Direct\ThirdPartyNotice.txt" Pack="true" PackagePath="ThirdPartyNotices\Microsoft.Azure.Cosmos.Direct.txt" />
 		<None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
 		<None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
@@ -211,7 +212,7 @@
 		</ItemGroup>
 		<Error Condition="'@(DirectProjectOutput->Count())' != '1'"
 		       Text="SDK packaging requires exactly one resolved Direct project assembly." />
-		<Error Condition="!Exists('$(QueryPlanInteropNativePath)')"
-		       Text="SDK packaging requires the restored QueryPlanInterop.Windows native payload, regardless of build host or RuntimeIdentifier." />
+		<Error Condition="!Exists('%(ServiceInteropNative.Identity)')"
+		       Text="SDK packaging requires the restored ServiceInterop native payload '%(ServiceInteropNative.Identity)', regardless of build host or RuntimeIdentifier." />
 	</Target>
 </Project>
