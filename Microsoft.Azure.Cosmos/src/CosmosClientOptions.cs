@@ -1001,6 +1001,11 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnablePartitionLevelCircuitBreaker { get; set; } = ConfigurationManager.IsPartitionLevelCircuitBreakerEnabled(defaultValue: false);
 
         /// <summary>
+        /// When true, control plane HTTP requests use a timeout policy with fewer attempts. Set by compute gateway from tenant configuration.
+        /// </summary>
+        internal bool UseReducedControlPlaneRetries { get; set; }
+
+        /// <summary>
         /// Flag from gateway to disable partition level failover. Normally, the SDK will enable partition level failover based on the account settings. 
         /// This flag will be used internally by the compute gateway as by default it will disable partition level failover.
         /// 
@@ -1262,6 +1267,7 @@ namespace Microsoft.Azure.Cosmos
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
                 EnablePartitionLevelCircuitBreaker = this.EnablePartitionLevelCircuitBreaker,
+                UseReducedControlPlaneRetries = this.UseReducedControlPlaneRetries,
                 DisablePartitionLevelFailoverClientLevelOverride = this.DisablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
