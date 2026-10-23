@@ -16,7 +16,6 @@
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Tests for <see cref="QueryPartitionProvider"/>.
@@ -2031,24 +2030,24 @@
             if (hybridsearchQueryInfo.FullTextSearchTerms != null)
             {
                 writer.WriteStartElement(nameof(hybridsearchQueryInfo.FullTextSearchTerms));
-                foreach (JToken requirement in hybridsearchQueryInfo.FullTextSearchTerms)
+                foreach (FullTextSearchTerms requirement in hybridsearchQueryInfo.FullTextSearchTerms)
                 {
                     writer.WriteStartElement("Entry");
                     writer.WriteStartElement("Path");
-                    foreach (JToken segment in requirement["path"])
+                    foreach (string segment in requirement.Path)
                     {
-                        writer.WriteElementString("Segment", segment.Value<string>());
+                        writer.WriteElementString("Segment", segment);
                     }
 
                     writer.WriteEndElement();
                     writer.WriteStartElement("Terms");
-                    foreach (JToken term in requirement["terms"])
+                    foreach (FullTextSearchTerm term in requirement.Terms)
                     {
                         writer.WriteStartElement("Term");
-                        writer.WriteElementString("Text", term["term"].Value<string>());
-                        if (term["distance"] != null)
+                        writer.WriteElementString("Text", term.Term);
+                        if (term.Distance.HasValue)
                         {
-                            writer.WriteElementString("Distance", term["distance"].ToString(Newtonsoft.Json.Formatting.None));
+                            writer.WriteElementString("Distance", XmlConvert.ToString(term.Distance.Value));
                         }
 
                         writer.WriteEndElement();

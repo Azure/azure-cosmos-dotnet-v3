@@ -641,7 +641,10 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <para>
         /// The age is measured from the start of statistics collection, not from the last cache access.
-        /// This client-wide option applies to both <see cref="FullTextScoreScope.Global"/> and <see cref="FullTextScoreScope.Local"/>.
+        /// The limit applies independently to each document, path word, and term hit count.
+        /// Reused counts may come from different statistics collections.
+        /// This client-wide option applies only to <see cref="FullTextScoreScope.Global"/>.
+        /// Queries using <see cref="FullTextScoreScope.Local"/> continue collecting statistics without using or populating this cache.
         /// It does not cache documents or query results and has no per-query override.
         /// Set it before creating the client; subsequent changes to the options do not affect the existing client.
         /// </para>
@@ -671,7 +674,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets the maximum number of completed full-text statistics entries retained per client.
+        /// Gets or sets the maximum number of full-text term hit counts retained across all paths and containers per client.
         /// </summary>
         internal int FullTextStatisticsCacheMaxEntries
         {

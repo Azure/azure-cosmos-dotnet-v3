@@ -136,16 +136,17 @@
 
                 Assert.IsTrue(result.Succeeded, $"{query.QueryText}: {(result.Failed ? result.Exception.ToString() : string.Empty)}");
                 Assert.IsNotNull(result.Result.HybridSearchQueryInfo, query.QueryText);
-                JToken actual = result.Result.HybridSearchQueryInfo.FullTextSearchTerms;
+                List<FullTextSearchTerms> actual = result.Result.HybridSearchQueryInfo.FullTextSearchTerms;
                 Assert.IsNotNull(actual, $"ServiceInterop did not emit fullTextSearchTerms for {query.QueryText}.");
+                JToken actualJson = JToken.FromObject(actual);
                 JArray expectedMetadata = JArray.Parse(expected);
                 Assert.IsTrue(
-                    JToken.DeepEquals(expectedMetadata, actual),
-                    $"{query.QueryText}{Environment.NewLine}Expected: {expected}{Environment.NewLine}Actual: {actual}");
+                    JToken.DeepEquals(expectedMetadata, actualJson),
+                    $"{query.QueryText}{Environment.NewLine}Expected: {expected}{Environment.NewLine}Actual: {actualJson}");
 
                 PartitionedQueryExecutionInfo converted = provider.ConvertPartitionedQueryExecutionInfo(result.Result, PartitionKeyDefinition);
                 Assert.IsTrue(PartitionedQueryExecutionInfo.TryParse(converted.ToString(), out PartitionedQueryExecutionInfo roundTripped));
-                Assert.IsTrue(JToken.DeepEquals(actual, roundTripped.HybridSearchQueryInfo.FullTextSearchTerms));
+                Assert.IsTrue(JToken.DeepEquals(actualJson, JToken.FromObject(roundTripped.HybridSearchQueryInfo.FullTextSearchTerms)));
 
                 StringBuilder xml = new StringBuilder();
                 using (XmlWriter writer = XmlWriter.Create(xml))
@@ -177,16 +178,16 @@
         }
 
         [DataTestMethod]
-        [DataRow(null)]
-        [DataRow("null")]
-        [DataRow("[]")]
-        [DataRow("42")]
-        [DataRow(@"""unsupported""")]
-        [DataRow(@"{""future"":true}")]
-        [DataRow(@"[{""path"":""not-an-array"",""terms"":null}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2}],""future"":true}]")]
-        [DataRow(@"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00""}]}]")]
-        public void TestFullTextSearchTermsDeserialization(string metadata)
+        [DataRow(null, null)]
+        [DataRow("null", null)]
+        [DataRow("[]", "[]")]
+        [DataRow("[{}]", @"[{""path"":null,""terms"":null}]")]
+        [DataRow(@"[{""path"":[""text""]}]", @"[{""path"":[""text""],""terms"":null}]")]
+        [DataRow(@"[{""terms"":[{}]}]", @"[{""path"":null,""terms"":[{""term"":null}]}]")]
+        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":null}]}]", @"[{""path"":[""text""],""terms"":[{""term"":""run""}]}]")]
+        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2}],""future"":true}]", @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2}]}]")]
+        [DataRow(@"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00""}]}]", @"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00""}]}]")]
+        public void TestFullTextSearchTermsDeserialization(string metadata, string expected)
         {
             const string statisticsQuery = "SELECT COUNT(1) AS documentCount FROM c";
             string property = metadata == null ? string.Empty : $",\"fullTextSearchTerms\":{metadata}";
@@ -208,12 +209,27 @@
                 }
                 else
                 {
-                    Assert.AreEqual(metadata, hybridPlan.FullTextSearchTerms.ToString(Formatting.None));
+                    Assert.AreEqual(expected, JsonConvert.SerializeObject(hybridPlan.FullTextSearchTerms));
                     string serialized = JsonConvert.SerializeObject(hybridPlan);
                     HybridSearchQueryInfo roundTripped = JsonConvert.DeserializeObject<HybridSearchQueryInfo>(serialized);
-                    Assert.IsTrue(JToken.DeepEquals(hybridPlan.FullTextSearchTerms, roundTripped.FullTextSearchTerms));
+                    Assert.AreEqual(expected, JsonConvert.SerializeObject(roundTripped.FullTextSearchTerms));
                 }
             }
+        }
+
+        [DataTestMethod]
+        [DataRow("42")]
+        [DataRow(@"""unsupported""")]
+        [DataRow(@"{""future"":true}")]
+        [DataRow(@"[{""path"":""not-an-array"",""terms"":null}]")]
+        [DataRow(@"[{""path"":[""text""],""terms"":[""run""]}]")]
+        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":2147483648}]}]")]
+        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":""not-a-number""}]}]")]
+        public void TestInvalidFullTextSearchTermsUseNormalQueryPlanErrorHandling(string metadata)
+        {
+            string queryPlan = "{\"hybridSearchQueryInfo\":{\"requiresGlobalStatistics\":true,\"fullTextSearchTerms\":" + metadata + "}}";
+            Assert.IsFalse(PartitionedQueryExecutionInfo.TryParse(queryPlan, out PartitionedQueryExecutionInfo plan));
+            Assert.IsNull(plan);
         }
 
         [TestMethod]
