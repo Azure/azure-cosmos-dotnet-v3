@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Xml;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -1843,7 +1844,9 @@
             Exception ex = this.Exception;
             while (ex != null)
             {
-                stringBuilder.AppendLine($"{ex.GetType()} : {ex.Message}");
+                // .NET formats native error-code messages differently on Windows and Linux.
+                string message = ex is COMException ? $"0x{ex.HResult:X8}" : ex.Message;
+                stringBuilder.AppendLine($"{ex.GetType()} : {message}");
                 ex = ex.InnerException;
             }
 

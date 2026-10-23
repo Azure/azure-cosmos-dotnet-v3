@@ -26,12 +26,12 @@ namespace Microsoft.Azure.Cosmos.Test.BaselineTest
         /// <summary>
         /// Directory where all the baselines will exist.
         /// </summary>
-        private const string TestBaslineDir = "BaselineTest\\TestBaseline";
+        private static readonly string TestBaslineDir = Path.Combine("BaselineTest", "TestBaseline");
 
         /// <summary>
         /// Directory where all the temporary baseline outputs will be placed.
         /// </summary>
-        private const string TestOutputDir = "BaselineTest\\TestOutput";
+        private static readonly string TestOutputDir = Path.Combine("BaselineTest", "TestOutput");
 
         /// <summary>
         /// The file extension for xml.

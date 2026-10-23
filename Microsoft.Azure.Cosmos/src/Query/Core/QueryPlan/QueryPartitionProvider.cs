@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                         if (!this.disposed && this.serviceProvider != IntPtr.Zero)
                         {
-                            uint errorCode = ServiceInteropWrapper.UpdateServiceProvider(
+                            uint errorCode = QueryPlanInterop.UpdateServiceProvider(
                                 this.serviceProvider,
                                 this.queryengineConfiguration);
 
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                 fixed (byte* bytePtr = buffer)
                 {
-                    errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery4(
+                    errorCode = QueryPlanInterop.GetPartitionKeyRangesFromQuery4(
                         this.serviceProvider,
                         querySpecJsonString,
                         partitionKeyRangesApiOptions,
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                         fixed (byte* bytePtr2 = buffer)
                         {
-                            errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery4(
+                            errorCode = QueryPlanInterop.GetPartitionKeyRangesFromQuery4(
                                 this.serviceProvider,
                                 querySpecJsonString,
                                 partitionKeyRangesApiOptions,
@@ -377,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             try
             {
                 IntPtr serviceProvider = IntPtr.Zero;
-                uint errorCode = ServiceInteropWrapper.CreateServiceProvider(
+                uint errorCode = QueryPlanInterop.CreateServiceProvider(
                                 queryEngineConfiguration,
                                 out serviceProvider);
                 Exception exception = Marshal.GetExceptionForHR((int)errorCode);
@@ -444,7 +444,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             {
                 if (this.serviceProvider != IntPtr.Zero)
                 {
-                    Marshal.Release(this.serviceProvider);
+                    QueryPlanInterop.ReleaseServiceProvider(this.serviceProvider);
                     this.serviceProvider = IntPtr.Zero;
                 }
 

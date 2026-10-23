@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -62,6 +63,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Kind = PartitionKind.Hash,
             Version = PartitionKeyDefinitionVersion.V2
         };
+
+        private string originalUseQueryInterop;
+
+        [TestInitialize]
+        public void TestInitialize()
+        {
+            // Local query planning is opt-in on Linux; other platforms ignore this variable.
+            this.originalUseQueryInterop = Environment.GetEnvironmentVariable(ConfigurationManager.UseQueryInterop);
+            Environment.SetEnvironmentVariable(ConfigurationManager.UseQueryInterop, "true");
+        }
+
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.UseQueryInterop, this.originalUseQueryInterop);
+        }
 
         [TestMethod]
         public async Task ServiceInterop_BadRequestContainsInnerException()
@@ -200,6 +217,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                     ("AZURE_COSMOS_BYPASS_QUERY_PARSING", string.Empty, false)
                 })
             {
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && name != ConfigurationManager.BypassQueryParsing)
+                {
+                    continue;
+                }
+
                 try
                 {
                     // Test new value
