@@ -150,8 +150,18 @@ namespace Microsoft.Azure.Cosmos.Common
                     return collectionInfo;
                 }
 
-                if (request.RequestContext.ResolvedCollectionRid == null)
+                if (request.RequestContext.ResolvedCollectionRid == null
+                    || !CollectionCache.IsCollectionRid(request.RequestContext.ResolvedCollectionRid))
                 {
+                    if (request.RequestContext.ResolvedCollectionRid != null)
+                    {
+                        DefaultTrace.TraceWarning(
+                            "ResolvedCollectionRid '{0}' for resource '{1}' is not a collection RID; falling back to name-based resolution. ActivityId: '{2}'",
+                            request.RequestContext.ResolvedCollectionRid,
+                            request.ResourceAddress,
+                            System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                    }
+
                     collectionInfo =
                         await this.ResolveByNameAsync(
                             apiVersion: request.Headers[HttpConstants.HttpHeaders.Version],
@@ -168,6 +178,15 @@ namespace Microsoft.Azure.Cosmos.Common
                             request.ResourceAddress,
                             collectionInfo.ResourceId,
                             System.Diagnostics.Trace.CorrelationManager.ActivityId);
+
+                        if (!CollectionCache.IsCollectionRid(collectionInfo.ResourceId))
+                        {
+                            throw new InvalidOperationException(
+                                $"Resolved resource '{request.ResourceAddress}' has a non-collection ResourceId " +
+                                $"'{collectionInfo.ResourceId}'. This indicates the server returned a database or " +
+                                $"other resource RID instead of a collection RID. ActivityId: " +
+                                $"'{System.Diagnostics.Trace.CorrelationManager.ActivityId}'.");
+                        }
 
                         request.ResourceId = collectionInfo.ResourceId;
                         request.RequestContext.ResolvedCollectionRid = collectionInfo.ResourceId;
@@ -356,6 +375,24 @@ namespace Microsoft.Azure.Cosmos.Common
             }
 
             return this.cacheByApiList[0];
+        }
+
+        internal static bool IsCollectionRid(string resourceId)
+        {
+            if (string.IsNullOrWhiteSpace(resourceId) ||
+                !ResourceId.TryParse(resourceId, out ResourceId resourceIdParsed))
+            {
+                return false;
+            }
+
+            string databaseRid = resourceIdParsed.DatabaseId.ToString();
+            if (StringComparer.Ordinal.Equals(databaseRid, resourceId))
+            {
+                return false;
+            }
+
+            string collectionRid = resourceIdParsed.DocumentCollectionId.ToString();
+            return StringComparer.Ordinal.Equals(collectionRid, resourceId);
         }
 
         private sealed class CollectionRidComparer : IEqualityComparer<ContainerProperties>
