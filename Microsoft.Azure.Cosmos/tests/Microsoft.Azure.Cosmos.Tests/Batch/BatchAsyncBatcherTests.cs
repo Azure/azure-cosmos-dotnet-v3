@@ -367,7 +367,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithFailure
             = (PartitionKeyRangeServerBatchRequest request, ITrace trace, ItemRequestOptions options, CancellationToken cancellationToken) => throw expectedException;
 
-        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) => Task.CompletedTask;
+        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, TimeSpan retryDelay, CancellationToken cancellation) => Task.CompletedTask;
 
         [DataTestMethod]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
@@ -560,6 +560,81 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task RetryDelayDoesNotBlockOtherOperationCompletion()
+        {
+            TimeSpan retryDelay = TimeSpan.FromMilliseconds(500);
+            Trace rootTrace = Trace.GetRootTrace("RootTrace");
+            Trace retryTrace = Trace.GetRootTrace("RetryTrace");
+            Mock<IDocumentClientRetryPolicy> retryPolicy = new Mock<IDocumentClientRetryPolicy>();
+            retryPolicy
+                .Setup(policy => policy.ShouldRetryAsync(It.IsAny<ResponseMessage>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ShouldRetryResult.RetryAfter(retryDelay));
+
+            ItemBatchOperation throttledOperation = this.CreateItemBatchOperation();
+            throttledOperation.AttachContext(new ItemBatchOperationContext(string.Empty, rootTrace, retryPolicy.Object));
+            ItemBatchOperation successfulOperation = this.CreateItemBatchOperation();
+            successfulOperation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton));
+
+            BatchAsyncBatcherExecuteDelegate executor = async (request, trace, options, cancellationToken) =>
+            {
+                List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>()
+                {
+                    new TransactionalBatchOperationResult(HttpStatusCode.TooManyRequests)
+                    {
+                        RetryAfter = retryDelay,
+                        Trace = retryTrace
+                    },
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
+                    {
+                        Trace = Trace.GetRootTrace("SuccessTrace")
+                    }
+                };
+
+                MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
+                SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                    partitionKey: null,
+                    operations: new ArraySegment<ItemBatchOperation>(request.Operations.ToArray()),
+                    serializerCore: MockCosmosUtil.Serializer,
+                    trace: trace,
+                    cancellationToken: cancellationToken);
+                TransactionalBatchResponse batchResponse = await TransactionalBatchResponse.FromResponseMessageAsync(
+                    new ResponseMessage((HttpStatusCode)207) { Content = responseContent },
+                    batchRequest,
+                    MockCosmosUtil.Serializer,
+                    true,
+                    trace,
+                    cancellationToken);
+
+                return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchResponse);
+            };
+
+            TimeSpan observedRetryDelay = TimeSpan.Zero;
+            BatchAsyncBatcherRetryDelegate retrier = (operation, delay, cancellationToken) =>
+            {
+                observedRetryDelay = delay;
+                return Task.CompletedTask;
+            };
+
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(
+                2,
+                1000,
+                MockCosmosUtil.Serializer,
+                executor,
+                retrier,
+                BatchAsyncBatcherTests.MockClientContext());
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(throttledOperation));
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(successfulOperation));
+
+            await batchAsyncBatcher.DispatchAsync(metric);
+
+            Assert.AreEqual(retryDelay, observedRetryDelay);
+            Assert.AreEqual(TaskStatus.WaitingForActivation, throttledOperation.Context.OperationTask.Status);
+            Assert.AreEqual(TaskStatus.RanToCompletion, successfulOperation.Context.OperationTask.Status);
+            rootTrace.SetWalkingStateRecursively();
+            Assert.AreEqual(1, rootTrace.Children.Count);
+        }
+
+        [TestMethod]
         public async Task RetrierGetsCalledOnSplit()
         {
             IDocumentClientRetryPolicy retryPolicy1 = new BulkExecutionRetryPolicy(
@@ -583,9 +658,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             await batchAsyncBatcher.DispatchAsync(metric);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), TimeSpan.Zero, It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), TimeSpan.Zero, It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
         [TestMethod]
@@ -612,9 +687,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             await batchAsyncBatcher.DispatchAsync(metric);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), TimeSpan.Zero, It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), TimeSpan.Zero, It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
         [TestMethod]
@@ -641,9 +716,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             await batchAsyncBatcher.DispatchAsync(metric);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), TimeSpan.Zero, It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), TimeSpan.Zero, It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
         [TestMethod]
@@ -661,9 +736,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             await batchAsyncBatcher.DispatchAsync(metric);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Never);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), TimeSpan.Zero, It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -698,10 +773,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation3));
             await batchAsyncBatcher.DispatchAsync(metric);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Never);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), TimeSpan.Zero, It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), TimeSpan.Zero, It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
         [TestMethod]
@@ -736,10 +811,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation3));
             await batchAsyncBatcher.DispatchAsync(metric);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Never);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Never);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation3), It.IsAny<CancellationToken>()), Times.Never);
-            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation3), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         private static ContainerInternal GetSplitEnabledContainer()
