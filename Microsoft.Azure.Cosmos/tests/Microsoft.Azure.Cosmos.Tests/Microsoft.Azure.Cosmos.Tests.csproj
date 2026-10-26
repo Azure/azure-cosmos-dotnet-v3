@@ -84,6 +84,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="BaselineTest\TestBaseline\SecondaryIndexMetadataProviderBaselineTests.PropertyProjections.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\SecondaryIndexMetadataProviderBaselineTests.RejectedDefinitions.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="BaselineTest\TestBaseline\ClientDistributionPlanBaselineTests.TestClientDistributionPlanDeserialization.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

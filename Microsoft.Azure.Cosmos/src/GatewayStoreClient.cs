@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
     internal class GatewayStoreClient : TransportClient
     {
         private readonly ICommunicationEventSource eventSource;
+        private readonly bool useReducedControlPlaneRetries;
         private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
         protected readonly CosmosHttpClient httpClient;
         protected readonly JsonSerializerSettings SerializerSettings;
@@ -33,8 +34,10 @@ namespace Microsoft.Azure.Cosmos
             CosmosHttpClient httpClient,
             ICommunicationEventSource eventSource,
             GlobalPartitionEndpointManager globalPartitionEndpointManager,
-            JsonSerializerSettings serializerSettings = null)
+            JsonSerializerSettings serializerSettings = null,
+            bool useReducedControlPlaneRetries = false)
         {
+            this.useReducedControlPlaneRetries = useReducedControlPlaneRetries;
             this.httpClient = httpClient;
             this.SerializerSettings = serializerSettings;
             this.eventSource = eventSource;
@@ -408,7 +411,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(
                     request,
-                    this.IsPartitionLevelFailoverEnabled()),
+                    this.IsPartitionLevelFailoverEnabled(),
+                    useReducedControlPlaneRetries: this.useReducedControlPlaneRetries),
                 request.RequestContext.ClientRequestStatistics,
                 cancellationToken,
                 request);

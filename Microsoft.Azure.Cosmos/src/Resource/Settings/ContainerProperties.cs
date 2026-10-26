@@ -385,7 +385,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         internal IReadOnlyList<MaterializedViewProperties> MaterializedViews
         {
-            get => this.materializedViewsInternal;
+            get => this.materializedViewsInternal ?? Array.Empty<MaterializedViewProperties>();
             set => this.materializedViewsInternal = value;
         }
 

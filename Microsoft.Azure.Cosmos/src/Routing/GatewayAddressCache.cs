@@ -55,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly SemaphoreSlim semaphore;
         private readonly CosmosHttpClient httpClient;
         private readonly bool isReplicaAddressValidationEnabled;
+        private readonly bool useReducedControlPlaneRetries;
         private readonly IConnectionStateListener connectionStateListener;
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
@@ -75,8 +76,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             bool enableTcpConnectionEndpointRediscovery = false,
             bool replicaAddressValidationEnabled = false,
             bool enableAsyncCacheExceptionNoSharing = true,
-            AuthorizationTokenProvider authorizationTokenProvider = null)
+            AuthorizationTokenProvider authorizationTokenProvider = null,
+            bool useReducedControlPlaneRetries = false)
         {
+            this.useReducedControlPlaneRetries = useReducedControlPlaneRetries;
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
             this.protocol = protocol;
             this.tokenProvider = tokenProvider;
@@ -776,7 +779,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             uri: targetEndpoint,
                             additionalHeaders: headers,
                             resourceType: resourceType,
-                            timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
+                            timeoutPolicy: HttpTimeoutPolicy.GetControlPlaneHotPathPolicy(this.useReducedControlPlaneRetries),
                             clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                             cancellationToken: default,
                             documentServiceRequest: faultInjectionRequest))
@@ -794,7 +797,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         uri: targetEndpoint,
                         additionalHeaders: headers,
                         resourceType: resourceType,
-                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
+                        timeoutPolicy: HttpTimeoutPolicy.GetControlPlaneHotPathPolicy(this.useReducedControlPlaneRetries),
                         clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                         cancellationToken: default))
                     {
@@ -825,7 +828,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         uri: targetEndpoint,
                         additionalHeaders: headers,
                         resourceType: resourceType,
-                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
+                        timeoutPolicy: HttpTimeoutPolicy.GetControlPlaneHotPathPolicy(this.useReducedControlPlaneRetries),
                         clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                         cancellationToken: default))
                     {
@@ -916,7 +919,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             uri: targetEndpoint,
                             additionalHeaders: headers,
                             resourceType: ResourceType.Document,
-                            timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
+                            timeoutPolicy: HttpTimeoutPolicy.GetControlPlaneHotPathPolicy(this.useReducedControlPlaneRetries),
                             clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                             cancellationToken: default,
                             documentServiceRequest: faultInjectionRequest))
@@ -934,7 +937,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         uri: targetEndpoint,
                         additionalHeaders: headers,
                         resourceType: ResourceType.Document,
-                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
+                        timeoutPolicy: HttpTimeoutPolicy.GetControlPlaneHotPathPolicy(this.useReducedControlPlaneRetries),
                         clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                         cancellationToken: default))
                     {
@@ -965,7 +968,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         uri: targetEndpoint,
                         additionalHeaders: headers,
                         resourceType: ResourceType.Document,
-                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
+                        timeoutPolicy: HttpTimeoutPolicy.GetControlPlaneHotPathPolicy(this.useReducedControlPlaneRetries),
                         clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                         cancellationToken: default))
                     {
