@@ -107,11 +107,13 @@ namespace Microsoft.Azure.Cosmos
                 string collectionPath = group.Key;
                 ContainerProperties containerProperties = containerPropertiesByCollection[collectionPath];
 
-                // Read once per collection: every operation in the group narrows the same compound token.
+                // Read once per collection for operations that need automatic tokens.
                 string collectionSessionToken = sessionContainer?.GetSessionToken(collectionPath);
 
                 foreach (DistributedTransactionOperation operation in group)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     await DistributedTransactionSessionTokenHelper.ResolveOperationSessionTokenAsync(
                         operation,
                         containerProperties,
@@ -287,13 +289,13 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Detects a split or move that happened between routing resolution and the server commit, which
         /// the transaction path could not previously see because it recorded no client-side range. Runs on
-        /// each distinct collection and serving range the status filter admitted, including operations the
-        /// send gate withheld a session token from, since the recorded range alone can detect the move.
+        /// each distinct collection and serving range the status filter admitted for operations with a
+        /// recorded range. That includes operations the send gate withheld a session token from, since the
+        /// recorded range alone can detect the move, but not caller-supplied tokens, which record no range.
         /// <para>
-        /// Failures are traced and swallowed. This runs after the transaction has already committed, so a
-        /// stale cache costs one extra round trip on a later request while throwing would report a
-        /// committed transaction as failed. Pre-flight resolution and post-commit bookkeeping are
-        /// deliberately asymmetric for that reason.
+        /// Failures, including refresh cancellation, are traced and swallowed so optional cache maintenance
+        /// cannot hide the coordinator response or prevent session-token capture. No caller cancellation
+        /// token is passed to this post-response refresh; the routing cache may remain stale on failure.
         /// </para>
         /// </remarks>
         private static async Task RefreshRoutingCacheIfPartitionMovedAsync(
@@ -311,7 +313,7 @@ namespace Microsoft.Azure.Cosmos
                     result.PartitionKeyRangeId,
                     trace ?? NoOpTrace.Singleton);
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex)
             {
                 DistributedTransactionSessionTokenHelper.TraceToleratedFailure(
                     $"Distributed transaction operation index {result.Index}: the routing cache could not be refreshed after the partition moved " +
@@ -330,20 +332,21 @@ namespace Microsoft.Azure.Cosmos
             bool isMultiMasterEnabled,
             ITrace trace)
         {
-            // Recorded before the gate runs so that comparing it against the range the server reports back
-            // still detects a split or move for an operation the gate withheld a token from.
-            operation.ResolvedPartitionKeyRangeId = await DistributedTransactionSessionTokenHelper.TryResolvePartitionKeyRangeIdAsync(
-                operation,
-                containerProperties,
-                partitionKeyRangeCache,
-                trace);
-
             if (!string.IsNullOrEmpty(operation.SessionToken))
             {
                 // The caller is explicitly controlling the session, matching the early return in
                 // GatewayStoreModel.ApplySessionTokenAsync. Pre-flight validation already ran.
                 return;
             }
+
+            // Automatic-token operations also record routing before the applicability gate so gated
+            // writes can detect a move. Explicit tokens need no per-operation routing lookup.
+            PartitionKeyRange range = await DistributedTransactionSessionTokenHelper.TryResolvePartitionKeyRangeAsync(
+                operation,
+                containerProperties,
+                partitionKeyRangeCache,
+                trace);
+            operation.ResolvedPartitionKeyRangeId = range?.Id;
 
             // A write against a single-master account is served only by the write region, so it carries no
             // session token; reads and multi-master writes still do. Same policy point operations apply.
@@ -360,6 +363,20 @@ namespace Microsoft.Azure.Cosmos
             operation.SessionToken = DistributedTransactionSessionTokenHelper.TryFindPartitionLocalSessionToken(
                 collectionSessionToken,
                 operation.ResolvedPartitionKeyRangeId);
+
+            if (operation.SessionToken == null && range?.Parents != null)
+            {
+                foreach (string parent in range.Parents)
+                {
+                    if (DistributedTransactionSessionTokenHelper.TryFindPartitionLocalSessionToken(collectionSessionToken, parent) != null)
+                    {
+                        throw new InvalidOperationException(
+                            $"Distributed transaction operation index {operation.OperationIndex} cannot preserve session progress " +
+                            $"from parent partition range '{parent}' for range '{range.Id}'. " +
+                            "No transaction request was sent. A session token for the current range is required.");
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -367,12 +384,9 @@ namespace Microsoft.Azure.Cosmos
         /// when the token holds no segment for it.
         /// </summary>
         /// <remarks>
-        /// Deliberately an exact match, with no walk to parent ranges. A point operation re-labels an
-        /// ancestor's vector under the child range id, which is safe there because the same client resolved
-        /// both. The coordinator instead drops a token whose prefix it cannot match, so a re-labelled
-        /// ancestor token would claim progress against a range that never reported it. Sending no token
-        /// immediately after a split costs one transaction's worth of session guarantee and self-heals as
-        /// soon as a transaction commits against the child range.
+        /// Deliberately an exact match. Parent-token inheritance requires a verified coordinator contract.
+        /// The caller rejects automatic resolution when only a known parent's progress is available,
+        /// rather than silently sending without that session guarantee.
         /// </remarks>
         internal static string TryFindPartitionLocalSessionToken(string collectionSessionToken, string partitionKeyRangeId)
         {
@@ -385,7 +399,7 @@ namespace Microsoft.Azure.Cosmos
             return partitionKeyRangeId + ":" + sessionToken;
         }
 
-        private static async Task<string> TryResolvePartitionKeyRangeIdAsync(
+        private static async Task<PartitionKeyRange> TryResolvePartitionKeyRangeAsync(
             DistributedTransactionOperation operation,
             ContainerProperties containerProperties,
             PartitionKeyRangeCache partitionKeyRangeCache,
@@ -406,12 +420,10 @@ namespace Microsoft.Azure.Cosmos
             string effectivePartitionKey = partitionKey.GetEffectivePartitionKeyString(
                 containerProperties.PartitionKey);
 
-            PartitionKeyRange range = await partitionKeyRangeCache.TryGetRangeByEffectivePartitionKeyAsync(
+            return await partitionKeyRangeCache.TryGetRangeByEffectivePartitionKeyAsync(
                 containerProperties.ResourceId,
                 effectivePartitionKey,
                 trace);
-
-            return range?.Id;
         }
 
         private static bool TryValidateSessionTokenForCapture(string sessionToken, out string failureReason)

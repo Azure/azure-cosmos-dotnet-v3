@@ -61,9 +61,8 @@ namespace Microsoft.Azure.Cosmos
         /// The partition key range this operation was routed to at request time.
         /// </summary>
         /// <remarks>
-        /// Recorded unconditionally, before the session-token send gate runs, so that comparing it against
-        /// the range the server reports back detects a split or move even for operations the gate withheld
-        /// a token from.
+        /// Recorded for operations without explicit tokens before the session-token send gate, so comparison
+        /// with the server's range detects a split or move even when the gate withheld a token.
         /// </remarks>
         internal string ResolvedPartitionKeyRangeId { get; set; }
 

@@ -3697,6 +3697,206 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 DistributedTransactionSessionTokenHelper.TryFindPartitionLocalSessionToken(collectionSessionToken, partitionKeyRangeId));
         }
 
+        [TestMethod]
+        [DataRow("0:1#5#4=3", "0", true, false, false, true, null)]
+        [DataRow("0:1#5#4=3", "0,2", true, false, false, true, null)]
+        [DataRow("2:1#7#4=6", "0,2", true, false, false, true, null)]
+        [DataRow("0:1#5#4=3,1:1#9#4=8", "0", false, false, false, true, "1:1#9#4=8")]
+        [DataRow("2:1#5#4=3", "0", false, false, false, true, null)]
+        [DataRow(null, "0", false, false, false, true, null)]
+        [DataRow("0:1#5#4=3", "0", false, true, false, true, null)]
+        [DataRow("0:1#5#4=3", "0", true, true, true, true, null)]
+        [DataRow("0:1#5#4=3", "0", false, false, false, false, null)]
+        [DataRow("0:1#5#4=3", "0", false, true, true, false, null)]
+        public async Task ExecuteTransactionAsync_ProtectsCachedParentProgress(
+            string cachedToken, string parents, bool shouldThrow, bool isWrite,
+            bool isMultiMaster, bool sessionConsistency, string expectedToken)
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+            if (cachedToken != null)
+            {
+                foreach (string token in cachedToken.Split(','))
+                {
+                    sessionContainer.SetSessionToken(
+                        CollectionResourceId,
+                        DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName),
+                        new RequestNameValueCollection { [HttpConstants.HttpHeaders.SessionToken] = token });
+                }
+            }
+
+            Mock<CosmosClientContext> context = this.CreateMockContext(
+                sessionContainer,
+                BuildDtcResponseJson(new[] { (statusCode: 200, sessionToken: (string)null) }),
+                HttpStatusCode.OK,
+                sessionConsistency ? Cosmos.ConsistencyLevel.Session : Cosmos.ConsistencyLevel.Eventual,
+                isMultiMaster, out MockDocumentClient documentClient);
+            documentClient.MockPartitionKeyRangeCache.Setup(cache => cache.TryGetOverlappingRangesAsync(
+                It.IsAny<string>(), It.IsAny<Documents.Routing.Range<string>>(), It.IsAny<ITrace>(), It.IsAny<bool>()))
+                .ReturnsAsync(new List<PartitionKeyRange>
+                {
+                    new PartitionKeyRange
+                    {
+                        Id = "1", MinInclusive = string.Empty, MaxExclusive = "FF",
+                        Parents = new System.Collections.ObjectModel.Collection<string>(parents.Split(','))
+                    }
+                });
+            DistributedTransactionOperation operation = new DistributedTransactionOperation(
+                isWrite ? OperationType.Create : OperationType.Read,
+                0, DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1");
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                new[] { operation }, context.Object, OperationType.CommitDistributedTransaction);
+
+            if (shouldThrow)
+            {
+                InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
+                StringAssert.Contains(exception.Message, "parent");
+                this.VerifyProcessResourceOperationCallCount(context, Times.Never());
+            }
+            else
+            {
+                using (await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+                {
+                    Assert.AreEqual(expectedToken, operation.SessionToken);
+                }
+            }
+        }
+
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ExecuteTransactionAsync_SkipsRoutingForExplicitTokens(bool includeImplicitOperation)
+        {
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+            Mock<CosmosClientContext> context = this.CreateMockContext(
+                sessionContainer,
+                BuildDtcResponseJson(new[]
+                {
+                    (statusCode: 200, subStatusCode: (int?)null, sessionToken: "0:1#10#4=9", partitionKeyRangeId: "0")
+                }),
+                HttpStatusCode.OK, Cosmos.ConsistencyLevel.Session, false, out MockDocumentClient documentClient);
+            InvalidOperationException routingFailure = new InvalidOperationException("routing unavailable");
+            documentClient.MockPartitionKeyRangeCache.Setup(cache => cache.TryGetOverlappingRangesAsync(
+                It.IsAny<string>(), It.IsAny<Documents.Routing.Range<string>>(), It.IsAny<ITrace>(), It.IsAny<bool>()))
+                .ThrowsAsync(routingFailure);
+            List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
+            {
+                new DistributedTransactionOperation(
+                    OperationType.Read, 0, DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1",
+                    requestOptions: new DistributedTransactionRequestOptions { SessionToken = "0:1#9#4=8" })
+            };
+            if (includeImplicitOperation)
+            {
+                operations.Add(new DistributedTransactionOperation(
+                    OperationType.Read, 1, DatabaseName, ContainerName, new PartitionKey("pk2"), id: "doc2"));
+            }
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, context.Object, OperationType.CommitDistributedTransaction);
+            if (includeImplicitOperation)
+            {
+                InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
+                Assert.AreSame(routingFailure, exception);
+                this.VerifyProcessResourceOperationCallCount(context, Times.Never());
+            }
+            else
+            {
+                using (await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+                {
+                    Assert.AreEqual("0:1#9#4=8", operations[0].SessionToken);
+                    Assert.IsNull(operations[0].ResolvedPartitionKeyRangeId);
+                    Assert.AreEqual(
+                        "0:1#10#4=9",
+                        sessionContainer.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName)),
+                        "Skipping routing for explicit tokens must not skip response-token capture.");
+                }
+
+                this.VerifyProcessResourceOperationCallCount(context, Times.Once());
+            }
+
+            documentClient.MockPartitionKeyRangeCache.Verify(cache => cache.TryGetOverlappingRangesAsync(
+                It.IsAny<string>(), It.IsAny<Documents.Routing.Range<string>>(), It.IsAny<ITrace>(), It.IsAny<bool>()),
+                includeImplicitOperation ? Times.Once() : Times.Never());
+        }
+
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ExecuteTransactionAsync_ReusesCapturedToken_InNextTransaction(bool explicitToken)
+        {
+            const string expectedToken = "0:1#9#4=8";
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+            Mock<CosmosClientContext> firstContext = this.CreateMockContext(
+                sessionContainer,
+                BuildDtcResponseJson(new[]
+                {
+                    (statusCode: 201, subStatusCode: (int?)null, sessionToken: expectedToken, partitionKeyRangeId: "0")
+                }),
+                HttpStatusCode.OK, Cosmos.ConsistencyLevel.Session);
+            DistributedTransactionCommitter first = new DistributedTransactionCommitter(
+                this.CreateOperations(1), firstContext.Object, OperationType.CommitDistributedTransaction);
+            using (DistributedTransactionResponse response = await first.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(expectedToken, response[0].SessionToken);
+            }
+
+            Mock<CosmosClientContext> secondContext = this.CreateMockContext(
+                sessionContainer,
+                BuildDtcResponseJson(new[] { (statusCode: 200, sessionToken: (string)null) }),
+                HttpStatusCode.OK, Cosmos.ConsistencyLevel.Session);
+            string sentToken = null;
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                secondContext,
+                (stream, _) =>
+                {
+                    using System.Text.Json.JsonDocument body = System.Text.Json.JsonDocument.Parse(stream);
+                    sentToken = body.RootElement.GetProperty(DistributedTransactionSerializer.Operations)[0]
+                        .GetProperty(DistributedTransactionSerializer.SessionToken).GetString();
+                },
+                () => Task.FromResult(CreateSuccessResponseMessage(operationCount: 1)));
+            DistributedTransactionOperation read = new DistributedTransactionOperation(
+                OperationType.Read, 0, DatabaseName, ContainerName, new PartitionKey("pk0"), id: "doc0",
+                requestOptions: explicitToken ? new DistributedTransactionRequestOptions { SessionToken = expectedToken } : null);
+            DistributedTransactionCommitter second = new DistributedTransactionCommitter(
+                new[] { read }, secondContext.Object, OperationType.CommitDistributedTransaction);
+            using (await second.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual(expectedToken, sentToken);
+            }
+        }
+
+        [TestMethod]
+        [DataRow("99:1#9#4=8", 404, 1002)]
+        [DataRow("0:1#9223372036854775807#4=9223372036854775807", 404, 1002)]
+        [DataRow("0:1#9223372036854775807#4=9223372036854775807", 408, 0)]
+        public async Task ExecuteTransactionAsync_PreservesMockedCoordinatorError_ForValidExplicitToken(
+            string token, int statusCode, int subStatusCode)
+        {
+            Mock<CosmosClientContext> context = this.CreateMockContext(
+                new SessionContainer("testhost"),
+                BuildDtcResponseJson(new[]
+                {
+                    (statusCode, subStatusCode: (int?)subStatusCode, sessionToken: (string)null, partitionKeyRangeId: "0")
+                }),
+                HttpStatusCode.MultiStatus, Cosmos.ConsistencyLevel.Session);
+            DistributedTransactionOperation operation = new DistributedTransactionOperation(
+                OperationType.Read, 0, DatabaseName, ContainerName, new PartitionKey("pk1"), id: "doc1",
+                requestOptions: new DistributedTransactionRequestOptions { SessionToken = token });
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                new[] { operation }, context.Object, OperationType.CommitDistributedTransaction);
+            using (DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None))
+            {
+                Assert.AreEqual((HttpStatusCode)statusCode, response.StatusCode);
+                Assert.AreEqual((HttpStatusCode)statusCode, response[0].StatusCode);
+                Assert.AreEqual((SubStatusCodes)subStatusCode, response[0].SubStatusCode);
+                Assert.IsFalse(response.IsRetriable);
+                Assert.AreEqual(token, operation.SessionToken);
+            }
+
+            this.VerifyProcessResourceOperationCallCount(context, Times.Once());
+        }
+
         /// <summary>
         /// Runs a single-operation transaction through request-side resolution and returns the operations
         /// as they were left after <see cref="DistributedTransactionCommitter.ExecuteTransactionAsync"/>.
@@ -3935,7 +4135,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         [TestMethod]
         [Description("A routing cache refresh failure after a committed transaction is traced, not surfaced; the transaction has already been applied.")]
-        public async Task ExecuteTransactionAsync_Succeeds_WhenRoutingCacheRefreshThrows()
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(2)]
+        public async Task ExecuteTransactionAsync_Succeeds_WhenRoutingCacheRefreshThrows(int failureKind)
         {
             SessionContainer sessionContainer = new SessionContainer("testhost");
 
@@ -3956,7 +4159,12 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     It.IsAny<string>(),
                     It.IsAny<ITrace>(),
                     true))
-                .ThrowsAsync(new InvalidOperationException("routing cache unavailable"));
+                .ThrowsAsync(failureKind switch
+                {
+                    1 => new OperationCanceledException("routing refresh canceled"),
+                    2 => new TaskCanceledException("routing refresh task canceled"),
+                    _ => new InvalidOperationException("routing cache unavailable")
+                });
 
             List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>
             {
@@ -4070,7 +4278,9 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         [TestMethod]
         [DoNotParallelize]
         [Description("A routing failure after commit is traced, bounded and escaped; it does not fail the committed transaction.")]
-        public async Task ExecuteTransactionAsync_BoundsRoutingFailureWarnings()
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ExecuteTransactionAsync_BoundsRoutingFailureWarnings(bool canceled)
         {
             Mock<CosmosClientContext> mockContext = this.CreateMockContext(
                 new SessionContainer("testhost"),
@@ -4080,7 +4290,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 accountConsistencyLevel: Cosmos.ConsistencyLevel.Session,
                 isMultiMasterEnabled: false,
                 out MockDocumentClient documentClient);
-            InvalidOperationException routingFailure = new InvalidOperationException("routing unavailable\r\n" + new string('x', 4096));
+            string failureMessage = "routing unavailable\r\n" + new string('x', 4096);
+            Exception routingFailure = canceled
+                ? new OperationCanceledException(failureMessage)
+                : new InvalidOperationException(failureMessage);
 
             documentClient.MockPartitionKeyRangeCache
                 .Setup(cache => cache.TryGetPartitionKeyRangeByIdAsync(
@@ -4141,6 +4354,46 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
                 () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None));
             Assert.AreSame(routingFailure, exception);
+            this.VerifyProcessResourceOperationCallCount(mockContext, Times.Never());
+        }
+
+        [DataTestMethod]
+        [DataRow(2)]
+        [DataRow(128)]
+        public async Task ExecuteTransactionAsync_StopsRoutingRemainingOperations_WhenCanceledDuringLookup(int operationCount)
+        {
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            Mock<CosmosClientContext> mockContext = this.CreateMockContext(
+                new SessionContainer("testhost"),
+                responseContent: null,
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Session,
+                isMultiMasterEnabled: false,
+                out MockDocumentClient documentClient);
+            documentClient.MockPartitionKeyRangeCache
+                .Setup(cache => cache.TryGetOverlappingRangesAsync(
+                    It.IsAny<string>(), It.IsAny<Documents.Routing.Range<string>>(), It.IsAny<ITrace>(), It.IsAny<bool>()))
+                .Callback(() => cancellationTokenSource.Cancel())
+                .ReturnsAsync(new List<PartitionKeyRange>
+                {
+                    new PartitionKeyRange { Id = "0", MinInclusive = string.Empty, MaxExclusive = "FF" }
+                });
+            List<DistributedTransactionOperation> operations = Enumerable.Range(0, operationCount)
+                .Select(index => new DistributedTransactionOperation(
+                    OperationType.Read, index, DatabaseName, ContainerName, new PartitionKey($"pk{index}"), id: $"doc{index}"))
+                .ToList();
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, mockContext.Object, OperationType.CommitDistributedTransaction);
+
+            OperationCanceledException exception = await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, cancellationTokenSource.Token));
+
+            Assert.AreEqual(cancellationTokenSource.Token, exception.CancellationToken);
+            documentClient.MockPartitionKeyRangeCache.Verify(
+                cache => cache.TryGetOverlappingRangesAsync(
+                    It.IsAny<string>(), It.IsAny<Documents.Routing.Range<string>>(), It.IsAny<ITrace>(), It.IsAny<bool>()),
+                Times.Once(),
+                "Cancellation during routing must prevent further uncancelable lookups in the same collection.");
             this.VerifyProcessResourceOperationCallCount(mockContext, Times.Never());
         }
 
