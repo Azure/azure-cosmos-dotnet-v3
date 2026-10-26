@@ -74,7 +74,7 @@ stages:
         IncludeEmulatorTests: false
 
 # Live-account AAD (Microsoft Entra ID) integration tests (TestCategory=MultiRegionAad).
-# Runs against the live Cosmos DB account dotnet-ci-20261026-multiregion via an Azure Resource
+# Runs against the configured live Cosmos DB account via an Azure Resource
 # Manager (Workload Identity Federation) service connection whose app-registration identity
 # (co-tenant with the account) holds the Cosmos DB data-plane role.
 - stage:
@@ -84,5 +84,5 @@ stages:
     - template:  templates/build-test-aad.yml
       parameters:
         BuildConfiguration: Release
-        AadAccountEndpoint: 'https://dotnet-ci-20261026-multiregion.documents.azure.com:443/'
+        AadAccountEndpoint: $(COSMOSDB_MULTI_REGION_AAD)
         AadServiceConnection: 'dotnet-v3-aad-ci'
