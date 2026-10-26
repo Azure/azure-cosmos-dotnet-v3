@@ -44,6 +44,7 @@ This result will return a server error to the customer: `FaultInjectionServerErr
 | `Timeout`               | 408:0        | The operation did not complete within the allocated time.                   |
 | `PartitionIsSplitting`  | 410:1007     | The partition is currently splitting.                                       |
 | `PartitionIsMigrating`  | 410:1008     | The partition is currently migrating.                                       |
+| `LeaseNotFound`         | 410:1022     | The replica's lease for the addressed documentServiceId is not found. Fires during partition merge / lease handoff. |
 | `SendDelay`             | n/a          | Will inject a delay to the request before it is sent to the backend.         |
 | `ResponseDelay`         | n/a          | Will inject a delay to the request after a response is received from the backend before returning the result. |
 | `ConnectionDelay`       | n/a          | Used to simulate high channel acquisition.                                  |
@@ -54,6 +55,8 @@ This result will return a server error to the customer: `FaultInjectionServerErr
 | `AadTokenRevoked`       | 401:5013     | The Microsoft Entra ID (AAD) token has been revoked.                        |
 
 > **Mode applicability:** `Gone` is only injected on **Direct** mode calls and is rejected when the rule targets the `Gateway` connection type. `DatabaseAccountNotFound` is the inverse — it is only valid for **Gateway** mode. See the validation in `FaultInjectionRuleBuilder`.
+
+> Note: `FaultInjectionConditionBuilder.WithOperationType(FaultInjectionOperationType.MetadataHeadCollection)` targets metadata HEAD requests (e.g., the consistency-barrier `Head/Collection` requests the SDK issues under Strong / Bounded-Staleness consistency to verify `GlobalCommittedLSN` before returning a read).
 
 ##### `FaultInjectionConnectionErrorResult`
 
