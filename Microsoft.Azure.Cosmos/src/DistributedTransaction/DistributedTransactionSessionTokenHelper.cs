@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            operation.SessionToken = DistributedTransactionSessionTokenHelper.TryFindPartitionLocalSessionToken(
+            operation.ResolvedSessionToken = DistributedTransactionSessionTokenHelper.TryFindPartitionLocalSessionToken(
                 collectionSessionToken,
                 operation.ResolvedPartitionKeyRangeId);
 

@@ -55,7 +55,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal string PartitionKeyJson { get; set; }
 
-        internal string SessionToken => string.IsNullOrWhiteSpace(this.RequestOptions?.SessionToken) ? null : this.RequestOptions.SessionToken;
+        internal string SessionToken => string.IsNullOrWhiteSpace(this.RequestOptions?.SessionToken) ? this.ResolvedSessionToken : this.RequestOptions.SessionToken;
+
+        internal string ResolvedSessionToken { get; set; }
 
         /// <summary>
         /// The partition key range this operation was routed to at request time.

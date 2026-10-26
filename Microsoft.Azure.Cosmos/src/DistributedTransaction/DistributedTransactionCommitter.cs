@@ -97,6 +97,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
+                // Validation and routing must use the same option values that will be serialized.
+                foreach (DistributedTransactionOperation operation in this.operations)
+                {
+                    operation.CaptureRequestOptions();
+                }
+
                 DistributedTransactionSessionTokenHelper.ValidateUserSuppliedSessionTokens(this.operations);
 
                 // Resolved before routing to decide which sub-operations receive an automatic session token.
