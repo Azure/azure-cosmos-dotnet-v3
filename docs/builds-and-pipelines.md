@@ -247,11 +247,15 @@ ADO service connection (Workload Identity Federation, no secret)
     → SDK DefaultAzureCredential → AzureCliCredential acquires a Cosmos data-plane token
 ```
 
-Configure the non-secret pipeline variable `COSMOSDB_MULTI_REGION_AAD` with the account's
-HTTPS endpoint in each consuming CI/nightly pipeline (or its shared variable group). Both YAMLs
-pass `$(COSMOSDB_MULTI_REGION_AAD)` to the AAD template; no account, subscription or tenant ID
-is embedded in source. Missing, unresolved or malformed endpoint values fail the job before
-authentication or test execution. This variable is an endpoint, not a connection string.
+Both pipelines pass the existing secret `$(COSMOSDB_MULTI_REGION)` through
+`MultiRegionConnectionString` to the AAD template. `TestCommon.GetAadAccountEndpoint()` extracts
+only `AccountEndpoint` from that connection string. The AAD client is created with this endpoint
+and an Entra `TokenCredential`; it does not use `AccountKey` for authentication. The same account
+therefore serves both key-based and AAD tests without a second endpoint variable.
+
+The CI template clears the optional `COSMOSDB_MULTI_REGION_AAD` override so a stale value
+cannot redirect AAD tests to a different account. Local tests may still use that override for
+a dedicated AAD-only account. Keep account, subscription and tenant values out of source.
 
 The template sets `COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true` and
 `COSMOSDB_AAD_STRICT=true`. Missing credentials, permissions or resources fail CI rather than
@@ -270,7 +274,7 @@ the corp policy that blocks *managed-identity* federated credentials.)
 
 | Item | Value |
 | --- | --- |
-| Account endpoint | Non-secret pipeline variable `COSMOSDB_MULTI_REGION_AAD` |
+| Account | Shared with the normal MultiRegion lane through secret `COSMOSDB_MULTI_REGION` |
 | Account tenant / subscription | Configured in the ARM service connection; must match the selected account |
 | DB / container | `AadLiveTestDb` / `AadLiveTestContainer` (`/pk`) — pre-created (data-plane identity can't create them) |
 | App registration | Single-tenant application in the account's tenant |
@@ -278,10 +282,11 @@ the corp policy that blocks *managed-identity* federated credentials.)
 | Data-plane role | Cosmos DB Built-in Data Contributor (`…0002`) on the account → the app SP |
 | Control-plane role | **Reader** on the account's resource group → the app SP (see gotcha below) |
 
-The account may be dedicated to AAD tests or shared with the key-based `MultiRegion` lane;
-these tests always authenticate with Entra tokens. During rotation, update the endpoint variable
-in every consuming pipeline and reconcile the service connection's tenant/subscription, identity,
-roles and fixture. Do not disable an existing AAD-only account policy to reuse a key-based account.
+During rotation, update `COSMOSDB_MULTI_REGION` in every consuming CI/nightly pipeline and
+reconcile the service connection's tenant/subscription, identity, roles and fixture. These tests
+always authenticate with Entra tokens even though the shared account also supports keys.
+Do not disable an existing AAD-only account policy; dedicated local AAD-only tests can use their
+optional endpoint override.
 
 ### Setting it up from scratch (runbook)
 
@@ -310,11 +315,11 @@ roles and fixture. Do not disable an existing AAD-only account policy to reuse a
      --assignee-principal-type ServicePrincipal --role "Reader" \
      --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>"
    ```
-7. **Set the non-secret `COSMOSDB_MULTI_REGION_AAD` pipeline variable** to the account's
-   HTTPS endpoint in every consuming CI/nightly pipeline. Keep `AadAccountEndpoint` bound to
-   `$(COSMOSDB_MULTI_REGION_AAD)` in both YAMLs and select the configured ARM connection via
-   `AadServiceConnection`. The endpoint is runtime configuration, so subsequent account
-   rotations do not require source changes.
+7. **Configure the existing secret `COSMOSDB_MULTI_REGION`** in every consuming CI/nightly
+   pipeline with the shared account's connection string. Keep `MultiRegionConnectionString`
+   bound to `$(COSMOSDB_MULTI_REGION)` in both YAMLs and select the configured ARM connection
+   via `AadServiceConnection`. Keep connection strings secret; never log or commit their values.
+   Subsequent account rotations update this shared secret, not SDK source.
 
 ### AAD gotchas (learned the hard way)
 
