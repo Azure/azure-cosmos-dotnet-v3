@@ -232,7 +232,7 @@ See [CONTRIBUTING → Tests](../CONTRIBUTING.md#tests) for the unit vs emulator 
 
 ## Live-account AAD tests (`MultiRegionAad`)
 
-These authenticate to a **real** Cosmos DB account using a real Entra token
+These authenticate to a **real AAD** Cosmos DB account using a real Entra token
 (data-plane RBAC) — the counterpart to the key-based `MultiRegion` live tests. They live in
 `Microsoft.Azure.Cosmos.EmulatorTests` under `[TestCategory("MultiRegionAad")]` and are wired into
 the PR and nightly pipelines via [`build-test-aad.yml`](../templates/build-test-aad.yml). The job
