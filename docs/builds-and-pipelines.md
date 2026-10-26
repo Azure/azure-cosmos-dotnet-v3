@@ -232,7 +232,7 @@ See [CONTRIBUTING → Tests](../CONTRIBUTING.md#tests) for the unit vs emulator 
 
 ## Live-account AAD tests (`MultiRegionAad`)
 
-These authenticate to a **real, AAD-only** Cosmos DB account using a real Entra token
+These authenticate to a **real** Cosmos DB account using a real Entra token
 (data-plane RBAC) — the counterpart to the key-based `MultiRegion` live tests. They live in
 `Microsoft.Azure.Cosmos.EmulatorTests` under `[TestCategory("MultiRegionAad")]` and are wired into
 the PR and nightly pipelines via [`build-test-aad.yml`](../templates/build-test-aad.yml). The job
@@ -264,12 +264,17 @@ the corp policy that blocks *managed-identity* federated credentials.)
 
 | Item | Value |
 | --- | --- |
-| Account | `dotnet-v3-multiregion` (AAD-only), RG `dotnet-v3-ci-pipelines`, sub `chrande-CosmosDB-SDK-CI` |
+| Account | `dotnet-ci-20261026-multiregion`, RG `dotnet-v3-ci-rg`, sub `CosmosDB_Test_Subscription` (`47838f41-2d71-40a5-b179-b72bfd3ba801`), tenant `f380f97b-b881-4503-9280-1e1418e4991e` |
 | DB / container | `AadLiveTestDb` / `AadLiveTestContainer` (`/pk`) — pre-created (data-plane identity can't create them) |
 | App registration | `dotnet-v3-aad-ci-app` (single-tenant, in the account's tenant) |
 | ADO service connection | `dotnet-v3-aad-ci` (ARM, Workload Identity Federation, saved *without verification*) |
 | Data-plane role | Cosmos DB Built-in Data Contributor (`…0002`) on the account → the app SP |
-| Control-plane role | **Reader** on RG `dotnet-v3-ci-pipelines` → the app SP (see gotcha below) |
+| Control-plane role | **Reader** on RG `dotnet-v3-ci-rg` → the app SP (see gotcha below) |
+
+The replacement account is shared with the key-based `MultiRegion` lane; these tests still
+authenticate exclusively with Entra tokens. Updating the endpoint does not migrate the service
+connection or grant permissions. Before running this lane, configure the identity and service
+connection for the account's tenant, grant the roles below, and pre-create the database/container.
 
 ### Setting it up from scratch (runbook)
 
@@ -279,7 +284,8 @@ the corp policy that blocks *managed-identity* federated credentials.)
 3. **Grant its service principal** the Cosmos data-plane role — note this uses the **SP object id**
    (enterprise-application object id), *not* the app-registration object id:
    ```
-   az cosmosdb sql role assignment create -a dotnet-v3-multiregion -g dotnet-v3-ci-pipelines \
+   az cosmosdb sql role assignment create -a dotnet-ci-20261026-multiregion -g dotnet-v3-ci-rg \
+     --subscription 47838f41-2d71-40a5-b179-b72bfd3ba801 \
      --role-definition-id 00000000-0000-0000-0000-000000000002 \
      --principal-id <SP-object-id> --scope "/"
    ```
@@ -295,7 +301,7 @@ the corp policy that blocks *managed-identity* federated credentials.)
    ```
    az role assignment create --assignee-object-id <SP-object-id> \
      --assignee-principal-type ServicePrincipal --role "Reader" \
-     --scope "/subscriptions/<sub>/resourceGroups/dotnet-v3-ci-pipelines"
+     --scope "/subscriptions/47838f41-2d71-40a5-b179-b72bfd3ba801/resourceGroups/dotnet-v3-ci-rg"
    ```
 7. **Set `AadServiceConnection`** (and `AadAccountEndpoint`) in `azure-pipelines.yml` and
    `azure-pipelines-nightly.yml`. The job now runs.

@@ -1,7 +1,7 @@
 # File: templates/build-test-aad.yml
 #
 # Live-account AAD (Microsoft Entra ID) integration tests (TestCategory=MultiRegionAad).
-# These authenticate to a real, AAD-only Cosmos DB account (dotnet-v3-multiregion) using a real
+# These authenticate to the configured live Cosmos DB account using a real
 # Entra token (data-plane RBAC), via an Azure Resource Manager service connection that uses
 # Workload Identity Federation (no client secret -- secrets are blocked by tenant policy).
 #
