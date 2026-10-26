@@ -5,8 +5,8 @@
 # Entra token (data-plane RBAC), via an Azure Resource Manager service connection that uses
 # Workload Identity Federation (no client secret -- secrets are blocked by tenant policy).
 #
-# The connection's identity is an app registration in the SAME tenant as the account
-# (dotnet-v3-aad-ci-app), which holds the Cosmos DB Built-in Data Contributor data-plane role on
+# The connection's identity is an app registration in the SAME tenant as the account,
+# which holds the Cosmos DB Built-in Data Contributor data-plane role on
 # the account. The AzureCLI@2 task logs `az` in as that identity; the SDK's DefaultAzureCredential
 # (AzureCliCredential) then acquires Cosmos data-plane tokens. (A co-tenant app registration is
 # required because Cosmos data-plane RBAC cannot grant a role to a principal in another tenant --
@@ -56,6 +56,25 @@ jobs:
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  - task: PowerShell@2
+    displayName: Validate MultiRegionAad endpoint
+    inputs:
+      targetType: inline
+      pwsh: true
+      script: |
+        [Uri] $endpoint = $null
+        if (-not [Uri]::TryCreate($env:COSMOSDB_MULTI_REGION_AAD, [UriKind]::Absolute, [ref]$endpoint) -or
+            $endpoint.Scheme -ne 'https' -or
+            [string]::IsNullOrWhiteSpace($endpoint.Host) -or
+            -not [string]::IsNullOrEmpty($endpoint.UserInfo) -or
+            $endpoint.AbsolutePath -ne '/' -or
+            -not [string]::IsNullOrEmpty($endpoint.Query) -or
+            -not [string]::IsNullOrEmpty($endpoint.Fragment)) {
+          throw 'Set COSMOSDB_MULTI_REGION_AAD to an absolute HTTPS account endpoint in the pipeline variables.'
+        }
+    env:
+      COSMOSDB_MULTI_REGION_AAD: ${{ parameters.AadAccountEndpoint }}
 
   # Add this Command to Include the .NET 6 SDK
   - task: UseDotNet@2

@@ -247,9 +247,15 @@ ADO service connection (Workload Identity Federation, no secret)
     → SDK DefaultAzureCredential → AzureCliCredential acquires a Cosmos data-plane token
 ```
 
-The tests set `COSMOSDB_MULTI_REGION_AAD` (the account endpoint) and
-`COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true`; `TestCommon` resolves the credential accordingly and
-skips with `Assert.Inconclusive` if endpoint/credentials/resources aren't configured.
+Configure the non-secret pipeline variable `COSMOSDB_MULTI_REGION_AAD` with the account's
+HTTPS endpoint in each consuming CI/nightly pipeline (or its shared variable group). Both YAMLs
+pass `$(COSMOSDB_MULTI_REGION_AAD)` to the AAD template; no account, subscription or tenant ID
+is embedded in source. Missing, unresolved or malformed endpoint values fail the job before
+authentication or test execution. This variable is an endpoint, not a connection string.
+
+The template sets `COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true` and
+`COSMOSDB_AAD_STRICT=true`. Missing credentials, permissions or resources fail CI rather than
+silently skipping the tests; local non-strict runs may use `Assert.Inconclusive`.
 
 ### Why an app registration (not the build-agent MI)
 
@@ -260,21 +266,22 @@ The working pattern is a **single-tenant app registration created in the account
 service principal holds the Cosmos role. (An app-registration federated credential also sidesteps
 the corp policy that blocks *managed-identity* federated credentials.)
 
-### The account & identity (current setup)
+### Required account and identity configuration
 
 | Item | Value |
 | --- | --- |
-| Account | `dotnet-ci-20261026-multiregion`, RG `dotnet-v3-ci-rg`, sub `CosmosDB_Test_Subscription` (`47838f41-2d71-40a5-b179-b72bfd3ba801`), tenant `f380f97b-b881-4503-9280-1e1418e4991e` |
+| Account endpoint | Non-secret pipeline variable `COSMOSDB_MULTI_REGION_AAD` |
+| Account tenant / subscription | Configured in the ARM service connection; must match the selected account |
 | DB / container | `AadLiveTestDb` / `AadLiveTestContainer` (`/pk`) — pre-created (data-plane identity can't create them) |
-| App registration | `dotnet-v3-aad-ci-app` (single-tenant, in the account's tenant) |
+| App registration | Single-tenant application in the account's tenant |
 | ADO service connection | `dotnet-v3-aad-ci` (ARM, Workload Identity Federation, saved *without verification*) |
 | Data-plane role | Cosmos DB Built-in Data Contributor (`…0002`) on the account → the app SP |
-| Control-plane role | **Reader** on RG `dotnet-v3-ci-rg` → the app SP (see gotcha below) |
+| Control-plane role | **Reader** on the account's resource group → the app SP (see gotcha below) |
 
-The replacement account is shared with the key-based `MultiRegion` lane; these tests still
-authenticate exclusively with Entra tokens. Updating the endpoint does not migrate the service
-connection or grant permissions. Before running this lane, configure the identity and service
-connection for the account's tenant, grant the roles below, and pre-create the database/container.
+The account may be dedicated to AAD tests or shared with the key-based `MultiRegion` lane;
+these tests always authenticate with Entra tokens. During rotation, update the endpoint variable
+in every consuming pipeline and reconcile the service connection's tenant/subscription, identity,
+roles and fixture. Do not disable an existing AAD-only account policy to reuse a key-based account.
 
 ### Setting it up from scratch (runbook)
 
@@ -284,8 +291,8 @@ connection for the account's tenant, grant the roles below, and pre-create the d
 3. **Grant its service principal** the Cosmos data-plane role — note this uses the **SP object id**
    (enterprise-application object id), *not* the app-registration object id:
    ```
-   az cosmosdb sql role assignment create -a dotnet-ci-20261026-multiregion -g dotnet-v3-ci-rg \
-     --subscription 47838f41-2d71-40a5-b179-b72bfd3ba801 \
+   az cosmosdb sql role assignment create -a <account-name> -g <resource-group> \
+     --subscription <subscription-id> \
      --role-definition-id 00000000-0000-0000-0000-000000000002 \
      --principal-id <SP-object-id> --scope "/"
    ```
@@ -301,10 +308,13 @@ connection for the account's tenant, grant the roles below, and pre-create the d
    ```
    az role assignment create --assignee-object-id <SP-object-id> \
      --assignee-principal-type ServicePrincipal --role "Reader" \
-     --scope "/subscriptions/47838f41-2d71-40a5-b179-b72bfd3ba801/resourceGroups/dotnet-v3-ci-rg"
+     --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>"
    ```
-7. **Set `AadServiceConnection`** (and `AadAccountEndpoint`) in `azure-pipelines.yml` and
-   `azure-pipelines-nightly.yml`. The job now runs.
+7. **Set the non-secret `COSMOSDB_MULTI_REGION_AAD` pipeline variable** to the account's
+   HTTPS endpoint in every consuming CI/nightly pipeline. Keep `AadAccountEndpoint` bound to
+   `$(COSMOSDB_MULTI_REGION_AAD)` in both YAMLs and select the configured ARM connection via
+   `AadServiceConnection`. The endpoint is runtime configuration, so subsequent account
+   rotations do not require source changes.
 
 ### AAD gotchas (learned the hard way)
 
