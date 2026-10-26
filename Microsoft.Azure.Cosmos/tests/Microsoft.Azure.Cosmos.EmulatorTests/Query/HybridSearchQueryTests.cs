@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     [TestCategory("Query")]
     public sealed class HybridSearchQueryTests : QueryTestsBase
     {
-        private const string CollectionDataPath = "Documents\\text-3properties-1536dimensions-100documents.json";
+        private static readonly string CollectionDataPath = Path.Combine("Documents", "text-3properties-1536dimensions-100documents.json");
         private const int RrfDocumentCount = 1000;
         private const int RrfLexicalMatchIndex = 49;
         private const int CompetitionRrfLexicalMatchRank = 47;
@@ -75,6 +75,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             });
 
         [TestMethod]
+        [TestCategory("LinuxQueryPlanInteropLive")]
         public async Task SanityTests()
         {
             List<SanityTestCase> testCases = new List<SanityTestCase>
@@ -162,6 +163,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
+        [TestCategory("LinuxQueryPlanInteropLive")]
         public async Task FullTextScoreProjectionAndFilterPredicateTests()
         {
             List<SanityTestCase> testCases = new List<SanityTestCase>
@@ -257,6 +259,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
+        [TestCategory("LinuxQueryPlanInteropLive")]
         public async Task FullTextScoreProjectionAndFilterPredicateWeightedRRFTests()
         {
             List<SanityTestCase> testCases = new List<SanityTestCase>
@@ -295,6 +298,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
+        [TestCategory("LinuxQueryPlanInteropLive")]
         public async Task WeightedRankFusionTests()
         {
             List<SanityTestCase> testCases = new List<SanityTestCase>

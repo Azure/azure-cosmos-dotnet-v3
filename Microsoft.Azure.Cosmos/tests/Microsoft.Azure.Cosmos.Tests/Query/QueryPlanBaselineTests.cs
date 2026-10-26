@@ -1846,6 +1846,11 @@
             {
                 // .NET formats native error-code messages differently on Windows and Linux.
                 string message = ex is COMException ? $"0x{ex.HResult:X8}" : ex.Message;
+
+                // Newer native builds (QueryPlanInterop on Linux) add these empty fields to the raw plan JSON.
+                message = message
+                    .Replace(",\"embeddingParameterMap\":null", string.Empty)
+                    .Replace(",\"requiresExtendedQueryPlan\":0", string.Empty);
                 stringBuilder.AppendLine($"{ex.GetType()} : {message}");
                 ex = ex.InnerException;
             }
@@ -1932,7 +1937,11 @@
         {
             writer.WriteStartElement("QueryRanges");
             writer.WriteStartElement("Range");
-            foreach (Range<PartitionKeyInternal> range in queryRanges)
+            // Native builds can return the same ranges in a different order; the SDK sorts them before use.
+            IEnumerable<Range<PartitionKeyInternal>> sortedRanges = queryRanges
+                .OrderBy(range => range, Range<PartitionKeyInternal>.MinComparer.Instance)
+                .ThenBy(range => range, Range<PartitionKeyInternal>.MaxComparer.Instance);
+            foreach (Range<PartitionKeyInternal> range in sortedRanges)
             {
                 string minBound = range.IsMinInclusive ? "[" : "(";
                 string maxBound = range.IsMaxInclusive ? "]" : ")";

@@ -5,6 +5,7 @@
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -735,6 +736,7 @@
         }
 
         [TestMethod]
+        [TestCategory("LinuxQueryPlanInteropLive")]
         public async Task TestOdeEnvironmentVariable()
         {
             bool defaultValue = false;
@@ -745,10 +747,15 @@
                 {
                     // Environment variables are case insensitive in windows
                     ("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED", "true", true),
+                    ("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED", "True", true),
+                    ("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED", "TRUE", true),
+                    ("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED", "truE", true),
                     ("AZURE_COSMOS_optimistic_direct_execution_enabled", "True", true),
                     ("azure_cosmos_optimistic_direct_execution_enabled", "TRUE", true),
                     ("Azure_Cosmos_Optimistic_Direct_Execution_Enabled", "truE", true),
                     ("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED", "false", false),
+                    ("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED", "False", false),
+                    ("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED", "FALSE", false),
                     ("AZURE_COSMOS_optimistic_direct_execution_enabled", "False", false),
                     ("azure_cosmos_optimistic_direct_execution_enabled", "FALSE", false),
                     ("Azure_Cosmos_Optimistic_Direct_Execution_Enabled", "false", false),
@@ -758,18 +765,23 @@
                     ("enableode", "false", defaultValue)
                 })
             {
+                string originalValue = Environment.GetEnvironmentVariable(name);
                 try
                 {
                     // Test new value
                     Environment.SetEnvironmentVariable(name, value);
                     QueryRequestOptions options2 = new QueryRequestOptions();
-                    bool areEqual = expectedValue == options2.EnableOptimisticDirectExecution;
-                    Assert.IsTrue(areEqual, $"EnvironmentVariable:'{name}', value:'{value}', expected:'{expectedValue}', actual:'{options2.EnableOptimisticDirectExecution}'");
+                    bool platformExpectedValue = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
+                        name == "AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED"
+                        ? expectedValue
+                        : defaultValue;
+                    bool areEqual = platformExpectedValue == options2.EnableOptimisticDirectExecution;
+                    Assert.IsTrue(areEqual, $"EnvironmentVariable:'{name}', value:'{value}', expected:'{platformExpectedValue}', actual:'{options2.EnableOptimisticDirectExecution}'");
                 }
                 finally
                 {
                     // Remove side effects.
-                    Environment.SetEnvironmentVariable(name, null);
+                    Environment.SetEnvironmentVariable(name, originalValue);
                 }
             }
 
@@ -783,6 +795,7 @@
                 })
             {
                 bool receivedException = false;
+                string originalValue = Environment.GetEnvironmentVariable("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED");
                 try
                 {
                     // Test new value
@@ -797,7 +810,7 @@
                 finally
                 {
                     // Remove side effects.
-                    Environment.SetEnvironmentVariable("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED", null);
+                    Environment.SetEnvironmentVariable("AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED", originalValue);
                 }
 
                 Assert.IsTrue(receivedException, $"Expected exception was not received for value '{value}'");

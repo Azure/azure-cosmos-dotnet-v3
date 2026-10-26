@@ -57,6 +57,18 @@ Linux musl distributions are not supported by these glibc native assets.
 The native libraries require glibc 2.17 or later and `libatomic.so.1` (for example,
 the `libatomic1` package on Ubuntu).
 
+The `LinuxQueryPlanInteropLive` PR CI job reuses the existing secret
+`COSMOSDB_ACCOUNT_CONNECTION_STRING` and runs the seven account-backed regressions
+tagged `LinuxQueryPlanInteropLive` on Ubuntu with native planning enabled. The
+account must be reachable from hosted Ubuntu agents and allow key authentication,
+full-text/vector queries, and containers with 25,000 RU/s.
+Tests use temporary databases and delete only their own resources;
+the Unicode case reuses the legacy assertions without its account-wide cleanup.
+The account-free distribution-plan test runs in the existing Linux unit job.
+Fork PRs do not run the secret-backed job. Missing credentials, native-load
+failures, skipped tests, and existing query failures fail the job rather than
+silently falling back or passing.
+
 ## Useful links
 
 - [Get Started APP](https://docs.microsoft.com/azure/cosmos-db/sql-api-get-started)
