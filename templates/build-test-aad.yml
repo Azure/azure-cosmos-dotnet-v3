@@ -29,7 +29,7 @@
 #      result, rejects every failed or skipped/inconclusive/not-executed result, and fails closed when
 #      no TRX was produced at all.
 #
-# Falsification (how to prove the lane really fails): point 'AadAccountEndpoint' at a nonexistent
+# Falsification (how to prove the lane really fails): point 'MultiRegionConnectionString' at a nonexistent
 # account, or rename the pre-created container so the fixture is missing, and re-run. The test task
 # fails because of guard (1); even if guard (1) were removed, guard (2) still fails the job because
 # every result is skipped/inconclusive instead of passed.
@@ -39,7 +39,7 @@ parameters:
   OS: 'Windows'
   Arguments: ' --filter "TestCategory=MultiRegionAad" --verbosity normal '
   CategoryListName: ' MultiRegionAad '
-  AadAccountEndpoint: ''
+  MultiRegionConnectionString: ''
   AadServiceConnection: ''
   # Fail the tests (instead of skipping them) when a live AAD prerequisite is not satisfied.
   StrictMode: true
@@ -56,25 +56,6 @@ jobs:
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
-
-  - task: PowerShell@2
-    displayName: Validate MultiRegionAad endpoint
-    inputs:
-      targetType: inline
-      pwsh: true
-      script: |
-        [Uri] $endpoint = $null
-        if (-not [Uri]::TryCreate($env:COSMOSDB_MULTI_REGION_AAD, [UriKind]::Absolute, [ref]$endpoint) -or
-            $endpoint.Scheme -ne 'https' -or
-            [string]::IsNullOrWhiteSpace($endpoint.Host) -or
-            -not [string]::IsNullOrEmpty($endpoint.UserInfo) -or
-            $endpoint.AbsolutePath -ne '/' -or
-            -not [string]::IsNullOrEmpty($endpoint.Query) -or
-            -not [string]::IsNullOrEmpty($endpoint.Fragment)) {
-          throw 'Set COSMOSDB_MULTI_REGION_AAD to an absolute HTTPS account endpoint in the pipeline variables.'
-        }
-    env:
-      COSMOSDB_MULTI_REGION_AAD: ${{ parameters.AadAccountEndpoint }}
 
   # Add this Command to Include the .NET 6 SDK
   - task: UseDotNet@2
@@ -115,7 +96,9 @@ jobs:
           ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} `
           --logger 'trx;LogFileName=MultiRegionAad.trx'
     env:
-      COSMOSDB_MULTI_REGION_AAD: ${{ parameters.AadAccountEndpoint }}
+      COSMOSDB_MULTI_REGION: ${{ parameters.MultiRegionConnectionString }}
+      # Reuse the normal account; ignore any stale optional local-test endpoint override.
+      COSMOSDB_MULTI_REGION_AAD: ''
       COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL: true
       # Fail closed: an unsatisfied prerequisite (missing endpoint/credential, 401/403 from a missing
       # data-plane role assignment, 404 from a missing database/container) fails the test instead of

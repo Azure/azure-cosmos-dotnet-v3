@@ -84,5 +84,5 @@ stages:
     - template:  templates/build-test-aad.yml
       parameters:
         BuildConfiguration: Release
-        AadAccountEndpoint: $(COSMOSDB_MULTI_REGION_AAD)
+        MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
         AadServiceConnection: 'dotnet-v3-aad-ci'
