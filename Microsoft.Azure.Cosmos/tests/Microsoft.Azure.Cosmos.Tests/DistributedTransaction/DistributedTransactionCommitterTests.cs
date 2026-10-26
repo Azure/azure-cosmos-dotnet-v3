@@ -3521,6 +3521,99 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 "Reads carry a session token regardless of the account's write configuration.");
         }
 
+        [DataTestMethod]
+        [DataRow(null, false)]
+        [DataRow(null, true)]
+        [DataRow("   ", false)]
+        [DataRow("   ", true)]
+        [DataRow("0:1#9#4=8", true)]
+        public async Task ExecuteTransactionAsync_ResolvesTokensWithoutMutatingSharedOptions(
+            string callerToken,
+            bool mutateDuringMetadataLookup)
+        {
+            string[] cachedTokens = { "0:1#5#4=3", "1:1#8#4=7" };
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+            foreach (string token in cachedTokens)
+            {
+                sessionContainer.SetSessionToken(
+                    CollectionResourceId,
+                    DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName),
+                    new RequestNameValueCollection { [HttpConstants.HttpHeaders.SessionToken] = token });
+            }
+
+            DistributedTransactionRequestOptions options = new DistributedTransactionRequestOptions
+            {
+                SessionToken = callerToken,
+                IfMatchEtag = "original"
+            };
+            Mock<CosmosClientContext> context = this.CreateMockContext(
+                sessionContainer,
+                responseContent: null,
+                statusCode: HttpStatusCode.OK,
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Session,
+                isMultiMasterEnabled: false,
+                out MockDocumentClient documentClient);
+            ContainerProperties properties = ContainerProperties.CreateWithResourceId(CollectionResourceId);
+            properties.PartitionKeyPath = "/pk";
+            context.Setup(c => c.GetCachedContainerPropertiesAsync(
+                    It.IsAny<string>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .Callback(() =>
+                {
+                    if (mutateDuringMetadataLookup)
+                    {
+                        options.SessionToken = "malformed-after-validation";
+                        options.IfMatchEtag = "changed";
+                    }
+                })
+                .ReturnsAsync(properties);
+            documentClient.MockPartitionKeyRangeCache.SetupSequence(cache => cache.TryGetOverlappingRangesAsync(
+                    It.IsAny<string>(), It.IsAny<Documents.Routing.Range<string>>(), It.IsAny<ITrace>(), It.IsAny<bool>()))
+                .ReturnsAsync(new List<PartitionKeyRange>
+                {
+                    new PartitionKeyRange { Id = "0", MinInclusive = string.Empty, MaxExclusive = "FF" }
+                })
+                .ReturnsAsync(new List<PartitionKeyRange>
+                {
+                    new PartitionKeyRange { Id = "1", MinInclusive = string.Empty, MaxExclusive = "FF" }
+                });
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                context,
+                (stream, _) =>
+                {
+                    using System.Text.Json.JsonDocument body = System.Text.Json.JsonDocument.Parse(stream);
+                    System.Text.Json.JsonElement sentOperations = body.RootElement.GetProperty(DistributedTransactionSerializer.Operations);
+                    Assert.AreEqual(2, sentOperations.GetArrayLength());
+                    for (int i = 0; i < 2; i++)
+                    {
+                        Assert.AreEqual(
+                            string.IsNullOrWhiteSpace(callerToken) ? cachedTokens[i] : callerToken,
+                            sentOperations[i].GetProperty(DistributedTransactionSerializer.SessionToken).GetString());
+                        Assert.AreEqual("original", sentOperations[i].GetProperty("ifMatch").GetString());
+                    }
+                },
+                () => Task.FromResult(CreateSuccessResponseMessage(operationCount: 2)));
+            DistributedTransactionOperation[] operations = Enumerable.Range(0, 2)
+                .Select(index => new DistributedTransactionOperation(
+                    OperationType.Read, index, DatabaseName, ContainerName, new PartitionKey($"pk{index}"),
+                    id: $"doc{index}", requestOptions: options))
+                .ToArray();
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, context.Object, OperationType.CommitDistributedTransaction);
+
+            using DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            Assert.AreEqual(mutateDuringMetadataLookup ? "malformed-after-validation" : callerToken, options.SessionToken);
+            Assert.AreEqual(mutateDuringMetadataLookup ? "changed" : "original", options.IfMatchEtag);
+            foreach (DistributedTransactionOperation operation in operations)
+            {
+                Assert.AreNotSame(options, operation.RequestOptions);
+                Assert.AreEqual(callerToken, operation.RequestOptions.SessionToken);
+            }
+
+            this.VerifyProcessResourceOperationCallCount(context, Times.Once());
+        }
+
         [TestMethod]
         [DataRow(false)]
         [DataRow(true)]
