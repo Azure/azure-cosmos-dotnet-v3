@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
 
                 using (StreamReader sr = new (stream))
                 {
-                    using (JsonTextReader jsonTextReader = new (sr))
+                    using (JsonTextReader jsonTextReader = new (sr) { ArrayPool = JsonCharArrayPool.Instance })
                     {
                         return jsonSerializer.Deserialize<T>(jsonTextReader);
                     }
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload = new ();
                 using (StreamWriter streamWriter = new (streamPayload, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
                 {
-                    using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                    using (JsonWriter writer = new JsonTextWriter(streamWriter) { ArrayPool = JsonCharArrayPool.Instance })
                     {
                         writer.Formatting = Formatting.None;
                         jsonSerializer.Serialize(writer, input);
