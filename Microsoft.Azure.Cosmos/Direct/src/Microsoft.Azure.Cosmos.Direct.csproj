@@ -30,7 +30,7 @@
 
   <ItemGroup>
     <EmbeddedResource Update="Resources\RMResources.resx" LogicalName="Microsoft.Azure.Documents.RMResources.resources" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" NoWarn="NU1903" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" NoWarn="NU1903" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="6.0.1" />
     <PackageReference Include="System.Memory" Version="4.5.5" />
