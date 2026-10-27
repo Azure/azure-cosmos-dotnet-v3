@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class CosmosJsonDotNetSerializer : CosmosSerializer
     {
+        private const int DefaultReaderBufferSize = 1024;
+        private const int MinReaderBufferSize = 128;
         private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
         private readonly JsonSerializerSettings SerializerSettings;
         private readonly bool BinaryEncodingEnabled;
@@ -116,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                using (StreamReader sr = new (stream))
+                using (StreamReader sr = new (stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: CosmosJsonDotNetSerializer.GetReaderBufferSize(stream)))
                 {
                     using (JsonTextReader jsonTextReader = new (sr) { ArrayPool = JsonCharArrayPool.Instance })
                     {
@@ -167,6 +169,24 @@ namespace Microsoft.Azure.Cosmos
 
             streamPayload.Position = 0;
             return streamPayload;
+        }
+
+        /// <summary>
+        /// Sizes the <see cref="StreamReader"/> buffer to the remaining content when it is smaller than the
+        /// default buffer size, so small documents do not pay for buffers they will never fill.
+        /// </summary>
+        private static int GetReaderBufferSize(Stream stream)
+        {
+            if (stream.CanSeek)
+            {
+                long remaining = stream.Length - stream.Position;
+                if (remaining < DefaultReaderBufferSize)
+                {
+                    return (int)Math.Max(remaining, MinReaderBufferSize);
+                }
+            }
+
+            return DefaultReaderBufferSize;
         }
 
         /// <summary>
