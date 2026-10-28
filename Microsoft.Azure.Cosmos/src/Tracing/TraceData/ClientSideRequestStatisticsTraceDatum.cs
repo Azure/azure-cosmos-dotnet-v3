@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
-        // The getters return copies, so mutations must go through the Append*/Record* methods below.
+        // The interface getters return copies, so mutations must go through the Append*/Record* methods below.
         public List<TransportAddressUri> ContactedReplicas
         {
             get => new List<TransportAddressUri>(this.contactedReplicas);
@@ -84,6 +84,13 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public HashSet<TransportAddressUri> FailedReplicas => new HashSet<TransportAddressUri>(this.failedReplicas);
 
         public HashSet<(string, Uri)> RegionsContacted => new HashSet<(string, Uri)>(this.regionsContacted);
+
+        // Allocation-free reads for SDK code; prefer these over the copying interface getters above.
+        public IReadOnlyList<TransportAddressUri> ContactedReplicasSnapshot => this.contactedReplicas;
+
+        public IReadOnlyList<TransportAddressUri> FailedReplicasSnapshot => this.failedReplicas;
+
+        public IReadOnlyList<(string, Uri)> RegionsContactedSnapshot => this.regionsContacted;
 
         public ITrace Trace { get; private set; }
 

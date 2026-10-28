@@ -77,6 +77,7 @@
             IClientSideRequestStatistics statistics = datum;
 
             using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            using ManualResetEventSlim firstReplicaAppended = new ManualResetEventSlim();
             Task backgroundTask = Task.Run(() =>
             {
                 int replica = 0;
@@ -89,11 +90,14 @@
                     }
 
                     statistics.AppendContactedReplica(new TransportAddressUri(new Uri($"http://storephysicaladdress{replica++}.com")));
+                    firstReplicaAppended.Set();
                 }
             });
 
             try
             {
+                Assert.IsTrue(firstReplicaAppended.Wait(TimeSpan.FromSeconds(5)), "Background updater never started.");
+
                 for (int i = 0; i < 100; i++)
                 {
                     _ = new CosmosTraceDiagnostics(trace).ToString();
@@ -122,7 +126,7 @@
                 .ToArray();
 
             using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            using ManualResetEventSlim updaterStarted = new ManualResetEventSlim();
+            using ManualResetEventSlim firstPassCompleted = new ManualResetEventSlim();
             Task backgroundTask = Task.Run(() =>
             {
                 for (int i = 0; !cancellationTokenSource.IsCancellationRequested; i++)
@@ -137,13 +141,17 @@
                     statistics.AppendContactedReplica(replica);
                     statistics.AppendFailedReplica(replica);
                     statistics.AppendRegionContacted($"region{i % replicas.Length}", replica.Uri);
-                    updaterStarted.Set();
+                    if (i == replicas.Length - 1)
+                    {
+                        // Every replica and region asserted below has now been recorded.
+                        firstPassCompleted.Set();
+                    }
                 }
             });
 
             try
             {
-                Assert.IsTrue(updaterStarted.Wait(TimeSpan.FromSeconds(5)), "Background updater never started.");
+                Assert.IsTrue(firstPassCompleted.Wait(TimeSpan.FromSeconds(5)), "Background updater never completed its first pass.");
 
                 for (int i = 0; i < 100; i++)
                 {
