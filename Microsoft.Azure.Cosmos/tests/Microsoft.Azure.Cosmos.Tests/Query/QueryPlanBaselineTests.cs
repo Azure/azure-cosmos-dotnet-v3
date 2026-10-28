@@ -1198,7 +1198,10 @@
                 @"/key")
             };
 
-            this.ExecuteTestSuite(testVariations);
+            // QueryPlanInterop.Linux intentionally saturates out-of-range hybrid-search component limits at UInt32.MaxValue.
+            this.ExecuteTestSuite(
+                testVariations,
+                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Top.Linux" : nameof(this.Top));
         }
 
         [TestMethod]
@@ -1360,7 +1363,10 @@
                     @"/key"),
             };
 
-            this.ExecuteTestSuite(testVariations);
+            // QueryPlanInterop.Linux intentionally saturates out-of-range hybrid-search component limits at UInt32.MaxValue.
+            this.ExecuteTestSuite(
+                testVariations,
+                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "OffsetLimit.Linux" : nameof(this.OffsetLimit));
         }
 
         [TestMethod]

@@ -7,10 +7,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Runtime.InteropServices;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -25,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class QueryPlanRetrieverTests
@@ -510,7 +513,74 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 JsonConvert.SerializeObject(partitionedQueryExecutionInfo.HybridSearchQueryInfo, jsonSerializerSettings);
             DebugTraceHelper.TraceQueryPlan(queryPlan);
 
-            Assert.AreEqual(testCase.ExpectedQueryPlan, queryPlan);
+            Assert.IsTrue(
+                JToken.DeepEquals(NormalizeQueryPlan(testCase.ExpectedQueryPlan), NormalizeQueryPlan(queryPlan)),
+                $"Query: {testCase.Query.QueryText}{Environment.NewLine}Expected: {testCase.ExpectedQueryPlan}{Environment.NewLine}Actual: {queryPlan}");
+        }
+
+        [DataTestMethod]
+        [DataRow("SELECT -1.79769e+308", "SELECT -1.7976900000000001e+308", true)]
+        [DataRow("SELECT 1.79769e+308", "SELECT 1.7976900000000001e+308", true)]
+        [DataRow("SELECT 1.79769e+308", "SELECT 1.79768e+308", false)]
+        [DataRow("SELECT '1.79769e+308'", "SELECT '1.7976900000000001e+308'", false)]
+        [DataRow("SELECT \"1.79769e+308\"", "SELECT \"1.7976900000000001e+308\"", false)]
+        public void QueryPlanComparisonPreservesSqlLiteralMeaning(string expectedSql, string actualSql, bool equivalent)
+        {
+            string expected = new JObject { ["rewrittenQuery"] = expectedSql }.ToString();
+            string actual = new JObject { ["rewrittenQuery"] = actualSql }.ToString();
+            Assert.AreEqual(equivalent, JToken.DeepEquals(NormalizeQueryPlan(expected), NormalizeQueryPlan(actual)));
+        }
+
+        [DataTestMethod]
+        [DataRow("Rrf", true)]
+        [DataRow("WeightedSum", false)]
+        public void QueryPlanComparisonOnlyDefaultsLegacyRrf(string scoreCombinationKind, bool equivalent)
+        {
+            JObject expected = new JObject { ["componentQueryInfos"] = new JArray() };
+            JObject actual = (JObject)expected.DeepClone();
+            actual["scoreCombinationKind"] = scoreCombinationKind;
+            Assert.AreEqual(
+                equivalent,
+                JToken.DeepEquals(NormalizeQueryPlan(expected.ToString()), NormalizeQueryPlan(actual.ToString())));
+        }
+
+        private static JObject NormalizeQueryPlan(string json)
+        {
+            JObject plan = JObject.Parse(json);
+            if (plan["componentQueryInfos"] != null && plan.Property("scoreCombinationKind") == null)
+            {
+                plan["scoreCombinationKind"] = "Rrf";
+            }
+
+            foreach (JProperty property in plan.Descendants().OfType<JProperty>())
+            {
+                if (property.Name != "rewrittenQuery" &&
+                    property.Name != "globalStatisticsQuery" &&
+                    property.Name != "orderByExpressions" &&
+                    property.Name != "groupByExpressions")
+                {
+                    continue;
+                }
+
+                IEnumerable<JValue> strings = property.Value is JArray expressions
+                    ? expressions.OfType<JValue>()
+                    : property.Value is JValue scalar ? new[] { scalar } : Enumerable.Empty<JValue>();
+                foreach (JValue sql in strings.Where(value => value.Type == JTokenType.String))
+                {
+                    // Skip quoted SQL text; only equivalent floating-point literals may change spelling.
+                    sql.Value = Regex.Replace(
+                        (string)sql.Value,
+                        @"'(?:[^'\\]|\\.|'')*'|""(?:[^""\\]|\\.|"""")*""|(?<![\w.])(?<number>-?\d+(?:\.\d+)?[eE][+-]?\d+)(?![\w.])",
+                        match => match.Groups["number"].Success &&
+                            double.TryParse(match.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out double number) &&
+                            !double.IsInfinity(number) &&
+                            !double.IsNaN(number)
+                                ? number.ToString("R", CultureInfo.InvariantCulture)
+                                : match.Value);
+                }
+            }
+
+            return plan;
         }
 
         private static TestCase MakeTest(

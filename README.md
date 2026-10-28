@@ -57,14 +57,29 @@ Linux musl distributions are not supported by these glibc native assets.
 The native libraries require glibc 2.17 or later and `libatomic.so.1` (for example,
 the `libatomic1` package on Ubuntu).
 
-The `LinuxQueryPlanInteropLive` PR CI job reuses the existing secret
-`COSMOSDB_ACCOUNT_CONNECTION_STRING` and runs the seven account-backed regressions
-tagged `LinuxQueryPlanInteropLive` on Ubuntu with native planning enabled. The
-account must be reachable from hosted Ubuntu agents and allow key authentication,
-full-text/vector queries, and containers with 25,000 RU/s.
-Tests use temporary databases and delete only their own resources;
-the Unicode case reuses the legacy assertions without its account-wide cleanup.
-The account-free distribution-plan test runs in the existing Linux unit job.
+PR CI runs `templates/build-linux-queryplaninterop.yml` with native planning enabled:
+
+- `LinuxQueryPlanInterop` runs the account-free query-plan, routing, and baseline
+  tests on Ubuntu 22.04 x64 and on Ubuntu 22.04 ARM64 (an ARM64 container under
+  QEMU on the hosted x64 agent). Each leg checks the native library's
+  dependencies with `ldd`, confirms the test process inherits
+  `AZURE_COSMOS_USE_QUERY_INTEROP=true`, and requires two sentinel tests to pass:
+  `OptedInLinuxProcessUsesNativePlanning` (the inherited flag routes queries to
+  QueryPlanInterop) and `AbsFilterTargetsBothSigns` (the library plans a query). The
+  ARM64 leg is non-blocking while the published ARM64 library fails to load with
+  "cannot allocate memory in static TLS block".
+- `LinuxQueryPlanInteropRuntimeImage` loads the library inside the stock
+  `aspnet:8.0-jammy` and `aspnet:8.0-azurelinux3.0-distroless-extra` images for
+  x64 and ARM64 and prints the exact `dlopen` error when it cannot. This lane is
+  non-blocking while the package still needs `libatomic.so.1`, which these images
+  do not include.
+- `LinuxQueryPlanInteropLive` reuses the existing secret `COSMOSDB_MULTI_REGION`
+  and runs the seven account-backed regressions tagged `LinuxQueryPlanInteropLive`
+  on Ubuntu x64. The account must be reachable from hosted Ubuntu agents and allow
+  key authentication, full-text/vector queries, and containers with 25,000 RU/s.
+  Tests use temporary databases and delete only their own resources; the Unicode
+  case reuses the legacy assertions without its account-wide cleanup.
+
 Fork PRs do not run the secret-backed job. Missing credentials, native-load
 failures, skipped tests, and existing query failures fail the job rather than
 silently falling back or passing.

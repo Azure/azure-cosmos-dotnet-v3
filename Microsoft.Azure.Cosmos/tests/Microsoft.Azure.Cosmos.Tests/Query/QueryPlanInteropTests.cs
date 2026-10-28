@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
+    using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
@@ -94,6 +95,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 Environment.SetEnvironmentVariable(ConfigurationManager.UseQueryInterop, originalOptIn);
                 Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, originalBypass);
             }
+        }
+
+        [TestMethod]
+        public void OptedInLinuxProcessUsesNativePlanning()
+        {
+            // Reads the inherited process environment (no overrides) so Linux CI proves the opt-in reached the test process.
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                || !ConfigurationManager.GetEnvironmentVariable(ConfigurationManager.UseQueryInterop, defaultValue: false))
+            {
+                Assert.Inconclusive($"Requires a Linux process started with {ConfigurationManager.UseQueryInterop}=true.");
+            }
+
+            Assert.IsFalse(ConfigurationManager.ForceBypassQueryParsing(), $"{ConfigurationManager.BypassQueryParsing} must not force the gateway.");
+            Assert.IsTrue(QueryPlanInterop.LinuxLibraryAvailable.Value, "The packaged QueryPlanInterop library must load.");
+            Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing(), "An opted-in Linux process must use QueryPlanInterop instead of the gateway.");
         }
 
         [TestMethod]
@@ -193,6 +209,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [DataRow("SELECT * FROM c")]
         [DataRow("SELECT * FROM c WHERE true")]
         [DataRow("SELECT * FROM c WHERE IS_DEFINED(c.key)")]
+        [DataRow("SELECT * FROM c WHERE c.other = 42")]
+        [DataRow("SELECT * FROM c WHERE c.key > 42")]
+        [DataRow("SELECT * FROM c WHERE c.key BETWEEN 1 AND 10")]
+        [DataRow("SELECT * FROM c WHERE c.key LIKE 'prefix%'")]
+        [DataRow("SELECT * FROM c WHERE ARRAY_CONTAINS(c.tags, 'hello')")]
+        [DataRow("SELECT c.id FROM c JOIN item IN c.items WHERE item.price = 42")]
+        [DataRow("SELECT * FROM c WHERE EXISTS(SELECT VALUE item FROM item IN c.items WHERE item.price = 42)")]
+        [DataRow("SELECT * FROM c WHERE c.name LIKE '%test%'")]
+        [DataRow("SELECT (SELECT * FROM c) FROM c")]
+        [DataRow("SELECT * FROM c WHERE c.name = '\u4e16\u754c'")]
+        [DataRow("SELECT * FROM c WHERE c.name = '\U0001F600'")]
         public void QueryWithoutKeyEqualityTargetsAllPartitions(string query)
         {
             PartitionedQueryExecutionInfoInternal plan = Plan(query);
@@ -205,6 +232,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [DataRow("SELECT * FROM c WHERE c.key = 5", "[5]")]
         [DataRow("SELECT * FROM c WHERE c.key = true", "[true]")]
         [DataRow("SELECT * FROM c WHERE c.key = null", "[null]")]
+        [DataRow("SELECT * FROM c WHERE c.key = 1.23", "[1.23]")]
+        [DataRow("SELECT * FROM c WHERE c.key = -99", "[-99]")]
+        [DataRow("SELECT * FROM c WHERE c.key = false", "[false]")]
+        [DataRow("SELECT * FROM c WHERE 'value' = c.key", "[\"value\"]")]
+        [DataRow("SELECT * FROM c WHERE c.key = 5 AND c.other = 'hello'", "[5]")]
         public void KeyEqualityTargetsSinglePartitionKeyValue(string query, string keyJson)
         {
             PartitionedQueryExecutionInfoInternal plan = Plan(query);
@@ -212,20 +244,51 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             AssertQueryInfo(plan, new Expected());
         }
 
-        [TestMethod]
-        public void InListTargetsEachValue()
+        [DataTestMethod]
+        [DataRow("SELECT * FROM c WHERE c.key IN (1, 2, 3)")]
+        [DataRow("SELECT * FROM c WHERE c.key IN (1, 2, 1, 3, 2)")]
+        public void InListTargetsEachValue(string query)
         {
-            PartitionedQueryExecutionInfoInternal plan = Plan("SELECT * FROM c WHERE c.key IN (1, 2, 3)");
+            PartitionedQueryExecutionInfoInternal plan = Plan(query);
             AssertPointRanges(plan, new object[] { 1 }, new object[] { 2 }, new object[] { 3 });
             AssertQueryInfo(plan, new Expected());
         }
 
-        [TestMethod]
-        public void OrFilterTargetsEachValue()
+        [DataTestMethod]
+        [DataRow("SELECT * FROM c WHERE c.key = 1 OR c.key = 2")]
+        [DataRow("SELECT * FROM c WHERE c.key = 1 OR c.key = 2 OR c.key = 1")]
+        public void OrFilterTargetsEachValue(string query)
         {
-            PartitionedQueryExecutionInfoInternal plan = Plan("SELECT * FROM c WHERE c.key = 1 OR c.key = 2");
+            PartitionedQueryExecutionInfoInternal plan = Plan(query);
             AssertPointRanges(plan, new object[] { 1 }, new object[] { 2 });
             AssertQueryInfo(plan, new Expected());
+        }
+
+        [DataTestMethod]
+        [DataRow("[\"value\"]")]
+        [DataRow("[42]")]
+        [DataRow("[false]")]
+        [DataRow("[null]")]
+        public void ParameterizedKeyEqualityTargetsSingleValue(string keyJson)
+        {
+            JToken value = JArray.Parse(keyJson).Single();
+            PartitionedQueryExecutionInfoInternal plan = Plan(
+                "SELECT * FROM c WHERE c.key = @key",
+                parameters: new JArray(Param("@key", value)));
+            AssertPointRanges(plan, new object[] { ((JValue)value).Value });
+            AssertQueryInfo(plan, new Expected());
+        }
+
+        [DataTestMethod]
+        [DataRow("SELECT c.name, c.age FROM c", false)]
+        [DataRow("SELECT VALUE c.name FROM c", true)]
+        [DataRow("SELECT VALUE udf.myFunc(c.name) FROM c", true)]
+        [DataRow("SELECT VALUE {\"name\": c.name} FROM c", true)]
+        public void ProjectionPreservesSelectValue(string query, bool hasSelectValue)
+        {
+            PartitionedQueryExecutionInfoInternal plan = Plan(query);
+            AssertFullRange(plan);
+            AssertQueryInfo(plan, new Expected { HasSelectValue = hasSelectValue });
         }
 
         [TestMethod]
@@ -246,6 +309,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             plan = Plan("SELECT * FROM Root r WHERE r.a.b.c", paths: paths);
             AssertFullRange(plan);
+            AssertQueryInfo(plan, new Expected());
+        }
+
+        [TestMethod]
+        public void UnicodePartitionKeyPathTargetsAllPartitions()
+        {
+            PartitionedQueryExecutionInfoInternal plan = Plan("SELECT * FROM c", paths: new[] { "/\u00fcser" });
+            AssertFullRange(plan);
+            AssertQueryInfo(plan, new Expected());
         }
 
         [TestMethod]
@@ -262,18 +334,48 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         }
 
         [TestMethod]
+        public void HierarchicalKeyTargetsThreeLevelKeyAndPrefix()
+        {
+            string[] paths = { "/tenantId", "/userId", "/sessionId" };
+            PartitionedQueryExecutionInfoInternal plan = Plan(
+                "SELECT * FROM c WHERE c.tenantId = 't1' AND c.userId = 'u1' AND c.sessionId = 's1'",
+                paths: paths,
+                kind: PartitionKind.MultiHash);
+            AssertPointRanges(plan, new object[] { "t1", "u1", "s1" });
+            AssertQueryInfo(plan, new Expected());
+
+            plan = Plan(
+                "SELECT * FROM c WHERE c.tenantId = 't1' AND c.userId = 'u1'",
+                paths: paths,
+                kind: PartitionKind.MultiHash);
+            AssertPointRanges(plan, new object[] { "t1", "u1" });
+            AssertQueryInfo(plan, new Expected());
+        }
+
+        [TestMethod]
         public void SubqueryFilterOnlyNarrowsOuterQuery()
         {
-            AssertPointRanges(Plan("SELECT (SELECT * FROM c) FROM c WHERE c.key = 42"), new object[] { 42 });
-            AssertFullRange(Plan("SELECT (SELECT * FROM c WHERE c.key = 42) FROM c"));
+            PartitionedQueryExecutionInfoInternal plan = Plan("SELECT (SELECT * FROM c) FROM c WHERE c.key = 42");
+            AssertPointRanges(plan, new object[] { 42 });
+            AssertQueryInfo(plan, new Expected());
+
+            plan = Plan("SELECT (SELECT * FROM c WHERE c.key = 42) FROM c");
+            AssertFullRange(plan);
+            AssertQueryInfo(plan, new Expected());
+
+            plan = Plan("SELECT * FROM c WHERE (c.blah = (SELECT * FROM c WHERE c.key = 42 and c.id = 5)) and c.key = 32");
+            AssertPointRanges(plan, new object[0]);
+            AssertQueryInfo(plan, new Expected());
         }
 
         // TOP / OFFSET / LIMIT
 
-        [TestMethod]
-        public void Top()
+        [DataTestMethod]
+        [DataRow("SELECT TOP 5 * FROM c")]
+        [DataRow("SELECT TOP 5 * FROM c WHERE c.blah = 5")]
+        public void Top(string query)
         {
-            PartitionedQueryExecutionInfoInternal plan = Plan("SELECT TOP 5 * FROM c");
+            PartitionedQueryExecutionInfoInternal plan = Plan(query);
             AssertFullRange(plan);
             AssertQueryInfo(plan, new Expected { Top = 5 });
         }
@@ -294,11 +396,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             AssertQueryInfo(plan, new Expected { Top = 5 });
         }
 
-        [TestMethod]
-        public void TopWithOrderBy()
+        [DataTestMethod]
+        [DataRow("SELECT TOP 5 * FROM c ORDER BY c.blah")]
+        [DataRow("SELECT TOP 5 c.blah FROM c ORDER BY c.blah")]
+        public void TopWithOrderBy(string query)
         {
             AssertQueryInfo(
-                Plan("SELECT TOP 5 * FROM c ORDER BY c.blah"),
+                Plan(query),
                 new Expected { Top = 5, OrderBy = Asc, OrderByExpressions = new[] { "c.blah" } });
         }
 
@@ -328,6 +432,31 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             PartitionedQueryExecutionInfoInternal plan = Plan("SELECT * FROM c ORDER BY c.name");
             Assert.IsFalse(string.IsNullOrEmpty(plan.QueryInfo.RewrittenQuery), "Cross-partition ORDER BY should produce a rewritten query.");
             AssertQueryInfo(plan, new Expected { OrderBy = Asc, OrderByExpressions = new[] { "c.name" } });
+        }
+
+        [DataTestMethod]
+        [DataRow("c.blah")]
+        [DataRow("c.key")]
+        public void OrderByAscending(string expression)
+        {
+            PartitionedQueryExecutionInfoInternal plan = Plan($"SELECT * FROM c ORDER BY {expression}");
+            AssertFullRange(plan);
+            AssertQueryInfo(plan, new Expected { OrderBy = Asc, OrderByExpressions = new[] { expression } });
+        }
+
+        [TestMethod]
+        public void QueryPlanJsonRoundTrip()
+        {
+            PartitionedQueryExecutionInfoInternal plan = Plan("SELECT TOP 5 c.name FROM c ORDER BY c.name");
+            string json = JsonConvert.SerializeObject(plan);
+            PartitionedQueryExecutionInfoInternal roundTripped = JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(
+                json,
+                new JsonSerializerSettings { DateParseHandling = DateParseHandling.None });
+
+            Assert.AreEqual(json, JsonConvert.SerializeObject(roundTripped));
+            Assert.AreEqual(plan.QueryInfo.RewrittenQuery, roundTripped.QueryInfo.RewrittenQuery);
+            AssertFullRange(roundTripped);
+            AssertQueryInfo(roundTripped, new Expected { Top = 5, OrderBy = Asc, OrderByExpressions = new[] { "c.name" } });
         }
 
         [TestMethod]
@@ -432,6 +561,24 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         }
 
         // Aggregates without VALUE fill the alias map instead of Aggregates.
+
+        [TestMethod]
+        public void NonValueAggregateUsesGeneratedAlias()
+        {
+            Expected expected = new Expected
+            {
+                GroupByAliases = new[] { "$1" },
+                GroupByAliasToAggregateType = new Dictionary<string, AggregateOperator?> { { "$1", AggregateOperator.Min } },
+            };
+
+            PartitionedQueryExecutionInfoInternal plan = Plan("SELECT MIN(c.blah) FROM c");
+            AssertFullRange(plan);
+            AssertQueryInfo(plan, expected);
+
+            plan = Plan("SELECT MIN(c.blah) FROM c WHERE c.key = 1");
+            AssertPointRanges(plan, new object[] { 1 });
+            AssertQueryInfo(plan, expected);
+        }
 
         [TestMethod]
         public void NonValueAggregatesUseGeneratedAliases()
@@ -543,6 +690,32 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             AssertQueryInfo(plan, new Expected());
         }
 
+        [TestMethod]
+        public void HybridRrfNegativeWeightReversesComponentOrder()
+        {
+            const string query = "SELECT TOP 15 c.id FROM c ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [1, -0.5])";
+            PartitionedQueryExecutionInfoInternal plan = Plan(query);
+            HybridSearchQueryInfo hybrid = plan.HybridSearchQueryInfo;
+            Assert.IsNotNull(hybrid, "RRF queries must produce a hybrid search plan.");
+            CollectionAssert.AreEqual(new[] { 1.0, 0.5 }, hybrid.ComponentWeights, "Component weights must be the absolute query weights.");
+            Assert.AreEqual(2, hybrid.ComponentQueryInfos.Count);
+            Assert.AreEqual(SortOrder.Descending, hybrid.ComponentQueryInfos[0].OrderBy.Single(), "A positive weight ranks the component by descending score.");
+            Assert.AreEqual(SortOrder.Ascending, hybrid.ComponentQueryInfos[1].OrderBy.Single(), "A negative weight reverses the component to ascending score.");
+
+            // The SDK requests the optimized plan by default. It omits component ORDER BY, so the SDK ranks every
+            // component descending, and a negative weight negates that component's projected score instead.
+            HybridSearchQueryInfo optimized = Plan(query, hybridSearchSkipOrderByRewrite: true).HybridSearchQueryInfo;
+            CollectionAssert.AreEqual(new[] { 1.0, 0.5 }, optimized.ComponentWeights, "Component weights must be the absolute query weights.");
+            Assert.AreEqual(2, optimized.ComponentQueryInfos.Count);
+            foreach (QueryInfo component in optimized.ComponentQueryInfos)
+            {
+                Assert.IsFalse(component.HasOrderBy, "The optimized plan must leave component ranking to the SDK.");
+                string componentScores = component.RewrittenQuery.Substring(component.RewrittenQuery.IndexOf("AS payload", StringComparison.Ordinal));
+                Assert.AreEqual(1, Regex.Matches(componentScores, @"-1 \*").Count, "Only the negative-weight component score must be negated.");
+                StringAssert.Matches(componentScores, new Regex(@"\[\(_FullTextScore\(c\.title.*\), \(-1 \* \(_FullTextScore\(c\.text"), "The second component score must be negated.");
+            }
+        }
+
         // Errors
 
         [TestMethod]
@@ -574,9 +747,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             string query,
             string[] paths = null,
             PartitionKind kind = PartitionKind.Hash,
-            JArray parameters = null)
+            JArray parameters = null,
+            bool hybridSearchSkipOrderByRewrite = false)
         {
-            TryCatch<PartitionedQueryExecutionInfoInternal> result = TryPlan(query, paths ?? Key, kind, parameters);
+            TryCatch<PartitionedQueryExecutionInfoInternal> result = TryPlan(query, paths ?? Key, kind, parameters, hybridSearchSkipOrderByRewrite);
             result.ThrowIfFailed();
             return result.Result;
         }
@@ -585,7 +759,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             string query,
             string[] paths,
             PartitionKind kind,
-            JArray parameters)
+            JArray parameters,
+            bool hybridSearchSkipOrderByRewrite = false)
         {
             EnsureNativePlatform();
             JObject querySpec = new JObject { { "query", query }, { "parameters", parameters ?? new JArray() } };
@@ -606,7 +781,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 hasLogicalPartitionKey: false,
                 allowDCount: true,
                 useSystemPrefix: false,
-                hybridSearchSkipOrderByRewrite: false,
+                hybridSearchSkipOrderByRewrite: hybridSearchSkipOrderByRewrite,
                 geospatialType: Cosmos.GeospatialType.Geography);
         }
 
