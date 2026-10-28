@@ -10,24 +10,49 @@
 # 3. LinuxQueryPlanInteropLive:         native preflight plus the LinuxQueryPlanInteropLive
 #                                       query regressions against a live account.
 
+# Typed parameters: untyped template parameters are strings, so not('false') would be false.
 parameters:
-  BuildConfiguration: 'Release'
-  VmImage: 'ubuntu-22.04'
-  # Account connection string (AccountEndpoint=...;AccountKey=...;) for the live job.
-  LiveConnectionString: ''
-  LiveConnectionStringName: 'COSMOSDB_MULTI_REGION'
-  IncludeArm64: true
-  # QueryPlanInterop.Linux 1.0.6 fails to dlopen on ARM64 ("cannot allocate memory in static
-  # TLS block"). Keep ARM64 non-blocking until a package with the fix ships.
-  Arm64Blocking: false
-  Arm64TestImage: 'mcr.microsoft.com/dotnet/sdk:8.0-jammy'
-  IncludeRuntimeImage: true
-  # Stock .NET images do not ship libatomic.so.1, which the 1.0.6 native libraries require.
-  # Keep this lane non-blocking until a package without that dependency ships.
-  RuntimeImageBlocking: false
-  UbuntuRuntimeImage: 'mcr.microsoft.com/dotnet/aspnet:8.0-jammy'
-  AzureLinuxRuntimeImage: 'mcr.microsoft.com/dotnet/aspnet:8.0-azurelinux3.0-distroless-extra'
-  UnitTestFilter: 'FullyQualifiedName~QueryPlanInteropTests|FullyQualifiedName~QueryPartitionProviderTests|FullyQualifiedName~CosmosTargetsInteropPublishTests|FullyQualifiedName~QueryPlanBaselineTests|FullyQualifiedName~OptimisticDirectExecutionQueryBaselineTests|FullyQualifiedName~FullPipelineTests|FullyQualifiedName~PageSizeFactorForTopTests|FullyQualifiedName~QueryPlanRetrieverTests|FullyQualifiedName~PartitionRoutingHelperTest|FullyQualifiedName~SubpartitionTests|FullyQualifiedName~ClientDistributionPlanBaselineTests'
+- name: BuildConfiguration
+  type: string
+  default: 'Release'
+- name: VmImage
+  type: string
+  default: 'ubuntu-22.04'
+# Account connection string (AccountEndpoint=...;AccountKey=...;) for the live job.
+- name: LiveConnectionString
+  type: string
+  default: ''
+- name: LiveConnectionStringName
+  type: string
+  default: 'COSMOSDB_MULTI_REGION'
+- name: IncludeArm64
+  type: boolean
+  default: true
+# QueryPlanInterop.Linux 1.0.6 fails to dlopen on ARM64 ("cannot allocate memory in static
+# TLS block"). Keep ARM64 non-blocking until a package with the fix ships.
+- name: Arm64Blocking
+  type: boolean
+  default: false
+- name: Arm64TestImage
+  type: string
+  default: 'mcr.microsoft.com/dotnet/sdk:8.0-jammy'
+- name: IncludeRuntimeImage
+  type: boolean
+  default: true
+# Stock .NET images do not ship libatomic.so.1, which the 1.0.6 native libraries require.
+# Keep this lane non-blocking until a package without that dependency ships.
+- name: RuntimeImageBlocking
+  type: boolean
+  default: false
+- name: UbuntuRuntimeImage
+  type: string
+  default: 'mcr.microsoft.com/dotnet/aspnet:8.0-jammy'
+- name: AzureLinuxRuntimeImage
+  type: string
+  default: 'mcr.microsoft.com/dotnet/aspnet:8.0-azurelinux3.0-distroless-extra'
+- name: UnitTestFilter
+  type: string
+  default:  'FullyQualifiedName~QueryPlanInteropTests|FullyQualifiedName~QueryPartitionProviderTests|FullyQualifiedName~CosmosTargetsInteropPublishTests|FullyQualifiedName~QueryPlanBaselineTests|FullyQualifiedName~OptimisticDirectExecutionQueryBaselineTests|FullyQualifiedName~FullPipelineTests|FullyQualifiedName~PageSizeFactorForTopTests|FullyQualifiedName~QueryPlanRetrieverTests|FullyQualifiedName~PartitionRoutingHelperTest|FullyQualifiedName~SubpartitionTests|FullyQualifiedName~ClientDistributionPlanBaselineTests'
 
 jobs:
 - job: LinuxQueryPlanInterop
@@ -87,8 +112,11 @@ jobs:
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq qemu-user-static binfmt-support > /dev/null
         # Match the x64 host: .NET 8 SDK, .NET 6 runtime for the test project, and libatomic1,
         # which the native library needs and the .NET images do not ship (see README).
+        # The CLI's first-run NuGet migration takes a named mutex that QEMU cannot emulate for
+        # non-root users, so pre-create the first-run sentinels in HOME=/tmp.
         printf '%s\n' "FROM $ARM64_IMAGE" \
           "RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libatomic1 > /dev/null && curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --runtime dotnet --channel 6.0 --install-dir /usr/share/dotnet > /dev/null" \
+          "RUN v=\$(dotnet --version) && mkdir -p /tmp/.dotnet && cd /tmp/.dotnet && touch \$v.dotnetFirstUseSentinel \$v.aspNetCertificateSentinel \$v.toolpath.sentinel && chmod -R a+rwX /tmp/.dotnet" \
           | docker build --quiet --platform linux/arm64 -t qpi-arm64-test -
         runner=(docker run --rm --platform linux/arm64 --user "$(id -u):$(id -g)"
           -e HOME=/tmp -e DOTNET_CLI_HOME=/tmp -e DOTNET_NOLOGO=1 -e DOTNET_CLI_TELEMETRY_OPTOUT=1
@@ -135,7 +163,8 @@ jobs:
       testResultsFormat: VSTest
       testResultsFiles: '$(Agent.TempDirectory)/LinuxQueryPlanInterop-$(QpiArch)/*.trx'
       testRunTitle: Linux QueryPlanInterop - Ubuntu 22.04 $(QpiArch)
-      failTaskOnMissingResultsFile: true
+      # A non-blocking leg already reported its problem as a warning.
+      failTaskOnMissingResultsFile: $(QpiBlocking)
 
 - ${{ if eq(parameters.IncludeRuntimeImage, true) }}:
   - job: LinuxQueryPlanInteropRuntimeImage
