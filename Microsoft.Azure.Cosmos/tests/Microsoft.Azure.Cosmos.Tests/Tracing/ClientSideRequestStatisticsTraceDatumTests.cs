@@ -64,15 +64,150 @@
         }
 
         [TestMethod]
+        [Timeout(20000)]
+        public async Task ConcurrentUpdateContactedReplicasDuringSerializationDoesNotThrow()
+        {
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(
+                DateTime.UtcNow,
+                Trace.GetRootTrace(nameof(ConcurrentUpdateContactedReplicasDuringSerializationDoesNotThrow)));
+            ITrace trace = Trace.GetRootTrace(nameof(ConcurrentUpdateContactedReplicasDuringSerializationDoesNotThrow));
+            trace.AddDatum("stats", datum);
+
+            // Same Direct helper StoreReader uses, so this exercises the production writer path.
+            IClientSideRequestStatistics statistics = datum;
+
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            Task backgroundTask = Task.Run(() =>
+            {
+                int replica = 0;
+                while (!cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    if (replica % 64 == 0)
+                    {
+                        // Write-path reset (as in ConsistencyWriter) keeps the copied list small.
+                        statistics.RecordContactedReplicas(Array.Empty<TransportAddressUri>());
+                    }
+
+                    statistics.AppendContactedReplica(new TransportAddressUri(new Uri($"http://storephysicaladdress{replica++}.com")));
+                }
+            });
+
+            try
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    _ = new CosmosTraceDiagnostics(trace).ToString();
+                }
+            }
+            finally
+            {
+                cancellationTokenSource.Cancel();
+                await backgroundTask;
+            }
+
+            Assert.IsTrue(datum.ContactedReplicas.Count > 0, "Replicas appended through the Direct helper were not recorded on the datum.");
+        }
+
+        [TestMethod]
+        [Timeout(20000)]
+        public async Task ConcurrentReplicaAndRegionUpdatesDuringSerializationDoNotThrow()
+        {
+            ITrace trace = Trace.GetRootTrace(nameof(ConcurrentReplicaAndRegionUpdatesDuringSerializationDoNotThrow));
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+            trace.AddDatum("stats", datum);
+            IClientSideRequestStatistics statistics = datum;
+
+            TransportAddressUri[] replicas = Enumerable.Range(0, 8)
+                .Select(i => new TransportAddressUri(new Uri($"http://storephysicaladdress{i}.com")))
+                .ToArray();
+
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            using ManualResetEventSlim updaterStarted = new ManualResetEventSlim();
+            Task backgroundTask = Task.Run(() =>
+            {
+                for (int i = 0; !cancellationTokenSource.IsCancellationRequested; i++)
+                {
+                    TransportAddressUri replica = replicas[i % replicas.Length];
+                    if (i % 64 == 0)
+                    {
+                        // Mirrors ConsistencyWriter replacing the list, and keeps it bounded.
+                        statistics.RecordContactedReplicas(replicas);
+                    }
+
+                    statistics.AppendContactedReplica(replica);
+                    statistics.AppendFailedReplica(replica);
+                    statistics.AppendRegionContacted($"region{i % replicas.Length}", replica.Uri);
+                    updaterStarted.Set();
+                }
+            });
+
+            try
+            {
+                Assert.IsTrue(updaterStarted.Wait(TimeSpan.FromSeconds(5)), "Background updater never started.");
+
+                for (int i = 0; i < 100; i++)
+                {
+                    _ = new CosmosTraceDiagnostics(trace).ToString();
+                    _ = TraceWriter.TraceToText(trace);
+                }
+            }
+            finally
+            {
+                cancellationTokenSource.Cancel();
+                await backgroundTask;
+            }
+
+            JToken stats = JObject.Parse(new CosmosTraceDiagnostics(trace).ToString())["data"]["stats"];
+            Assert.IsTrue(stats["ContactedReplicas"].Any());
+            Assert.AreEqual(replicas.Length, stats["FailedReplicas"].Count());
+            Assert.AreEqual(replicas.Length, stats["RegionsContacted"].Count());
+        }
+
+        [TestMethod]
+        public void DirectStatisticsHelpers_RecordOnDatumAndGettersReturnSnapshots()
+        {
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(
+                DateTime.UtcNow,
+                Trace.GetRootTrace(nameof(DirectStatisticsHelpers_RecordOnDatumAndGettersReturnSnapshots)));
+            IClientSideRequestStatistics statistics = datum;
+            TransportAddressUri replica1 = new TransportAddressUri(new Uri("http://storephysicaladdress1.com"));
+            TransportAddressUri replica2 = new TransportAddressUri(new Uri("http://storephysicaladdress2.com"));
+            Uri regionEndpoint = new Uri("http://region1.com");
+
+            Assert.IsInstanceOfType(statistics, typeof(IClientSideRequestStatisticsExtension));
+
+            statistics.RecordContactedReplicas(new[] { replica1, replica2 });
+            statistics.AppendContactedReplica(replica2);
+            statistics.AppendFailedReplica(replica1);
+            statistics.AppendFailedReplica(replica1);
+            statistics.AppendRegionContacted("region1", regionEndpoint);
+            statistics.AppendRegionContacted("region1", regionEndpoint);
+
+            CollectionAssert.AreEqual(new[] { replica1, replica2, replica2 }, datum.ContactedReplicas);
+            CollectionAssert.AreEqual(new[] { replica1 }, datum.FailedReplicas.ToList());
+            CollectionAssert.AreEqual(new[] { ("region1", regionEndpoint) }, datum.RegionsContacted.ToList());
+
+            statistics.ContactedReplicas = new List<TransportAddressUri> { replica1 };
+            CollectionAssert.AreEqual(new[] { replica1 }, datum.ContactedReplicas);
+
+            datum.ContactedReplicas.Add(replica2);
+            datum.FailedReplicas.Add(replica2);
+            datum.RegionsContacted.Add(("region2", regionEndpoint));
+            Assert.AreEqual(1, datum.ContactedReplicas.Count);
+            Assert.AreEqual(1, datum.FailedReplicas.Count);
+            Assert.AreEqual(1, datum.RegionsContacted.Count);
+        }
+
+        [TestMethod]
         public void DuplicateContactedReplicasTests()
         {
             ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Trace.GetRootTrace(nameof(DuplicateContactedReplicasTests)));
-            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress1.com")));
-            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
-            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
-            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
-            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
-            clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress3.com")));
+            clientSideRequestStatisticsTraceDatum.AppendContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress1.com")));
+            clientSideRequestStatisticsTraceDatum.AppendContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
+            clientSideRequestStatisticsTraceDatum.AppendContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
+            clientSideRequestStatisticsTraceDatum.AppendContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
+            clientSideRequestStatisticsTraceDatum.AppendContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
+            clientSideRequestStatisticsTraceDatum.AppendContactedReplica(new TransportAddressUri(new Uri("http://storephysicaladdress3.com")));
             ITrace trace = Trace.GetRootTrace("test");
             trace.AddDatum("stats", clientSideRequestStatisticsTraceDatum);
             string json = new CosmosTraceDiagnostics(trace).ToString();

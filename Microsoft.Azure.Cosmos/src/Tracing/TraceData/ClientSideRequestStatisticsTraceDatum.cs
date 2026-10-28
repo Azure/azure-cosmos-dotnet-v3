@@ -6,17 +6,19 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Text;
+    using System.Threading;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
-    internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatistics
+    internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatisticsExtension
     {
         private static readonly IReadOnlyDictionary<string, AddressResolutionStatistics> EmptyEndpointToAddressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
         private static readonly IReadOnlyList<StoreResponseStatistics> EmptyStoreResponseStatistics = new List<StoreResponseStatistics>();
@@ -35,15 +37,18 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private IReadOnlyList<HttpResponseStatistics> shallowCopyOfHttpResponseStatistics = null;
         private SystemUsageHistory systemUsageHistory = null;
 
+        // Written by the Direct store paths while diagnostics may be serialized on another thread, so they are
+        // immutable snapshots swapped atomically. Lists (not sets) keep serialization in insertion order.
+        private ImmutableList<TransportAddressUri> contactedReplicas = ImmutableList<TransportAddressUri>.Empty;
+        private ImmutableList<TransportAddressUri> failedReplicas = ImmutableList<TransportAddressUri>.Empty;
+        private ImmutableList<(string, Uri)> regionsContacted = ImmutableList<(string, Uri)>.Empty;
+
         public ClientSideRequestStatisticsTraceDatum(DateTime startTime, ITrace trace)
         {
             this.RequestStartTimeUtc = startTime;
             this.RequestEndTimeUtc = null;
             this.endpointToAddressResolutionStats = new Dictionary<string, AddressResolutionStatistics>();
-            this.ContactedReplicas = new List<TransportAddressUri>();
             this.storeResponseStatistics = new List<StoreResponseStatistics>();
-            this.FailedReplicas = new HashSet<TransportAddressUri>();
-            this.RegionsContacted = new HashSet<(string, Uri)>();
             this.httpResponseStatistics = new List<HttpResponseStatistics>();
             this.Trace = trace;
         }
@@ -69,11 +74,16 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
-        public List<TransportAddressUri> ContactedReplicas { get; set; }
+        // The getters return copies, so mutations must go through the Append*/Record* methods below.
+        public List<TransportAddressUri> ContactedReplicas
+        {
+            get => new List<TransportAddressUri>(this.contactedReplicas);
+            set => this.RecordContactedReplicas(value);
+        }
 
-        public HashSet<TransportAddressUri> FailedReplicas { get; }
+        public HashSet<TransportAddressUri> FailedReplicas => new HashSet<TransportAddressUri>(this.failedReplicas);
 
-        public HashSet<(string, Uri)> RegionsContacted { get; }
+        public HashSet<(string, Uri)> RegionsContacted => new HashSet<(string, Uri)>(this.regionsContacted);
 
         public ITrace Trace { get; private set; }
 
@@ -290,6 +300,54 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 this.shallowCopyOfStoreResponseStatistics = null;
                 this.storeResponseStatistics.Add(responseStatistics);
             }
+        }
+
+        public void AppendContactedReplica(TransportAddressUri contactedReplica)
+        {
+            ImmutableInterlocked.Update(
+                ref this.contactedReplicas,
+                static (replicas, replica) => replicas.Add(replica),
+                contactedReplica);
+        }
+
+        public void AppendContactedReplicas(IReadOnlyList<TransportAddressUri> contactedReplicas)
+        {
+            if (contactedReplicas == null)
+            {
+                return;
+            }
+
+            ImmutableInterlocked.Update(
+                ref this.contactedReplicas,
+                static (replicas, replicasToAdd) => replicas.AddRange(replicasToAdd),
+                contactedReplicas);
+        }
+
+        public void RecordContactedReplicas(IReadOnlyList<TransportAddressUri> contactedReplicas)
+        {
+            if (contactedReplicas == null)
+            {
+                return;
+            }
+
+            // A plain swap is safe because the write path replaces the list before any read-path appends.
+            Interlocked.Exchange(ref this.contactedReplicas, ImmutableList.CreateRange(contactedReplicas));
+        }
+
+        public void AppendFailedReplica(TransportAddressUri failedReplica)
+        {
+            ImmutableInterlocked.Update(
+                ref this.failedReplicas,
+                static (replicas, replica) => replicas.Contains(replica) ? replicas : replicas.Add(replica),
+                failedReplica);
+        }
+
+        public void AppendRegionContacted(string regionName, Uri locationEndpoint)
+        {
+            ImmutableInterlocked.Update(
+                ref this.regionsContacted,
+                static (regions, region) => regions.Contains(region) ? regions : regions.Add(region),
+                (regionName, locationEndpoint));
         }
 
         public void RecordException(
