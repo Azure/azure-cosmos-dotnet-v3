@@ -21,11 +21,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- [6130](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6130) Hybrid search RRF now assigns a unique ordinal rank to every component result, including tied scores. Component score ties are broken by the decoded document ID portion of `_rid` in the component's sort direction, rather than by the encoded string. Final RRF score ties use decoded document IDs descending. Set `AZURE_COSMOS_HYBRID_SEARCH_USE_COMPETITION_RANKING=true` to restore the previous competition-ranking behavior.
+
 #### Bugs Fixed
 
 - [6147](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6147) Change Feed Processor: Fixes stale lease ETags after successful updates, avoiding unnecessary precondition failures and recovery reads during sequential checkpoints while preserving retries for concurrent updates.
+- [6141](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6141) Distributed Transactions (preview): Fixes operation results synthesized from bodyless or unusable responses reporting index `0` for every operation instead of the corresponding zero-based request index.
+- [6119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6119) Distributed Transactions (preview): Isolates submitted operations from later additions to a read or write transaction, avoiding incorrect failures when interpreting a successful response. Each transaction instance still supports only one nonempty execution attempt.
+- [6119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6119) Distributed Transactions (preview): Captures ETags, session tokens, and typed-patch conditions consistently when constructing the request, preventing changes to caller options during payload preparation from producing inconsistent option values.
+- [6151](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6151) Query: Updates query-plan deserialization to preserve vector embedding policy paths alongside embedding text and recognize optional hybrid-search score combination metadata. This schema update does not enable `GenerateEmbeddings` or `CombinedScore` execution.
+- [6139](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6139) Query: Fixes an issue where a query whose `OFFSET`, `LIMIT`, or `TOP` value was fractional or too large for a 64-bit integer threw an unexpected `ArgumentOutOfRangeException` during client-side query parsing. These queries are now treated as parse failures.
+- [6138](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6138) CosmosElements: Fixes an issue where parsing an empty, whitespace-only, or malformed JSON payload threw an unexpected `InvalidOperationException`, `ArgumentException`, or `IndexOutOfRangeException`. These payloads are now reported as JSON parse failures.
 
 #### Other Changes
+
+- [6154](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6154) Direct: Expands the available managed source with resource models, serialization, partition-key routing, session tokens, and their supporting types and unit tests. The SDK still uses the existing Direct package and native query-planning library; runtime behavior and public APIs are unchanged.
+- [6137](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6137) Direct: Begins making the managed Direct implementation available as source in this repository with a buildable foundation of 53 unchanged source files. The SDK continues to use the existing Direct package; runtime behavior and public APIs are unchanged.
+
+### <a name="3.64.0-preview.3"/> [3.64.0-preview.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.3) - 2026-10-22
+
+### <a name="3.63.3"/> [3.63.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.63.3) - 2026-10-22
+
+#### Bugs Fixed
+
+- [6160](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6160) Gateway V2 (thin client): Fixes duplicate range-header exceptions for queries and incremental change feed reads scoped to part of a physical partition, while preserving the requested subrange.
+- [6144](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6144) Bulk: Honors server-provided retry delays for individually throttled operations without blocking other operations in the same batch.
 
 ### <a name="3.64.0-preview.2"/> [3.64.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0-preview.2) - 2026-9-29
 

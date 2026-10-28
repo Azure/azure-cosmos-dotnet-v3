@@ -37,26 +37,27 @@ namespace Microsoft.Azure.Cosmos
         public static HttpTimeoutPolicy GetTimeoutPolicy(
            DocumentServiceRequest documentServiceRequest,
            bool isPartitionLevelFailoverEnabled = false,
-           bool isThinClientEnabled = false)
+           bool isThinClientEnabled = false,
+           bool useReducedControlPlaneRetries = false)
         {
             //Query Plan Requests
             if (documentServiceRequest.ResourceType == ResourceType.Document
                 && documentServiceRequest.OperationType == OperationType.QueryPlan)
             {
-                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
+                return HttpTimeoutPolicy.GetControlPlaneHotPathPolicy(useReducedControlPlaneRetries);
             }
 
             //Get Partition Key Range Requests
             if (documentServiceRequest.ResourceType == ResourceType.PartitionKeyRange
                 && documentServiceRequest.OperationType == OperationType.ReadFeed)
             {
-                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
+                return HttpTimeoutPolicy.GetControlPlaneHotPathPolicy(useReducedControlPlaneRetries);
             }
 
             //Get Addresses Requests
             if (documentServiceRequest.ResourceType == ResourceType.Address)
             {
-                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
+                return HttpTimeoutPolicy.GetControlPlaneHotPathPolicy(useReducedControlPlaneRetries);
             }
 
             // Distributed transaction (DTX) requests have their own retry/backoff policy
@@ -107,11 +108,18 @@ namespace Microsoft.Azure.Cosmos
             //Meta Data Read
             if (HttpTimeoutPolicy.IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
             {
-                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
+                return HttpTimeoutPolicy.GetControlPlaneHotPathPolicy(useReducedControlPlaneRetries);
             }
 
             //Default behavior
             return HttpTimeoutPolicyDefault.Instance;
+        }
+
+        public static HttpTimeoutPolicy GetControlPlaneHotPathPolicy(bool useReducedControlPlaneRetries)
+        {
+            return useReducedControlPlaneRetries
+                ? HttpTimeoutPolicyControlPlaneReducedRetriesHotPath.InstanceShouldThrow503OnTimeout
+                : HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
         }
 
         private static bool IsMetaData(DocumentServiceRequest request)

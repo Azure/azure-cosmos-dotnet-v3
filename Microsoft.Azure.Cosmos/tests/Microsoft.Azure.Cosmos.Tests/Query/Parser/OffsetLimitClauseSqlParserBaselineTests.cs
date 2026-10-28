@@ -5,6 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
 {
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Parser;
+    using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -26,6 +29,29 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
             };
 
             this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        [DataRow("SELECT * FROM c OFFSET 5555555555555555555555555555555555555555 LIMIT 10", DisplayName = "OffsetOverflowsInt64")]
+        [DataRow("SELECT * FROM c OFFSET 10 LIMIT 5555555555555555555555555555555555555555", DisplayName = "LimitOverflowsInt64")]
+        [DataRow("SELECT * FROM c OFFSET 1.5 LIMIT 10", DisplayName = "OffsetNonInteger")]
+        [DataRow("SELECT * FROM c OFFSET 10 LIMIT 1.5", DisplayName = "LimitNonInteger")]
+        [DataRow(
+            "SELECT c.type, COUNT(1) AS cnt FROM c JOIN t INBETWEEN WHERE ARRAy_CONTAINS(c.tags, \"x\") GROUP BY c.type ORDER BY c.type OFFSET 5555555555555555555555555555555555555555 LIMIT 10",
+            DisplayName = "FuzzerRepro")]
+        public void Parse_InvalidCountLiteral_ReturnsFailed(string query)
+        {
+            TryCatch<SqlQuery> result = SqlQueryParser.Monadic.Parse(query);
+
+            Assert.IsTrue(result.Failed);
+            Assert.IsFalse(SqlQueryParser.TryParse(query, out SqlQuery _));
+        }
+
+        [TestMethod]
+        [DataRow("SELECT * FROM c OFFSET 9223372036854775807 LIMIT 10")]
+        public void Parse_ValidCountLiteral_Succeeds(string query)
+        {
+            Assert.IsTrue(SqlQueryParser.Monadic.Parse(query).Succeeded);
         }
 
         public static SqlParserBaselineTestInput CreateInput(string description, string offsetLimitClause)

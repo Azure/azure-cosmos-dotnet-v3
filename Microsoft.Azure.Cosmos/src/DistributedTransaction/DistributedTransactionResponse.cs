@@ -602,6 +602,7 @@ namespace Microsoft.Azure.Cosmos
                 // on DistributedTransactionResponse.ActivityId.
                 this.results.Add(new DistributedTransactionOperationResult(this.StatusCode)
                 {
+                    Index = i,
                     SubStatusCode = this.SubStatusCode,
                 });
             }

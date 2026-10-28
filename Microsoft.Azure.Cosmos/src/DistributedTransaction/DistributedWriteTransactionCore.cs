@@ -190,12 +190,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(patchOperations));
             }
 
-            // Forward the customer-supplied conditional predicate (if any) into the PatchSpec so the
-            // serializer emits the server-evaluated 'condition' field. Other request-level options
-            // (SessionToken, IfMatchEtag, IfNoneMatchEtag) flow through the operation's requestOptions.
             PatchSpec patchSpec = new PatchSpec(
                 patchOperations,
-                new PatchItemRequestOptions { FilterPredicate = requestOptions?.FilterPredicate });
+                new PatchItemRequestOptions());
 
             this.operations.Add(
                 new DistributedTransactionOperation<PatchSpec>(
@@ -294,15 +291,14 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         /// <remarks>
-        /// Each call to <see cref="DistributedTransaction.ExecuteTransactionAsync"/> generates a unique
-        /// idempotency token that the server uses for duplicate detection during the SDK's internal
-        /// retries. A second call would generate a new token and bypass that server-side duplicate
-        /// detection, risking a double-commit. When the previous commit's outcome is unknown
-        /// (e.g., cancellation or network failure), verify the resulting state before retrying
-        /// to avoid duplicate writes.
+        /// The server uses idempotency tokens for duplicate detection during the SDK's internal retries.
+        /// Cancellation does not abort or roll back a transaction that may already have reached the service.
+        /// When the outcome is unknown after cancellation or a network failure, reconcile the outcome
+        /// using application-specific safeguards before deciding whether to submit another transaction.
+        /// Executing a new transaction uses a new idempotency token and can apply the same writes twice.
         /// </remarks>
-        /// <exception cref="InvalidOperationException">Thrown if <see cref="DistributedTransaction.ExecuteTransactionAsync"/> has already been called on this instance.</exception>
-        /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is cancelled before or during the commit.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the transaction has no operations or execution has already started on this instance.</exception>
+        /// <exception cref="OperationCanceledException">Thrown when cancellation is observed before or during execution. The write transaction may still have committed.</exception>
         public override Task<DistributedTransactionResponse> ExecuteTransactionAsync(CancellationToken cancellationToken = default)
         {
             if (this.operations.Count == 0)
@@ -315,6 +311,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException(CommitAlreadyCalledMessage);
             }
 
+            // Snapshot here because the operation helper may defer execution.
+            DistributedTransactionOperation[] operations = this.operations.ToArray();
+
             return this.clientContext.OperationHelperAsync(
                 operationName: $"{nameof(DistributedWriteTransaction)}.{nameof(ExecuteTransactionAsync)}",
                 containerName: null,
@@ -324,7 +323,7 @@ namespace Microsoft.Azure.Cosmos
                 task: (trace) =>
                 {
                     DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                        operations: this.operations,
+                        operations: operations,
                         clientContext: this.clientContext,
                         operationType: OperationType.CommitDistributedTransaction,
                         onDispatch: this.PublishIdempotencyToken);

@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         }
         
         [JsonProperty("embeddingParameterMap", NullValueHandling = NullValueHandling.Ignore)]
-        public Dictionary<string, string> EmbeddingParameterMap
+        public Dictionary<string, EmbeddingParameter> EmbeddingParameterMap
         {
             get;
             set;
