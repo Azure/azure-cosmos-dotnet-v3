@@ -694,6 +694,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithPollInterval(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithStartTime(System.Nullable`1[System.DateTime])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithStartTime(System.Nullable`1[System.DateTime]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithStartTime(System.DateTime)": {
           "Type": "Method",
           "Attributes": [],

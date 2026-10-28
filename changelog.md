@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- Change Feed Processor: Supports passing `null` to `WithStartTime` to clear a previously persisted start time. Minimum UTC timestamps now specify a start time instead of clearing it.
+
 #### Breaking Changes
 
 - [6130](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6130) Hybrid search RRF now assigns a unique ordinal rank to every component result, including tied scores. Component score ties are broken by the decoded document ID portion of `_rid` in the component's sort direction, rather than by the encoded string. Final RRF score ties use decoded document IDs descending. Set `AZURE_COSMOS_HYBRID_SEARCH_USE_COMPETITION_RANKING=true` to restore the previous competition-ranking behavior.
@@ -166,6 +168,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [5829](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5829) Routing: Adds Gateway Account Property Flag for Dynamic Hedging Control. Introduces a Gateway-controlled `disableCrossRegionalHedging` account property that lets operators dynamically disable PPAF cross-region hedging (and any customer-configured `AvailabilityStrategy`) without rolling back PPAF entirely. The SDK reconciles `ConnectionPolicy.AvailabilityStrategy` against the Gateway-supplied flag on each account-properties refresh; toggling the flag back to `false` restores the customer-configured strategy or rebuilds the SDK default.
 - [5648](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5648) Hub Region Caching: Caches discovered hub region per partition on successful response during 403/3 discovery chain, enabling subsequent requests to skip the discovery and route directly to the cached hub.
 - [#5549](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5549) Adds AAD token revocation (CAE / Emergency) transparent retry handling
+
+- [5931](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5931) ChangeFeed: Add support for StartTime for merged partitions
 
 #### Breaking Changes
 

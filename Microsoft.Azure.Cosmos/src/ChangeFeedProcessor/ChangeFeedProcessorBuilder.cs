@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// This is only used when:
-        /// (1) Lease store is not initialized and is ignored if a lease exists and has continuation token.
+        /// (1) Lease store is not initialized and is ignored if a lease exists and has a continuation token.
         /// (2) StartContinuation is not specified.
         /// (3) StartTime is not specified.
         /// </remarks>
@@ -144,28 +144,46 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Sets the time (exclusive) to start looking for changes after.
+        /// The start time is persisted in the lease document so that it is honored across processor restarts.
         /// </summary>
         /// <remarks>
-        /// This is only used when:
-        /// (1) Lease store is not initialized and is ignored if a lease exists and has continuation token.
-        /// (2) StartContinuation is not specified.
-        /// If this is specified, StartFromBeginning is ignored.
+        /// The start time is persisted in the lease and sent as the If-Modified-Since header alongside the
+        /// continuation token on subsequent change feed requests. This ensures documents are returned after
+        /// the specified time even after partition merges.
+        /// A start time takes precedence over StartFromBeginning.
+        /// Use <see cref="WithStartTime(DateTime?)"/> with <see langword="null"/> to clear a previously persisted start time.
         /// </remarks>
         /// <param name="startTime">Date and time when to start looking for changes.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public ChangeFeedProcessorBuilder WithStartTime(DateTime startTime)
+        {
+            return this.WithStartTime((DateTime?)startTime);
+        }
+
+        /// <summary>
+        /// Sets the time (exclusive) to start looking for changes after, or clears a previously persisted start time.
+        /// The start time is persisted in the lease document so that it is honored across processor restarts.
+        /// </summary>
+        /// <remarks>
+        /// The start time is persisted in the lease and sent as the If-Modified-Since header alongside the
+        /// continuation token on subsequent change feed requests. This ensures documents are returned after
+        /// the specified time even after partition merges.
+        /// Passing <see langword="null"/> clears the persisted start time from the lease document.
+        /// After it is cleared, a lease without a continuation starts from the current time unless
+        /// <see cref="WithStartFromBeginning"/> is also configured.
+        /// A non-null start time takes precedence over StartFromBeginning.
+        /// </remarks>
+        /// <param name="startTime">Date and time when to start looking for changes. Use <see langword="null"/> to clear a previously persisted start time.</param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+        public ChangeFeedProcessorBuilder WithStartTime(DateTime? startTime)
         {
             if (this.changeFeedProcessorOptions.Mode == ChangeFeedMode.AllVersionsAndDeletes)
             {
                 throw new InvalidOperationException($"Using the '{nameof(WithStartTime)}' option with ChangeFeedProcessor is not supported with {ChangeFeedMode.AllVersionsAndDeletes} mode.");
             }
 
-            if (startTime == null)
-            {
-                throw new ArgumentNullException(nameof(startTime));
-            }
-
             this.changeFeedProcessorOptions.StartTime = startTime;
+            this.changeFeedProcessorOptions.IsStartTimeUserExplicit = true;
             return this;
         }
 
