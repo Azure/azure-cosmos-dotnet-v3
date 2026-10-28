@@ -253,6 +253,97 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.IsInstanceOfType(builder.Build(), typeof(ChangeFeedProcessor));
         }
 
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void WithStartTimeNullClearsStartTime(bool startFromBeginning)
+        {
+            Action<DocumentServiceLeaseStoreManager,
+                Container,
+                string,
+                ChangeFeedLeaseOptions,
+                ChangeFeedProcessorOptions,
+                Container> verifier = (leaseStoreManager,
+                leaseContainer,
+                instanceName,
+                changeFeedLeaseOptions,
+                changeFeedProcessorOptions,
+                monitoredContainer) =>
+                {
+                    Assert.IsNull(changeFeedProcessorOptions.StartTime);
+                    Assert.IsTrue(changeFeedProcessorOptions.IsStartTimeUserExplicit);
+                    Assert.AreEqual(startFromBeginning, changeFeedProcessorOptions.StartFromBeginning);
+                };
+
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
+                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
+                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
+                verifier);
+
+            builder.WithInMemoryLeaseContainer();
+            builder.WithStartTime(DateTime.UtcNow);
+            if (startFromBeginning)
+            {
+                builder.WithStartFromBeginning();
+            }
+
+            Assert.AreSame(builder, builder.WithStartTime(null));
+            builder.Build();
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void WithStartTimePreservesMinimumUtcTime(bool nullable)
+        {
+            DateTime minimumUtcTime = DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc);
+            Action<DocumentServiceLeaseStoreManager,
+                Container,
+                string,
+                ChangeFeedLeaseOptions,
+                ChangeFeedProcessorOptions,
+                Container> verifier = (leaseStoreManager,
+                leaseContainer,
+                instanceName,
+                changeFeedLeaseOptions,
+                changeFeedProcessorOptions,
+                monitoredContainer) =>
+                {
+                    Assert.AreEqual(minimumUtcTime, changeFeedProcessorOptions.StartTime);
+                    Assert.IsTrue(changeFeedProcessorOptions.IsStartTimeUserExplicit);
+                };
+
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
+                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
+                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
+                verifier);
+
+            builder.WithInMemoryLeaseContainer();
+            if (nullable)
+            {
+                builder.WithStartTime((DateTime?)minimumUtcTime);
+            }
+            else
+            {
+                builder.WithStartTime(minimumUtcTime);
+            }
+
+            builder.Build();
+        }
+
+        [TestMethod]
+        public void WithStartTimeNullRejectsAllVersionsAndDeletes()
+        {
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
+                ChangeFeedProcessorBuilderTests.GetMockedContainer(),
+                ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
+                ChangeFeedProcessorBuilderTests.GetEmptyInitialization());
+
+            builder.WithChangeFeedMode(ChangeFeedMode.AllVersionsAndDeletes);
+
+            Assert.ThrowsException<InvalidOperationException>(() => builder.WithStartTime(null));
+        }
+
         #region WithInMemoryLeaseContainer(MemoryStream) Tests
 
         [TestMethod]
