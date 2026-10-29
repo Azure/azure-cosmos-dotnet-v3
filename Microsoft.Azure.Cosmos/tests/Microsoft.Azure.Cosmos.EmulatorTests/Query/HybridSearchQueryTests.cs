@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         private const int CompetitionRrfLexicalMatchRank = 47;
         private const int OrdinalRrfLexicalMatchRank = 1;
 
-        // The planner substitutes this value for an undefined component score.
+        // Undefined-score sentinel used by component query projections.
         private const double UndefinedComponentScore = 1.79769e+308;
 
         private const string SampleVector = @"[0.02, 0, -0.02, 0, -0.04, -0.01, -0.04, -0.01, 0.06, 0.08, -0.05, -0.04, -0.03, 0.05, -0.03, 0, -0.03, 0, 0.05, 0, 0.03,
@@ -504,7 +504,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }
                     else if (!isEmulator && !queryEngineConfiguration.ContainsKey("queryEnableFullTextPreviewFeatures"))
                     {
-                        // The live-account oracle temporarily enables preview features, so pin the default it restores.
+                        // Set the preview-feature value to restore after reference queries.
                         queryEngineConfiguration["queryEnableFullTextPreviewFeatures"] = false;
                         provider.Update(queryEngineConfiguration);
                     }
@@ -541,7 +541,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     IReadOnlyList<IReadOnlyList<int>> expectedOrderings = testCase.ExpectedOrderings;
                     if (testCase.ComputeExpectedOrderingOnLiveAccount && !isEmulator)
                     {
-                        // Plan with the same configuration and flags the query under test uses.
                         HybridSearchQueryInfo hybridSearchQueryInfo = await GetHybridSearchQueryInfoAsync(container, provider, testCase.Query, testRequestOptions);
                         IDictionary<string, object> referenceConfiguration = new Dictionary<string, object>(queryEngineConfiguration)
                         {
@@ -628,10 +627,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             SqlArrayCreateScalarExpression weights = rrf.Arguments.Last() as SqlArrayCreateScalarExpression;
             int componentCount = rrf.Arguments.Length - (weights == null ? 0 : 1);
 
-            // The planner owns component direction and weight normalization, so rank each component the way the
-            // SDK ranks the plan it receives: by the component ORDER BY direction, or descending when the optimized
-            // plan omits it. A negative weight becomes the absolute weight with either an ascending ORDER BY or,
-            // in the optimized plan, a negated component score.
+            // Use the component plan's sort order and weights for the reference ranking.
             Assert.AreEqual(componentCount, hybridSearchQueryInfo.ComponentQueryInfos.Count, "The plan must contain one query per RRF component.");
             bool useDefaultComponentWeight = hybridSearchQueryInfo.ComponentWeights == null || hybridSearchQueryInfo.ComponentWeights.Count == 0;
             Assert.AreEqual(useDefaultComponentWeight, weights == null, "The plan must carry component weights only when the query specifies them.");
@@ -685,9 +681,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     CollectionAssert.AreEquivalent(expectedIndices.ToArray(), indices.ToArray(), "Components must rank the same eligible documents.");
                 }
 
-                // Like the planned component scores, an undefined score becomes the maximum double before any negation.
-                // RRF uses ordinal component ranks with the SDK's RID tie-breaker: lower RID first for ascending
-                // components and higher RID first for descending components.
+                // Apply the RID tie-breaker in the component's sort direction.
                 double ComponentScore(ComponentScoreDocument document) => scoreSign * (document.Score ?? UndefinedComponentScore);
                 IOrderedEnumerable<ComponentScoreDocument> ordered = sortOrder == SortOrder.Ascending
                     ? documents.OrderBy(ComponentScore)
@@ -795,8 +789,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         /// <summary>
-        /// The emulator ordering is exact, but RRF ties are broken by RID, which differs on a live account.
-        /// Against a live account the expected ordering is computed from the component query results instead.
+        /// Derives live-account expectations from component queries to preserve RID tie-breaking.
         /// </summary>
         private static SanityTestCase MakeRankFusionTest(
             string query,

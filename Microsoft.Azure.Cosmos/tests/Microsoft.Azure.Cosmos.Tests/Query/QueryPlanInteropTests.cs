@@ -24,10 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Tests for local query planning through QueryPlanInterop. No account or emulator is used.
-    /// 1. Routing: when the SDK uses the local library versus the gateway (Linux opt-in, flags, fallback).
-    /// 2. Plans: calls the library directly (Windows ServiceInterop on Windows, QueryPlanInterop.Linux
-    ///    on Linux) and checks every QueryInfo field, so both platforms must return the same plan.
+    /// Tests native query planning and routing without an account or emulator.
     /// </summary>
     [TestClass]
     [DoNotParallelize]
@@ -100,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [TestMethod]
         public void OptedInLinuxProcessUsesNativePlanning()
         {
-            // Reads the inherited process environment (no overrides) so Linux CI proves the opt-in reached the test process.
+            // Check inherited flags without changing the process environment.
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
                 || !ConfigurationManager.GetEnvironmentVariable(ConfigurationManager.UseQueryInterop, defaultValue: false))
             {
@@ -702,8 +699,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Assert.AreEqual(SortOrder.Descending, hybrid.ComponentQueryInfos[0].OrderBy.Single(), "A positive weight ranks the component by descending score.");
             Assert.AreEqual(SortOrder.Ascending, hybrid.ComponentQueryInfos[1].OrderBy.Single(), "A negative weight reverses the component to ascending score.");
 
-            // The SDK requests the optimized plan by default. It omits component ORDER BY, so the SDK ranks every
-            // component descending, and a negative weight negates that component's projected score instead.
+            // Optimized plans reverse negative-weight scores rather than component sort order.
             HybridSearchQueryInfo optimized = Plan(query, hybridSearchSkipOrderByRewrite: true).HybridSearchQueryInfo;
             CollectionAssert.AreEqual(new[] { 1.0, 0.5 }, optimized.ComponentWeights, "Component weights must be the absolute query weights.");
             Assert.AreEqual(2, optimized.ComponentQueryInfos.Count);
@@ -814,8 +810,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         }
 
         /// <summary>
-        /// Compares every QueryInfo field except RewrittenQuery, whose text varies by native version.
-        /// Null and empty collections are treated as equal.
+        /// Compares query metadata without rewritten SQL; treats null and empty collections equally.
         /// </summary>
         private static void AssertQueryInfo(PartitionedQueryExecutionInfoInternal plan, Expected expected)
         {

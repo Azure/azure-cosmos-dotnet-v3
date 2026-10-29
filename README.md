@@ -40,39 +40,35 @@ For available versions, see [SDK versioning](./docs/versioning.md).
 
 ### Opt-in local query planning on Linux
 
-On Linux x64 and ARM64, set `AZURE_COSMOS_USE_QUERY_INTEROP=true` before starting
-the application to generate query plans locally using the bundled
-`Microsoft.Azure.Cosmos.QueryPlanInterop.Linux` native library. Publish with
-`linux-x64` or `linux-arm64` to include the matching native asset; RID-independent
-NuGet builds retain both assets under `runtimes`.
+Set `AZURE_COSMOS_USE_QUERY_INTEROP=true` before starting a Linux x64 or ARM64
+application to generate query plans locally using the bundled
+`Microsoft.Azure.Cosmos.QueryPlanInterop.Linux` library. Publish with `linux-x64`
+or `linux-arm64` to include the matching native asset. RID-independent builds
+retain both assets under `runtimes`. The native libraries require glibc 2.17 or
+later; Alpine/musl is not supported.
 
-The default remains gateway query planning on Linux. Windows keeps its existing
-ServiceInterop behavior. `AZURE_COSMOS_BYPASS_QUERY_PARSING=true` overrides the
-opt-in and forces gateway planning. If the native library or its dependencies
-cannot load, the SDK logs the failure and uses gateway planning. Availability
-is checked once per process; restart after fixing native dependencies.
-This option changes query-plan generation only, not the client's Direct/Gateway
-connection mode. Queries that can already skip query planning continue to do so.
-Linux musl distributions are not supported by these glibc native assets.
-The native libraries require glibc 2.17 or later. QueryPlanInterop.Linux 1.0.8 no
-longer requires `libatomic.so.1`, but requires the `en_US.UTF-8` locale data:
-loading the library without it can terminate the process rather than fall back
-to gateway planning.
+Linux uses gateway planning by default. Unset the variable or set it to `false`
+to disable local planning. `AZURE_COSMOS_BYPASS_QUERY_PARSING=true` always forces
+gateway planning. Recoverable native-library loading failures are logged and
+use gateway planning; availability is checked once per process.
+
+This option affects query-plan generation only, not the client's Direct/Gateway
+connection mode. Windows keeps its existing ServiceInterop behavior, and macOS
+continues to use gateway planning.
 
 PR CI runs `templates/build-linux-queryplaninterop.yml` with native planning enabled:
 
-- `LinuxQueryPlanInterop` runs the account-free query-plan, routing, and baseline
-  tests on Ubuntu 22.04 x64 and on Ubuntu 22.04 ARM64 (an ARM64 container under
-  QEMU on the hosted x64 agent). Each leg checks the native library's
-  dependencies with `ldd`, confirms the test process inherits
+- `LinuxQueryPlanInterop` runs the account-free query-plan, routing, baseline,
+  and native-asset publishing tests on Ubuntu 22.04 x64 and ARM64 (an ARM64
+  container under QEMU on the hosted x64 agent). Each leg checks the native
+  library's dependencies with `ldd`, confirms the test process inherits
   `AZURE_COSMOS_USE_QUERY_INTEROP=true`, and requires two sentinel tests to pass:
   `OptedInLinuxProcessUsesNativePlanning` (the inherited flag routes queries to
   QueryPlanInterop) and `AbsFilterTargetsBothSigns` (the library plans a query).
 - `LinuxQueryPlanInteropRuntimeImage` loads the library inside the stock
   `aspnet:8.0-jammy` and `aspnet:8.0-azurelinux3.0-distroless-extra` images for
-  x64 and ARM64 and prints the exact `dlopen` error when it cannot. These images do
-  not include `libatomic.so.1`, so this lane also guards against new system-library
-  dependencies.
+  x64 and ARM64. It checks native-library availability and reports `dlopen`
+  diagnostics for recoverable loading failures.
 - `LinuxQueryPlanInteropLive` reuses the existing secret `COSMOSDB_MULTI_REGION`
   and runs the seven account-backed regressions tagged `LinuxQueryPlanInteropLive`
   on Ubuntu x64. The account must be reachable from hosted Ubuntu agents and allow
@@ -80,9 +76,6 @@ PR CI runs `templates/build-linux-queryplaninterop.yml` with native planning ena
   Tests use temporary databases and delete only their own resources; the Unicode
   case reuses the legacy assertions without its account-wide cleanup.
 
-Fork PRs do not run the secret-backed job. Missing credentials, native-load
-failures, skipped tests, and existing query failures fail the job rather than
-silently falling back or passing.
 
 ## Useful links
 

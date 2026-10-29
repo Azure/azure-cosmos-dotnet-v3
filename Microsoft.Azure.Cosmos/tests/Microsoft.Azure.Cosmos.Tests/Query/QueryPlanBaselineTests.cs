@@ -1198,7 +1198,6 @@
                 @"/key")
             };
 
-            // QueryPlanInterop.Linux intentionally saturates out-of-range hybrid-search component limits at UInt32.MaxValue.
             this.ExecuteTestSuite(
                 testVariations,
                 RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Top.Linux" : nameof(this.Top));
@@ -1363,7 +1362,6 @@
                     @"/key"),
             };
 
-            // QueryPlanInterop.Linux intentionally saturates out-of-range hybrid-search component limits at UInt32.MaxValue.
             this.ExecuteTestSuite(
                 testVariations,
                 RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "OffsetLimit.Linux" : nameof(this.OffsetLimit));
@@ -1850,10 +1848,10 @@
             Exception ex = this.Exception;
             while (ex != null)
             {
-                // .NET formats native error-code messages differently on Windows and Linux.
+                // Compare HRESULTs instead of platform-specific error messages.
                 string message = ex is COMException ? $"0x{ex.HResult:X8}" : ex.Message;
 
-                // Newer native builds (QueryPlanInterop on Linux) add these empty fields to the raw plan JSON.
+                // Normalize optional fields before comparing error baselines.
                 message = message
                     .Replace(",\"embeddingParameterMap\":null", string.Empty)
                     .Replace(",\"requiresExtendedQueryPlan\":0", string.Empty);
@@ -1943,7 +1941,7 @@
         {
             writer.WriteStartElement("QueryRanges");
             writer.WriteStartElement("Range");
-            // Native builds can return the same ranges in a different order; the SDK sorts them before use.
+            // Keep range ordering deterministic in baselines.
             IEnumerable<Range<PartitionKeyInternal>> sortedRanges = queryRanges
                 .OrderBy(range => range, Range<PartitionKeyInternal>.MinComparer.Instance)
                 .ThenBy(range => range, Range<PartitionKeyInternal>.MaxComparer.Instance);

@@ -1,16 +1,5 @@
-# File: templates/build-linux-queryplaninterop.yml
-# Linux lanes for opt-in local query planning (AZURE_COSMOS_USE_QUERY_INTEROP=true)
-# backed by Microsoft.Azure.Cosmos.QueryPlanInterop.Linux.
-#
-# 1. LinuxQueryPlanInterop:             account-free native/routing/baseline tests on
-#                                       Ubuntu 22.04 x64 (native) and ARM64 (QEMU container).
-# 2. LinuxQueryPlanInteropRuntimeImage: loads the packaged native library inside stock
-#                                       .NET container images (Ubuntu and Azure Linux 3.0
-#                                       distroless) and reports the loader error when it cannot.
-# 3. LinuxQueryPlanInteropLive:         native preflight plus the LinuxQueryPlanInteropLive
-#                                       query regressions against a live account.
+# Linux native query-planning tests, runtime-image checks, and live-account regressions.
 
-# Typed parameters: untyped template parameters are strings, so not('false') would be false.
 parameters:
 - name: BuildConfiguration
   type: string
@@ -105,14 +94,13 @@ jobs:
       results="$AGENT_TEMPDIRECTORY/LinuxQueryPlanInterop-$QPIARCH"
       mkdir -p "$results"
       if [ "$QPIARCH" = "arm64" ]; then
-        # Hosted agents are x64; run the ARM64 .NET runtime and native library under QEMU.
+        # Run ARM64 binaries on the hosted x64 agent.
         sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq qemu-user-static binfmt-support > /dev/null
-        # Match the x64 host: .NET 8 SDK plus the .NET 6 runtime for the test project.
+        # The test assembly requires the .NET 6 runtime.
         printf '%s\n' "FROM $ARM64_IMAGE" \
           "RUN curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --runtime dotnet --channel 6.0 --install-dir /usr/share/dotnet > /dev/null" \
           | docker build --quiet --platform linux/arm64 -t qpi-arm64-test -
-        # Use the image's root account; an unmapped host UID breaks NuGet's named mutex.
         runner=(docker run --rm --platform linux/arm64 --user 0:0
           -e HOME=/tmp -e DOTNET_CLI_HOME=/tmp -e DOTNET_NOLOGO=1 -e DOTNET_CLI_TELEMETRY_OPTOUT=1
           -e AZURE_COSMOS_USE_QUERY_INTEROP -e AZURE_COSMOS_BYPASS_QUERY_PARSING
@@ -123,11 +111,11 @@ jobs:
         library=libQueryPlanInterop.amd64.so
       fi
 
-      # The test process (host or ARM64 container) must inherit the opt-in, not just this step.
+      # Validate flags inside the test process environment.
       "${runner[@]}" bash -c 'echo "Test process flags: AZURE_COSMOS_USE_QUERY_INTEROP=${AZURE_COSMOS_USE_QUERY_INTEROP:-<unset>} AZURE_COSMOS_BYPASS_QUERY_PARSING=${AZURE_COSMOS_BYPASS_QUERY_PARSING:-<unset>}"; [ "${AZURE_COSMOS_USE_QUERY_INTEROP:-}" = "true" ] && [ "${AZURE_COSMOS_BYPASS_QUERY_PARSING:-}" = "false" ]' \
         || { echo "##vso[task.logissue type=error]The $QPIARCH test process does not have AZURE_COSMOS_USE_QUERY_INTEROP=true."; exit 1; }
 
-      # Report the loader's own message if a native dependency (glibc, libatomic, ...) is missing.
+      # Report unresolved native dependencies before running the tests.
       if ! "${runner[@]}" bash -c '. /etc/os-release; echo "Test process: $PRETTY_NAME $(uname -m), $(ldd --version | head -n 1)"; ldd "$1"; ! ldd "$1" | grep -q "not found"' _ "$out/$library"; then
         report_failure "$library has unresolved native dependencies on $QPIARCH."
       fi
@@ -136,7 +124,7 @@ jobs:
       "${runner[@]}" dotnet test "$out/Microsoft.Azure.Cosmos.Tests.dll" --filter "$UNIT_FILTER" \
         --results-directory "$results" --logger "trx;LogFileName=unit-$QPIARCH.trx" || test_exit=$?
 
-      # Sentinels: the inherited opt-in routed this process to QueryPlanInterop, and the packaged library planned a query.
+      # Require successful native routing and query planning.
       for sentinel in OptedInLinuxProcessUsesNativePlanning AbsFilterTargetsBothSigns; do
         if ! grep -Eq "testName=\"$sentinel\"[^>]*outcome=\"Passed\"" "$results/unit-$QPIARCH.trx"; then
           report_failure "QueryPlanInteropTests.$sentinel did not pass on $QPIARCH; the tests did not use QueryPlanInterop ($library)."
@@ -158,7 +146,6 @@ jobs:
       testResultsFormat: VSTest
       testResultsFiles: '$(Agent.TempDirectory)/LinuxQueryPlanInterop-$(QpiArch)/*.trx'
       testRunTitle: Linux QueryPlanInterop - Ubuntu 22.04 $(QpiArch)
-      # A non-blocking leg already reported its problem as a warning.
       failTaskOnMissingResultsFile: $(QpiBlocking)
 
 - ${{ if eq(parameters.IncludeRuntimeImage, true) }}:
@@ -197,7 +184,7 @@ jobs:
         probe="$AGENT_TEMPDIRECTORY/qpi-runtime-probe"
         rm -rf "$probe"
         mkdir -p "$probe"
-        # The SDK project keeps Direct and HybridRow private (they are packed as files), so reference them explicitly.
+        # Direct and HybridRow require explicit references in the probe project.
         props="$BUILD_SOURCESDIRECTORY/Directory.Build.props"
         direct_version=$(sed -n 's:.*<DirectVersion>\(.*\)</DirectVersion>.*:\1:p' "$props")
         hybridrow_version=$(sed -n 's:.*<HybridRowVersion>\(.*\)</HybridRowVersion>.*:\1:p' "$props")
@@ -355,7 +342,6 @@ jobs:
           throw 'Building the live-test project failed.'
       }
 
-      # The account-backed tests read GatewayEndpoint/MasterKey from settings.json.
       $settingsPath = Join-Path (Split-Path $liveProject) "bin/$($env:CONFIGURATION)/net6.0/settings.json"
       $originalSettings = [IO.File]::ReadAllBytes($settingsPath)
       $originalPermissions = [IO.File]::GetUnixFileMode($settingsPath)
@@ -365,8 +351,7 @@ jobs:
       [IO.File]::SetUnixFileMode($settingsPath, ([IO.UnixFileMode]::UserRead -bor [IO.UnixFileMode]::UserWrite))
       try {
           [IO.File]::WriteAllText($settingsPath, ($settings | ConvertTo-Json -Depth 20), [Text.UTF8Encoding]::new($false))
-          # Only tagged tests run: they create and delete their own databases. Never run the full
-          # Query category here; legacy QueryTests cleanup deletes every database in the account.
+          # Do not run the full Query category: its cleanup deletes all account databases.
           & dotnet test $liveProject -c $env:CONFIGURATION /p:OS=Linux --no-build --no-restore `
               --filter 'TestCategory=LinuxQueryPlanInteropLive' `
               --results-directory $liveResults --logger 'trx;LogFileName=linux-live.trx' --verbosity minimal `

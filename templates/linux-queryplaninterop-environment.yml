@@ -1,6 +1,4 @@
-# File: templates/linux-queryplaninterop-environment.yml
-# Prints the Linux host facts that decide whether QueryPlanInterop can load and
-# fails early if the opt-in flags are not set as the native lanes expect.
+# Report the Linux environment and require native-planning flags.
 
 steps:
 - bash: |
@@ -9,7 +7,6 @@ steps:
     echo "OS:            ${PRETTY_NAME}"
     echo "Kernel/arch:   $(uname -srm)"
     echo "glibc:         $(ldd --version | head -n 1)"
-    echo "libatomic:     $(ldconfig -p | grep -m 1 'libatomic.so.1' || echo 'not found')"
     echo "CPU count:     $(nproc)"
     dotnet --list-sdks
     dotnet --list-runtimes

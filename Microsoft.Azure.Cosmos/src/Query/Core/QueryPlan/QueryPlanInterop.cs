@@ -85,8 +85,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 return;
             }
 
-            // The package's public header defines IUnknown::Release as vtable slot 2.
-            // Marshal.Release uses COM interop, which is not supported on Linux.
             IntPtr vtable = Marshal.ReadIntPtr(serviceProvider);
             IntPtr release = Marshal.ReadIntPtr(vtable, 2 * IntPtr.Size);
             Marshal.GetDelegateForFunctionPointer<ReleaseDelegate>(release)(serviceProvider);
