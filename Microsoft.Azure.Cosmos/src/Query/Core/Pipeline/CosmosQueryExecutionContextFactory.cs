@@ -568,7 +568,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 isContinuationExpected: cosmosQueryContext.IsContinuationExpected,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 fullTextScoreScope: inputParameters.FullTextScoreScope,
-                requestContinuationToken: inputParameters.InitialUserContinuationToken);
+                requestContinuationToken: inputParameters.InitialUserContinuationToken,
+                statisticsCache: cosmosQueryContext.QueryClient.HybridSearchStatisticsCache);
         }
 
         private static async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(

@@ -2171,6 +2171,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
                     containerResponse.Resource.ResourceId,
+                    containerResponse.Resource.ETag,
                     effectivePartitionKeyRanges: null,
                     //new List<Documents.Routing.Range<string>> { new Documents.Routing.Range<string>("AA", "AA", true, true) },
                     containerResponse.Resource.PartitionKey,

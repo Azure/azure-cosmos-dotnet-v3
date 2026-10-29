@@ -85,6 +85,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new ContainerQueryProperties(
                 containerProperties.ResourceId,
+                containerProperties.ETag,
                 effectivePartitionKeyRange,
                 containerProperties.PartitionKey,
                 containerProperties.VectorEmbeddingPolicy,

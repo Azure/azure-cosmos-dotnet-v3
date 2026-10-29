@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Runtime.InteropServices;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -25,146 +25,154 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     [TestClass]
     public class HybridSearchStatisticsCacheTests
     {
-        [DataTestMethod]
-        [DataRow(0L, 1)]
-        [DataRow(-1L, 1)]
-        [DataRow(1L, 0)]
-        [DataRow(1L, -1)]
-        public void InvalidSettingsAreRejected(long maxAgeTicks, int maxEntries)
+        public TestContext TestContext { get; set; }
+
+        [TestMethod]
+        public void InvalidSettingsAreRejected()
         {
-            Assert.ThrowsException<ArgumentOutOfRangeException>(
-                () => new Cache(TimeSpan.FromTicks(maxAgeTicks), maxEntries));
+            List<SettingsTestCase> testCases = new List<SettingsTestCase>
+            {
+                new SettingsTestCase("Zero age", 0, 1),
+                new SettingsTestCase("Negative age", -1, 1),
+                new SettingsTestCase("Zero capacity", 1, 0),
+                new SettingsTestCase("Negative capacity", 1, -1),
+            };
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                SettingsTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                Assert.ThrowsException<ArgumentOutOfRangeException>(
+                    () => new Cache(TimeSpan.FromTicks(testCase.MaxAgeTicks), testCase.MaxEntries), testCase.ToString());
+            }
         }
 
         [TestMethod]
         public void DefaultClockIsMonotonic()
         {
-            using Cache cache = new Cache(TimeSpan.MaxValue, 1);
+            Cache cache = new Cache(TimeSpan.MaxValue, 3);
             TimeSpan startedAt = cache.GetElapsedTime();
             Assert.IsTrue(startedAt >= TimeSpan.Zero);
             Assert.IsTrue(cache.GetElapsedTime() >= startedAt);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), startedAt));
+            cache.Add("rid", "etag", CreatePlan(), CreateStatistics(), startedAt);
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan(), out GlobalFullTextSearchStatistics result));
             Assert.AreEqual(10L, result.DocumentCount);
         }
 
         [TestMethod]
-        public void MissingEntriesDoNotCreateContainerBuckets()
+        public void MissesDoNotPopulateCounters()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 2, () => TimeSpan.Zero);
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 2, () => TimeSpan.Zero);
             for (int index = 0; index < 10; index++)
             {
                 Assert.IsFalse(cache.TryGet(index.ToString(), "etag", CreatePlan(), out GlobalFullTextSearchStatistics result));
                 Assert.IsNull(result);
             }
 
-            Assert.AreEqual(0, cache.Count);
-            Assert.AreEqual(0, cache.ContainerRevisionCount);
-        }
-
-        [DataTestMethod]
-        [DataRow(null, "etag")]
-        [DataRow("", "etag")]
-        [DataRow("rid", null)]
-        [DataRow("rid", "")]
-        public void MissingContainerIdentityBypassesStorage(string resourceId, string etag)
-        {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 1, () => TimeSpan.Zero);
-            Assert.IsFalse(cache.TryGet(resourceId, etag, CreatePlan(), out GlobalFullTextSearchStatistics result));
-            Assert.IsNull(result);
-            Assert.IsFalse(cache.TryAdd(resourceId, etag, CreatePlan(), CreateStatistics(), TimeSpan.Zero));
-            Assert.AreEqual(0, cache.Count);
-            Assert.AreEqual(0, cache.ContainerRevisionCount);
+            Assert.AreEqual(0, StoredCount(cache));
         }
 
         [TestMethod]
-        public void InvalidArgumentsAreRejected()
+        public void MissingContainerIdentityBypassesStorage()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 1, () => TimeSpan.Zero);
-            Assert.ThrowsException<ArgumentNullException>(() => cache.TryGet("rid", "etag", null, out _));
-            Assert.ThrowsException<ArgumentNullException>(() => cache.TryAdd("rid", "etag", null, CreateStatistics(), TimeSpan.Zero));
-            Assert.ThrowsException<ArgumentNullException>(() => cache.TryAdd("rid", "etag", CreatePlan(), null, TimeSpan.Zero));
-            Assert.ThrowsException<ArgumentOutOfRangeException>(
-                () => cache.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), TimeSpan.FromTicks(-1)));
+            List<ContainerIdentityTestCase> testCases = new List<ContainerIdentityTestCase>
+            {
+                new ContainerIdentityTestCase("Null RID", null, "etag", 10),
+                new ContainerIdentityTestCase("Null ETag", "rid", null, 10),
+            };
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                ContainerIdentityTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                Cache cache = new Cache(TimeSpan.FromMinutes(1), 3, () => TimeSpan.Zero);
+                Assert.IsFalse(cache.TryGet(testCase.ResourceId, testCase.ETag, CreatePlan(), out GlobalFullTextSearchStatistics result));
+                Assert.IsNull(result);
+                cache.Add(testCase.ResourceId, testCase.ETag, CreatePlan(), CreateStatistics(testCase.DocumentCount), TimeSpan.Zero);
+                Assert.AreEqual(0, StoredCount(cache));
+            }
         }
 
-        [DataTestMethod]
-        [DataRow(null)]
-        [DataRow("null")]
-        [DataRow("[]")]
-        [DataRow("[null]")]
-        [DataRow("[{}]")]
-        [DataRow(@"[{""terms"":[{""term"":""run""}]}]")]
-        [DataRow(@"[{""path"":null,""terms"":[{""term"":""run""}]}]")]
-        [DataRow(@"[{""path"":[],""terms"":[{""term"":""run""}]}]")]
-        [DataRow(@"[{""path"":[null],""terms"":[{""term"":""run""}]}]")]
-        [DataRow(@"[{""path"":[""text""]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":null}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[null]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{}]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":null}]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""parameter"":""@term""}]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":-1}]}]")]
-        public void MissingOrIncompleteMetadataBypassesLookupAndAdmission(string metadata)
+        [TestMethod]
+        public void MissingOrIncompleteMetadataBypassesLookupAndAdmission()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 2, () => TimeSpan.Zero);
-            HybridSearchQueryInfo plan = ParsePlan(metadata);
-            Assert.IsFalse(cache.TryGet("rid", "etag", plan, out GlobalFullTextSearchStatistics result));
-            Assert.IsNull(result);
-            Assert.IsFalse(cache.TryAdd("rid", "etag", plan, CreateStatistics(), TimeSpan.Zero));
-            Assert.AreEqual(0, cache.Count);
-            Assert.AreEqual(0, cache.ContainerRevisionCount);
+            List<MetadataTestCase> testCases = new List<MetadataTestCase>
+            {
+                new MetadataTestCase("Absent metadata", null),
+                new MetadataTestCase("Null metadata", "null"),
+                new MetadataTestCase("Empty metadata", "[]"),
+                new MetadataTestCase("Null entry", "[null]"),
+                new MetadataTestCase("Empty entry", "[{}]"),
+                new MetadataTestCase("Missing path", @"[{""terms"":[{""term"":""run""}]}]"),
+                new MetadataTestCase("Null path", @"[{""path"":null,""terms"":[{""term"":""run""}]}]"),
+                new MetadataTestCase("Empty path", @"[{""path"":[],""terms"":[{""term"":""run""}]}]"),
+                new MetadataTestCase("Null path segment", @"[{""path"":[null],""terms"":[{""term"":""run""}]}]"),
+                new MetadataTestCase("Missing terms", @"[{""path"":[""text""]}]"),
+                new MetadataTestCase("Null terms", @"[{""path"":[""text""],""terms"":null}]"),
+                new MetadataTestCase("Empty terms", @"[{""path"":[""text""],""terms"":[]}]"),
+                new MetadataTestCase("Null term entry", @"[{""path"":[""text""],""terms"":[null]}]"),
+                new MetadataTestCase("Empty term entry", @"[{""path"":[""text""],""terms"":[{}]}]"),
+                new MetadataTestCase("Null term text", @"[{""path"":[""text""],""terms"":[{""term"":null}]}]"),
+                new MetadataTestCase("Unresolved parameter", @"[{""path"":[""text""],""terms"":[{""parameter"":""@term""}]}]"),
+                new MetadataTestCase("Negative distance", @"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":-1}]}]"),
+            };
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                MetadataTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                Cache cache = new Cache(TimeSpan.FromMinutes(1), 8, () => TimeSpan.Zero);
+                HybridSearchQueryInfo plan = ParsePlan(testCase.Metadata);
+                Assert.IsFalse(cache.TryGet("rid", "etag", plan, out GlobalFullTextSearchStatistics result));
+                Assert.IsNull(result);
+                cache.Add("rid", "etag", plan, CreateStatistics(), TimeSpan.Zero);
+                Assert.AreEqual(0, StoredCount(cache));
+            }
         }
 
         [TestMethod]
         public void UnneededStatisticsBypassesLookupAndAdmission()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 1, () => TimeSpan.Zero);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), TimeSpan.Zero));
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 3, () => TimeSpan.Zero);
+            cache.Add("rid", "etag", CreatePlan(), CreateStatistics(), TimeSpan.Zero);
             HybridSearchQueryInfo plan = CreatePlan();
             plan.RequiresGlobalStatistics = false;
             Assert.IsFalse(cache.TryGet("rid", "etag", plan, out _));
-            Assert.IsFalse(cache.TryAdd("rid", "etag", plan, CreateStatistics(), TimeSpan.Zero));
-            Assert.AreEqual(1, cache.Count);
+            cache.Add("rid", "etag", plan, CreateStatistics(), TimeSpan.Zero);
+            Assert.AreEqual(3, StoredCount(cache));
         }
 
         [TestMethod]
         public void ContainerRevisionsIsolateCounts()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 4, () => TimeSpan.Zero);
-            foreach ((string rid, string etag, long count) in new[]
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 12, () => TimeSpan.Zero);
+            List<ContainerIdentityTestCase> testCases = new List<ContainerIdentityTestCase>
             {
-                ("rid", "etag", 10L),
-                ("other-rid", "etag", 20L),
-                ("rid", "other-etag", 30L),
-                ("RID", "etag", 40L),
-            })
+                new ContainerIdentityTestCase("Original container", "rid", "etag", 10),
+                new ContainerIdentityTestCase("Different container", "other-rid", "etag", 20),
+                new ContainerIdentityTestCase("Different revision", "rid", "other-etag", 30),
+                new ContainerIdentityTestCase("Case-sensitive RID", "RID", "etag", 40),
+            };
+            for (int index = 0; index < testCases.Count; index++)
             {
-                Assert.IsTrue(cache.TryAdd(rid, etag, CreatePlan(), CreateStatistics(count), TimeSpan.Zero));
+                ContainerIdentityTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Publish case {index}: {testCase}");
+                cache.Add(testCase.ResourceId, testCase.ETag, CreatePlan(), CreateStatistics(testCase.DocumentCount), TimeSpan.Zero);
             }
 
-            foreach ((string rid, string etag, long count) in new[]
+            for (int index = 0; index < testCases.Count; index++)
             {
-                ("rid", "etag", 10L),
-                ("other-rid", "etag", 20L),
-                ("rid", "other-etag", 30L),
-                ("RID", "etag", 40L),
-            })
-            {
-                Assert.IsTrue(cache.TryGet(rid, etag, CreatePlan(), out GlobalFullTextSearchStatistics result));
-                Assert.AreEqual(count, result.DocumentCount);
+                ContainerIdentityTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Read case {index}: {testCase}");
+                Assert.IsTrue(cache.TryGet(testCase.ResourceId, testCase.ETag, CreatePlan(), out GlobalFullTextSearchStatistics result));
+                Assert.AreEqual(testCase.DocumentCount, result.DocumentCount);
             }
 
-            Assert.AreEqual(4, cache.Count);
-            Assert.AreEqual(4, cache.ContainerRevisionCount);
+            Assert.AreEqual(12, StoredCount(cache));
         }
 
         [TestMethod]
         public void ReusesSubsetsReorderedTermsDuplicatesAndRepeatedPaths()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 2, () => TimeSpan.Zero);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("swim", "run"), Statistics(10, 100, 2, 3), TimeSpan.Zero));
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 4, () => TimeSpan.Zero);
+            cache.Add("rid", "etag", CreatePlan("swim", "run"), Statistics(10, 100, 2, 3), TimeSpan.Zero);
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("run"), out GlobalFullTextSearchStatistics subset));
             CollectionAssert.AreEqual(new long[] { 3 }, subset.FullTextStatistics[0].HitCounts.ToArray());
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("run", "swim", "run"), out GlobalFullTextSearchStatistics reordered));
@@ -178,22 +186,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Assert.AreEqual(100L, result.FullTextStatistics[1].TotalWordCount);
             CollectionAssert.AreEqual(new long[] { 3 }, result.FullTextStatistics[0].HitCounts.ToArray());
             CollectionAssert.AreEqual(new long[] { 2, 3 }, result.FullTextStatistics[1].HitCounts.ToArray());
-            Assert.AreEqual(2, cache.Count);
+            Assert.AreEqual(4, StoredCount(cache));
         }
 
         [TestMethod]
         public void IndependentlyCollectedCountsCanBeCombined()
         {
             TestClock clock = new TestClock();
-            using Cache cache = new Cache(TimeSpan.FromSeconds(10), 3, clock.Read);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("run"), Statistics(10, 100, 3), clock.Now));
+            Cache cache = new Cache(TimeSpan.FromSeconds(10), 6, clock.Read);
+            cache.Add("rid", "etag", CreatePlan("run"), Statistics(10, 100, 3), clock.Now);
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("run"), out GlobalFullTextSearchStatistics selected));
             clock.Now = TimeSpan.FromSeconds(2);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("swim"), Statistics(20, 200, 5), clock.Now));
+            cache.Add("rid", "etag", CreatePlan("swim"), Statistics(20, 200, 5), clock.Now);
             clock.Now = TimeSpan.FromSeconds(4);
             HybridSearchQueryInfo title = CreatePlan("energy");
             title.FullTextSearchTerms[0].Path[0] = "title";
-            Assert.IsTrue(cache.TryAdd("rid", "etag", title, Statistics(30, 90, 6), clock.Now));
+            cache.Add("rid", "etag", title, Statistics(30, 90, 6), clock.Now);
 
             HybridSearchQueryInfo combined = CreatePlan("swim", "run");
             combined.FullTextSearchTerms.Insert(0, title.FullTextSearchTerms[0]);
@@ -212,14 +220,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public void EmptyCorpusAndMaximumCountsAreSupported()
         {
             TestClock clock = new TestClock();
-            using Cache cache = new Cache(TimeSpan.FromSeconds(10), 1, clock.Read);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan(), Statistics(0, 0, 0), clock.Now));
+            Cache cache = new Cache(TimeSpan.FromSeconds(10), 3, clock.Read);
+            cache.Add("rid", "etag", CreatePlan(), Statistics(0, 0, 0), clock.Now);
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan(), out GlobalFullTextSearchStatistics empty));
             Assert.AreEqual(0L, empty.DocumentCount);
             Assert.AreEqual(0L, empty.FullTextStatistics[0].TotalWordCount);
             CollectionAssert.AreEqual(new long[] { 0 }, empty.FullTextStatistics[0].HitCounts.ToArray());
             clock.Now = TimeSpan.FromSeconds(1);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan(), Statistics(long.MaxValue, long.MaxValue, long.MaxValue), clock.Now));
+            cache.Add("rid", "etag", CreatePlan(), Statistics(long.MaxValue, long.MaxValue, long.MaxValue), clock.Now);
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan(), out GlobalFullTextSearchStatistics maximum));
             Assert.AreEqual(long.MaxValue, maximum.DocumentCount);
             Assert.AreEqual(long.MaxValue, maximum.FullTextStatistics[0].TotalWordCount);
@@ -230,10 +238,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public void RefreshingOtherCountsDoesNotRenewOldHitCounts()
         {
             TestClock clock = new TestClock();
-            using Cache cache = new Cache(TimeSpan.FromSeconds(10), 2, clock.Read);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("run"), Statistics(10, 100, 3), clock.Now));
+            Cache cache = new Cache(TimeSpan.FromSeconds(10), 4, clock.Read);
+            cache.Add("rid", "etag", CreatePlan("run"), Statistics(10, 100, 3), clock.Now);
             clock.Now = TimeSpan.FromSeconds(9);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("swim"), Statistics(20, 200, 5), clock.Now));
+            cache.Add("rid", "etag", CreatePlan("swim"), Statistics(20, 200, 5), clock.Now);
             clock.Now = TimeSpan.FromSeconds(10) - TimeSpan.FromTicks(1);
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("run", "swim"), out _));
             clock.Now = TimeSpan.FromSeconds(10);
@@ -242,42 +250,38 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("swim"), out GlobalFullTextSearchStatistics live));
             Assert.AreEqual(20L, live.DocumentCount);
             Assert.AreEqual(200L, live.FullTextStatistics[0].TotalWordCount);
-            Assert.AreEqual(1, cache.Count);
         }
 
         [TestMethod]
         public void RefreshingAnotherPathDoesNotRenewOldPathCounts()
         {
             TestClock clock = new TestClock();
-            using Cache cache = new Cache(TimeSpan.FromSeconds(10), 2, clock.Read);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), clock.Now));
+            Cache cache = new Cache(TimeSpan.FromSeconds(10), 5, clock.Read);
+            cache.Add("rid", "etag", CreatePlan(), CreateStatistics(), clock.Now);
             clock.Now = TimeSpan.FromSeconds(5);
             HybridSearchQueryInfo otherPath = CreatePlan();
             otherPath.FullTextSearchTerms[0].Path[0] = "title";
-            Assert.IsTrue(cache.TryAdd("rid", "etag", otherPath, CreateStatistics(20), clock.Now));
+            cache.Add("rid", "etag", otherPath, CreateStatistics(20), clock.Now);
             clock.Now = TimeSpan.FromSeconds(10);
             Assert.IsFalse(cache.TryGet("rid", "etag", CreatePlan(), out _));
             Assert.IsTrue(cache.TryGet("rid", "etag", otherPath, out _));
-            Assert.AreEqual(1, cache.Count);
             clock.Now = TimeSpan.FromSeconds(15);
             Assert.IsFalse(cache.TryGet("rid", "etag", otherPath, out _));
-            Assert.AreEqual(0, cache.Count);
-            Assert.AreEqual(0, cache.ContainerRevisionCount);
         }
 
         [TestMethod]
         public void NumericallyInconsistentMixedCountsCauseAMissWithoutClamping()
         {
             TestClock clock = new TestClock();
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 2, clock.Read);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("run"), Statistics(10, 100, 8), clock.Now));
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 4, clock.Read);
+            cache.Add("rid", "etag", CreatePlan("run"), Statistics(10, 100, 8), clock.Now);
             clock.Now = TimeSpan.FromSeconds(1);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("swim"), Statistics(3, 30, 2), clock.Now));
+            cache.Add("rid", "etag", CreatePlan("swim"), Statistics(3, 30, 2), clock.Now);
             Assert.IsFalse(cache.TryGet("rid", "etag", CreatePlan("run", "swim"), out GlobalFullTextSearchStatistics invalid));
             Assert.IsNull(invalid);
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("swim"), out _));
             clock.Now = TimeSpan.FromSeconds(2);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("run", "swim"), Statistics(3, 30, 1, 2), clock.Now));
+            cache.Add("rid", "etag", CreatePlan("run", "swim"), Statistics(3, 30, 1, 2), clock.Now);
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("run", "swim"), out GlobalFullTextSearchStatistics refreshed));
             CollectionAssert.AreEqual(new long[] { 1, 2 }, refreshed.FullTextStatistics[0].HitCounts.ToArray());
         }
@@ -286,82 +290,59 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public void ZeroDocumentCountWithOlderNonzeroWordCountCausesAMiss()
         {
             TestClock clock = new TestClock();
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 2, clock.Read);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan(), Statistics(10, 100, 0), clock.Now));
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 5, clock.Read);
+            cache.Add("rid", "etag", CreatePlan(), Statistics(10, 100, 0), clock.Now);
             clock.Now = TimeSpan.FromSeconds(1);
             HybridSearchQueryInfo otherPath = CreatePlan();
             otherPath.FullTextSearchTerms[0].Path[0] = "title";
-            Assert.IsTrue(cache.TryAdd("rid", "etag", otherPath, Statistics(0, 0, 0), clock.Now));
+            cache.Add("rid", "etag", otherPath, Statistics(0, 0, 0), clock.Now);
             Assert.IsFalse(cache.TryGet("rid", "etag", CreatePlan(), out _));
             Assert.IsTrue(cache.TryGet("rid", "etag", otherPath, out _));
         }
 
-        [DataTestMethod]
-        [DataRow(-1L, 10L, 0L)]
-        [DataRow(10L, -1L, 0L)]
-        [DataRow(10L, 10L, -1L)]
-        [DataRow(10L, 10L, 11L)]
-        [DataRow(0L, 10L, 0L)]
-        public void InvalidCountsAreNotAdmitted(long documents, long words, long hits)
-        {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 2, () => TimeSpan.Zero);
-            Assert.IsFalse(cache.TryAdd("rid", "etag", CreatePlan(), Statistics(documents, words, hits), TimeSpan.Zero));
-            Assert.AreEqual(0, cache.Count);
-            Assert.AreEqual(0, cache.ContainerRevisionCount);
-        }
-
         [TestMethod]
-        public void InvalidDimensionsAndConflictingDuplicatesDoNotPartiallyUpdate()
+        public void InvalidDimensionsAreNotAdmitted()
         {
             TestClock clock = new TestClock();
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 3, clock.Read);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan(), Statistics(10, 100, 2), clock.Now));
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 8, clock.Read);
+            cache.Add("rid", "etag", CreatePlan(), Statistics(10, 100, 2), clock.Now);
             clock.Now = TimeSpan.FromSeconds(1);
             HybridSearchQueryInfo twoPaths = CreatePlan();
             twoPaths.FullTextSearchTerms.Add(CreatePlan("swim").FullTextSearchTerms[0]);
-            (HybridSearchQueryInfo Plan, GlobalFullTextSearchStatistics Statistics)[] invalidCases =
+            List<StatisticsShapeTestCase> testCases = new List<StatisticsShapeTestCase>
             {
-                (twoPaths, CreateStatistics(20)),
-                (CreatePlan(), new GlobalFullTextSearchStatistics(20, Array.Empty<FullTextStatistics>())),
-                (CreatePlan(), new GlobalFullTextSearchStatistics(20, new FullTextStatistics[] { null })),
-                (CreatePlan("run", "swim"), CreateStatistics(20)),
-                (CreatePlan(), Statistics(20, 200, 1, 2)),
-                (twoPaths, new GlobalFullTextSearchStatistics(20, new[]
-                {
-                    new FullTextStatistics(200, new long[] { 4 }),
-                    new FullTextStatistics(201, new long[] { 5 }),
-                })),
-                (CreatePlan("run", "run"), Statistics(20, 200, 4, 5)),
+                new StatisticsShapeTestCase("Missing path statistics", twoPaths, CreateStatistics(20)),
+                new StatisticsShapeTestCase("Empty statistics", CreatePlan(), new GlobalFullTextSearchStatistics(20, Array.Empty<FullTextStatistics>())),
+                new StatisticsShapeTestCase("Null path statistics", CreatePlan(), new GlobalFullTextSearchStatistics(20, new FullTextStatistics[] { null })),
+                new StatisticsShapeTestCase("Missing term count", CreatePlan("run", "swim"), CreateStatistics(20)),
+                new StatisticsShapeTestCase("Extra term count", CreatePlan(), Statistics(20, 200, 1, 2)),
             };
 
-            foreach ((HybridSearchQueryInfo plan, GlobalFullTextSearchStatistics statistics) in invalidCases)
+            for (int index = 0; index < testCases.Count; index++)
             {
-                Assert.IsFalse(cache.TryAdd("rid", "etag", plan, statistics, clock.Now));
+                StatisticsShapeTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                cache.Add("rid", "etag", testCase.Plan, testCase.Statistics, clock.Now);
                 Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan(), out GlobalFullTextSearchStatistics original));
                 Assert.AreEqual(10L, original.DocumentCount);
                 Assert.AreEqual(100L, original.FullTextStatistics[0].TotalWordCount);
                 CollectionAssert.AreEqual(new long[] { 2 }, original.FullTextStatistics[0].HitCounts.ToArray());
-                Assert.AreEqual(1, cache.Count);
+                Assert.AreEqual(3, StoredCount(cache));
             }
         }
 
         [TestMethod]
-        public void CountsAreIsolatedFromInputModelsAndReturnedSnapshots()
+        public void CountsAreIsolatedFromInputStatisticsAndReturnedSnapshots()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 2, () => TimeSpan.Zero);
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 4, () => TimeSpan.Zero);
             HybridSearchQueryInfo plan = CreatePlan("swim", "run");
             long[] hits = { 2, 3 };
             List<FullTextStatistics> paths = new List<FullTextStatistics> { new FullTextStatistics(100, hits) };
-            Assert.IsTrue(cache.TryAdd("rid", "etag", plan, new GlobalFullTextSearchStatistics(10, paths), TimeSpan.Zero));
+            cache.Add("rid", "etag", plan, new GlobalFullTextSearchStatistics(10, paths), TimeSpan.Zero);
             hits[0] = 999;
             paths.Clear();
-            plan.FullTextSearchTerms[0].Path[0] = "changed";
-            plan.FullTextSearchTerms[0].Terms[0].Term = "changed";
-            plan.FullTextSearchTerms[0].Terms[0].Distance = 2;
-            plan.FullTextSearchTerms.Clear();
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("swim", "run"), out GlobalFullTextSearchStatistics first));
             CollectionAssert.AreEqual(new long[] { 2, 3 }, first.FullTextStatistics[0].HitCounts.ToArray());
-            Assert.ThrowsException<NotSupportedException>(() => ((IList<FullTextStatistics>)first.FullTextStatistics).Clear());
             Assert.IsTrue(MemoryMarshal.TryGetArray(first.FullTextStatistics[0].HitCounts, out ArraySegment<long> returned));
             returned.Array[returned.Offset] = 999;
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("swim", "run"), out GlobalFullTextSearchStatistics second));
@@ -369,68 +350,88 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             CollectionAssert.AreEqual(new long[] { 2, 3 }, second.FullTextStatistics[0].HitCounts.ToArray());
         }
 
-        [DataTestMethod]
-        [DataRow(@"[{""path"":[""title""],""terms"":[{""term"":""swim"",""distance"":2}]}]")]
-        [DataRow(@"[{""path"":[""Text""],""terms"":[{""term"":""swim"",""distance"":2}]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""Swim"",""distance"":2}]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":1}]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""swim""}]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":0}]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""swim run"",""distance"":2}]}]")]
-        public void DistinctPathsTermsAndDistancesDoNotShareCounts(string metadata)
+        [TestMethod]
+        public void DistinctPathsTermsAndDistancesDoNotShareCounts()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 2, () => TimeSpan.Zero);
-            HybridSearchQueryInfo original = ParsePlan(@"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2},{""term"":""run""}]}]");
-            Assert.IsTrue(cache.TryAdd("rid", "etag", original, Statistics(10, 100, 2, 3), TimeSpan.Zero));
-            Assert.IsFalse(cache.TryGet("rid", "etag", ParsePlan(metadata), out _));
+            List<MetadataTestCase> testCases = new List<MetadataTestCase>
+            {
+                new MetadataTestCase("Different path", @"[{""path"":[""title""],""terms"":[{""term"":""swim"",""distance"":2}]}]"),
+                new MetadataTestCase("Path casing", @"[{""path"":[""Text""],""terms"":[{""term"":""swim"",""distance"":2}]}]"),
+                new MetadataTestCase("Term casing", @"[{""path"":[""text""],""terms"":[{""term"":""Swim"",""distance"":2}]}]"),
+                new MetadataTestCase("Different distance", @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":1}]}]"),
+                new MetadataTestCase("Missing distance", @"[{""path"":[""text""],""terms"":[{""term"":""swim""}]}]"),
+                new MetadataTestCase("Zero versus missing distance", @"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":0}]}]"),
+                new MetadataTestCase("Phrase versus separate terms", @"[{""path"":[""text""],""terms"":[{""term"":""swim run"",""distance"":2}]}]"),
+            };
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                MetadataTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                Cache cache = new Cache(TimeSpan.FromMinutes(1), 4, () => TimeSpan.Zero);
+                HybridSearchQueryInfo original = ParsePlan(@"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2},{""term"":""run""}]}]");
+                cache.Add("rid", "etag", original, Statistics(10, 100, 2, 3), TimeSpan.Zero);
+                Assert.IsFalse(cache.TryGet("rid", "etag", ParsePlan(testCase.Metadata), out _));
+            }
         }
 
         [TestMethod]
         public void PathSegmentsPhrasesAndDateLikeStringsRemainExact()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 4, () => TimeSpan.Zero);
-            string[] metadata =
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 9, () => TimeSpan.Zero);
+            List<MetadataTestCase> testCases = new List<MetadataTestCase>
             {
-                @"[{""path"":[""a/b""],""terms"":[{""term"":""United States""}]}]",
-                @"[{""path"":[""a"",""b""],""terms"":[{""term"":""United States""}]}]",
-                @"[{""path"":[""tags"",""[0]""],""terms"":[{""term"":""""}]}]",
-                @"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00"",""distance"":2147483647}]}]",
+                new MetadataTestCase("Slash in a single segment", @"[{""path"":[""a/b""],""terms"":[{""term"":""United States""}]}]"),
+                new MetadataTestCase("Separate path segments", @"[{""path"":[""a"",""b""],""terms"":[{""term"":""United States""}]}]"),
+                new MetadataTestCase("Numeric indexer and empty term", @"[{""path"":[""tags"",""[0]""],""terms"":[{""term"":""""}]}]"),
+                new MetadataTestCase("Date-like strings and maximum distance", @"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00"",""distance"":2147483647}]}]"),
             };
-            for (int index = 0; index < metadata.Length; index++)
+            for (int index = 0; index < testCases.Count; index++)
             {
-                Assert.IsTrue(cache.TryAdd("rid", "etag", ParsePlan(metadata[index]), Statistics(10, 100, index), TimeSpan.Zero));
+                MetadataTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Publish case {index}: {testCase}, HitCount={index}");
+                cache.Add("rid", "etag", ParsePlan(testCase.Metadata), Statistics(10, 100, index), TimeSpan.Zero);
             }
 
-            for (int index = 0; index < metadata.Length; index++)
+            for (int index = 0; index < testCases.Count; index++)
             {
-                Assert.IsTrue(cache.TryGet("rid", "etag", ParsePlan(metadata[index]), out GlobalFullTextSearchStatistics result));
+                MetadataTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Read case {index}: {testCase}, ExpectedHitCount={index}");
+                Assert.IsTrue(cache.TryGet("rid", "etag", ParsePlan(testCase.Metadata), out GlobalFullTextSearchStatistics result));
                 CollectionAssert.AreEqual(new long[] { index }, result.FullTextStatistics[0].HitCounts.ToArray());
             }
 
-            Assert.AreEqual(4, cache.Count);
+            Assert.AreEqual(9, StoredCount(cache));
         }
 
-        [DataTestMethod]
-        [DataRow(@"[{""terms"":[{""distance"":2,""term"":""swim""},{""term"":""run""}],""path"":[""text""]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2},{""term"":""run"",""distance"":null}]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":""2""},{""term"":""run""}]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2,""future"":true},{""term"":""run""}],""future"":true}]")]
-        public void EquivalentMetadataUsesNormalQueryPlanDeserialization(string metadata)
+        [TestMethod]
+        public void EquivalentMetadataUsesNormalQueryPlanDeserialization()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 2, () => TimeSpan.Zero);
-            HybridSearchQueryInfo plan = ParsePlan(@"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2},{""term"":""run""}]}]");
-            Assert.IsTrue(cache.TryAdd("rid", "etag", plan, Statistics(10, 100, 2, 3), TimeSpan.Zero));
-            Assert.IsTrue(cache.TryGet("rid", "etag", ParsePlan(metadata), out GlobalFullTextSearchStatistics result));
-            CollectionAssert.AreEqual(new long[] { 2, 3 }, result.FullTextStatistics[0].HitCounts.ToArray());
+            List<MetadataTestCase> testCases = new List<MetadataTestCase>
+            {
+                new MetadataTestCase("Property ordering", @"[{""terms"":[{""distance"":2,""term"":""swim""},{""term"":""run""}],""path"":[""text""]}]"),
+                new MetadataTestCase("Null distance", @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2},{""term"":""run"",""distance"":null}]}]"),
+                new MetadataTestCase("String distance", @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":""2""},{""term"":""run""}]}]"),
+                new MetadataTestCase("Unknown fields", @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2,""future"":true},{""term"":""run""}],""future"":true}]"),
+            };
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                MetadataTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                Cache cache = new Cache(TimeSpan.FromMinutes(1), 4, () => TimeSpan.Zero);
+                HybridSearchQueryInfo plan = ParsePlan(@"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2},{""term"":""run""}]}]");
+                cache.Add("rid", "etag", plan, Statistics(10, 100, 2, 3), TimeSpan.Zero);
+                Assert.IsTrue(cache.TryGet("rid", "etag", ParsePlan(testCase.Metadata), out GlobalFullTextSearchStatistics result));
+                CollectionAssert.AreEqual(new long[] { 2, 3 }, result.FullTextStatistics[0].HitCounts.ToArray());
+            }
         }
 
         [TestMethod]
         public void IdentityIgnoresStatisticsQueryTextAndCurrentCulture()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 1, () => TimeSpan.Zero);
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 3, () => TimeSpan.Zero);
             HybridSearchQueryInfo plan = CreatePlan();
             plan.GlobalStatisticsQuery = "SELECT COUNT(1) FROM c";
-            Assert.IsTrue(cache.TryAdd("rid", "etag", plan, CreateStatistics(), TimeSpan.Zero));
+            cache.Add("rid", "etag", plan, CreateStatistics(), TimeSpan.Zero);
             plan.GlobalStatisticsQuery = null;
             CultureInfo original = CultureInfo.CurrentCulture;
             try
@@ -448,15 +449,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public void ExpiryIsAbsoluteAndUsesCollectionStart()
         {
             TestClock clock = new TestClock { Now = TimeSpan.FromSeconds(8) };
-            using Cache cache = new Cache(TimeSpan.FromSeconds(10), 1, clock.Read);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), TimeSpan.Zero));
+            Cache cache = new Cache(TimeSpan.FromSeconds(10), 3, clock.Read);
+            cache.Add("rid", "etag", CreatePlan(), CreateStatistics(), TimeSpan.Zero);
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan(), out GlobalFullTextSearchStatistics selected));
             clock.Now = TimeSpan.FromSeconds(10) - TimeSpan.FromTicks(1);
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan(), out _));
             clock.Now = TimeSpan.FromSeconds(10);
             Assert.IsFalse(cache.TryGet("rid", "etag", CreatePlan(), out _));
-            Assert.AreEqual(0, cache.Count);
-            Assert.AreEqual(0, cache.ContainerRevisionCount);
             Assert.AreEqual(10L, selected.DocumentCount);
         }
 
@@ -464,32 +463,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public void ExpiredOrFutureCollectionsAreNotAdmitted()
         {
             TestClock clock = new TestClock { Now = TimeSpan.FromSeconds(10) };
-            using Cache cache = new Cache(TimeSpan.FromSeconds(10), 1, clock.Read);
-            Assert.IsFalse(cache.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), TimeSpan.Zero));
-            Assert.IsFalse(cache.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), clock.Now + TimeSpan.FromTicks(1)));
-            Assert.AreEqual(0, cache.Count);
-        }
-
-        [TestMethod]
-        public void AdmissionRechecksAgeAfterReadingStatistics()
-        {
-            TestClock clock = new TestClock();
-            using Cache cache = new Cache(TimeSpan.FromSeconds(10), 1, clock.Read);
-            CallbackStatisticsList source = new CallbackStatisticsList(() => clock.Now = TimeSpan.FromSeconds(10));
-            Assert.IsFalse(cache.TryAdd("rid", "etag", CreatePlan(), new GlobalFullTextSearchStatistics(10, source), TimeSpan.Zero));
-            Assert.AreEqual(0, cache.Count);
+            Cache cache = new Cache(TimeSpan.FromSeconds(10), 3, clock.Read);
+            cache.Add("rid", "etag", CreatePlan(), CreateStatistics(), TimeSpan.Zero);
+            cache.Add("rid", "etag", CreatePlan(), CreateStatistics(), clock.Now + TimeSpan.FromTicks(1));
+            Assert.AreEqual(0, StoredCount(cache));
         }
 
         [TestMethod]
         public void LargeAgesAndTimestampsDoNotOverflow()
         {
             TestClock clock = new TestClock { Now = TimeSpan.MaxValue - TimeSpan.FromTicks(1) };
-            using Cache cache = new Cache(TimeSpan.MaxValue, 1, clock.Read);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), TimeSpan.Zero));
+            Cache cache = new Cache(TimeSpan.MaxValue, 3, clock.Read);
+            cache.Add("rid", "etag", CreatePlan(), CreateStatistics(), TimeSpan.Zero);
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan(), out _));
             clock.Now = TimeSpan.MaxValue;
             Assert.IsFalse(cache.TryGet("rid", "etag", CreatePlan(), out _));
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), TimeSpan.MaxValue - TimeSpan.FromTicks(5)));
+            cache.Add("rid", "etag", CreatePlan(), CreateStatistics(), TimeSpan.MaxValue - TimeSpan.FromTicks(5));
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan(), out _));
         }
 
@@ -497,11 +486,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public void SeparateCachesHaveIndependentPoliciesAndContents()
         {
             TestClock clock = new TestClock();
-            using Cache shortLived = new Cache(TimeSpan.FromSeconds(5), 1, clock.Read);
-            using Cache longLived = new Cache(TimeSpan.FromSeconds(10), 1, clock.Read);
-            Assert.IsTrue(shortLived.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), clock.Now));
+            Cache shortLived = new Cache(TimeSpan.FromSeconds(5), 3, clock.Read);
+            Cache longLived = new Cache(TimeSpan.FromSeconds(10), 3, clock.Read);
+            shortLived.Add("rid", "etag", CreatePlan(), CreateStatistics(), clock.Now);
             Assert.IsFalse(longLived.TryGet("rid", "etag", CreatePlan(), out _));
-            Assert.IsTrue(longLived.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(20), clock.Now));
+            longLived.Add("rid", "etag", CreatePlan(), CreateStatistics(20), clock.Now);
             clock.Now = TimeSpan.FromSeconds(5);
             Assert.IsFalse(shortLived.TryGet("rid", "etag", CreatePlan(), out _));
             Assert.IsTrue(longLived.TryGet("rid", "etag", CreatePlan(), out GlobalFullTextSearchStatistics result));
@@ -509,20 +498,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
-        public void CapacityCountsDistinctTermsAcrossPathsContainersAndRevisions()
+        public void CapacityCountsAllScalarKindsAcrossContainersAndRevisions()
         {
             TestClock clock = new TestClock();
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 3, clock.Read);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("run", "swim"), Statistics(10, 100, 2, 3), clock.Now));
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 8, clock.Read);
+            cache.Add("rid", "etag", CreatePlan("run", "swim"), Statistics(10, 100, 2, 3), clock.Now);
             clock.Now = TimeSpan.FromSeconds(1);
-            Assert.IsTrue(cache.TryAdd("rid", "other-etag", CreatePlan(), CreateStatistics(), clock.Now));
+            cache.Add("rid", "other-etag", CreatePlan(), CreateStatistics(), clock.Now);
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("run", "swim"), out _));
             clock.Now = TimeSpan.FromSeconds(2);
             HybridSearchQueryInfo otherPath = CreatePlan("energy");
             otherPath.FullTextSearchTerms[0].Path[0] = "title";
-            Assert.IsTrue(cache.TryAdd("other-rid", "etag", otherPath, CreateStatistics(), clock.Now));
-            Assert.AreEqual(3, cache.Count);
-            Assert.AreEqual(3, cache.ContainerRevisionCount);
+            cache.Add("other-rid", "etag", otherPath, CreateStatistics(), clock.Now);
+            Assert.AreEqual(8, StoredCount(cache));
             Assert.IsFalse(cache.TryGet("rid", "etag", CreatePlan("run", "swim"), out _));
             Assert.IsTrue(cache.TryGet("rid", "other-etag", CreatePlan(), out _));
             Assert.IsTrue(cache.TryGet("other-rid", "etag", otherPath, out _));
@@ -532,106 +520,145 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public void PublicationPreservesItsOverlappingTermsWhenMakingRoom()
         {
             TestClock clock = new TestClock();
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 2, clock.Read);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("run"), Statistics(10, 100, 2), clock.Now));
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 4, clock.Read);
+            cache.Add("rid", "etag", CreatePlan("run"), Statistics(10, 100, 2), clock.Now);
             clock.Now = TimeSpan.FromSeconds(1);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("bike"), Statistics(10, 100, 4), clock.Now));
+            cache.Add("rid", "etag", CreatePlan("bike"), Statistics(10, 100, 4), clock.Now);
             clock.Now = TimeSpan.FromSeconds(2);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("run", "swim"), Statistics(10, 100, 3, 5), clock.Now));
+            cache.Add("rid", "etag", CreatePlan("run", "swim"), Statistics(10, 100, 3, 5), clock.Now);
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("run", "swim"), out GlobalFullTextSearchStatistics result));
             CollectionAssert.AreEqual(new long[] { 3, 5 }, result.FullTextStatistics[0].HitCounts.ToArray());
             Assert.IsFalse(cache.TryGet("rid", "etag", CreatePlan("bike"), out _));
-            Assert.AreEqual(2, cache.Count);
+            Assert.AreEqual(4, StoredCount(cache));
         }
 
         [TestMethod]
-        public void RepeatedSlotsDoNotConsumeExtraCapacityAndOversizedPublicationsAreSkipped()
+        public void RepeatedSlotsShareEntriesAndOversizedPublicationsAreSkipped()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 1, () => TimeSpan.Zero);
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 6, () => TimeSpan.Zero);
             HybridSearchQueryInfo repeated = CreatePlan("run", "run");
             repeated.FullTextSearchTerms.Add(CreatePlan("run").FullTextSearchTerms[0]);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", repeated, new GlobalFullTextSearchStatistics(10, new[]
+            cache.Add("rid", "etag", repeated, new GlobalFullTextSearchStatistics(10, new[]
             {
                 new FullTextStatistics(100, new long[] { 2, 2 }),
                 new FullTextStatistics(100, new long[] { 2 }),
-            }), TimeSpan.Zero));
-            Assert.AreEqual(1, cache.Count);
+            }), TimeSpan.Zero);
+            Assert.AreEqual(3, StoredCount(cache));
             Assert.IsTrue(cache.TryGet("rid", "etag", repeated, out _));
-            Assert.IsFalse(cache.TryAdd("other", "etag", CreatePlan("swim", "bike"), Statistics(20, 200, 3, 4), TimeSpan.Zero));
+            cache.Add("other", "etag", CreatePlan("a", "b", "c", "d", "e", "f"), Statistics(20, 200, 1, 1, 1, 1, 1, 1), TimeSpan.Zero);
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan(), out _));
-            Assert.AreEqual(1, cache.Count);
-            Assert.AreEqual(1, cache.ContainerRevisionCount);
+            Assert.AreEqual(3, StoredCount(cache));
+        }
+
+        [TestMethod]
+        public void CapacityMustFitTheCompleteScalarSet()
+        {
+            List<SettingsTestCase> testCases = new List<SettingsTestCase>
+            {
+                new SettingsTestCase("Document count only", TimeSpan.FromMinutes(1).Ticks, 1),
+                new SettingsTestCase("Document and word counts only", TimeSpan.FromMinutes(1).Ticks, 2),
+            };
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                SettingsTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                Cache cache = new Cache(TimeSpan.FromTicks(testCase.MaxAgeTicks), testCase.MaxEntries, () => TimeSpan.Zero);
+                cache.Add("rid", "etag", CreatePlan(), CreateStatistics(), TimeSpan.Zero);
+                Assert.IsFalse(cache.TryGet("rid", "etag", CreatePlan(), out _));
+                Assert.AreEqual(0, StoredCount(cache));
+            }
+        }
+
+        [TestMethod]
+        public void EvictedRequiredScalarsCauseAMissWithoutDiscardingOtherLiveEntries()
+        {
+            TestClock clock = new TestClock();
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 4, clock.Read);
+            cache.Add("first", "etag", CreatePlan(), CreateStatistics(), clock.Now);
+            clock.Now = TimeSpan.FromSeconds(1);
+            cache.Add("second", "etag", CreatePlan(), CreateStatistics(20), clock.Now);
+            Assert.AreEqual(4, StoredCount(cache));
+            Assert.IsFalse(cache.TryGet("first", "etag", CreatePlan(), out GlobalFullTextSearchStatistics missing));
+            Assert.IsNull(missing);
+            Assert.IsTrue(cache.TryGet("second", "etag", CreatePlan(), out GlobalFullTextSearchStatistics present));
+            Assert.AreEqual(20L, present.DocumentCount);
+            Assert.AreEqual(4, StoredCount(cache), "Independent live scalars are retained even if related counters were evicted.");
         }
 
         [TestMethod]
         public void EvictionUsesCollectionTimeRatherThanPublicationOrder()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 2, () => TimeSpan.FromSeconds(10));
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("newer"), CreateStatistics(), TimeSpan.FromSeconds(5)));
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("older"), CreateStatistics(), TimeSpan.FromSeconds(1)));
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("latest"), CreateStatistics(), TimeSpan.FromSeconds(8)));
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 4, () => TimeSpan.FromSeconds(10));
+            cache.Add("rid", "etag", CreatePlan("newer"), CreateStatistics(), TimeSpan.FromSeconds(5));
+            cache.Add("rid", "etag", CreatePlan("older"), CreateStatistics(), TimeSpan.FromSeconds(1));
+            cache.Add("rid", "etag", CreatePlan("latest"), CreateStatistics(), TimeSpan.FromSeconds(8));
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("newer"), out _));
             Assert.IsFalse(cache.TryGet("rid", "etag", CreatePlan("older"), out _));
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("latest"), out _));
         }
 
-        [DataTestMethod]
-        [DataRow("rid")]
-        [DataRow("other-rid")]
-        public void CapacityOneCleansUpAndRecreatesParentCaches(string resourceId)
+        [TestMethod]
+        public void MinimumCompleteCapacityEvictsOlderCounters()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 1, () => TimeSpan.Zero);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("run"), CreateStatistics(), TimeSpan.Zero));
-            Assert.IsTrue(cache.TryAdd(resourceId, "etag", CreatePlan("swim"), CreateStatistics(), TimeSpan.Zero));
-            Assert.IsFalse(cache.TryGet("rid", "etag", CreatePlan("run"), out _));
-            Assert.IsTrue(cache.TryGet(resourceId, "etag", CreatePlan("swim"), out _));
-            Assert.AreEqual(1, cache.Count);
-            Assert.AreEqual(1, cache.ContainerRevisionCount);
+            List<ContainerIdentityTestCase> testCases = new List<ContainerIdentityTestCase>
+            {
+                new ContainerIdentityTestCase("Same container", "rid", "etag", 10),
+                new ContainerIdentityTestCase("Different container", "other-rid", "etag", 10),
+            };
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                ContainerIdentityTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                Cache cache = new Cache(TimeSpan.FromMinutes(1), 3, () => TimeSpan.FromSeconds(1));
+                cache.Add("rid", "etag", CreatePlan("run"), CreateStatistics(), TimeSpan.Zero);
+                cache.Add(testCase.ResourceId, testCase.ETag, CreatePlan("swim"), CreateStatistics(testCase.DocumentCount), TimeSpan.FromSeconds(1));
+                Assert.IsFalse(cache.TryGet("rid", "etag", CreatePlan("run"), out _));
+                Assert.IsTrue(cache.TryGet(testCase.ResourceId, testCase.ETag, CreatePlan("swim"), out _));
+                Assert.AreEqual(3, StoredCount(cache));
+            }
         }
 
         [TestMethod]
-        public void InsertionRemovesExpiredCountsAndEmptyParents()
+        public void InsertionRemovesExpiredScalarsBeforeEviction()
         {
             TestClock clock = new TestClock();
-            using Cache cache = new Cache(TimeSpan.FromSeconds(10), 4, clock.Read);
-            Assert.IsTrue(cache.TryAdd("old", "etag", CreatePlan("run", "swim"), Statistics(10, 100, 2, 3), clock.Now));
-            Assert.IsTrue(cache.TryAdd("old", "other-etag", CreatePlan(), CreateStatistics(), clock.Now));
+            Cache cache = new Cache(TimeSpan.FromSeconds(10), 10, clock.Read);
+            cache.Add("old", "etag", CreatePlan("run", "swim"), Statistics(10, 100, 2, 3), clock.Now);
+            cache.Add("old", "other-etag", CreatePlan(), CreateStatistics(), clock.Now);
             clock.Now = TimeSpan.FromSeconds(5);
-            Assert.IsTrue(cache.TryAdd("fresh", "etag", CreatePlan(), CreateStatistics(), clock.Now));
+            cache.Add("fresh", "etag", CreatePlan(), CreateStatistics(), clock.Now);
             clock.Now = TimeSpan.FromSeconds(10);
-            Assert.IsTrue(cache.TryAdd("new", "etag", CreatePlan(), CreateStatistics(), clock.Now));
+            cache.Add("new", "etag", CreatePlan(), CreateStatistics(), clock.Now);
             Assert.IsTrue(cache.TryGet("fresh", "etag", CreatePlan(), out _));
-            Assert.AreEqual(2, cache.Count);
-            Assert.AreEqual(2, cache.ContainerRevisionCount);
+            Assert.AreEqual(6, StoredCount(cache));
         }
 
         [TestMethod]
         public void OlderPublicationsOnlyFillMissingCountsWithoutRegressingNewerOnes()
         {
             TestClock clock = new TestClock { Now = TimeSpan.FromSeconds(10) };
-            using Cache cache = new Cache(TimeSpan.FromSeconds(10), 3, clock.Read);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("run"), Statistics(20, 200, 8), TimeSpan.FromSeconds(5)));
+            Cache cache = new Cache(TimeSpan.FromSeconds(10), 4, clock.Read);
+            cache.Add("rid", "etag", CreatePlan("run"), Statistics(20, 200, 8), TimeSpan.FromSeconds(5));
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan(), out GlobalFullTextSearchStatistics selected));
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("run", "swim"), Statistics(10, 100, 2, 3), TimeSpan.FromSeconds(1)));
-            Assert.IsFalse(cache.TryAdd("rid", "etag", CreatePlan("run"), Statistics(20, 200, 9), TimeSpan.FromSeconds(5)));
+            cache.Add("rid", "etag", CreatePlan("run", "swim"), Statistics(10, 100, 2, 3), TimeSpan.FromSeconds(1));
+            cache.Add("rid", "etag", CreatePlan("run"), Statistics(20, 200, 9), TimeSpan.FromSeconds(5));
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("run", "swim"), out GlobalFullTextSearchStatistics result));
             Assert.AreEqual(20L, result.DocumentCount);
             Assert.AreEqual(200L, result.FullTextStatistics[0].TotalWordCount);
             CollectionAssert.AreEqual(new long[] { 8, 3 }, result.FullTextStatistics[0].HitCounts.ToArray());
             Assert.AreEqual(20L, selected.DocumentCount);
-            Assert.AreEqual(2, cache.Count);
+            Assert.AreEqual(4, StoredCount(cache));
             clock.Now = TimeSpan.FromSeconds(11);
             Assert.IsFalse(cache.TryGet("rid", "etag", CreatePlan("swim"), out _));
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("run"), out _));
-            Assert.AreEqual(1, cache.Count);
         }
 
         [TestMethod]
         public void LateOldRevisionPublicationDoesNotReplaceTheNewRevision()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 2, () => TimeSpan.FromSeconds(10));
-            Assert.IsTrue(cache.TryAdd("rid", "new", CreatePlan(), CreateStatistics(20), TimeSpan.FromSeconds(5)));
-            Assert.IsTrue(cache.TryAdd("rid", "old", CreatePlan(), CreateStatistics(10), TimeSpan.Zero));
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 6, () => TimeSpan.FromSeconds(10));
+            cache.Add("rid", "new", CreatePlan(), CreateStatistics(20), TimeSpan.FromSeconds(5));
+            cache.Add("rid", "old", CreatePlan(), CreateStatistics(10), TimeSpan.Zero);
             Assert.IsTrue(cache.TryGet("rid", "new", CreatePlan(), out GlobalFullTextSearchStatistics current));
             Assert.AreEqual(20L, current.DocumentCount);
             Assert.IsTrue(cache.TryGet("rid", "old", CreatePlan(), out GlobalFullTextSearchStatistics old));
@@ -639,106 +666,70 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
-        public void ClearAndDisposePreserveSelectedSnapshots()
-        {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 1, () => TimeSpan.Zero);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), TimeSpan.Zero));
-            Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan(), out GlobalFullTextSearchStatistics selected));
-            cache.Clear();
-            Assert.AreEqual(0, cache.Count);
-            Assert.AreEqual(0, cache.ContainerRevisionCount);
-            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), TimeSpan.Zero));
-            cache.Dispose();
-            cache.Dispose();
-            cache.Clear();
-            Assert.IsFalse(cache.TryGet("rid", "etag", CreatePlan(), out _));
-            Assert.IsFalse(cache.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), TimeSpan.Zero));
-            Assert.AreEqual(0, cache.Count);
-            Assert.AreEqual(0, cache.ContainerRevisionCount);
-            Assert.AreEqual(10L, selected.DocumentCount);
-        }
-
-        [TestMethod]
-        public async Task DisposalDuringSnapshotCopyPreventsAdmissionWithoutHoldingTheLock()
-        {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 1, () => TimeSpan.Zero);
-            using ManualResetEventSlim resumeCopy = new ManualResetEventSlim();
-            TaskCompletionSource<bool> copying = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            CallbackStatisticsList source = new CallbackStatisticsList(() =>
-            {
-                copying.SetResult(true);
-                Assert.IsTrue(resumeCopy.Wait(TimeSpan.FromSeconds(10)));
-            });
-            Task<bool> admission = Task.Run(() => cache.TryAdd(
-                "rid", "etag", CreatePlan(), new GlobalFullTextSearchStatistics(10, source), TimeSpan.Zero));
-            try
-            {
-                await copying.Task.WaitAsync(TimeSpan.FromSeconds(10));
-                await Task.Run(cache.Dispose).WaitAsync(TimeSpan.FromSeconds(10));
-            }
-            finally
-            {
-                resumeCopy.Set();
-                await admission;
-            }
-
-            Assert.IsFalse(await admission);
-            Assert.AreEqual(0, cache.Count);
-        }
-
-        [TestMethod]
         public async Task ConcurrentPublicationKeepsTheNewestCounts()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 1, () => TimeSpan.FromSeconds(10));
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 4, () => TimeSpan.FromSeconds(10));
             await Task.WhenAll(Enumerable.Range(0, 64).Select(index => Task.Run(() =>
             {
-                cache.TryAdd("rid", "etag", CreatePlan(), Statistics(index, index * 10, index), TimeSpan.FromTicks(index));
-                Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan(), out GlobalFullTextSearchStatistics result));
-                Assert.AreEqual(result.DocumentCount, result.FullTextStatistics[0].HitCounts.Span[0]);
+                HybridSearchQueryInfo plan = CreatePlan("run", "run");
+                cache.Add("rid", "etag", plan, Statistics(index, index * 10, index, index), TimeSpan.FromTicks(index));
+                if (cache.TryGet("rid", "etag", plan, out GlobalFullTextSearchStatistics result))
+                {
+                    Assert.IsTrue(result.FullTextStatistics[0].HitCounts.Span[0] <= result.DocumentCount,
+                        $"Publication {index}: a lookup combining independent counts must still satisfy numeric invariants.");
+                }
             })));
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan(), out GlobalFullTextSearchStatistics newest));
             Assert.AreEqual(63L, newest.DocumentCount);
-            Assert.AreEqual(1, cache.Count);
+            Assert.AreEqual(630L, newest.FullTextStatistics[0].TotalWordCount);
+            Assert.AreEqual(63L, newest.FullTextStatistics[0].HitCounts.Span[0]);
+            Assert.AreEqual(3, StoredCount(cache));
         }
 
         [TestMethod]
-        public async Task ConcurrentContainerOperationsMaintainTheGlobalTermBound()
+        public async Task ConcurrentContainerOperationsUseBestEffortCapacity()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 8, () => TimeSpan.FromSeconds(10));
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 8, () => TimeSpan.FromSeconds(10));
             await Task.WhenAll(Enumerable.Range(0, 64).Select(index => Task.Run(() =>
             {
                 string resourceId = (index % 4).ToString();
                 HybridSearchQueryInfo plan = CreatePlan(index.ToString());
-                Assert.IsTrue(cache.TryAdd(resourceId, "etag", plan, Statistics(100, 1000, index), TimeSpan.FromTicks(index)));
+                cache.Add(resourceId, "etag", plan, Statistics(100, 1000, index), TimeSpan.FromTicks(index));
                 if (cache.TryGet(resourceId, "etag", plan, out GlobalFullTextSearchStatistics result))
                 {
                     Assert.AreEqual((long)index, result.FullTextStatistics[0].HitCounts.Span[0]);
                 }
             })));
-            Assert.AreEqual(8, cache.Count);
-            Assert.IsTrue(cache.ContainerRevisionCount > 0 && cache.ContainerRevisionCount <= 4);
+            cache.Add("settled", "etag", CreatePlan(), Statistics(100, 1000, 1), TimeSpan.FromSeconds(1));
+            Assert.IsTrue(StoredCount(cache) <= 8, "A publication without concurrent writers must bring retention within the target.");
         }
 
         [TestMethod]
-        public async Task ConcurrentOverlappingPublicationsPreserveSharedTermsAndCapacity()
+        public async Task ConcurrentOverlappingPublicationsRemainConsistentAndRecoverCapacity()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 8, () => TimeSpan.FromSeconds(10));
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 8, () => TimeSpan.FromSeconds(10));
             await Task.WhenAll(Enumerable.Range(0, 64).Select(index => Task.Run(() =>
             {
                 HybridSearchQueryInfo plan = CreatePlan("shared", index.ToString());
-                Assert.IsTrue(cache.TryAdd("rid", "etag", plan, Statistics(100, 1000, index, index), TimeSpan.FromTicks(index)));
-                Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("shared"), out _));
+                cache.Add("rid", "etag", plan, Statistics(100, 1000, index, index), TimeSpan.FromTicks(index));
+                if (cache.TryGet("rid", "etag", CreatePlan("shared"), out GlobalFullTextSearchStatistics selected))
+                {
+                    Assert.IsTrue(selected.FullTextStatistics[0].HitCounts.Span[0] <= selected.DocumentCount,
+                        $"Publication {index}: a concurrent hit must contain numerically compatible counts.");
+                }
             })));
+
+            // Concurrent eviction may remove a just-refreshed shared count; one settled publication restores it.
+            cache.Add("rid", "etag", CreatePlan("shared"), Statistics(100, 1000, 63), TimeSpan.FromSeconds(1));
             Assert.IsTrue(cache.TryGet("rid", "etag", CreatePlan("shared"), out GlobalFullTextSearchStatistics result));
             CollectionAssert.AreEqual(new long[] { 63 }, result.FullTextStatistics[0].HitCounts.ToArray());
-            Assert.AreEqual(8, cache.Count);
-            Assert.AreEqual(1, cache.ContainerRevisionCount);
+            Assert.IsTrue(StoredCount(cache) <= 8, "A publication without concurrent writers must bring retention within the target.");
         }
 
         [TestMethod]
         public void NativePlansReuseSubsetsAndRegroupCountsAcrossQueryAndParameterChanges()
         {
-            using Cache cache = new Cache(TimeSpan.FromMinutes(1), 2, () => TimeSpan.Zero);
+            Cache cache = new Cache(TimeSpan.FromMinutes(1), 4, () => TimeSpan.Zero);
             HybridSearchQueryInfo first = GetNativePlan(new SqlQuerySpec(
                 "SELECT TOP 10 c.id FROM c ORDER BY RANK RRF(FullTextScore(c.text, @first, @second), VectorDistance(c.image, @vector))",
                 new SqlParameterCollection
@@ -748,7 +739,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     new SqlParameter("@vector", new[] { 1.0, 2.0, 3.0 }),
                     new SqlParameter("@unused", 1),
                 }));
-            Assert.IsTrue(cache.TryAdd("rid", "etag", first, Statistics(10, 100, 2, 3), TimeSpan.Zero));
+            cache.Add("rid", "etag", first, Statistics(10, 100, 2, 3), TimeSpan.Zero);
             HybridSearchQueryInfo subset = GetNativePlan(new SqlQuerySpec(
                 "SELECT TOP 20 c.title FROM c ORDER BY RANK RRF(FullTextScore(c.text, @term), VectorDistance(c.image, @vector))",
                 new SqlParameterCollection
@@ -828,39 +819,96 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             return new GlobalFullTextSearchStatistics(documents, new[] { new FullTextStatistics(words, hits) });
         }
 
+        private static int StoredCount(Cache cache)
+        {
+            FieldInfo field = typeof(Cache).GetField("counts", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(field);
+            return ((ICollection)field.GetValue(cache)).Count;
+        }
+
+        private readonly struct SettingsTestCase
+        {
+            public SettingsTestCase(string name, long maxAgeTicks, int maxEntries)
+            {
+                this.Name = name;
+                this.MaxAgeTicks = maxAgeTicks;
+                this.MaxEntries = maxEntries;
+            }
+
+            public string Name { get; }
+
+            public long MaxAgeTicks { get; }
+
+            public int MaxEntries { get; }
+
+            public override string ToString() => $"{this.Name}: MaxAgeTicks={this.MaxAgeTicks}, MaxEntries={this.MaxEntries}";
+        }
+
+        private readonly struct ContainerIdentityTestCase
+        {
+            public ContainerIdentityTestCase(string name, string resourceId, string etag, long documentCount)
+            {
+                this.Name = name;
+                this.ResourceId = resourceId;
+                this.ETag = etag;
+                this.DocumentCount = documentCount;
+            }
+
+            public string Name { get; }
+
+            public string ResourceId { get; }
+
+            public string ETag { get; }
+
+            public long DocumentCount { get; }
+
+            public override string ToString() =>
+                $"{this.Name}: RID={this.ResourceId ?? "<null>"}, ETag={this.ETag ?? "<null>"}, DocumentCount={this.DocumentCount}";
+        }
+
+        private readonly struct MetadataTestCase
+        {
+            public MetadataTestCase(string name, string metadata)
+            {
+                this.Name = name;
+                this.Metadata = metadata;
+            }
+
+            public string Name { get; }
+
+            public string Metadata { get; }
+
+            public override string ToString() => $"{this.Name}: Metadata={this.Metadata ?? "<absent>"}";
+        }
+
+        private readonly struct StatisticsShapeTestCase
+        {
+            public StatisticsShapeTestCase(string name, HybridSearchQueryInfo plan, GlobalFullTextSearchStatistics statistics)
+            {
+                this.Name = name;
+                this.Plan = plan;
+                this.Statistics = statistics;
+            }
+
+            public string Name { get; }
+
+            public HybridSearchQueryInfo Plan { get; }
+
+            public GlobalFullTextSearchStatistics Statistics { get; }
+
+            public override string ToString() =>
+                $"{this.Name}: PlanTermCounts=[{string.Join(",", this.Plan.FullTextSearchTerms.Select(path => path.Terms.Count))}], " +
+                $"DocumentCount={this.Statistics.DocumentCount}, Statistics=[" +
+                string.Join(";", this.Statistics.FullTextStatistics.Select(path => path == null
+                    ? "<null>"
+                    : $"Words={path.TotalWordCount}, Hits=[{string.Join(",", path.HitCounts.ToArray())}]")) + "]";
+        }
+
         private sealed class TestClock
         {
             public TimeSpan Now { get; set; }
 
             public TimeSpan Read() => this.Now;
-        }
-
-        private sealed class CallbackStatisticsList : IReadOnlyList<FullTextStatistics>
-        {
-            private readonly Action beforeRead;
-
-            public CallbackStatisticsList(Action beforeRead)
-            {
-                this.beforeRead = beforeRead;
-            }
-
-            public int Count => 1;
-
-            public FullTextStatistics this[int index]
-            {
-                get
-                {
-                    this.beforeRead();
-                    return new FullTextStatistics(100, new long[] { 1 });
-                }
-            }
-
-            public IEnumerator<FullTextStatistics> GetEnumerator()
-            {
-                yield return this[0];
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
         }
     }
 }

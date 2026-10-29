@@ -34,6 +34,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private readonly static QueryState Continuation = new QueryState(CosmosString.Create("HybridSearchInProgress"));
 
+        private readonly string containerResourceId;
+
+        private readonly string containerETag;
+
+        private readonly HybridSearchStatisticsCache statisticsCache;
+
         private readonly HybridSearchQueryInfo hybridSearchQueryInfo;
 
         private readonly int pageSize;
@@ -65,6 +71,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         }
 
         private HybridSearchCrossPartitionQueryPipelineStage(
+            string containerResourceId,
+            string containerETag,
+            HybridSearchStatisticsCache statisticsCache,
             HybridSearchQueryInfo hybridSearchQueryInfo,
             HybridSearchComponentPipelineFactory pipelineFactory,
             int pageSize,
@@ -80,6 +89,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             this.state = state;
             this.globalStatisticsPipeline = globalStatisticsPipeline;
             this.queryPipelineStages = queryPipelineStages;
+            this.containerResourceId = containerResourceId;
+            this.containerETag = containerETag;
+            this.statisticsCache = statisticsCache;
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
@@ -93,7 +105,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             int maxItemCount,
             bool isContinuationExpected,
             int maxConcurrency,
-            Cosmos.FullTextScoreScope fullTextScoreScope)
+            Cosmos.FullTextScoreScope fullTextScoreScope,
+            HybridSearchStatisticsCache statisticsCache)
         {
             TryCatch<IQueryPipelineStage> ComponentPipelineFactory(QueryInfo rewrittenQueryInfo)
             {
@@ -171,8 +184,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     Math.Min(MaximumPageSize, maxItemCount) :
                     MaximumPageSize;
 
+            statisticsCache = fullTextScoreScope == Cosmos.FullTextScoreScope.Global && HybridSearchStatisticsCache.IsQuerySupported(queryInfo) ? statisticsCache : null;
+
             return TryCatch<IQueryPipelineStage>.FromResult(
                 new HybridSearchCrossPartitionQueryPipelineStage(
+                    containerQueryProperties.ResourceId,
+                    containerQueryProperties.ETag,
+                    statisticsCache,
                     queryInfo,
                     ComponentPipelineFactory,
                     pageSize,

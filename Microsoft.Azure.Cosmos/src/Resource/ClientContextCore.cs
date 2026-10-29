@@ -530,7 +530,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (disposing)
                 {
-                    this.hybridSearchStatisticsCache?.Dispose();
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();
                     this.inferenceService?.Dispose();

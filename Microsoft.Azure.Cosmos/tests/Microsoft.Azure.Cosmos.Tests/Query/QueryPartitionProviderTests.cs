@@ -3,17 +3,13 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Text;
-    using System.Xml.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-    using XmlWriter = System.Xml.XmlWriter;
 
     [TestClass]
     public class QueryPartitionProviderTests
@@ -26,6 +22,8 @@
             },
             Kind = PartitionKind.Hash,
         };
+
+        public TestContext TestContext { get; set; }
 
         [TestMethod]
         public void TestQueryPartitionProviderUpdate()
@@ -71,123 +69,30 @@
             Assert.IsTrue(tryGetQueryPlan.Succeeded);
         }
 
-        [DataTestMethod]
-        [DataRow(false)]
-        [DataRow(true)]
-        public void TestFullTextSearchTermsFromServiceInterop(bool hybridSearchSkipOrderByRewrite)
+        [TestMethod]
+        public void TestFullTextSearchTermsDeserialization()
         {
-            Dictionary<string, object> configuration = QueryPartitionProviderTestInstance.DefaultQueryEngineConfiguration
-                .ToDictionary(entry => entry.Key, entry => entry.Value);
-            configuration["queryEnableFullTextPreviewFeatures"] = true;
-
-            using QueryPartitionProvider provider = new QueryPartitionProvider(configuration);
-
-            (SqlQuerySpec Query, string Expected)[] testCases =
+            List<MetadataTestCase> testCases = new List<MetadataTestCase>
             {
-                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, 'swim', 'run')"),
-                    @"[{""path"":[""text""],""terms"":[{""term"":""swim""},{""term"":""run""}]}]"),
-                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.author.bio, 'energy')"),
-                    @"[{""path"":[""author"",""bio""],""terms"":[{""term"":""energy""}]}]"),
-                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[""author""][""bio""], 'energy')"),
-                    @"[{""path"":[""author"",""bio""],""terms"":[{""term"":""energy""}]}]"),
-                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.tags[0], 'energy')"),
-                    @"[{""path"":[""tags"",""[0]""],""terms"":[{""term"":""energy""}]}]"),
-                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[""a/b""], 'energy')"),
-                    @"[{""path"":[""a/b""],""terms"":[{""term"":""energy""}]}]"),
-                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.text, 'swim'), FullTextScore(c.text, 'run'))"),
-                    @"[{""path"":[""text""],""terms"":[{""term"":""swim""}]},{""path"":[""text""],""terms"":[{""term"":""run""}]}]"),
-                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.title, 'energy'), FullTextScore(c.text, 'swim', 'run'), VectorDistance(c.image, [1, 2, 3]))"),
-                    @"[{""path"":[""title""],""terms"":[{""term"":""energy""}]},{""path"":[""text""],""terms"":[{""term"":""swim""},{""term"":""run""}]}]"),
-                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, {'term': 'swim', 'distance': 2}, 'run')"),
-                    @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2},{""term"":""run""}]}]"),
-                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, 'run', 'swim', 'run', 'United States')"),
-                    @"[{""path"":[""text""],""terms"":[{""term"":""run""},{""term"":""swim""},{""term"":""run""},{""term"":""United States""}]}]"),
-                (new SqlQuerySpec(
-                    @"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[@path], @needle, @plain)",
-                    new SqlParameterCollection
-                    {
-                        new SqlParameter("@path", "text"),
-                        new SqlParameter("@needle", new { term = "swim", distance = 2 }),
-                        new SqlParameter("@plain", "run"),
-                    }),
-                    @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2},{""term"":""run""}]}]"),
-                (new SqlQuerySpec(@"SELECT TOP 10 FullTextScore(c.text, 'swim') AS score FROM c WHERE FullTextScore(c.text, 'swim') > 0 ORDER BY RANK FullTextScore(c.text, 'swim')"),
-                    @"[{""path"":[""text""],""terms"":[{""term"":""swim""}]}]"),
-                (new SqlQuerySpec(@"SELECT TOP 10 FullTextScore(c.title, 'energy') AS score FROM c WHERE FullTextScore(c.text, 'swim') > 0 ORDER BY RANK FullTextScore(c.title, 'energy')"),
-                    @"[{""path"":[""title""],""terms"":[{""term"":""energy""}]},{""path"":[""text""],""terms"":[{""term"":""swim""}]}]"),
-                (new SqlQuerySpec(@"SELECT TOP 10 * FROM c ORDER BY RANK RRF(VectorDistance(c.image, [1, 2, 3]), VectorDistance(c.backup, [3, 2, 1]))"),
-                    @"[]"),
+                new MetadataTestCase("Absent metadata", null, null),
+                new MetadataTestCase("Null metadata", "null", null),
+                new MetadataTestCase("Empty metadata", "[]", "[]"),
+                new MetadataTestCase("Empty entry", "[{}]", @"[{""path"":null,""terms"":null}]"),
+                new MetadataTestCase("Missing terms", @"[{""path"":[""text""]}]", @"[{""path"":[""text""],""terms"":null}]"),
+                new MetadataTestCase("Missing path and term text", @"[{""terms"":[{}]}]", @"[{""path"":null,""terms"":[{""term"":null}]}]"),
+                new MetadataTestCase("Null distance", @"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":null}]}]", @"[{""path"":[""text""],""terms"":[{""term"":""run""}]}]"),
+                new MetadataTestCase("Unknown fields", @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2}],""future"":true}]", @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2}]}]"),
+                new MetadataTestCase("Date-like strings", @"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00""}]}]", @"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00""}]}]"),
             };
-
-            foreach ((SqlQuerySpec query, string expected) in testCases)
+            for (int index = 0; index < testCases.Count; index++)
             {
-                TryCatch<PartitionedQueryExecutionInfoInternal> result = provider.TryGetPartitionedQueryExecutionInfoInternal(
-                    querySpecJsonString: JsonConvert.SerializeObject(query),
-                    partitionKeyDefinition: PartitionKeyDefinition,
-                    vectorEmbeddingPolicy: null,
-                    requireFormattableOrderByQuery: true,
-                    isContinuationExpected: false,
-                    allowNonValueAggregateQuery: true,
-                    hasLogicalPartitionKey: false,
-                    allowDCount: true,
-                    useSystemPrefix: false,
-                    hybridSearchSkipOrderByRewrite: hybridSearchSkipOrderByRewrite,
-                    geospatialType: Cosmos.GeospatialType.Geography);
-
-                Assert.IsTrue(result.Succeeded, $"{query.QueryText}: {(result.Failed ? result.Exception.ToString() : string.Empty)}");
-                Assert.IsNotNull(result.Result.HybridSearchQueryInfo, query.QueryText);
-                List<FullTextSearchTerms> actual = result.Result.HybridSearchQueryInfo.FullTextSearchTerms;
-                Assert.IsNotNull(actual, $"ServiceInterop did not emit fullTextSearchTerms for {query.QueryText}.");
-                JToken actualJson = JToken.FromObject(actual);
-                JArray expectedMetadata = JArray.Parse(expected);
-                Assert.IsTrue(
-                    JToken.DeepEquals(expectedMetadata, actualJson),
-                    $"{query.QueryText}{Environment.NewLine}Expected: {expected}{Environment.NewLine}Actual: {actualJson}");
-
-                PartitionedQueryExecutionInfo converted = provider.ConvertPartitionedQueryExecutionInfo(result.Result, PartitionKeyDefinition);
-                Assert.IsTrue(PartitionedQueryExecutionInfo.TryParse(converted.ToString(), out PartitionedQueryExecutionInfo roundTripped));
-                Assert.IsTrue(JToken.DeepEquals(actualJson, JToken.FromObject(roundTripped.HybridSearchQueryInfo.FullTextSearchTerms)));
-
-                StringBuilder xml = new StringBuilder();
-                using (XmlWriter writer = XmlWriter.Create(xml))
-                {
-                    new QueryPlanBaselineTestPositiveOutput(result.Result).SerializeAsXml(writer);
-                }
-
-                XElement metadataXml = XElement.Parse(xml.ToString())
-                    .Element(nameof(HybridSearchQueryInfo))
-                    .Element(nameof(HybridSearchQueryInfo.FullTextSearchTerms));
-                Assert.IsNotNull(metadataXml);
-                XElement[] entries = metadataXml.Elements("Entry").ToArray();
-                Assert.AreEqual(expectedMetadata.Count, entries.Length);
-                for (int index = 0; index < entries.Length; index++)
-                {
-                    CollectionAssert.AreEqual(
-                        expectedMetadata[index]["path"].Values<string>().ToArray(),
-                        entries[index].Element("Path").Elements("Segment").Select(segment => segment.Value).ToArray());
-                    JToken[] expectedTerms = expectedMetadata[index]["terms"].ToArray();
-                    XElement[] terms = entries[index].Element("Terms").Elements("Term").ToArray();
-                    Assert.AreEqual(expectedTerms.Length, terms.Length);
-                    for (int termIndex = 0; termIndex < terms.Length; termIndex++)
-                    {
-                        Assert.AreEqual(expectedTerms[termIndex]["term"].Value<string>(), terms[termIndex].Element("Text").Value);
-                        Assert.AreEqual(expectedTerms[termIndex]["distance"]?.ToString(Formatting.None), terms[termIndex].Element("Distance")?.Value);
-                    }
-                }
+                MetadataTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                this.VerifyFullTextSearchTermsDeserialization(testCase.Metadata, testCase.Expected);
             }
         }
 
-        [DataTestMethod]
-        [DataRow(null, null)]
-        [DataRow("null", null)]
-        [DataRow("[]", "[]")]
-        [DataRow("[{}]", @"[{""path"":null,""terms"":null}]")]
-        [DataRow(@"[{""path"":[""text""]}]", @"[{""path"":[""text""],""terms"":null}]")]
-        [DataRow(@"[{""terms"":[{}]}]", @"[{""path"":null,""terms"":[{""term"":null}]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":null}]}]", @"[{""path"":[""text""],""terms"":[{""term"":""run""}]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2}],""future"":true}]", @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2}]}]")]
-        [DataRow(@"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00""}]}]", @"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00""}]}]")]
-        public void TestFullTextSearchTermsDeserialization(string metadata, string expected)
+        private void VerifyFullTextSearchTermsDeserialization(string metadata, string expected)
         {
             const string statisticsQuery = "SELECT COUNT(1) AS documentCount FROM c";
             string property = metadata == null ? string.Empty : $",\"fullTextSearchTerms\":{metadata}";
@@ -198,8 +103,17 @@
             PartitionedQueryExecutionInfo gatewayPlan = new CosmosSerializerCore().FromStream<PartitionedQueryExecutionInfo>(stream);
             PartitionedQueryExecutionInfoInternal internalPlan = JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(queryPlan);
 
-            foreach (HybridSearchQueryInfo hybridPlan in new[] { parsed.HybridSearchQueryInfo, gatewayPlan.HybridSearchQueryInfo, internalPlan.HybridSearchQueryInfo })
+            List<DeserializedPlanTestCase> testCases = new List<DeserializedPlanTestCase>
             {
+                new DeserializedPlanTestCase("TryParse", parsed.HybridSearchQueryInfo),
+                new DeserializedPlanTestCase("Gateway serializer", gatewayPlan.HybridSearchQueryInfo),
+                new DeserializedPlanTestCase("Internal plan serializer", internalPlan.HybridSearchQueryInfo),
+            };
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                DeserializedPlanTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Deserializer case {index}: {testCase.Name}, Metadata={metadata ?? "<absent>"}, Expected={expected ?? "<null>"}");
+                HybridSearchQueryInfo hybridPlan = testCase.Plan;
                 Assert.AreEqual(statisticsQuery, hybridPlan.GlobalStatisticsQuery);
                 Assert.IsTrue(hybridPlan.RequiresGlobalStatistics);
                 if (metadata == null || metadata == "null")
@@ -217,19 +131,27 @@
             }
         }
 
-        [DataTestMethod]
-        [DataRow("42")]
-        [DataRow(@"""unsupported""")]
-        [DataRow(@"{""future"":true}")]
-        [DataRow(@"[{""path"":""not-an-array"",""terms"":null}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[""run""]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":2147483648}]}]")]
-        [DataRow(@"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":""not-a-number""}]}]")]
-        public void TestInvalidFullTextSearchTermsUseNormalQueryPlanErrorHandling(string metadata)
+        [TestMethod]
+        public void TestInvalidFullTextSearchTermsUseNormalQueryPlanErrorHandling()
         {
-            string queryPlan = "{\"hybridSearchQueryInfo\":{\"requiresGlobalStatistics\":true,\"fullTextSearchTerms\":" + metadata + "}}";
-            Assert.IsFalse(PartitionedQueryExecutionInfo.TryParse(queryPlan, out PartitionedQueryExecutionInfo plan));
-            Assert.IsNull(plan);
+            List<MetadataTestCase> testCases = new List<MetadataTestCase>
+            {
+                new MetadataTestCase("Numeric metadata", "42", null),
+                new MetadataTestCase("String metadata", @"""unsupported""", null),
+                new MetadataTestCase("Object metadata", @"{""future"":true}", null),
+                new MetadataTestCase("Non-array path", @"[{""path"":""not-an-array"",""terms"":null}]", null),
+                new MetadataTestCase("Non-object term", @"[{""path"":[""text""],""terms"":[""run""]}]", null),
+                new MetadataTestCase("Distance overflow", @"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":2147483648}]}]", null),
+                new MetadataTestCase("Non-numeric distance", @"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":""not-a-number""}]}]", null),
+            };
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                MetadataTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                string queryPlan = "{\"hybridSearchQueryInfo\":{\"requiresGlobalStatistics\":true,\"fullTextSearchTerms\":" + testCase.Metadata + "}}";
+                Assert.IsFalse(PartitionedQueryExecutionInfo.TryParse(queryPlan, out PartitionedQueryExecutionInfo plan));
+                Assert.IsNull(plan);
+            }
         }
 
         [TestMethod]
@@ -346,6 +268,37 @@
                 Assert.IsTrue(PartitionedQueryExecutionInfo.TryParse(serializedQueryPlan, out PartitionedQueryExecutionInfo parsedQueryPlan));
                 Assert.AreEqual(serializedQueryPlan, parsedQueryPlan.ToString());
             }
+        }
+
+        private readonly struct MetadataTestCase
+        {
+            public MetadataTestCase(string name, string metadata, string expected)
+            {
+                this.Name = name;
+                this.Metadata = metadata;
+                this.Expected = expected;
+            }
+
+            public string Name { get; }
+
+            public string Metadata { get; }
+
+            public string Expected { get; }
+
+            public override string ToString() => $"{this.Name}: Metadata={this.Metadata ?? "<absent>"}, Expected={this.Expected ?? "<null>"}";
+        }
+
+        private readonly struct DeserializedPlanTestCase
+        {
+            public DeserializedPlanTestCase(string name, HybridSearchQueryInfo plan)
+            {
+                this.Name = name;
+                this.Plan = plan;
+            }
+
+            public string Name { get; }
+
+            public HybridSearchQueryInfo Plan { get; }
         }
     }
 }

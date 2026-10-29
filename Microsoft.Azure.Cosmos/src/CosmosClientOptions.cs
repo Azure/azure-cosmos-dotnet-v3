@@ -635,27 +635,20 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the maximum age of cached full-text statistics that hybrid search queries using this client can reuse.
         /// </summary>
         /// <value>
-        /// The default is <see langword="null"/>. A null or zero value disables statistics-cache lookup and population.
-        /// A positive value permits reuse within the specified age.
+        /// The default is <see langword="null"/>. A null or zero value disables the statistics cache.
         /// </value>
         /// <remarks>
         /// <para>
-        /// The age is measured from the start of statistics collection, not from the last cache access.
-        /// The limit applies independently to each document, path word, and term hit count.
-        /// Reused counts may come from different statistics collections.
-        /// This client-wide option applies only to <see cref="FullTextScoreScope.Global"/>.
-        /// Queries using <see cref="FullTextScoreScope.Local"/> continue collecting statistics without using or populating this cache.
-        /// It does not cache documents or query results and has no per-query override.
-        /// Set it before creating the client; subsequent changes to the options do not affect the existing client.
+        /// Age is measured from the start of statistics collection and applies independently to each cached document,
+        /// word, and term-hit count. The cache applies only to
+        /// <see cref="FullTextScoreScope.Global"/>. Changes after the client is created have no effect.
         /// </para>
         /// <para>
-        /// Reusing statistics can affect FullTextScore values, ranking, and score-based predicates and projections.
-        /// Opting in permits stale statistics regardless of the consistency level, read consistency strategy, or session token.
-        /// Actual service requests retain their normal consistency handling; cached statistics are not guaranteed to
-        /// reflect the latest writes or the supplied session token.
+        /// Reused statistics may not reflect recent writes, regardless of the consistency level or session token,
+        /// which can affect FullTextScore values and ranking.
         /// </para>
         /// <para>
-        /// This option currently stores and validates the age allowance. Statistics-cache execution is not yet enabled.
+        /// Statistics-cache execution is not yet enabled; this option currently only validates and stores the value.
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
@@ -674,8 +667,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets the maximum number of full-text term hit counts retained across all paths and containers per client.
+        /// Gets or sets the target maximum number of full-text scalar statistics retained across all kinds and containers per client.
         /// </summary>
+        /// <remarks>Concurrent publications can temporarily exceed this target; eviction is best effort.</remarks>
         internal int FullTextStatisticsCacheMaxEntries
         {
             get => this.fullTextStatisticsCacheMaxEntries;
