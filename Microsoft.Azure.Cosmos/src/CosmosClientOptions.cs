@@ -652,9 +652,6 @@ namespace Microsoft.Azure.Cosmos
         /// Reused statistics may not reflect recent writes, regardless of the consistency level or session token,
         /// which can affect FullTextScore values and ranking.
         /// </para>
-        /// <para>
-        /// Statistics-cache execution is not yet enabled; this option currently only validates and stores the value.
-        /// </para>
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
         public TimeSpan? FullTextStatisticsCacheMaxAge
