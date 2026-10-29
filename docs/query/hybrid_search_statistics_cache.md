@@ -1,8 +1,8 @@
 # Hybrid search full-text statistics cache
 
-**Status:** The query-plan metadata, client option, cache, and pipeline wiring
-are implemented. Lookup, admission, and skipping the statistics request
-(phase 7) are not yet enabled; queries still collect statistics normally.
+**Status:** The query-plan metadata, client option, cache, pipeline wiring, and
+cache lookup/admission are implemented. Global queries skip the statistics
+request when every required count is cached and fresh.
 
 ## 1. Summary
 
@@ -156,13 +156,15 @@ query finishes.
 Name-cache-stale retries rebuild the stage with refreshed RID and ETag, so a
 retried query never uses the previous container's counts.
 
-## 6. Pipeline behavior (phase 7)
+## 6. Pipeline behavior
 
 The existing `Uninitialized` state resolves statistics:
 
-- **Hit:** build component pipelines from the cached statistics and run them
-  immediately. Do not create the statistics pipeline or emit a statistics
-  page; the hit costs zero statistics RU.
+- **Hit:** build component pipelines from the cached statistics and run them in
+  the same `MoveNextAsync` call. The statistics pipeline is still constructed,
+  since construction does no I/O and keeps construction-error timing unchanged,
+  but it is never moved, so no statistics request is issued and no statistics
+  page is emitted. The hit costs zero statistics RU.
 - **Miss:** capture `GetElapsedTime()` before any statistics request, run the
   existing statistics pipeline, pass the result to `Add`, and continue as today.
   The query always uses its own fetched result, whether or not it was cached.
@@ -172,8 +174,10 @@ sharing. Failures and cancellation follow the existing `TryCatch` behavior, and
 nothing is cached from a failed or cancelled collection. Selected statistics
 are pinned for the iterator.
 
-Diagnostics should add a child trace with a hit, miss, or bypass decision, a
-reason, and slot counts. Do not log paths, terms, keys, or counts.
+When the cache is enabled for the query, the stage records a
+`Hybrid Search Statistics Cache` trace datum of `Hit` or `Miss` with
+`AddOrUpdateDatum`, which tolerates retries reusing a trace. Disabled and Local
+queries add nothing. No paths, terms, keys, or counts are logged.
 
 ## 7. Testing
 
@@ -184,8 +188,10 @@ reason, and slot counts. Do not log paths, terms, keys, or counts.
   `QueryPartitionProviderTests` covers deserialization and malformed metadata.
 - `ClientContextCoreTests`, `FactoryTests`, and `CosmosClientOptionsUnitTests`
   cover ownership, wiring, ETag propagation, and option validation.
-- Phase 7 adds behavior tests showing a warm cache skips the statistics request,
-  plus emulator tests.
+- `NonStreamingOrderByQueryTests` verifies that a warm Global cache issues no
+  statistics requests, returns identical results, and omits the statistics
+  RU, while Local queries after a Global warm-up still collect statistics.
+- Remaining: broader pipeline regression coverage and emulator tests.
 
 Feature tests use lightweight case types and explicit loops, not
 `DataTestMethod`/`DataRow`. Tests read private state through reflection rather

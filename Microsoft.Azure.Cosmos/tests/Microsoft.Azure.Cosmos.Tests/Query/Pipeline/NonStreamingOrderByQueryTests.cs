@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
@@ -74,6 +75,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         private const string HitCounts = "hitCounts";
 
         private static readonly int[] PageSizes = new[] { 1, 10, 100, DocumentCount };
+
+        public TestContext TestContext { get; set; }
 
         [TestMethod]
         public async Task InMemoryContainerParityTests()
@@ -266,6 +269,115 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             // Verify that default QueryRequestOptions.FullTextScoreScope is Global
             QueryRequestOptions options = new QueryRequestOptions();
             Assert.AreEqual(FullTextScoreScope.Global, options.FullTextScoreScope);
+        }
+
+        [TestMethod]
+        public async Task HybridSearchStatisticsCacheSkipsStatisticsRequestsOnlyForGlobalHits()
+        {
+            List<StatisticsCacheTestCase> testCases = new List<StatisticsCacheTestCase>
+            {
+                new StatisticsCacheTestCase(FullTextScoreScope.Global, expectHit: true),
+                new StatisticsCacheTestCase(FullTextScoreScope.Local, expectHit: false),
+            };
+            
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                StatisticsCacheTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                await VerifyStatisticsCacheAsync(testCase);
+            }
+        }
+
+        private static async Task VerifyStatisticsCacheAsync(StatisticsCacheTestCase testCase)
+        {
+            IReadOnlyList<FeedRangeEpk> ranges = new List<FeedRangeEpk>
+            {
+                new FeedRangeEpk(new Documents.Routing.Range<string>(string.Empty, "AA", true, false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("BB", "FF", true, false)),
+            };
+            HybridSearchStatisticsCache cache = new HybridSearchStatisticsCache(TimeSpan.FromMinutes(1), 256);
+
+            // A Global query warms the cache; the second query uses the case's scope.
+            (IReadOnlyList<CosmosElement> coldResults, double coldCharge, MockDocumentContainer coldContainer) =
+                await RunCachedHybridSearchAsync(ranges, cache, FullTextScoreScope.Global);
+            Assert.AreEqual(ranges.Count, coldContainer.StatisticsQueryRanges.Count, testCase.ToString());
+
+            (IReadOnlyList<CosmosElement> results, double charge, MockDocumentContainer container) =
+                await RunCachedHybridSearchAsync(ranges, cache, testCase.Scope);
+            Assert.AreEqual(testCase.ExpectHit ? 0 : ranges.Count, container.StatisticsQueryRanges.Count, testCase.ToString());
+            CollectionAssert.AreEqual(coldResults.ToList(), results.ToList(), testCase.ToString());
+            Assert.AreEqual(container.TotalRequestCharge, charge, testCase.ToString());
+            Assert.AreEqual(
+                testCase.ExpectHit ? coldCharge - (ranges.Count * GlobalStatisticsQueryCharge) : coldCharge,
+                charge,
+                testCase.ToString());
+        }
+
+        private static async Task<(IReadOnlyList<CosmosElement>, double, MockDocumentContainer)> RunCachedHybridSearchAsync(
+            IReadOnlyList<FeedRangeEpk> ranges,
+            HybridSearchStatisticsCache cache,
+            FullTextScoreScope fullTextScoreScope)
+        {
+            MockDocumentContainer container = MockDocumentContainer.CreateHybridSearchContainer(
+                ranges,
+                new[] { PartitionedFeedMode.NonStreamingReversed, PartitionedFeedMode.NonStreamingReversed },
+                leafPageCount: 2,
+                backendPageSize: 10,
+                returnEmptyGlobalStatistics: false,
+                skipOrderByRewrite: false,
+                calculateScores: CalculateDefaultScores);
+
+            // The metadata matches the mock statistics: two terms on the first path and one on the second.
+            HybridSearchQueryInfo hybridSearchQueryInfo = Create2ItemHybridSearchQueryInfo(requiresGlobalStatistics: true, skip: null, take: 100, weights: null);
+            hybridSearchQueryInfo.FullTextSearchTerms = new List<FullTextSearchTerms>
+            {
+                new FullTextSearchTerms
+                {
+                    Path = new List<string> { "text" },
+                    Terms = new List<FullTextSearchTerm> { new FullTextSearchTerm { Term = "swim" }, new FullTextSearchTerm { Term = "run" } },
+                },
+                new FullTextSearchTerms
+                {
+                    Path = new List<string> { "title" },
+                    Terms = new List<FullTextSearchTerm> { new FullTextSearchTerm { Term = "energy" } },
+                },
+            };
+
+            TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
+                container,
+                Create2ItemSqlQuerySpec(),
+                ranges,
+                partitionKey: null,
+                queryInfo: null,
+                hybridSearchQueryInfo: hybridSearchQueryInfo,
+                maxItemCount: 1000,
+                new ContainerQueryProperties("rid", "etag", null, null, null, Cosmos.GeospatialType.Geography, false),
+                ranges,
+                isContinuationExpected: true,
+                maxConcurrency: MaxConcurrency,
+                fullTextScoreScope: fullTextScoreScope,
+                requestContinuationToken: null,
+                statisticsCache: cache);
+            Assert.IsTrue(tryCreatePipeline.Succeeded);
+
+            (IReadOnlyList<CosmosElement> results, double charge) = await RunPipelineStage(tryCreatePipeline.Result, 1000);
+            return (results, charge, container);
+        }
+
+        private readonly struct StatisticsCacheTestCase
+        {
+            public StatisticsCacheTestCase(FullTextScoreScope scope, bool expectHit)
+            {
+                this.Scope = scope;
+                this.ExpectHit = expectHit;
+            }
+
+            public FullTextScoreScope Scope { get; }
+
+            public bool ExpectHit { get; }
+
+            public override string ToString() => $"Scope={this.Scope}, ExpectHit={this.ExpectHit}";
         }
 
         [TestMethod]
