@@ -329,6 +329,7 @@
                 string max = min + "-FF";
                 return Task.FromResult(new ContainerQueryProperties(
                     "test",
+                    null,
                     new List<Documents.Routing.Range<string>>
                     {
                         new Documents.Routing.Range<string>(

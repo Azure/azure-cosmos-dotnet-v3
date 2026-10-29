@@ -1073,7 +1073,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 isContinuationExpected: true,
                 maxConcurrency: MaxConcurrency,
                 fullTextScoreScope: fullTextScoreScope,
-                requestContinuationToken: null);
+                requestContinuationToken: null,
+                statisticsCache: null);
 
             Assert.IsTrue(tryCreatePipeline.Succeeded);
             return RunPipelineStage(tryCreatePipeline.Result, pageSize);

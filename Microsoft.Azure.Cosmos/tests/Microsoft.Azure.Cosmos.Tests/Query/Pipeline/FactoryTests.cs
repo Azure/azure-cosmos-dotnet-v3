@@ -5,9 +5,11 @@
 namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -17,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -29,6 +32,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     [TestClass]
     public class FactoryTests
     {
+        public TestContext TestContext { get; set; }
+
         [TestMethod]
         public void TestCreate()
         {
@@ -47,14 +52,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 isContinuationExpected: true,
                 maxConcurrency: 10,
                 fullTextScoreScope: FullTextScoreScope.Global,
-                requestContinuationToken: default); ;
+                requestContinuationToken: default,
+                statisticsCache: null); ;
             Assert.IsTrue(monadicCreatePipeline.Succeeded);
         }
 
-        [DataTestMethod]
-        [DataRow(FullTextScoreScope.Global)]
-        [DataRow(FullTextScoreScope.Local)]
-        public async Task ExecutionFactoryUsesFullTextScoreScopeForStatistics(FullTextScoreScope scope)
+        [TestMethod]
+        public async Task ExecutionFactoryUsesFullTextScoreScopeForStatistics()
+        {
+            List<ScopeTestCase> testCases = new List<ScopeTestCase>
+            {
+                new ScopeTestCase(FullTextScoreScope.Global),
+                new ScopeTestCase(FullTextScoreScope.Local),
+            };
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                ScopeTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                await VerifyStatisticsRangesAsync(testCase.Scope);
+            }
+        }
+
+        private static async Task VerifyStatisticsRangesAsync(FullTextScoreScope scope)
         {
             const string statisticsQuery = "SELECT COUNT(1) AS documentCount FROM c";
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition
@@ -84,11 +103,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
             };
             Mock<CosmosQueryClient> queryClient = new Mock<CosmosQueryClient>(MockBehavior.Strict);
+            queryClient.SetupGet(client => client.HybridSearchStatisticsCache).Returns((HybridSearchStatisticsCache)null);
             queryClient.Setup(client => client.GetClientDisableOptimisticDirectExecutionAsync()).ReturnsAsync(false);
             queryClient.Setup(client => client.GetCachedContainerQueryPropertiesAsync(
                 It.IsAny<string>(), It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ContainerQueryProperties(
-                    "rid", null, partitionKeyDefinition, null, Cosmos.GeospatialType.Geography, useLengthAwareRangeComparer: false));
+                    "rid", null, null, partitionKeyDefinition, null, Cosmos.GeospatialType.Geography, useLengthAwareRangeComparer: false));
             queryClient.SetupSequence(client => client.GetTargetPartitionKeyRangesAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<Range<string>>>(), false, It.IsAny<ITrace>()))
                 .ReturnsAsync(targetRanges)
@@ -148,9 +168,216 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 expected.Select(range => range.ToRange()).ToArray(),
                 requestedRanges.Select(range => range.Range).ToArray());
             Assert.AreEqual((double)expected.Count, pipeline.Current.Result.RequestCharge);
+            queryClient.VerifyGet(client => client.HybridSearchStatisticsCache, Times.Once);
             queryClient.Verify(client => client.GetTargetPartitionKeyRangesAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<Range<string>>>(), false, It.IsAny<ITrace>()),
                 Times.Exactly(2));
+        }
+
+        [TestMethod]
+        public async Task QueryClientCarriesETagFromTheExistingMetadataRead()
+        {
+            List<ContainerMetadataTestCase> testCases = new List<ContainerMetadataTestCase>
+            {
+                new ContainerMetadataTestCase("Missing ETag", null),
+                new ContainerMetadataTestCase("Present ETag", "etag"),
+            };
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                ContainerMetadataTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                await VerifyContainerMetadataAsync(testCase.ETag);
+            }
+        }
+
+        private static async Task VerifyContainerMetadataAsync(string etag)
+        {
+            ContainerProperties properties = ContainerProperties.CreateWithResourceId("rid");
+            properties.Id = "container";
+            properties.PartitionKeyPath = "/pk";
+            typeof(ContainerProperties).GetProperty(nameof(ContainerProperties.ETag)).SetValue(properties, etag);
+            using MockDocumentClient documentClient = new MockDocumentClient();
+            Mock<CosmosClientContext> context = new Mock<CosmosClientContext>(MockBehavior.Strict);
+            context.SetupGet(client => client.DocumentClient).Returns(documentClient);
+            context.Setup(client => client.GetCachedContainerPropertiesAsync(
+                "dbs/db/colls/container", NoOpTrace.Singleton, CancellationToken.None)).ReturnsAsync(properties);
+
+            CosmosQueryClient queryClient = new CosmosQueryClientCore(context.Object, null);
+            ContainerQueryProperties first = await queryClient.GetCachedContainerQueryPropertiesAsync(
+                "dbs/db/colls/container", null, NoOpTrace.Singleton, CancellationToken.None);
+            Assert.AreEqual("rid", first.ResourceId);
+            Assert.AreEqual(etag, first.ETag);
+            Assert.AreSame(properties.PartitionKey, first.PartitionKeyDefinition);
+            context.Verify(client => client.GetCachedContainerPropertiesAsync(
+                "dbs/db/colls/container", NoOpTrace.Singleton, CancellationToken.None), Times.Once);
+
+            typeof(ContainerProperties).GetProperty(nameof(ContainerProperties.ETag)).SetValue(properties, "updated-etag");
+            ContainerQueryProperties second = await queryClient.GetCachedContainerQueryPropertiesAsync(
+                "dbs/db/colls/container", null, NoOpTrace.Singleton, CancellationToken.None);
+            Assert.AreEqual(etag, first.ETag);
+            Assert.AreEqual("updated-etag", second.ETag);
+            context.Verify(client => client.GetCachedContainerPropertiesAsync(
+                "dbs/db/colls/container", NoOpTrace.Singleton, CancellationToken.None), Times.Exactly(2));
+        }
+
+        [TestMethod]
+        public async Task PipelineFactoryBindsOnlyEligibleGlobalStatistics()
+        {
+            List<CacheBindingTestCase> testCases = new List<CacheBindingTestCase>
+            {
+                new CacheBindingTestCase { Name = "Global", ExpectedCache = true },
+                new CacheBindingTestCase { Name = "Global with a narrow target", NarrowTargetRange = true, ExpectedCache = true },
+                new CacheBindingTestCase { Name = "Local", Scope = FullTextScoreScope.Local },
+                new CacheBindingTestCase { Name = "Disabled", CacheEnabled = false },
+                new CacheBindingTestCase { Name = "Statistics not required", RequiresStatistics = false },
+                new CacheBindingTestCase { Name = "Missing metadata", MetadataPresent = false },
+                new CacheBindingTestCase { Name = "Incomplete metadata", MetadataComplete = false },
+                new CacheBindingTestCase { Name = "Missing RID", ResourceId = null, ExpectedCache = true },
+                new CacheBindingTestCase { Name = "Missing ETag", ETag = null, ExpectedCache = true },
+            };
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                CacheBindingTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                await VerifyCacheBindingAsync(testCase);
+            }
+        }
+
+        private static async Task VerifyCacheBindingAsync(CacheBindingTestCase testCase)
+        {
+            HybridSearchStatisticsCache cache = new HybridSearchStatisticsCache(TimeSpan.FromMinutes(1), 4);
+            HybridSearchQueryInfo plan = CreateHybridPlan();
+            plan.RequiresGlobalStatistics = testCase.RequiresStatistics;
+            if (!testCase.MetadataPresent)
+            {
+                plan.FullTextSearchTerms = null;
+            }
+            else if (!testCase.MetadataComplete)
+            {
+                plan.FullTextSearchTerms[0].Terms.Clear();
+            }
+
+            ContainerQueryProperties properties = CreateContainerProperties(testCase.ResourceId, testCase.ETag);
+            IReadOnlyList<FeedRangeEpk> targetRanges = testCase.NarrowTargetRange
+                ? new[] { new FeedRangeEpk(new Range<string>("10", "20", isMinInclusive: true, isMaxInclusive: false)) }
+                : new[] { FeedRangeEpk.FullRange };
+            Mock<IDocumentContainer> container = new Mock<IDocumentContainer>(MockBehavior.Strict);
+            TryCatch<IQueryPipelineStage> created = PipelineFactory.MonadicCreate(
+                documentContainer: container.Object,
+                sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                targetRanges: targetRanges,
+                partitionKey: null,
+                queryInfo: null,
+                hybridSearchQueryInfo: plan,
+                maxItemCount: 10,
+                containerQueryProperties: properties,
+                allRanges: new[] { FeedRangeEpk.FullRange },
+                isContinuationExpected: false,
+                maxConcurrency: 1,
+                fullTextScoreScope: testCase.Scope,
+                requestContinuationToken: null,
+                statisticsCache: testCase.CacheEnabled ? cache : null);
+            created.ThrowIfFailed();
+            await using IQueryPipelineStage pipeline = created.Result;
+            HybridSearchCrossPartitionQueryPipelineStage stage = (HybridSearchCrossPartitionQueryPipelineStage)pipeline;
+            Assert.AreSame(testCase.ExpectedCache ? cache : null, GetPrivateField<HybridSearchStatisticsCache>(stage, "statisticsCache"));
+            Assert.AreEqual(properties.ResourceId, GetPrivateField<string>(stage, "containerResourceId"));
+            Assert.AreEqual(properties.ETag, GetPrivateField<string>(stage, "containerETag"));
+            Assert.AreSame(plan, GetPrivateField<HybridSearchQueryInfo>(stage, "hybridSearchQueryInfo"));
+            Assert.AreEqual(0, StoredCount(cache));
+            container.VerifyNoOtherCalls();
+        }
+
+        private readonly struct ScopeTestCase
+        {
+            public ScopeTestCase(FullTextScoreScope scope)
+            {
+                this.Scope = scope;
+            }
+
+            public FullTextScoreScope Scope { get; }
+
+            public override string ToString() => $"Scope={this.Scope}";
+        }
+
+        private readonly struct ContainerMetadataTestCase
+        {
+            public ContainerMetadataTestCase(string name, string etag)
+            {
+                this.Name = name;
+                this.ETag = etag;
+            }
+
+            public string Name { get; }
+
+            public string ETag { get; }
+
+            public override string ToString() => $"{this.Name}: ETag={this.ETag ?? "<null>"}";
+        }
+
+        private sealed class CacheBindingTestCase
+        {
+            public string Name { get; set; }
+
+            public FullTextScoreScope Scope { get; set; } = FullTextScoreScope.Global;
+
+            public string ResourceId { get; set; } = "rid";
+
+            public string ETag { get; set; } = "etag";
+
+            public bool CacheEnabled { get; set; } = true;
+
+            public bool RequiresStatistics { get; set; } = true;
+
+            public bool MetadataPresent { get; set; } = true;
+
+            public bool MetadataComplete { get; set; } = true;
+
+            public bool NarrowTargetRange { get; set; }
+
+            public bool ExpectedCache { get; set; }
+
+            public override string ToString() =>
+                $"{this.Name}: Scope={this.Scope}, RID={this.ResourceId ?? "<null>"}, ETag={this.ETag ?? "<null>"}, " +
+                $"Enabled={this.CacheEnabled}, Required={this.RequiresStatistics}, Metadata={this.MetadataPresent}, " +
+                $"Complete={this.MetadataComplete}, NarrowRange={this.NarrowTargetRange}, ExpectedCache={this.ExpectedCache}";
+        }
+
+        private static HybridSearchQueryInfo CreateHybridPlan()
+        {
+            return new HybridSearchQueryInfo
+            {
+                RequiresGlobalStatistics = true,
+                GlobalStatisticsQuery = "SELECT COUNT(1) AS documentCount FROM c",
+                ComponentQueryInfos = new List<QueryInfo>(),
+                FullTextSearchTerms = new List<FullTextSearchTerms>
+                {
+                    new FullTextSearchTerms
+                    {
+                        Path = new List<string> { "text" },
+                        Terms = new List<FullTextSearchTerm> { new FullTextSearchTerm { Term = "run" } },
+                    },
+                },
+            };
+        }
+
+        private static ContainerQueryProperties CreateContainerProperties(string resourceId, string etag)
+        {
+            return new ContainerQueryProperties(
+                resourceId, etag, null, new PartitionKeyDefinition { Paths = new Collection<string> { "/pk" }, Kind = PartitionKind.Hash },
+                null, Cosmos.GeospatialType.Geography, useLengthAwareRangeComparer: false);
+        }
+
+        private static T GetPrivateField<T>(object instance, string name)
+        {
+            FieldInfo field = instance.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(field);
+            return (T)field.GetValue(instance);
+        }
+
+        private static int StoredCount(HybridSearchStatisticsCache cache)
+        {
+            return GetPrivateField<ICollection>(cache, "counts").Count;
         }
     }
 }

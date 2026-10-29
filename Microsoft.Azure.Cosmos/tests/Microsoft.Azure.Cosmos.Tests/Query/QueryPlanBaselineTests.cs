@@ -1548,6 +1548,14 @@
                     "SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.title, 'energy'), FullTextScore(c.text, 'swim', 'run'))",
                     "/id"),
                 Hash(
+                    "Fuzzy term distance",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, {'term': 'swim', 'distance': 2}, 'run')",
+                    "/id"),
+                Hash(
+                    "Duplicate terms and phrase",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, 'run', 'swim', 'run', 'United States')",
+                    "/id"),
+                Hash(
                     "Resolved path and term parameters",
                     new SqlQuerySpec(
                         "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[@path], @term)",

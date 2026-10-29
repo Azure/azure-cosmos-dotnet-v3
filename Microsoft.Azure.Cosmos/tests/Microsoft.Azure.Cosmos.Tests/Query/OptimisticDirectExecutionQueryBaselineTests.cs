@@ -1319,6 +1319,7 @@
         {
             return Task.FromResult(new ContainerQueryProperties(
                  "test",
+                 null,
                  new List<Range<string>>
                  {
                      new Range<string>(

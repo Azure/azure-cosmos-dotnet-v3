@@ -5,26 +5,28 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using CacheKey = Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch.HybridSearchStatisticsCacheKey;
 
-    // The caller must restrict lookup and admission to Global full-text statistics.
-    internal sealed class HybridSearchStatisticsCache : IDisposable
+    // Caches independently aged full-text statistics. The caller must restrict use to Global scoring.
+    // Each count is read and written independently; a lookup may combine counts from different collections.
+    internal sealed class HybridSearchStatisticsCache
     {
-        private readonly Dictionary<(string ResourceId, string ETag), ContainerStatistics> containerCaches =
-            new Dictionary<(string ResourceId, string ETag), ContainerStatistics>();
-        private readonly object lockObject = new object();
+        private readonly ConcurrentDictionary<CacheKey, CachedCount> counts = new ConcurrentDictionary<CacheKey, CachedCount>();
         private readonly TimeSpan maxAge;
         private readonly int maxEntries;
         private readonly Func<TimeSpan> getElapsedTime;
-        private int entryCount;
-        private bool disposed;
 
-        public HybridSearchStatisticsCache(TimeSpan maxAge, int maxEntries, Func<TimeSpan> getElapsedTime = null)
+        public HybridSearchStatisticsCache(TimeSpan maxAge, int maxEntries)
+            : this(maxAge, maxEntries, null)
+        {
+        }
+
+        public HybridSearchStatisticsCache(TimeSpan maxAge, int maxEntries, Func<TimeSpan> getElapsedTime)
         {
             if (maxAge <= TimeSpan.Zero)
             {
@@ -47,28 +49,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             this.getElapsedTime = getElapsedTime;
         }
 
-        public int Count
-        {
-            get
-            {
-                lock (this.lockObject)
-                {
-                    return this.entryCount;
-                }
-            }
-        }
-
-        public int ContainerRevisionCount
-        {
-            get
-            {
-                lock (this.lockObject)
-                {
-                    return this.containerCaches.Count;
-                }
-            }
-        }
-
         public TimeSpan GetElapsedTime() => this.getElapsedTime();
 
         public bool TryGet(
@@ -77,311 +57,154 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             HybridSearchQueryInfo hybridSearchQueryInfo,
             out GlobalFullTextSearchStatistics statistics)
         {
-            if (hybridSearchQueryInfo == null)
-            {
-                throw new ArgumentNullException(nameof(hybridSearchQueryInfo));
-            }
-
             statistics = null;
-            if (string.IsNullOrEmpty(containerResourceId) || string.IsNullOrEmpty(containerETag) ||
-                !TryCreateKeys(hybridSearchQueryInfo, out List<(CosmosObject Path, CosmosObject[] Terms)> keys))
+            if (containerResourceId == null ||
+                containerETag == null ||
+                !IsQuerySupported(hybridSearchQueryInfo))
             {
                 return false;
             }
 
-            long documentCount;
-            long[] wordCounts = new long[keys.Count];
-            long[][] hitCounts = keys.Select(key => new long[key.Terms.Length]).ToArray();
-            (string ResourceId, string ETag) containerRevision = (containerResourceId, containerETag);
-            lock (this.lockObject)
+            TimeSpan now = this.getElapsedTime();
+            if (!this.TryGetLiveCount(CacheKey.CreateTotalDocumentCount(containerResourceId, containerETag), now, out long documentCount))
             {
-                if (this.disposed || !this.containerCaches.TryGetValue(containerRevision, out ContainerStatistics containerCache))
+                return false;
+            }
+
+            List<FullTextSearchTerms> fullTextSearchTerms = hybridSearchQueryInfo.FullTextSearchTerms;
+            FullTextStatistics[] fullTextStatistics = new FullTextStatistics[fullTextSearchTerms.Count];
+            for (int pathIndex = 0; pathIndex < fullTextStatistics.Length; pathIndex++)
+            {
+                FullTextSearchTerms pathSearchTerms = fullTextSearchTerms[pathIndex];
+
+                // Counts may come from different collections; reject combinations that are numerically impossible.
+                if (!this.TryGetLiveCount(CacheKey.CreateDocumentPathWordCount(containerResourceId, containerETag, pathSearchTerms.Path), now, out long wordCount) ||
+                    (documentCount == 0 && wordCount != 0))
                 {
                     return false;
                 }
 
-                TimeSpan now = this.getElapsedTime();
-                if (!this.IsFresh(containerCache.DocumentCount.CollectionStartedAt, now))
+                long[] hitCounts = new long[pathSearchTerms.Terms.Count];
+                for (int termIndex = 0; termIndex < hitCounts.Length; termIndex++)
                 {
-                    this.RemoveExpiredEntries(now);
-                    return false;
+                    FullTextSearchTerm term = pathSearchTerms.Terms[termIndex];
+                    CacheKey hitCountKey = CacheKey.CreateDocumentPathTermHitCount(
+                        containerResourceId, containerETag, pathSearchTerms.Path, term.Term, term.Distance);
+                    if (!this.TryGetLiveCount(hitCountKey, now, out hitCounts[termIndex]) ||
+                        hitCounts[termIndex] > documentCount)
+                    {
+                        return false;
+                    }
                 }
 
-                documentCount = containerCache.DocumentCount.Value;
-                for (int pathIndex = 0; pathIndex < keys.Count; pathIndex++)
-                {
-                    if (!containerCache.Paths.TryGetValue(keys[pathIndex].Path, out FullTextPathStatisticsCache pathCache))
-                    {
-                        return false;
-                    }
-
-                    if (!this.IsFresh(pathCache.TotalWordCount.CollectionStartedAt, now))
-                    {
-                        this.RemoveExpiredEntries(now);
-                        return false;
-                    }
-
-                    wordCounts[pathIndex] = pathCache.TotalWordCount.Value;
-                    if (!IsValidWordCount(documentCount, wordCounts[pathIndex]))
-                    {
-                        return false;
-                    }
-
-                    for (int termIndex = 0; termIndex < keys[pathIndex].Terms.Length; termIndex++)
-                    {
-                        if (!pathCache.HitCounts.TryGetValue(keys[pathIndex].Terms[termIndex], out CachedCount hitCount))
-                        {
-                            return false;
-                        }
-
-                        if (!this.IsFresh(hitCount.CollectionStartedAt, now))
-                        {
-                            this.RemoveExpiredEntries(now);
-                            return false;
-                        }
-
-                        if (hitCount.Value > documentCount)
-                        {
-                            return false;
-                        }
-
-                        hitCounts[pathIndex][termIndex] = hitCount.Value;
-                    }
-                }
+                fullTextStatistics[pathIndex] = new FullTextStatistics(wordCount, hitCounts);
             }
 
-            FullTextStatistics[] fullTextStatistics = new FullTextStatistics[keys.Count];
-            for (int index = 0; index < fullTextStatistics.Length; index++)
-            {
-                fullTextStatistics[index] = new FullTextStatistics(wordCounts[index], hitCounts[index]);
-            }
-
-            statistics = new GlobalFullTextSearchStatistics(documentCount, Array.AsReadOnly(fullTextStatistics));
+            statistics = new GlobalFullTextSearchStatistics(documentCount, fullTextStatistics);
             return true;
         }
 
-        public bool TryAdd(
+        public void Add(
             string containerResourceId,
             string containerETag,
             HybridSearchQueryInfo hybridSearchQueryInfo,
             GlobalFullTextSearchStatistics statistics,
             TimeSpan collectionStartedAt)
         {
-            if (hybridSearchQueryInfo == null)
+            TimeSpan now = this.getElapsedTime();
+            if (containerResourceId == null ||
+                containerETag == null ||
+                statistics == null ||
+                !IsQuerySupported(hybridSearchQueryInfo) ||
+                !this.IsFresh(collectionStartedAt, now))
             {
-                throw new ArgumentNullException(nameof(hybridSearchQueryInfo));
+                return;
             }
 
-            if (statistics == null)
+            List<FullTextSearchTerms> fullTextSearchTerms = hybridSearchQueryInfo.FullTextSearchTerms;
+            if (statistics.FullTextStatistics.Count != fullTextSearchTerms.Count)
             {
-                throw new ArgumentNullException(nameof(statistics));
+                return;
             }
 
-            if (collectionStartedAt < TimeSpan.Zero)
+            int entryCount = 1;
+            for (int pathIndex = 0; pathIndex < fullTextSearchTerms.Count; pathIndex++)
             {
-                throw new ArgumentOutOfRangeException(nameof(collectionStartedAt));
+                FullTextStatistics pathStatistics = statistics.FullTextStatistics[pathIndex];
+                if (pathStatistics == null || pathStatistics.HitCounts.Length != fullTextSearchTerms[pathIndex].Terms.Count)
+                {
+                    return;
+                }
+
+                entryCount += 1 + pathStatistics.HitCounts.Length;
             }
 
-            if (string.IsNullOrEmpty(containerResourceId) || string.IsNullOrEmpty(containerETag) ||
-                !this.IsFresh(collectionStartedAt, this.getElapsedTime()) ||
-                !TryCreateKeys(hybridSearchQueryInfo, out List<(CosmosObject Path, CosmosObject[] Terms)> keys) ||
-                !this.TryCreateSnapshot(keys, statistics, collectionStartedAt, out ContainerStatistics snapshot))
+            // A response that cannot fit would only evict other entries and then itself.
+            if (entryCount > this.maxEntries)
+            {
+                return;
+            }
+
+            this.Set(CacheKey.CreateTotalDocumentCount(containerResourceId, containerETag), statistics.DocumentCount, collectionStartedAt);
+            for (int pathIndex = 0; pathIndex < fullTextSearchTerms.Count; pathIndex++)
+            {
+                FullTextSearchTerms pathSearchTerms = fullTextSearchTerms[pathIndex];
+                FullTextStatistics pathStatistics = statistics.FullTextStatistics[pathIndex];
+                this.Set(
+                    CacheKey.CreateDocumentPathWordCount(containerResourceId, containerETag, pathSearchTerms.Path),
+                    pathStatistics.TotalWordCount,
+                    collectionStartedAt);
+
+                ReadOnlySpan<long> hitCounts = pathStatistics.HitCounts.Span;
+                for (int termIndex = 0; termIndex < hitCounts.Length; termIndex++)
+                {
+                    FullTextSearchTerm term = pathSearchTerms.Terms[termIndex];
+                    this.Set(
+                        CacheKey.CreateDocumentPathTermHitCount(containerResourceId, containerETag, pathSearchTerms.Path, term.Term, term.Distance),
+                        hitCounts[termIndex],
+                        collectionStartedAt);
+                }
+            }
+
+            this.EvictIfOverCapacity(now);
+        }
+
+        internal static bool IsQuerySupported(HybridSearchQueryInfo hybridSearchQueryInfo)
+        {
+            if (hybridSearchQueryInfo == null || !hybridSearchQueryInfo.RequiresGlobalStatistics)
             {
                 return false;
             }
 
-            (string ResourceId, string ETag) containerRevision = (containerResourceId, containerETag);
-            lock (this.lockObject)
-            {
-                TimeSpan now = this.getElapsedTime();
-                if (this.disposed || !this.IsFresh(collectionStartedAt, now))
-                {
-                    return false;
-                }
-
-                this.RemoveExpiredEntries(now);
-                this.containerCaches.TryGetValue(containerRevision, out ContainerStatistics containerCache);
-                int newTermCount = 0;
-                foreach (KeyValuePair<CosmosObject, FullTextPathStatisticsCache> path in snapshot.Paths)
-                {
-                    foreach (CosmosObject term in path.Value.HitCounts.Keys)
-                    {
-                        if (containerCache == null || !containerCache.Paths.TryGetValue(path.Key, out FullTextPathStatisticsCache pathCache) ||
-                            !pathCache.HitCounts.ContainsKey(term))
-                        {
-                            newTermCount++;
-                        }
-                    }
-                }
-
-                while (this.entryCount > this.maxEntries - newTermCount)
-                {
-                    this.EvictOldestEntry(containerRevision, snapshot);
-                }
-
-                if (!this.containerCaches.TryGetValue(containerRevision, out containerCache))
-                {
-                    this.containerCaches.Add(containerRevision, snapshot);
-                    this.entryCount += newTermCount;
-                    return true;
-                }
-
-                bool updated = false;
-                if (containerCache.DocumentCount.CollectionStartedAt < collectionStartedAt)
-                {
-                    containerCache.DocumentCount = snapshot.DocumentCount;
-                    updated = true;
-                }
-
-                foreach (KeyValuePair<CosmosObject, FullTextPathStatisticsCache> path in snapshot.Paths)
-                {
-                    if (!containerCache.Paths.TryGetValue(path.Key, out FullTextPathStatisticsCache pathCache))
-                    {
-                        containerCache.Paths.Add(path.Key, path.Value);
-                        updated = true;
-                        continue;
-                    }
-
-                    if (pathCache.TotalWordCount.CollectionStartedAt < collectionStartedAt)
-                    {
-                        pathCache.TotalWordCount = path.Value.TotalWordCount;
-                        updated = true;
-                    }
-
-                    foreach (KeyValuePair<CosmosObject, CachedCount> term in path.Value.HitCounts)
-                    {
-                        if (!pathCache.HitCounts.TryGetValue(term.Key, out CachedCount existingCount) ||
-                            existingCount.CollectionStartedAt < collectionStartedAt)
-                        {
-                            pathCache.HitCounts[term.Key] = term.Value;
-                            updated = true;
-                        }
-                    }
-                }
-
-                this.entryCount += newTermCount;
-                return updated;
-            }
-        }
-
-        public void Clear()
-        {
-            lock (this.lockObject)
-            {
-                this.containerCaches.Clear();
-                this.entryCount = 0;
-            }
-        }
-
-        public void Dispose()
-        {
-            lock (this.lockObject)
-            {
-                this.disposed = true;
-                this.containerCaches.Clear();
-                this.entryCount = 0;
-            }
-        }
-
-        private static bool TryCreateKeys(
-            HybridSearchQueryInfo hybridSearchQueryInfo,
-            out List<(CosmosObject Path, CosmosObject[] Terms)> keys)
-        {
-            keys = null;
             List<FullTextSearchTerms> fullTextSearchTerms = hybridSearchQueryInfo.FullTextSearchTerms;
-            if (!hybridSearchQueryInfo.RequiresGlobalStatistics || fullTextSearchTerms == null || fullTextSearchTerms.Count == 0 ||
-                fullTextSearchTerms.Any(pathSearchTerms =>
+            return fullTextSearchTerms != null && fullTextSearchTerms.Count > 0 &&
+                !fullTextSearchTerms.Any(pathSearchTerms =>
                     pathSearchTerms?.Path == null || pathSearchTerms.Path.Count == 0 || pathSearchTerms.Path.Any(segment => segment == null) ||
                     pathSearchTerms.Terms == null || pathSearchTerms.Terms.Count == 0 ||
-                    pathSearchTerms.Terms.Any(term => term?.Term == null || term.Distance < 0)))
-            {
-                return false;
-            }
-
-            keys = fullTextSearchTerms.Select(pathSearchTerms =>
-                (
-                    CosmosObject.Create(new Dictionary<string, CosmosElement>
-                    {
-                        ["path"] = CosmosArray.Create(pathSearchTerms.Path.Select(segment => CosmosString.Create(segment))),
-                    }),
-                    pathSearchTerms.Terms.Select(term => CosmosObject.Create(new Dictionary<string, CosmosElement>
-                    {
-                        ["term"] = CosmosString.Create(term.Term),
-                        ["distance"] = term.Distance.HasValue ? CosmosNumber64.Create(term.Distance.Value) : CosmosNull.Create(),
-                    })).ToArray()
-                )).ToList();
-            return true;
+                    pathSearchTerms.Terms.Any(term => term?.Term == null || term.Distance < 0));
         }
 
-        private static bool IsValidWordCount(long documentCount, long wordCount)
+        private void Set(CacheKey key, long value, TimeSpan collectionStartedAt)
         {
-            return wordCount >= 0 && (documentCount != 0 || wordCount == 0);
+            CachedCount count = new CachedCount(value, collectionStartedAt);
+
+            // A slower, older collection must not replace a newer count.
+            this.counts.AddOrUpdate(
+                key,
+                count,
+                (_, existing) => existing.CollectionStartedAt >= collectionStartedAt ? existing : count);
         }
 
-        private bool TryCreateSnapshot(
-            IReadOnlyList<(CosmosObject Path, CosmosObject[] Terms)> keys,
-            GlobalFullTextSearchStatistics statistics,
-            TimeSpan collectionStartedAt,
-            out ContainerStatistics snapshot)
+        private bool TryGetLiveCount(CacheKey key, TimeSpan now, out long value)
         {
-            snapshot = null;
-            if (statistics.DocumentCount < 0 || statistics.FullTextStatistics.Count != keys.Count)
+            if (this.counts.TryGetValue(key, out CachedCount count) && this.IsFresh(count.CollectionStartedAt, now))
             {
-                return false;
+                value = count.Value;
+                return true;
             }
 
-            ContainerStatistics result = new ContainerStatistics(new CachedCount(statistics.DocumentCount, collectionStartedAt));
-            int termCount = 0;
-            for (int pathIndex = 0; pathIndex < keys.Count; pathIndex++)
-            {
-                FullTextStatistics source = statistics.FullTextStatistics[pathIndex];
-                if (source == null || source.HitCounts.Length != keys[pathIndex].Terms.Length ||
-                    !IsValidWordCount(statistics.DocumentCount, source.TotalWordCount))
-                {
-                    return false;
-                }
-
-                if (!result.Paths.TryGetValue(keys[pathIndex].Path, out FullTextPathStatisticsCache pathCache))
-                {
-                    pathCache = new FullTextPathStatisticsCache(new CachedCount(source.TotalWordCount, collectionStartedAt));
-                    result.Paths.Add(keys[pathIndex].Path, pathCache);
-                }
-                else if (pathCache.TotalWordCount.Value != source.TotalWordCount)
-                {
-                    return false;
-                }
-
-                for (int termIndex = 0; termIndex < keys[pathIndex].Terms.Length; termIndex++)
-                {
-                    long hitCount = source.HitCounts.Span[termIndex];
-                    if (hitCount < 0 || hitCount > statistics.DocumentCount)
-                    {
-                        return false;
-                    }
-
-                    CosmosObject term = keys[pathIndex].Terms[termIndex];
-                    if (pathCache.HitCounts.TryGetValue(term, out CachedCount existingCount))
-                    {
-                        if (existingCount.Value != hitCount)
-                        {
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        if (termCount == this.maxEntries)
-                        {
-                            return false;
-                        }
-
-                        pathCache.HitCounts.Add(term, new CachedCount(hitCount, collectionStartedAt));
-                        termCount++;
-                    }
-                }
-            }
-
-            snapshot = result;
-            return true;
+            value = 0;
+            return false;
         }
 
         private bool IsFresh(TimeSpan collectionStartedAt, TimeSpan now)
@@ -389,108 +212,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             return now >= collectionStartedAt && now - collectionStartedAt < this.maxAge;
         }
 
-        private void RemoveExpiredEntries(TimeSpan now)
+        // Best effort: concurrent writers can briefly exceed capacity or evict a just-refreshed count.
+        private void EvictIfOverCapacity(TimeSpan now)
         {
-            List<((string ResourceId, string ETag) ContainerRevision, CosmosObject Path, CosmosObject Term)> expiredEntries = null;
-            foreach (KeyValuePair<(string ResourceId, string ETag), ContainerStatistics> containerCache in this.containerCaches)
+            if (this.counts.Count <= this.maxEntries)
             {
-                foreach (KeyValuePair<CosmosObject, FullTextPathStatisticsCache> path in containerCache.Value.Paths)
+                return;
+            }
+
+            // ToArray takes one consistent snapshot; LINQ over the live dictionary can throw during concurrent writes.
+            // Expired entries sort first, so one oldest-first pass removes them all and then only the remaining excess.
+            KeyValuePair<CacheKey, CachedCount>[] entries = this.counts.ToArray();
+            int excess = entries.Length - this.maxEntries;
+            foreach (KeyValuePair<CacheKey, CachedCount> entry in entries.OrderBy(entry => entry.Value.CollectionStartedAt))
+            {
+                if (excess <= 0 && this.IsFresh(entry.Value.CollectionStartedAt, now))
                 {
-                    foreach (KeyValuePair<CosmosObject, CachedCount> term in path.Value.HitCounts)
-                    {
-                        if (!this.IsFresh(containerCache.Value.DocumentCount.CollectionStartedAt, now) ||
-                            !this.IsFresh(path.Value.TotalWordCount.CollectionStartedAt, now) ||
-                            !this.IsFresh(term.Value.CollectionStartedAt, now))
-                        {
-                            expiredEntries ??= new List<((string ResourceId, string ETag), CosmosObject, CosmosObject)>();
-                            expiredEntries.Add((containerCache.Key, path.Key, term.Key));
-                        }
-                    }
+                    break;
                 }
+
+                this.counts.TryRemove(entry.Key, out _);
+                excess--;
             }
-
-            if (expiredEntries != null)
-            {
-                foreach (((string ResourceId, string ETag) containerRevision, CosmosObject path, CosmosObject term) in expiredEntries)
-                {
-                    this.RemoveEntry(containerRevision, path, term);
-                }
-            }
-        }
-
-        private void EvictOldestEntry((string ResourceId, string ETag) targetRevision, ContainerStatistics incoming)
-        {
-            (string ResourceId, string ETag) oldestContainerRevision = default;
-            CosmosObject oldestPath = null;
-            CosmosObject oldestTerm = null;
-            TimeSpan oldestCollectionStartedAt = TimeSpan.MaxValue;
-            foreach (KeyValuePair<(string ResourceId, string ETag), ContainerStatistics> containerCache in this.containerCaches)
-            {
-                foreach (KeyValuePair<CosmosObject, FullTextPathStatisticsCache> path in containerCache.Value.Paths)
-                {
-                    foreach (KeyValuePair<CosmosObject, CachedCount> term in path.Value.HitCounts)
-                    {
-                        // Keep already-cached terms needed by this publication when making room for its new terms.
-                        if (containerCache.Key == targetRevision && incoming.Paths.TryGetValue(path.Key, out FullTextPathStatisticsCache incomingPath) &&
-                            incomingPath.HitCounts.ContainsKey(term.Key))
-                        {
-                            continue;
-                        }
-
-                        if (oldestTerm == null || term.Value.CollectionStartedAt < oldestCollectionStartedAt)
-                        {
-                            oldestContainerRevision = containerCache.Key;
-                            oldestPath = path.Key;
-                            oldestTerm = term.Key;
-                            oldestCollectionStartedAt = term.Value.CollectionStartedAt;
-                        }
-                    }
-                }
-            }
-
-            this.RemoveEntry(oldestContainerRevision, oldestPath, oldestTerm);
-        }
-
-        private void RemoveEntry((string ResourceId, string ETag) containerRevision, CosmosObject path, CosmosObject term)
-        {
-            ContainerStatistics containerCache = this.containerCaches[containerRevision];
-            FullTextPathStatisticsCache pathCache = containerCache.Paths[path];
-            pathCache.HitCounts.Remove(term);
-            this.entryCount--;
-            if (pathCache.HitCounts.Count == 0)
-            {
-                containerCache.Paths.Remove(path);
-            }
-
-            if (containerCache.Paths.Count == 0)
-            {
-                this.containerCaches.Remove(containerRevision);
-            }
-        }
-
-        private sealed class ContainerStatistics
-        {
-            public ContainerStatistics(CachedCount documentCount)
-            {
-                this.DocumentCount = documentCount;
-            }
-
-            public CachedCount DocumentCount { get; set; }
-
-            public Dictionary<CosmosObject, FullTextPathStatisticsCache> Paths { get; } =
-                new Dictionary<CosmosObject, FullTextPathStatisticsCache>();
-        }
-
-        private sealed class FullTextPathStatisticsCache
-        {
-            public FullTextPathStatisticsCache(CachedCount totalWordCount)
-            {
-                this.TotalWordCount = totalWordCount;
-            }
-
-            public CachedCount TotalWordCount { get; set; }
-
-            public Dictionary<CosmosObject, CachedCount> HitCounts { get; } = new Dictionary<CosmosObject, CachedCount>();
         }
 
         private readonly struct CachedCount
