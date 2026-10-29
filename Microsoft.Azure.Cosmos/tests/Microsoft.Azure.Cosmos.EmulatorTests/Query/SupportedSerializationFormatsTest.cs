@@ -44,6 +44,7 @@
         }
 
         [TestMethod]
+        [Ignore("Requires an emulator build that supports binary serialization feature negotiation.")]
         [DoNotParallelize]
         [DataRow(ConnectionMode.Direct, null)]
         [DataRow(ConnectionMode.Gateway, null)]
