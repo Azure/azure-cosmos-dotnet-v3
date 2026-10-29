@@ -338,6 +338,15 @@ namespace Microsoft.Azure.Cosmos
             set;
         }
 
+        /// <summary>
+        /// When true, control plane (metadata and address) HTTP requests use the reduced retries timeout policy.
+        /// </summary>
+        internal bool UseReducedControlPlaneRetries
+        {
+            get;
+            set;
+        }
+
         internal bool DisablePartitionLevelFailoverClientLevelOverride
         {
             get;

@@ -51,7 +51,8 @@ namespace Microsoft.Azure.Cosmos
              DocumentClientEventSource eventSource,
              JsonSerializerSettings serializerSettings,
              CosmosHttpClient httpClient,
-             GlobalPartitionEndpointManager globalPartitionEndpointManager)
+             GlobalPartitionEndpointManager globalPartitionEndpointManager,
+             bool useReducedControlPlaneRetries = false)
         {
             this.endpointManager = endpointManager;
             this.sessionContainer = sessionContainer;
@@ -62,7 +63,8 @@ namespace Microsoft.Azure.Cosmos
                 httpClient,
                 this.eventSource,
                 globalPartitionEndpointManager,
-                serializerSettings);
+                serializerSettings,
+                useReducedControlPlaneRetries);
 
             this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
                 this.MarkEndpointsToHealthyAsync);
