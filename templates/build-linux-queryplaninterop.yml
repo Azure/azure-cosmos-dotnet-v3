@@ -29,10 +29,10 @@ parameters:
   type: boolean
   default: true
 # QueryPlanInterop.Linux 1.0.6 fails to dlopen on ARM64 ("cannot allocate memory in static
-# TLS block"). Keep ARM64 non-blocking until a package with the fix ships.
+# TLS block"). Set to false to report ARM64 failures as warnings instead of failing the build.
 - name: Arm64Blocking
   type: boolean
-  default: false
+  default: true
 - name: Arm64TestImage
   type: string
   default: 'mcr.microsoft.com/dotnet/sdk:8.0-jammy'
@@ -40,10 +40,10 @@ parameters:
   type: boolean
   default: true
 # Stock .NET images do not ship libatomic.so.1, which the 1.0.6 native libraries require.
-# Keep this lane non-blocking until a package without that dependency ships.
+# Set to false to report this lane's failures as warnings instead of failing the build.
 - name: RuntimeImageBlocking
   type: boolean
-  default: false
+  default: true
 - name: UbuntuRuntimeImage
   type: string
   default: 'mcr.microsoft.com/dotnet/aspnet:8.0-jammy'
