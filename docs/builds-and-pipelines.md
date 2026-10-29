@@ -179,6 +179,25 @@ Steps-only template (no parameters) used by every Windows emulator job:
 To reproduce locally, install the [same emulator](https://aka.ms/cosmosdb-emulator) and start it
 with comparable flags (see [CONTRIBUTING](../CONTRIBUTING.md#usage-of-cosmos-db-emulator-for-running-unit-tests)).
 
+Binary serialization negotiation is covered by
+`SupportedSerializationFormatsTest.TestSupportedSerializationFeatures` in the
+`Query` category (emulator bucket 1 in `templates/build-test.yml`). It checks raw
+response markers and decoded values for Direct/Gateway point reads and queries,
+with feature-enabled, legacy-binary, and text-only advertisements. It uses the
+standard emulator settings; `COSMOSDBEMULATOR_ENDPOINT` can override the endpoint.
+No live-account credentials or additional pipeline variables are needed. The test
+temporarily enables and restores `AZURE_COSMOS_BINARY_ENCODING_ENABLED` itself.
+The feature-enabled cases require an emulator backend that understands the
+extended advertisement. Emulator 2.14.28.0 rejects it in Gateway mode and returns
+legacy encodings in Direct mode; those cases fail explicitly rather than skipping
+the wire-type assertions.
+
+Run this coverage locally against the running Windows emulator:
+
+```powershell
+dotnet test Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Microsoft.Azure.Cosmos.EmulatorTests.csproj --filter FullyQualifiedName~SupportedSerializationFormatsTest
+```
+
 ### Packaging & build templates
 
 | Template | Role |

@@ -5,6 +5,7 @@ parameters:
   Arguments: ''
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
+  # The Query shard includes Direct/Gateway binary serialization feature negotiation tests.
   EmulatorPipeline1Arguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory !=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiRegionAad & TestCategory!=MultiMaster & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed) & TestCategory!=Ignore" --verbosity normal '
   EmulatorPipeline2Arguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory !=ThinClient & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiRegionAad & TestCategory!=MultiMaster & TestCategory!=Ignore" --verbosity normal '
   EmulatorPipeline3Arguments: ' --filter "TestCategory=MultiRegion" --verbosity normal '

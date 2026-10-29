@@ -68,11 +68,15 @@ namespace Microsoft.Azure.Cosmos.Query
                 string.Empty,
                 true, Guid.NewGuid());
             INameValueCollection headers = await testQueryExecutionContext.CreateCommonHeadersAsync(feedOptions);
-            Assert.AreEqual("JsonText,CosmosBinary", headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
+            Assert.AreEqual("JsonText,CosmosBinary+Base64Strings+NumberArrays+UInt64", headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
 
             feedOptions.SupportedSerializationFormats = SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow;
             headers = await testQueryExecutionContext.CreateCommonHeadersAsync(feedOptions);
-            Assert.AreEqual("CosmosBinary, HybridRow", headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
+            Assert.AreEqual("CosmosBinary+Base64Strings+NumberArrays+UInt64, HybridRow", headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
+
+            feedOptions.SupportedSerializationFormats = SupportedSerializationFormats.JsonText;
+            headers = await testQueryExecutionContext.CreateCommonHeadersAsync(feedOptions);
+            Assert.AreEqual("JsonText", headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
         }
 
         internal class TestQueryExecutionContext : DocumentQueryExecutionContextBase

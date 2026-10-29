@@ -190,7 +190,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     testHandlerHitCount++;
 
                     bool shouldReturnBinaryResponse = request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] != null
-                        && request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats].Equals(SupportedSerializationFormats.CosmosBinary.ToString());
+                        && request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats].Equals(CosmosSerializationUtil.SupportedBinarySerializationFormat);
+
+                    Assert.AreEqual(binaryEncodingEnabledInClient, shouldReturnBinaryResponse);
 
                     response = new ResponseMessage(httpStatusCode, request, errorMessage: null)
                     {
@@ -969,9 +971,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Assert.AreEqual(partitionKeySerialized, request.Headers.PartitionKey);
                     testHandlerHitCount++;
 
+                    Assert.AreEqual(
+                        binaryEncodingEnabledInClient ? "CosmosBinary+Base64Strings+NumberArrays+UInt64" : null,
+                        request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
+
                     bool shouldReturnBinaryResponse = binaryEncodingEnabledInContainer
-                        && request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] != null
-                        && request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats].Equals(SupportedSerializationFormats.CosmosBinary.ToString());
+                        && request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] != null;
 
                     response = new ResponseMessage(httpStatusCode, request, errorMessage: null)
                     {

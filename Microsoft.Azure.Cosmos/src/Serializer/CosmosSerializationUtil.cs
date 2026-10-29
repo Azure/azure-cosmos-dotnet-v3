@@ -14,7 +14,19 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class CosmosSerializationUtil
     {
+        internal const string SupportedBinarySerializationFormat = nameof(SupportedSerializationFormats.CosmosBinary)
+            + "+" + nameof(SupportedSerializationFeatures.Base64Strings)
+            + "+" + nameof(SupportedSerializationFeatures.NumberArrays)
+            + "+" + nameof(SupportedSerializationFeatures.UInt64);
+
         private static readonly CamelCaseNamingStrategy camelCaseNamingStrategy = new CamelCaseNamingStrategy();
+
+        internal static string GetSupportedSerializationFormats(SupportedSerializationFormats formats)
+        {
+            return formats.ToString().Replace(
+                nameof(SupportedSerializationFormats.CosmosBinary),
+                CosmosSerializationUtil.SupportedBinarySerializationFormat);
+        }
 
         internal static string GetStringWithPropertyNamingPolicy(CosmosLinqSerializerOptions options, string name)
         {
