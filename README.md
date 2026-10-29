@@ -54,8 +54,10 @@ is checked once per process; restart after fixing native dependencies.
 This option changes query-plan generation only, not the client's Direct/Gateway
 connection mode. Queries that can already skip query planning continue to do so.
 Linux musl distributions are not supported by these glibc native assets.
-The native libraries require glibc 2.17 or later and `libatomic.so.1` (for example,
-the `libatomic1` package on Ubuntu).
+The native libraries require glibc 2.17 or later. QueryPlanInterop.Linux 1.0.8 no
+longer requires `libatomic.so.1`, but requires the `en_US.UTF-8` locale data:
+loading the library without it can terminate the process rather than fall back
+to gateway planning.
 
 PR CI runs `templates/build-linux-queryplaninterop.yml` with native planning enabled:
 
@@ -65,14 +67,12 @@ PR CI runs `templates/build-linux-queryplaninterop.yml` with native planning ena
   dependencies with `ldd`, confirms the test process inherits
   `AZURE_COSMOS_USE_QUERY_INTEROP=true`, and requires two sentinel tests to pass:
   `OptedInLinuxProcessUsesNativePlanning` (the inherited flag routes queries to
-  QueryPlanInterop) and `AbsFilterTargetsBothSigns` (the library plans a query). The
-  ARM64 leg is non-blocking while the published ARM64 library fails to load with
-  "cannot allocate memory in static TLS block".
+  QueryPlanInterop) and `AbsFilterTargetsBothSigns` (the library plans a query).
 - `LinuxQueryPlanInteropRuntimeImage` loads the library inside the stock
   `aspnet:8.0-jammy` and `aspnet:8.0-azurelinux3.0-distroless-extra` images for
-  x64 and ARM64 and prints the exact `dlopen` error when it cannot. This lane is
-  non-blocking while the package still needs `libatomic.so.1`, which these images
-  do not include.
+  x64 and ARM64 and prints the exact `dlopen` error when it cannot. These images do
+  not include `libatomic.so.1`, so this lane also guards against new system-library
+  dependencies.
 - `LinuxQueryPlanInteropLive` reuses the existing secret `COSMOSDB_MULTI_REGION`
   and runs the seven account-backed regressions tagged `LinuxQueryPlanInteropLive`
   on Ubuntu x64. The account must be reachable from hosted Ubuntu agents and allow

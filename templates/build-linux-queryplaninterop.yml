@@ -28,8 +28,7 @@ parameters:
 - name: IncludeArm64
   type: boolean
   default: true
-# QueryPlanInterop.Linux 1.0.6 fails to dlopen on ARM64 ("cannot allocate memory in static
-# TLS block"). Set to false to report ARM64 failures as warnings instead of failing the build.
+# Set to false to report ARM64 failures as warnings instead of failing the build.
 - name: Arm64Blocking
   type: boolean
   default: true
@@ -39,7 +38,6 @@ parameters:
 - name: IncludeRuntimeImage
   type: boolean
   default: true
-# Stock .NET images do not ship libatomic.so.1, which the 1.0.6 native libraries require.
 # Set to false to report this lane's failures as warnings instead of failing the build.
 - name: RuntimeImageBlocking
   type: boolean
@@ -110,15 +108,12 @@ jobs:
         # Hosted agents are x64; run the ARM64 .NET runtime and native library under QEMU.
         sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
         sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq qemu-user-static binfmt-support > /dev/null
-        # Match the x64 host: .NET 8 SDK, .NET 6 runtime for the test project, and libatomic1,
-        # which the native library needs and the .NET images do not ship (see README).
-        # The CLI's first-run NuGet migration takes a named mutex that QEMU cannot emulate for
-        # non-root users, so pre-create the first-run sentinels in HOME=/tmp.
+        # Match the x64 host: .NET 8 SDK plus the .NET 6 runtime for the test project.
         printf '%s\n' "FROM $ARM64_IMAGE" \
-          "RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libatomic1 > /dev/null && curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --runtime dotnet --channel 6.0 --install-dir /usr/share/dotnet > /dev/null" \
-          "RUN v=\$(dotnet --version) && mkdir -p /tmp/.dotnet && cd /tmp/.dotnet && touch \$v.dotnetFirstUseSentinel \$v.aspNetCertificateSentinel \$v.toolpath.sentinel && chmod -R a+rwX /tmp/.dotnet" \
+          "RUN curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --runtime dotnet --channel 6.0 --install-dir /usr/share/dotnet > /dev/null" \
           | docker build --quiet --platform linux/arm64 -t qpi-arm64-test -
-        runner=(docker run --rm --platform linux/arm64 --user "$(id -u):$(id -g)"
+        # Use the image's root account; an unmapped host UID breaks NuGet's named mutex.
+        runner=(docker run --rm --platform linux/arm64 --user 0:0
           -e HOME=/tmp -e DOTNET_CLI_HOME=/tmp -e DOTNET_NOLOGO=1 -e DOTNET_CLI_TELEMETRY_OPTOUT=1
           -e AZURE_COSMOS_USE_QUERY_INTEROP -e AZURE_COSMOS_BYPASS_QUERY_PARSING
           -v "$BUILD_SOURCESDIRECTORY:$BUILD_SOURCESDIRECTORY" -v "$results:$results" -w "$out" qpi-arm64-test)
