@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Globalization;
@@ -1222,10 +1223,12 @@ namespace Microsoft.Azure.Documents
             return new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
         }
 
-        [TestMethod]
+        [DataTestMethod]
+        [DataRow("2s")]
+        [DataRow("3s")]
         [TestCategory("Integration")]
         [Owner("cosmosdbcomputeteam")]
-        public async Task ReadBarrier_NonFirstReplicaGone1022_PrimarySuccess_ShouldSucceed()
+        public async Task ReadBarrier_NonFirstReplicaGone1022_PrimarySuccess_ShouldSucceed(string failedReplica)
         {
             DocumentServiceRequest entity = QuorumReaderTests.GetRequestEntity();
             entity.Headers[HttpConstants.HttpHeaders.ConsistencyLevel] = ConsistencyLevel.Strong.ToString();
@@ -1235,6 +1238,17 @@ namespace Microsoft.Azure.Documents
             ReadMode readMode = ReadMode.Strong;
 
             int primaryHeadCalls = 0;
+            List<string> headReplicas = new List<string>();
+            Mock<IAddressEnumerator> addressEnumerator = new Mock<IAddressEnumerator>();
+            addressEnumerator
+                .Setup(enumerator => enumerator.GetTransportAddresses(
+                    It.IsAny<IReadOnlyList<TransportAddressUri>>(),
+                    It.IsAny<Lazy<ConcurrentDictionary<TransportAddressUri, bool>>>(),
+                    It.IsAny<bool>()))
+                .Returns<IReadOnlyList<TransportAddressUri>, Lazy<ConcurrentDictionary<TransportAddressUri, bool>>, bool>(
+                    (addresses, _, _) => addresses
+                        .OrderBy(address => address.Uri.AbsoluteUri.Contains("/replicas/0p/"))
+                        .ThenBy(address => address.Uri.AbsoluteUri, StringComparer.Ordinal));
 
             QuorumReader quorumReader = QuorumReaderTests.GetQuorumReader(
                 (Uri uri, DocumentServiceRequest req) =>
@@ -1288,13 +1302,11 @@ namespace Microsoft.Azure.Documents
 
                     if (req.OperationType == OperationType.Head)
                     {
-                        // ANY secondary (2s) returns Gone/1022 -> should trigger pivot to primary
-                        if (u.Contains("/replicas/2s/"))
+                        headReplicas.Add(uri.Segments.Last().TrimEnd('/'));
+                        if (u.Contains($"/replicas/{failedReplica}/"))
                         {
-                            DictionaryNameValueCollection gone = new DictionaryNameValueCollection(new NameValueCollection
-                            {
-                                { WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString(CultureInfo.InvariantCulture) }
-                            });
+                            DictionaryNameValueCollection gone = H("100", "100", "95", "100", readQuorum.ToString(CultureInfo.InvariantCulture));
+                            gone[WFConstants.BackendHeaders.SubStatus] = ((int)SubStatusCodes.LeaseNotFound).ToString(CultureInfo.InvariantCulture);
 
                             return Task.FromResult(new StoreResponse
                             {
@@ -1306,6 +1318,8 @@ namespace Microsoft.Azure.Documents
                         if (u.Contains("/replicas/0p/"))
                         {
                             Interlocked.Increment(ref primaryHeadCalls);
+                            Assert.IsTrue(req.RequestContext.ForceRefreshAddressCache, "The primary-only fallback must refresh its address.");
+
                             return Task.FromResult(new StoreResponse
                             {
                                 Status = (int)HttpStatusCode.OK,
@@ -1321,7 +1335,8 @@ namespace Microsoft.Azure.Documents
                     }
 
                     throw new InvalidOperationException($"Unexpected operation type: {req.OperationType}");
-                });
+                },
+                addressEnumerator: addressEnumerator.Object);
 
             // Act
             StoreResponse response = await quorumReader.ReadStrongAsync(entity, readQuorum, readMode);
@@ -1329,7 +1344,8 @@ namespace Microsoft.Azure.Documents
             // Assert
             Assert.IsNotNull(response);
             Assert.AreEqual((int)HttpStatusCode.OK, response.Status);
-            Assert.IsTrue(primaryHeadCalls >= 1, "Primary HEAD must be invoked when ANY secondary returns 410/1022.");
+            Assert.AreEqual(1, primaryHeadCalls, "The secondary barrier must be followed by a primary-only fallback.");
+            CollectionAssert.AreEqual(new[] { "1s", "2s", "3s", "0p" }, headReplicas);
         }
 
         [TestMethod]
@@ -1956,7 +1972,8 @@ namespace Microsoft.Azure.Documents
         /// <returns>Store reader configured to call the provided handler.</returns>
         private static QuorumReader GetQuorumReader(
            Func<Uri, DocumentServiceRequest, Task<StoreResponse>> invokeResourceOperationAsyncHandler,
-           bool enableBarrierEarlyYieldOn429 = false)
+           bool enableBarrierEarlyYieldOn429 = false,
+           IAddressEnumerator addressEnumerator = null)
         {
             Mock<TransportClient> mockTransportClient = new Mock<TransportClient>();
             mockTransportClient
@@ -2002,7 +2019,7 @@ namespace Microsoft.Azure.Documents
             StoreReader storeReader = new StoreReader(
                 mockTransportClient.Object,
                 addressSelector,
-                new AddressEnumerator(),
+                addressEnumerator ?? new AddressEnumerator(),
                 new NullSessionContainer(),
                 enableReplicaValidation: false);
 
