@@ -1,0 +1,388 @@
+# Linux native query-planning tests, runtime-image checks, and live-account regressions.
+
+parameters:
+- name: BuildConfiguration
+  type: string
+  default: 'Release'
+- name: VmImage
+  type: string
+  default: 'ubuntu-22.04'
+# Account connection string (AccountEndpoint=...;AccountKey=...;) for the live job.
+- name: LiveConnectionString
+  type: string
+  default: ''
+- name: LiveConnectionStringName
+  type: string
+  default: 'COSMOSDB_MULTI_REGION'
+- name: IncludeArm64
+  type: boolean
+  default: true
+# Set to false to report ARM64 failures as warnings instead of failing the build.
+- name: Arm64Blocking
+  type: boolean
+  default: true
+- name: Arm64TestImage
+  type: string
+  default: 'mcr.microsoft.com/dotnet/sdk:8.0-jammy'
+- name: IncludeRuntimeImage
+  type: boolean
+  default: true
+# Set to false to report this lane's failures as warnings instead of failing the build.
+- name: RuntimeImageBlocking
+  type: boolean
+  default: true
+- name: UbuntuRuntimeImage
+  type: string
+  default: 'mcr.microsoft.com/dotnet/aspnet:8.0-jammy'
+- name: AzureLinuxRuntimeImage
+  type: string
+  default: 'mcr.microsoft.com/dotnet/aspnet:8.0-azurelinux3.0-distroless-extra'
+- name: UnitTestFilter
+  type: string
+  default:  'FullyQualifiedName~QueryPlanInteropTests|FullyQualifiedName~QueryPartitionProviderTests|FullyQualifiedName~CosmosTargetsInteropPublishTests|FullyQualifiedName~QueryPlanBaselineTests|FullyQualifiedName~OptimisticDirectExecutionQueryBaselineTests|FullyQualifiedName~FullPipelineTests|FullyQualifiedName~PageSizeFactorForTopTests|FullyQualifiedName~QueryPlanRetrieverTests|FullyQualifiedName~PartitionRoutingHelperTest|FullyQualifiedName~SubpartitionTests|FullyQualifiedName~ClientDistributionPlanBaselineTests'
+
+jobs:
+- job: LinuxQueryPlanInterop
+  displayName: Linux native query planning
+  timeoutInMinutes: 120
+  pool:
+    vmImage: ${{ parameters.VmImage }}
+  strategy:
+    matrix:
+      Ubuntu2204_x64:
+        QpiArch: x64
+        QpiBlocking: true
+      ${{ if eq(parameters.IncludeArm64, true) }}:
+        Ubuntu2204_arm64:
+          QpiArch: arm64
+          QpiBlocking: ${{ parameters.Arm64Blocking }}
+  variables:
+    AZURE_COSMOS_USE_QUERY_INTEROP: 'true'
+    AZURE_COSMOS_BYPASS_QUERY_PARSING: 'false'
+  steps:
+  - task: UseDotNet@2
+    inputs:
+      packageType: runtime
+      version: 6.x
+  - task: UseDotNet@2
+    inputs:
+      packageType: sdk
+      version: 8.x
+  - template: linux-queryplaninterop-environment.yml
+
+  - bash: |
+      set -euo pipefail
+      dotnet build "$BUILD_SOURCESDIRECTORY/Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Microsoft.Azure.Cosmos.Tests.csproj" \
+        -c "$CONFIGURATION" /p:OS=Linux --verbosity minimal
+    displayName: Build unit tests (managed output contains both Linux native assets)
+    env:
+      CONFIGURATION: ${{ parameters.BuildConfiguration }}
+
+  - bash: |
+      set -euo pipefail
+      report_failure() {
+        if [ "${QPIBLOCKING,,}" = "true" ]; then
+          echo "##vso[task.logissue type=error]$1"
+          exit 1
+        fi
+        echo "##vso[task.logissue type=warning]$1 (non-blocking on $QPIARCH)"
+        echo "##vso[task.complete result=SucceededWithIssues;]"
+        exit 0
+      }
+
+      out="$BUILD_SOURCESDIRECTORY/Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/bin/$CONFIGURATION/net6.0"
+      results="$AGENT_TEMPDIRECTORY/LinuxQueryPlanInterop-$QPIARCH"
+      mkdir -p "$results"
+      if [ "$QPIARCH" = "arm64" ]; then
+        # Run ARM64 binaries on the hosted x64 agent.
+        sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq qemu-user-static binfmt-support > /dev/null
+        # The test assembly requires the .NET 6 runtime.
+        printf '%s\n' "FROM $ARM64_IMAGE" \
+          "RUN curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --runtime dotnet --channel 6.0 --install-dir /usr/share/dotnet > /dev/null" \
+          | docker build --quiet --platform linux/arm64 -t qpi-arm64-test -
+        runner=(docker run --rm --platform linux/arm64 --user 0:0
+          -e HOME=/tmp -e DOTNET_CLI_HOME=/tmp -e DOTNET_NOLOGO=1 -e DOTNET_CLI_TELEMETRY_OPTOUT=1
+          -e AZURE_COSMOS_USE_QUERY_INTEROP -e AZURE_COSMOS_BYPASS_QUERY_PARSING
+          -v "$BUILD_SOURCESDIRECTORY:$BUILD_SOURCESDIRECTORY" -v "$results:$results" -w "$out" qpi-arm64-test)
+        library=libQueryPlanInterop.arm64.so
+      else
+        runner=()
+        library=libQueryPlanInterop.amd64.so
+      fi
+
+      # Validate flags inside the test process environment.
+      "${runner[@]}" bash -c 'echo "Test process flags: AZURE_COSMOS_USE_QUERY_INTEROP=${AZURE_COSMOS_USE_QUERY_INTEROP:-<unset>} AZURE_COSMOS_BYPASS_QUERY_PARSING=${AZURE_COSMOS_BYPASS_QUERY_PARSING:-<unset>}"; [ "${AZURE_COSMOS_USE_QUERY_INTEROP:-}" = "true" ] && [ "${AZURE_COSMOS_BYPASS_QUERY_PARSING:-}" = "false" ]' \
+        || { echo "##vso[task.logissue type=error]The $QPIARCH test process does not have AZURE_COSMOS_USE_QUERY_INTEROP=true."; exit 1; }
+
+      # Report unresolved native dependencies before running the tests.
+      if ! "${runner[@]}" bash -c '. /etc/os-release; echo "Test process: $PRETTY_NAME $(uname -m), $(ldd --version | head -n 1)"; ldd "$1"; ! ldd "$1" | grep -q "not found"' _ "$out/$library"; then
+        report_failure "$library has unresolved native dependencies on $QPIARCH."
+      fi
+
+      test_exit=0
+      "${runner[@]}" dotnet test "$out/Microsoft.Azure.Cosmos.Tests.dll" --filter "$UNIT_FILTER" \
+        --results-directory "$results" --logger "trx;LogFileName=unit-$QPIARCH.trx" || test_exit=$?
+
+      # Require successful native routing and query planning.
+      for sentinel in OptedInLinuxProcessUsesNativePlanning AbsFilterTargetsBothSigns; do
+        if ! grep -Eq "testName=\"$sentinel\"[^>]*outcome=\"Passed\"" "$results/unit-$QPIARCH.trx"; then
+          report_failure "QueryPlanInteropTests.$sentinel did not pass on $QPIARCH; the tests did not use QueryPlanInterop ($library)."
+        fi
+      done
+      if [ "$test_exit" -ne 0 ]; then
+        report_failure "Linux native query-plan tests failed on $QPIARCH. See the published test results."
+      fi
+    displayName: Native query-plan ABI, routing and baseline tests ($(QpiArch))
+    env:
+      CONFIGURATION: ${{ parameters.BuildConfiguration }}
+      ARM64_IMAGE: ${{ parameters.Arm64TestImage }}
+      UNIT_FILTER: ${{ parameters.UnitTestFilter }}
+
+  - task: PublishTestResults@2
+    displayName: Publish Linux native test results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: VSTest
+      testResultsFiles: '$(Agent.TempDirectory)/LinuxQueryPlanInterop-$(QpiArch)/*.trx'
+      testRunTitle: Linux QueryPlanInterop - Ubuntu 22.04 $(QpiArch)
+      failTaskOnMissingResultsFile: $(QpiBlocking)
+
+- ${{ if eq(parameters.IncludeRuntimeImage, true) }}:
+  - job: LinuxQueryPlanInteropRuntimeImage
+    displayName: Linux native library load in .NET images
+    timeoutInMinutes: 45
+    pool:
+      vmImage: ${{ parameters.VmImage }}
+    strategy:
+      matrix:
+        UbuntuJammy_x64:
+          QpiArch: x64
+          QpiDockerArch: amd64
+          QpiImage: ${{ parameters.UbuntuRuntimeImage }}
+        AzureLinux3_x64:
+          QpiArch: x64
+          QpiDockerArch: amd64
+          QpiImage: ${{ parameters.AzureLinuxRuntimeImage }}
+        ${{ if eq(parameters.IncludeArm64, true) }}:
+          UbuntuJammy_arm64:
+            QpiArch: arm64
+            QpiDockerArch: arm64
+            QpiImage: ${{ parameters.UbuntuRuntimeImage }}
+          AzureLinux3_arm64:
+            QpiArch: arm64
+            QpiDockerArch: arm64
+            QpiImage: ${{ parameters.AzureLinuxRuntimeImage }}
+    steps:
+    - task: UseDotNet@2
+      inputs:
+        packageType: sdk
+        version: 8.x
+
+    - bash: |
+        set -euo pipefail
+        probe="$AGENT_TEMPDIRECTORY/qpi-runtime-probe"
+        rm -rf "$probe"
+        mkdir -p "$probe"
+        # Direct and HybridRow require explicit references in the probe project.
+        props="$BUILD_SOURCESDIRECTORY/Directory.Build.props"
+        direct_version=$(sed -n 's:.*<DirectVersion>\(.*\)</DirectVersion>.*:\1:p' "$props")
+        hybridrow_version=$(sed -n 's:.*<HybridRowVersion>\(.*\)</HybridRowVersion>.*:\1:p' "$props")
+        cat > "$probe/QpiRuntimeProbe.csproj" <<EOF
+        <Project Sdk="Microsoft.NET.Sdk">
+          <PropertyGroup>
+            <OutputType>Exe</OutputType>
+            <TargetFramework>net8.0</TargetFramework>
+            <ImplicitUsings>enable</ImplicitUsings>
+          </PropertyGroup>
+          <ItemGroup>
+            <ProjectReference Include="$BUILD_SOURCESDIRECTORY/Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj" />
+            <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$direct_version]" />
+            <PackageReference Include="Microsoft.HybridRow" Version="[$hybridrow_version]" />
+          </ItemGroup>
+        </Project>
+        EOF
+        cat > "$probe/Program.cs" <<'EOF'
+        using System.Reflection;
+        using System.Runtime.InteropServices;
+
+        Type interop = typeof(Microsoft.Azure.Cosmos.CosmosClient).Assembly
+            .GetType("Microsoft.Azure.Cosmos.Query.Core.QueryPlan.QueryPlanInterop", throwOnError: true)!;
+        Lazy<bool> available = (Lazy<bool>)interop
+            .GetField("LinuxLibraryAvailable", BindingFlags.Static | BindingFlags.NonPublic)!
+            .GetValue(null)!;
+        Console.WriteLine($"{RuntimeInformation.OSDescription} | {RuntimeInformation.ProcessArchitecture} | {RuntimeInformation.FrameworkDescription}");
+        Console.WriteLine($"QueryPlanInterop.LinuxLibraryAvailable={available.Value}");
+        if (available.Value)
+        {
+            return 0;
+        }
+
+        string library = Path.Combine(
+            AppContext.BaseDirectory,
+            RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "libQueryPlanInterop.arm64.so" : "libQueryPlanInterop.amd64.so");
+        Marshal.PrelinkAll(typeof(Native));
+        IntPtr handle = Native.dlopen(library, 2);
+        Console.WriteLine(handle == IntPtr.Zero
+            ? $"dlopen failed: {Marshal.PtrToStringAnsi(Native.dlerror())}"
+            : "dlopen succeeded, but native service-provider creation failed.");
+        return 1;
+
+        static class Native
+        {
+            [DllImport("libc.so.6")]
+            public static extern IntPtr dlopen(string fileName, int flags);
+
+            [DllImport("libc.so.6")]
+            public static extern IntPtr dlerror();
+        }
+        EOF
+        dotnet restore "$probe/QpiRuntimeProbe.csproj" -r "linux-$QPIARCH" /p:OS=Linux --verbosity minimal
+        dotnet publish "$probe/QpiRuntimeProbe.csproj" -c Release -r "linux-$QPIARCH" --self-contained false --no-restore \
+          -o "$probe/out" /p:OS=Linux --verbosity minimal
+        ls -l "$probe/out"/libQueryPlanInterop.*.so
+      displayName: Publish native-load probe (linux-$(QpiArch))
+
+    - bash: |
+        set -euo pipefail
+        if [ "$QPIDOCKERARCH" = "arm64" ]; then
+          sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq qemu-user-static binfmt-support > /dev/null
+        fi
+        docker pull --quiet --platform "linux/$QPIDOCKERARCH" "$QPIIMAGE"
+        docker run --rm --platform "linux/$QPIDOCKERARCH" -e AZURE_COSMOS_USE_QUERY_INTEROP=true \
+          -v "$AGENT_TEMPDIRECTORY/qpi-runtime-probe/out:/app:ro" -w /app --entrypoint /usr/bin/dotnet \
+          "$QPIIMAGE" /app/QpiRuntimeProbe.dll
+      displayName: Load QueryPlanInterop in $(QpiImage) ($(QpiArch))
+      continueOnError: ${{ not(parameters.RuntimeImageBlocking) }}
+
+- job: LinuxQueryPlanInteropLive
+  displayName: Linux native query planning - live account
+  timeoutInMinutes: 60
+  condition: and(succeeded(), ne(variables['System.PullRequest.IsFork'], 'True'))
+  pool:
+    vmImage: ${{ parameters.VmImage }}
+  variables:
+    AZURE_COSMOS_USE_QUERY_INTEROP: 'true'
+    AZURE_COSMOS_BYPASS_QUERY_PARSING: 'false'
+    AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED: 'false'
+  steps:
+  - task: UseDotNet@2
+    inputs:
+      packageType: runtime
+      version: 6.x
+  - task: UseDotNet@2
+    inputs:
+      packageType: sdk
+      version: 8.x
+  - template: linux-queryplaninterop-environment.yml
+
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      $name = $env:LIVE_CONNECTION_STRING_NAME
+      $raw = $env:LIVE_CONNECTION_STRING
+      if ([string]::IsNullOrWhiteSpace($raw) -or $raw.StartsWith('$(')) {
+          throw "The $name pipeline secret is not available; emulator or gateway fallback is not allowed."
+      }
+
+      $connection = [System.Data.Common.DbConnectionStringBuilder]::new()
+      try {
+          $connection.set_ConnectionString($raw)
+      }
+      catch [ArgumentException] {
+          throw "$name is malformed."
+      }
+      $endpoint = $null
+      if (-not $connection.ContainsKey('AccountEndpoint') -or -not $connection.ContainsKey('AccountKey') -or
+          -not [Uri]::TryCreate([string]$connection['AccountEndpoint'], [UriKind]::Absolute, [ref]$endpoint) -or
+          $endpoint.Scheme -ne 'https' -or $endpoint.IsLoopback -or -not [string]::IsNullOrEmpty($endpoint.UserInfo) -or
+          [string]::IsNullOrWhiteSpace([string]$connection['AccountKey'])) {
+          throw "$name must contain a non-emulator HTTPS AccountEndpoint and a nonempty AccountKey."
+      }
+
+      Write-Host "##vso[task.setvariable variable=QpiLiveAccountEndpoint;issecret=true]$($endpoint.AbsoluteUri)"
+      Write-Host "##vso[task.setvariable variable=QpiLiveAccountKey;issecret=true]$([string]$connection['AccountKey'])"
+      $hostLabel = $endpoint.Host.Split('.')[0]
+      $masked = $hostLabel.Substring(0, [Math]::Min(4, $hostLabel.Length)) + '***' + $endpoint.Host.Substring($hostLabel.Length)
+      Write-Host "Live account from ${name}: $masked (key authentication)"
+    displayName: Resolve live account (${{ parameters.LiveConnectionStringName }})
+    env:
+      LIVE_CONNECTION_STRING: ${{ parameters.LiveConnectionString }}
+      LIVE_CONNECTION_STRING_NAME: ${{ parameters.LiveConnectionStringName }}
+
+  - bash: |
+      set -euo pipefail
+      results="$AGENT_TEMPDIRECTORY/LinuxQueryPlanInteropLive/native-preflight"
+      mkdir -p "$results"
+      dotnet test "$BUILD_SOURCESDIRECTORY/Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Microsoft.Azure.Cosmos.Tests.csproj" \
+        -c "$CONFIGURATION" /p:OS=Linux \
+        --filter 'FullyQualifiedName=Microsoft.Azure.Cosmos.Tests.Query.QueryPlanInteropTests.OptedInLinuxProcessUsesNativePlanning|FullyQualifiedName=Microsoft.Azure.Cosmos.Tests.Query.QueryPlanInteropTests.AbsFilterTargetsBothSigns' \
+        --results-directory "$results" --logger 'trx;LogFileName=native-preflight.trx' --verbosity minimal
+      for sentinel in OptedInLinuxProcessUsesNativePlanning AbsFilterTargetsBothSigns; do
+        if ! grep -Eq "testName=\"$sentinel\"[^>]*outcome=\"Passed\"" "$results/native-preflight.trx"; then
+          echo "##vso[task.logissue type=error]Native preflight $sentinel did not pass; live tests would not use QueryPlanInterop."
+          exit 1
+        fi
+      done
+    displayName: Native preflight on this agent
+    env:
+      CONFIGURATION: ${{ parameters.BuildConfiguration }}
+
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      $PSNativeCommandUseErrorActionPreference = $false
+
+      $repositoryRoot = (Resolve-Path -LiteralPath $env:BUILD_SOURCESDIRECTORY).Path
+      $liveProject = Join-Path $repositoryRoot 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/Microsoft.Azure.Cosmos.EmulatorTests.csproj'
+      $liveResults = Join-Path $env:AGENT_TEMPDIRECTORY 'LinuxQueryPlanInteropLive/live'
+      New-Item -ItemType Directory -Force -Path $liveResults | Out-Null
+
+      & dotnet build $liveProject -c $env:CONFIGURATION /p:OS=Linux --verbosity minimal
+      if ($LASTEXITCODE -ne 0) {
+          throw 'Building the live-test project failed.'
+      }
+
+      $settingsPath = Join-Path (Split-Path $liveProject) "bin/$($env:CONFIGURATION)/net6.0/settings.json"
+      $originalSettings = [IO.File]::ReadAllBytes($settingsPath)
+      $originalPermissions = [IO.File]::GetUnixFileMode($settingsPath)
+      $settings = [Text.Encoding]::UTF8.GetString($originalSettings).TrimStart([char]0xFEFF) | ConvertFrom-Json -AsHashtable
+      $settings.AppSettings.GatewayEndpoint = $env:QPI_LIVE_ENDPOINT
+      $settings.AppSettings.MasterKey = $env:QPI_LIVE_KEY
+      [IO.File]::SetUnixFileMode($settingsPath, ([IO.UnixFileMode]::UserRead -bor [IO.UnixFileMode]::UserWrite))
+      try {
+          [IO.File]::WriteAllText($settingsPath, ($settings | ConvertTo-Json -Depth 20), [Text.UTF8Encoding]::new($false))
+          # Do not run the full Query category: its cleanup deletes all account databases.
+          & dotnet test $liveProject -c $env:CONFIGURATION /p:OS=Linux --no-build --no-restore `
+              --filter 'TestCategory=LinuxQueryPlanInteropLive' `
+              --results-directory $liveResults --logger 'trx;LogFileName=linux-live.trx' --verbosity minimal `
+              -- RunConfiguration.MaxCpuCount=1 MSTest.Parallelize.Workers=1
+          $testExitCode = $LASTEXITCODE
+
+          [xml] $trx = Get-Content -LiteralPath (Join-Path $liveResults 'linux-live.trx') -Raw
+          $counters = $trx.TestRun.ResultSummary.Counters
+          if (-not $counters -or [int]$counters.total -ne 7 -or [int]$counters.executed -ne 7) {
+              throw 'Expected exactly 7 executed LinuxQueryPlanInteropLive tests; missing or skipped tests are not accepted.'
+          }
+          if ($testExitCode -ne 0) {
+              throw 'Linux query-plan live regressions failed. See linux-live.trx; failures are not suppressed.'
+          }
+      }
+      finally {
+          [IO.File]::WriteAllBytes($settingsPath, $originalSettings)
+          [IO.File]::SetUnixFileMode($settingsPath, $originalPermissions)
+      }
+    displayName: Existing query regressions with Linux native planning (live account)
+    env:
+      CONFIGURATION: ${{ parameters.BuildConfiguration }}
+      QPI_LIVE_ENDPOINT: $(QpiLiveAccountEndpoint)
+      QPI_LIVE_KEY: $(QpiLiveAccountKey)
+
+  - task: PublishTestResults@2
+    displayName: Publish Linux native/live test results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: VSTest
+      testResultsFiles: '$(Agent.TempDirectory)/LinuxQueryPlanInteropLive/**/*.trx'
+      testRunTitle: Linux QueryPlanInterop - native preflight and live regressions
+      failTaskOnFailedTests: true
+      failTaskOnMissingResultsFile: true

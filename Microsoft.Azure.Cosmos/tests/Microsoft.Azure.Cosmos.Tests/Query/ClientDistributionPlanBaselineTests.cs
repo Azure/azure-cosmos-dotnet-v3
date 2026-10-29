@@ -1,5 +1,6 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests.Query
 {
+    using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Text.Json;
@@ -19,6 +20,7 @@
             List<ClientDistributionPlanTestInput> testVariations = new List<ClientDistributionPlanTestInput>();
             string textPath = "../../../Query/DistributionPlans/Text";
             string[] filePaths = Directory.GetFiles(textPath);
+            Array.Sort(filePaths, StringComparer.Ordinal);
 
             foreach (string filePath in filePaths)
             {

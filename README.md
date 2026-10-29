@@ -38,6 +38,45 @@ using (FeedIterator<dynamic> feedIterator = container.GetItemQueryIterator<dynam
 
 For available versions, see [SDK versioning](./docs/versioning.md).
 
+### Opt-in local query planning on Linux
+
+Set `AZURE_COSMOS_USE_QUERY_INTEROP=true` before starting a Linux x64 or ARM64
+application to generate query plans locally using the bundled
+`Microsoft.Azure.Cosmos.QueryPlanInterop.Linux` library. Publish with `linux-x64`
+or `linux-arm64` to include the matching native asset. RID-independent builds
+retain both assets under `runtimes`. The native libraries require glibc 2.17 or
+later; Alpine/musl is not supported.
+
+Linux uses gateway planning by default. Unset the variable or set it to `false`
+to disable local planning. `AZURE_COSMOS_BYPASS_QUERY_PARSING=true` always forces
+gateway planning. Recoverable native-library loading failures are logged and
+use gateway planning; availability is checked once per process.
+
+This option affects query-plan generation only, not the client's Direct/Gateway
+connection mode. Windows keeps its existing ServiceInterop behavior, and macOS
+continues to use gateway planning.
+
+PR CI runs `templates/build-linux-queryplaninterop.yml` with native planning enabled:
+
+- `LinuxQueryPlanInterop` runs the account-free query-plan, routing, baseline,
+  and native-asset publishing tests on Ubuntu 22.04 x64 and ARM64 (an ARM64
+  container under QEMU on the hosted x64 agent). Each leg checks the native
+  library's dependencies with `ldd`, confirms the test process inherits
+  `AZURE_COSMOS_USE_QUERY_INTEROP=true`, and requires two sentinel tests to pass:
+  `OptedInLinuxProcessUsesNativePlanning` (the inherited flag routes queries to
+  QueryPlanInterop) and `AbsFilterTargetsBothSigns` (the library plans a query).
+- `LinuxQueryPlanInteropRuntimeImage` loads the library inside the stock
+  `aspnet:8.0-jammy` and `aspnet:8.0-azurelinux3.0-distroless-extra` images for
+  x64 and ARM64. It checks native-library availability and reports `dlopen`
+  diagnostics for recoverable loading failures.
+- `LinuxQueryPlanInteropLive` reuses the existing secret `COSMOSDB_MULTI_REGION`
+  and runs the seven account-backed regressions tagged `LinuxQueryPlanInteropLive`
+  on Ubuntu x64. The account must be reachable from hosted Ubuntu agents and allow
+  key authentication, full-text/vector queries, and containers with 25,000 RU/s.
+  Tests use temporary databases and delete only their own resources; the Unicode
+  case reuses the legacy assertions without its account-wide cleanup.
+
+
 ## Useful links
 
 - [Get Started APP](https://docs.microsoft.com/azure/cosmos-db/sql-api-get-started)

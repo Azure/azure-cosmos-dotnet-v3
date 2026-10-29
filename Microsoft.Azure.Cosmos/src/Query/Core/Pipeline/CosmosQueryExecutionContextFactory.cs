@@ -582,8 +582,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
             if (cosmosQueryContext.QueryClient.BypassQueryParsing())
             {
-                // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
-                // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
+                // Use gateway planning when native planning is unavailable, disabled, or unsupported.
                 partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
                     cosmosQueryContext,
                     inputParameters.SqlQuerySpec,

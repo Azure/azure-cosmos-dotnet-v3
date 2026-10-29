@@ -784,21 +784,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestQueryUnicodeDocumentHttpsGateway()
         {
-            await this.TestQueryUnicodeDocument(useGateway: true, protocol: Protocol.Https);
+            await TestQueryUnicodeDocument(useGateway: true, protocol: Protocol.Https);
         }
 
-        private async Task TestQueryUnicodeDocument(bool useGateway, Protocol protocol)
+        internal static async Task TestQueryUnicodeDocument(bool useGateway, Protocol protocol)
         {
-            try
+            using (DocumentClient testClient = TestCommon.CreateClient(useGateway, protocol: protocol, defaultConsistencyLevel: Documents.ConsistencyLevel.Session))
             {
-                using (DocumentClient testClient = TestCommon.CreateClient(useGateway, protocol: protocol, defaultConsistencyLevel: Documents.ConsistencyLevel.Session))
+                Database database = null;
+                try
                 {
-                    Database database = testClient.Create<Database>(null, new Database { Id = "TestQueryUnicodeDocument" + Guid.NewGuid().ToString() });
+                    database = testClient.Create<Database>(null, new Database { Id = "TestQueryUnicodeDocument" + Guid.NewGuid().ToString() });
 
                     DocumentCollection sourceCollection = new DocumentCollection
                     {
                         Id = "TestQueryUnicodeDocument" + Guid.NewGuid().ToString(),
-                        PartitionKey = defaultPartitionKeyDefinition
+                        PartitionKey = new PartitionKeyDefinition
+                        {
+                            Paths = new Collection<string> { "/pk" },
+                            Kind = PartitionKind.Hash
+                        }
                     };
                     sourceCollection.IndexingPolicy.Automatic = true;
                     sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
@@ -860,10 +865,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await testDocumentSQL("Uighur0", "ۋېڭكقق ھس قك كدسدق د كوكو الضعيف بقي قوي", null);
                     await testDocumentSQL("Yi0", "ꉬꄒꐵꄓꐨꐵꄓꐨ", null);
                 }
-            }
-            catch (DocumentClientException e)
-            {
-                Assert.Fail("Unexpected exception : " + GatewayTests.DumpFullExceptionMessage(e));
+                catch (DocumentClientException e)
+                {
+                    Assert.Fail("Unexpected exception : " + e);
+                }
+                finally
+                {
+                    if (database != null)
+                    {
+                        await testClient.DeleteDatabaseAsync(database.SelfLink);
+                    }
+                }
             }
         }
 

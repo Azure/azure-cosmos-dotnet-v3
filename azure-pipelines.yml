@@ -21,6 +21,12 @@ variables:
 
 
 jobs:
+- template:  templates/build-linux-queryplaninterop.yml
+  parameters:
+    BuildConfiguration: Release
+    LiveConnectionString: $(COSMOSDB_MULTI_REGION)
+    LiveConnectionStringName: COSMOSDB_MULTI_REGION
+
 - template:  templates/static-tools.yml
   parameters:
     BuildConfiguration: Release
