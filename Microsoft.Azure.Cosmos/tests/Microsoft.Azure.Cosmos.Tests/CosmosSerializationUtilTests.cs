@@ -24,11 +24,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow((int)(SupportedSerializationFormats.JsonText | SupportedSerializationFormats.CosmosBinary), "JsonText, CosmosBinary+Base64Strings+NumberArrays+UInt64")]
         [DataRow((int)(SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow), "CosmosBinary+Base64Strings+NumberArrays+UInt64, HybridRow")]
         [DataRow((int)(SupportedSerializationFormats.JsonText | SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow), "JsonText, CosmosBinary+Base64Strings+NumberArrays+UInt64, HybridRow")]
-        public void GetSupportedSerializationFormats_AdvertisesBinaryFeaturesOnlyForBinary(
+        public void GetSupportedSerializationFormatsAndFeatures_AdvertisesBinaryFeaturesOnlyForBinary(
             int formats,
             string expected)
         {
-            Assert.AreEqual(expected, CosmosSerializationUtil.GetSupportedSerializationFormats((SupportedSerializationFormats)formats));
+            Assert.AreEqual(expected, CosmosSerializationUtil.GetSupportedSerializationFormatsAndFeatures((SupportedSerializationFormats)formats));
         }
 
         [TestMethod]

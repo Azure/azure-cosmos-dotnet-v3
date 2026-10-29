@@ -326,8 +326,8 @@ namespace Microsoft.Azure.Cosmos
             if (request.OperationType == OperationType.Query)
             {
                 request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.SupportedSerializationFormats.HasValue
-                    ? CosmosSerializationUtil.GetSupportedSerializationFormats(this.SupportedSerializationFormats.Value)
-                    : DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
+                    ? CosmosSerializationUtil.GetSupportedSerializationFormatsAndFeatures(this.SupportedSerializationFormats.Value)
+                    : CosmosSerializationUtil.DefaultSupportedSerializationFormats;
             }
 
             if (this.StartId != null)

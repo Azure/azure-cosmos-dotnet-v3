@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             headers.Continuation = continuationToken?.ToString();
             headers.PageSize = queryPaginationOptions.PageSizeLimit?.ToString() ?? int.MaxValue.ToString();
             headers.PartitionKey = partitionKey?.ToString();
-            headers.SupportedSerializationFormats = DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
+            headers.SupportedSerializationFormats = CosmosSerializationUtil.DefaultSupportedSerializationFormats;
             headers.ActivityId = this.correlatedActivityId.ToString();
             headers.Add(HttpConstants.HttpHeaders.CorrelatedActivityId, this.correlatedActivityId.ToString());
 

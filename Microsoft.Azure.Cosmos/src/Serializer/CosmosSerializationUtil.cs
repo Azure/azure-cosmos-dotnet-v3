@@ -19,9 +19,11 @@ namespace Microsoft.Azure.Cosmos
             + "+" + nameof(SupportedSerializationFeatures.NumberArrays)
             + "+" + nameof(SupportedSerializationFeatures.UInt64);
 
+        internal static readonly string DefaultSupportedSerializationFormats = string.Join(",", SupportedSerializationFormats.JsonText, CosmosSerializationUtil.SupportedBinarySerializationFormat);
+
         private static readonly CamelCaseNamingStrategy camelCaseNamingStrategy = new CamelCaseNamingStrategy();
 
-        internal static string GetSupportedSerializationFormats(SupportedSerializationFormats formats)
+        internal static string GetSupportedSerializationFormatsAndFeatures(SupportedSerializationFormats formats)
         {
             return formats.ToString().Replace(
                 nameof(SupportedSerializationFormats.CosmosBinary),
