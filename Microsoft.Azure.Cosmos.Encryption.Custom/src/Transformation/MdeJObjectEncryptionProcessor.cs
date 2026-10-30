@@ -44,7 +44,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             using ArrayPoolManager arrayPoolManager = new ();
 
-            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, token);
+            bool useDataEncryptionKeyDirectly = encryptor is IDataEncryptionKeyAccessor;
+            DataEncryptionKey encryptionKey = useDataEncryptionKeyDirectly
+                ? await ((IDataEncryptionKeyAccessor)encryptor).GetEncryptionKeyAsync(
+                    encryptionOptions.DataEncryptionKeyId,
+                    encryptionOptions.EncryptionAlgorithm,
+                    token) ?? throw new InvalidOperationException($"{nameof(IDataEncryptionKeyAccessor)} returned null {nameof(DataEncryptionKey)}.")
+                : null;
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
@@ -67,7 +73,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     continue;
                 }
 
-                byte[] encryptedBytes = this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength);
+                byte[] encryptedBytes = useDataEncryptionKeyDirectly
+                    ? this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength)
+                    : await EncryptThroughEncryptorAsync(encryptor, encryptionOptions, typeMarker, processedBytes, processedBytesLength, token);
 
                 input[propertyName] = encryptedBytes;
 
@@ -103,7 +111,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             using ArrayPoolManager arrayPoolManager = new ();
             using ArrayPoolManager<char> charPoolManager = new ();
 
-            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
+            bool useDataEncryptionKeyDirectly = encryptor is IDataEncryptionKeyAccessor;
+            DataEncryptionKey encryptionKey = useDataEncryptionKeyDirectly
+                ? await ((IDataEncryptionKeyAccessor)encryptor).GetEncryptionKeyAsync(
+                    encryptionProperties.DataEncryptionKeyId,
+                    encryptionProperties.EncryptionAlgorithm,
+                    cancellationToken) ?? throw new InvalidOperationException($"{nameof(IDataEncryptionKeyAccessor)} returned null {nameof(DataEncryptionKey)}.")
+                : null;
 
             List<string> pathsDecrypted = new (encryptionProperties.EncryptedPaths.Count());
 
@@ -123,7 +137,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     continue;
                 }
 
-                (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextWithTypeMarker.Length, arrayPoolManager);
+                byte[] bytes;
+                int processedBytes;
+                if (useDataEncryptionKeyDirectly)
+                {
+                    (bytes, processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextWithTypeMarker.Length, arrayPoolManager);
+                }
+                else
+                {
+                    bytes = await DecryptThroughEncryptorAsync(encryptor, encryptionProperties, cipherTextWithTypeMarker, cancellationToken);
+                    processedBytes = bytes.Length;
+                }
 
                 this.Serializer.DeserializeAndAddProperty(
                     (TypeMarker)cipherTextWithTypeMarker[0],
@@ -141,6 +165,46 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             document.Remove(Constants.EncryptedInfo);
             return decryptionContext;
+        }
+
+        private static async Task<byte[]> EncryptThroughEncryptorAsync(
+            Encryptor encryptor,
+            EncryptionOptions encryptionOptions,
+            TypeMarker typeMarker,
+            byte[] processedBytes,
+            int processedBytesLength,
+            CancellationToken token)
+        {
+            // Encryptor requires an exact-length array.
+            byte[] plainText = new byte[processedBytesLength];
+            Buffer.BlockCopy(processedBytes, 0, plainText, 0, processedBytesLength);
+
+            byte[] cipherText = await encryptor.EncryptAsync(
+                plainText,
+                encryptionOptions.DataEncryptionKeyId,
+                encryptionOptions.EncryptionAlgorithm,
+                token) ?? throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(encryptor.EncryptAsync)}.");
+
+            byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
+            cipherTextWithTypeMarker[0] = (byte)typeMarker;
+            Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
+            return cipherTextWithTypeMarker;
+        }
+
+        private static async Task<byte[]> DecryptThroughEncryptorAsync(
+            Encryptor encryptor,
+            EncryptionProperties encryptionProperties,
+            byte[] cipherTextWithTypeMarker,
+            CancellationToken cancellationToken)
+        {
+            byte[] cipherText = new byte[cipherTextWithTypeMarker.Length - 1];
+            Buffer.BlockCopy(cipherTextWithTypeMarker, 1, cipherText, 0, cipherTextWithTypeMarker.Length - 1);
+
+            return await encryptor.DecryptAsync(
+                cipherText,
+                encryptionProperties.DataEncryptionKeyId,
+                encryptionProperties.EncryptionAlgorithm,
+                cancellationToken) ?? throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(encryptor.DecryptAsync)}.");
         }
     }
 }

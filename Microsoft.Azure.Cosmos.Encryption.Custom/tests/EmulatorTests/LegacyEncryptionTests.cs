@@ -1739,7 +1739,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         // This class is same as CosmosEncryptor but copied so as to induce decryption failure easily for testing.
-        private class TestEncryptor : Encryptor
+        private class TestEncryptor : Encryptor, IDataEncryptionKeyAccessor
         {
             public DataEncryptionKeyProvider DataEncryptionKeyProvider { get; }
             public bool FailDecryption { get; set; }
@@ -1782,7 +1782,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 return dek.EncryptData(plainText);
             }
 
-            public override async Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            public async Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
             {
                 return await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
                     dataEncryptionKeyId,
