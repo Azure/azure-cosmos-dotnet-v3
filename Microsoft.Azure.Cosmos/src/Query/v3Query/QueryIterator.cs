@@ -99,8 +99,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ICosmosDistributedQueryClient distributedQueryClient = new CosmosDistributedQueryClient(
                 clientContext,
                 resourceLink,
-                correlatedActivityId,
-                queryRequestOptions);
+                correlatedActivityId);
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 containerCore,

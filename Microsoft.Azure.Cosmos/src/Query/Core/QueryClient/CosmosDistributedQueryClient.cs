@@ -23,8 +23,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
         private readonly Guid correlatedActivityId;
 
-        private readonly QueryRequestOptions queryRequestOptions;
-
         private DocumentClient DocumentClient => this.cosmosClientContext.DocumentClient;
 
         private IDocumentClientRetryPolicy RetryPolicy => this.cosmosClientContext.DocumentClient.ResetSessionTokenRetryPolicy.GetRequestPolicy();
@@ -32,13 +30,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public CosmosDistributedQueryClient(
             CosmosClientContext cosmosClientContext,
             string containerLink,
-            Guid correlatedActivityId,
-            QueryRequestOptions queryRequestOptions = null)
+            Guid correlatedActivityId)
         {
             this.cosmosClientContext = cosmosClientContext ?? throw new ArgumentNullException(nameof(cosmosClientContext));
             this.containerLink = containerLink ?? throw new ArgumentNullException(nameof(containerLink));
             this.correlatedActivityId = correlatedActivityId;
-            this.queryRequestOptions = queryRequestOptions;
         }
 
         public async Task<TryCatch<QueryPage>> MonadicQueryAsync(
@@ -81,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             }
         }
 
-        internal DocumentServiceRequest CreateRequest(
+        private DocumentServiceRequest CreateRequest(
             SqlQuerySpec sqlQuerySpec,
             Cosmos.PartitionKey? partitionKey,
             FeedRangeInternal feedRange,
@@ -99,9 +95,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             headers.Continuation = continuationToken?.ToString();
             headers.PageSize = queryPaginationOptions.PageSizeLimit?.ToString() ?? int.MaxValue.ToString();
             headers.PartitionKey = partitionKey?.ToString();
-            headers.SupportedSerializationFormats = CosmosSerializationUtil.GetSupportedSerializationFormatsAndFeatures(
-                this.queryRequestOptions?.SupportedSerializationFormats,
-                this.queryRequestOptions?.SupportedSerializationFeatures);
+            headers.SupportedSerializationFormats = (SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.JsonText).ToString();
             headers.ActivityId = this.correlatedActivityId.ToString();
             headers.Add(HttpConstants.HttpHeaders.CorrelatedActivityId, this.correlatedActivityId.ToString());
 
