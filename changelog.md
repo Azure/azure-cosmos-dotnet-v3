@@ -32,7 +32,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
-- Query: Restores standard competition ranking for hybrid search RRF. Tied component scores share a rank, and the next distinct score's rank reflects its sorted position. Removes the ordinal-ranking behavior and decoded `_rid` tie-breakers introduced in [6130](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6130); `AZURE_COSMOS_HYBRID_SEARCH_USE_COMPETITION_RANKING` is no longer needed or used.
 - [6154](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6154) Direct: Expands the available managed source with resource models, serialization, partition-key routing, session tokens, and their supporting types and unit tests. The SDK still uses the existing Direct package and native query-planning library; runtime behavior and public APIs are unchanged.
 - [6137](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6137) Direct: Begins making the managed Direct implementation available as source in this repository with a buildable foundation of 53 unchanged source files. The SDK continues to use the existing Direct package; runtime behavior and public APIs are unchanged.
 
