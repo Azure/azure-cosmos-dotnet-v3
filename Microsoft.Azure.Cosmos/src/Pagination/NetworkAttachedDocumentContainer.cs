@@ -149,13 +149,31 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     feedRange,
                     forceRefresh: false,
                     trace);
+                FeedRangeEpk parentFeedRangeEpk = feedRange as FeedRangeEpk;
+                if (parentFeedRangeEpk == null &&
+                    feedRange is FeedRangePartitionKey feedRangePartitionKey)
+                {
+                    parentFeedRangeEpk = FeedRangeEpk.TryCreateFromPartialPartitionKey(
+                        feedRangePartitionKey,
+                        containerProperties.PartitionKey);
+                }
+
+                bool useLengthAwareRangeComparer =
+                    this.container.ClientContext.ClientOptions.UseLengthAwareRangeComparer;
                 return TryCatch<List<FeedRangeEpk>>.FromResult(
-                    overlappingRanges.Select(range => new FeedRangeEpk(
-                        new Documents.Routing.Range<string>(
-                            min: range.MinInclusive,
-                            max: range.MaxExclusive,
-                            isMinInclusive: true,
-                            isMaxInclusive: false))).ToList());
+                    overlappingRanges.Select(range =>
+                    {
+                        Documents.Routing.Range<string> childRange =
+                            new Documents.Routing.Range<string>(
+                                min: range.MinInclusive,
+                                max: range.MaxExclusive,
+                                isMinInclusive: true,
+                                isMaxInclusive: false);
+                        return parentFeedRangeEpk?.GetClippedRange(
+                            childRange,
+                            useLengthAwareRangeComparer)
+                            ?? new FeedRangeEpk(childRange);
+                    }).ToList());
             }
             catch (Exception ex)
             {

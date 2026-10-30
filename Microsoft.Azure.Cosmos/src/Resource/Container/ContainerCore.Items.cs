@@ -722,7 +722,9 @@ namespace Microsoft.Azure.Cosmos
                     readFeedPaginationOptions,
                     requestOptions,
                     this,
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    useLengthAwareRangeComparer: this.ClientContext.ClientOptions.UseLengthAwareRangeComparer,
+                    feedRange: feedRange);
             }
 
             return QueryIterator.Create(
@@ -795,7 +797,8 @@ namespace Microsoft.Azure.Cosmos
                     continuationToken: continuationToken,
                     readFeedPaginationOptions: readFeedPaginationOptions,
                     container: this,
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    useLengthAwareRangeComparer: this.ClientContext.ClientOptions.UseLengthAwareRangeComparer);
             }
 
             return feedIterator;

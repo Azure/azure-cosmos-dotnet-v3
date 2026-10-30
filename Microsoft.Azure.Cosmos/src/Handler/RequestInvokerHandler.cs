@@ -710,12 +710,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 PartitionKeyDefinition partitionKeyDefinition = await cosmosContainerCore
                     .GetPartitionKeyDefinitionAsync(cancellationToken)
                     .ConfigureAwait(false);
-
-                if (partitionKeyDefinition != null && partitionKeyDefinition.Kind == PartitionKind.MultiHash
-                    && feedRangePartitionKey.PartitionKey.InternalKey?.Components?.Count < partitionKeyDefinition.Paths?.Count)
-                {
-                   feedRange = new FeedRangeEpk(feedRangePartitionKey.PartitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
-                }
+                feedRange = FeedRangeEpk.TryCreateFromPartialPartitionKey(
+                    feedRangePartitionKey,
+                    partitionKeyDefinition) ?? feedRange;
             }
 
             return feedRange;
