@@ -568,7 +568,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 isContinuationExpected: cosmosQueryContext.IsContinuationExpected,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 fullTextScoreScope: inputParameters.FullTextScoreScope,
-                isHybridSearchCompetitionRankingEnabled: inputParameters.IsHybridSearchCompetitionRankingEnabled,
                 requestContinuationToken: inputParameters.InitialUserContinuationToken);
         }
 
@@ -840,7 +839,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 bool returnResultsInDeterministicOrder,
                 bool enableOptimisticDirectExecution,
                 bool isHybridSearchQueryPlanOptimizationDisabled,
-                bool isHybridSearchCompetitionRankingEnabled,
                 bool enableDistributedQueryGatewayMode,
                 FullTextScoreScope fullTextScoreScope,
                 TestInjections testInjections,
@@ -858,7 +856,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder;
                 this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
                 this.IsHybridSearchQueryPlanOptimizationDisabled = isHybridSearchQueryPlanOptimizationDisabled;
-                this.IsHybridSearchCompetitionRankingEnabled = isHybridSearchCompetitionRankingEnabled;
                 this.EnableDistributedQueryGatewayMode = enableDistributedQueryGatewayMode;
                 this.FullTextScoreScope = fullTextScoreScope;
                 this.TestInjections = testInjections;
@@ -878,7 +875,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 bool? returnResultsInDeterministicOrder,
                 bool enableOptimisticDirectExecution,
                 bool isHybridSearchQueryPlanOptimizationDisabled,
-                bool isHybridSearchCompetitionRankingEnabled,
                 bool enableDistributedQueryGatewayMode,
                 FullTextScoreScope fullTextScoreScope,
                 TestInjections testInjections,
@@ -920,7 +916,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     returnResultsInDeterministicOrder: returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder),
                     enableOptimisticDirectExecution: enableOptimisticDirectExecution,
                     isHybridSearchQueryPlanOptimizationDisabled: isHybridSearchQueryPlanOptimizationDisabled,
-                    isHybridSearchCompetitionRankingEnabled: isHybridSearchCompetitionRankingEnabled,
                     enableDistributedQueryGatewayMode: enableDistributedQueryGatewayMode,
                     fullTextScoreScope: fullTextScoreScope,
                     testInjections: testInjections,
@@ -940,7 +935,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public TestInjections TestInjections { get; }
             public bool EnableOptimisticDirectExecution { get; }
             public bool IsHybridSearchQueryPlanOptimizationDisabled { get; }
-            public bool IsHybridSearchCompetitionRankingEnabled { get; }
             public bool EnableDistributedQueryGatewayMode { get; }
             public bool UseLengthAwareRangeComparer { get; }
             public FullTextScoreScope FullTextScoreScope { get; }
@@ -961,7 +955,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     this.ReturnResultsInDeterministicOrder,
                     this.EnableOptimisticDirectExecution,
                     this.IsHybridSearchQueryPlanOptimizationDisabled,
-                    this.IsHybridSearchCompetitionRankingEnabled,
                     this.EnableDistributedQueryGatewayMode,
                     this.FullTextScoreScope,
                     this.TestInjections,

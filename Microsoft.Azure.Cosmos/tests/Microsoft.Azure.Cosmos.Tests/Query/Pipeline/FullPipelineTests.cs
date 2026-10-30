@@ -340,7 +340,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 returnResultsInDeterministicOrder: null,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
-                isHybridSearchCompetitionRankingEnabled: queryRequestOptions.IsHybridSearchCompetitionRankingEnabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
                 fullTextScoreScope: queryRequestOptions.FullTextScoreScope,
                 testInjections: queryRequestOptions.TestSettings);
@@ -623,8 +622,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 isContinuationExpected: true,
                 maxConcurrency: 10,
                 fullTextScoreScope: FullTextScoreScope.Global,
-                requestContinuationToken: state,
-                isHybridSearchCompetitionRankingEnabled: false);
+                requestContinuationToken: state);
 
             tryCreatePipeline.ThrowIfFailed();
 
