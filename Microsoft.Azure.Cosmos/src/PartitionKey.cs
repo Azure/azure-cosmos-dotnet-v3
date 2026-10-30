@@ -188,12 +188,46 @@ namespace Microsoft.Azure.Cosmos
                 return PartitionKey.NullPartitionKeyInternal.ToJsonString();
             }
 
-            return this.InternalKey.ToJsonString();
+            return PartitionKey.ToJsonString(this.InternalKey);
         }
 
         internal string ToJsonString()
         {
-            return this.InternalKey.ToJsonString();
+            return PartitionKey.ToJsonString(this.InternalKey);
+        }
+
+        /// <summary>
+        /// Serializes the partition key to JSON, avoiding the JSON.NET serializer for the most common
+        /// case of a single string component made up only of characters that never need escaping.
+        /// </summary>
+        private static string ToJsonString(PartitionKeyInternal partitionKeyInternal)
+        {
+            if (partitionKeyInternal.Components is { Count: 1 } components
+                && components[0] is StringPartitionKeyComponent stringComponent
+                && stringComponent.ToObject() is string value
+                && PartitionKey.IsJsonSafeAscii(value))
+            {
+                return "[\"" + value + "\"]";
+            }
+
+            return partitionKeyInternal.ToJsonString();
+        }
+
+        /// <summary>
+        /// Returns true if JSON.NET would write every character of the value as-is when escaping non-ASCII
+        /// characters, i.e. the value only contains printable ASCII excluding the quote and backslash.
+        /// </summary>
+        private static bool IsJsonSafeAscii(string value)
+        {
+            foreach (char c in value)
+            {
+                if (c < ' ' || c > '~' || c == '"' || c == '\\')
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         internal static bool TryParseJsonString(string partitionKeyString, out PartitionKey partitionKey)

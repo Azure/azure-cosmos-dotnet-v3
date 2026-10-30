@@ -45,6 +45,49 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         }
 
         [TestMethod]
+        public void JsonCharArrayPoolClearsArraysOnReturn()
+        {
+            char[] array = JsonCharArrayPool.Instance.Rent(1024);
+            array.AsSpan().Fill('x');
+
+            JsonCharArrayPool.Instance.Return(array);
+
+            Assert.AreEqual(-1, Array.FindIndex(array, (c) => c != '\0'), "The array was not cleared before being returned to the pool.");
+        }
+
+        [TestMethod]
+        public void FromStreamDoesNotLeakContentToSharedArrayPool()
+        {
+            const string marker = "cosmos-sensitive-marker-c3b1f1a2";
+            string json = $"{{\"id\":\"1\",\"description\":\"{marker}\"}}";
+
+            CosmosJsonDotNetSerializer serializer = new CosmosJsonDotNetSerializer();
+            using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+            {
+                ToDoActivity result = serializer.FromStream<ToDoActivity>(stream);
+                Assert.AreEqual(marker, result.Description);
+            }
+
+            List<char[]> rented = new List<char[]>();
+            try
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    char[] array = System.Buffers.ArrayPool<char>.Shared.Rent(1024);
+                    rented.Add(array);
+                    Assert.IsFalse(new string(array).Contains(marker), "Deserialized content was left in a buffer returned to the shared array pool.");
+                }
+            }
+            finally
+            {
+                foreach (char[] array in rented)
+                {
+                    System.Buffers.ArrayPool<char>.Shared.Return(array);
+                }
+            }
+        }
+
+        [TestMethod]
         public void ValidateSerializer()
         {
             CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Diagnostics;
     using System.Linq;
     using System.Threading;
@@ -18,6 +19,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
     //TODO: write unit test for this handler
     internal class TransportHandler : RequestHandler
     {
+        // The set of store model types is small and fixed, so cache the trace name per type to avoid
+        // formatting a new string for every request.
+        private static readonly ConcurrentDictionary<Type, string> TransportRequestTraceNames = new ConcurrentDictionary<Type, string>();
+
         private readonly CosmosClient client;
 
         public TransportHandler(CosmosClient client)
@@ -136,14 +141,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
             // not thin-client-routable (service withdrew thin endpoints, unsupported op, unhealthy region, ...).
             // Label the diagnostics trace with the store model that actually serves the request so a gateway-served
             // request never appears under ThinClientStoreModel and vice versa.
-            string storeModelName = storeProxy is ThinClientStoreModel thinClientStoreModel
+            Type storeModelType = storeProxy is ThinClientStoreModel thinClientStoreModel
                 ? (thinClientStoreModel.WillRouteToThinClient(serviceRequest)
-                    ? typeof(ThinClientStoreModel).FullName
-                    : typeof(GatewayStoreModel).FullName)
-                : storeProxy.GetType().FullName;
+                    ? typeof(ThinClientStoreModel)
+                    : typeof(GatewayStoreModel))
+                : storeProxy.GetType();
 
             using (ITrace processMessageAsyncTrace = request.Trace.StartChild(
-                            name: $"{storeModelName} Transport Request",
+                            name: TransportHandler.GetTransportRequestTraceName(storeModelType),
                             component: TraceComponent.Transport,
                             level: Tracing.TraceLevel.Info))
             {
@@ -184,6 +189,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 return responseMessage;
             }
+        }
+
+        internal static string GetTransportRequestTraceName(Type storeModelType)
+        {
+            return TransportHandler.TransportRequestTraceNames.GetOrAdd(
+                storeModelType,
+                static (type) => $"{type.FullName} Transport Request");
         }
 
         internal static ResponseMessage AggregateExceptionConverter(AggregateException aggregateException, RequestMessage request)

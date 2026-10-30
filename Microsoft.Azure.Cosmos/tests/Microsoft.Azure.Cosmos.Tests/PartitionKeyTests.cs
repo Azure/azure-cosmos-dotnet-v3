@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -86,6 +87,44 @@ namespace Microsoft.Azure.Cosmos.Tests
             definition2.Paths.Add("/pk1");
 
             Assert.IsTrue(PartitionKeyDefinition.AreEquivalent(definition1, definition2));
+        }
+
+        [TestMethod]
+        public void ToJsonStringMatchesPartitionKeyInternalSerialization()
+        {
+            List<string> values = new List<string>
+            {
+                string.Empty,
+                "somePK",
+                "with space",
+                "quote\"inside",
+                "back\\slash",
+                "forward/slash",
+                "<html>&'",
+                "tab\tnew\nline\r",
+                "\u007f",
+                "caf\u00e9",
+                "\u2028\u2029\u0085",
+                "\ud83d\ude00",
+                new string('a', 2048),
+            };
+
+            for (int c = 0; c < 0x300; c++)
+            {
+                values.Add("pre" + (char)c + "post");
+            }
+
+            foreach (string value in values)
+            {
+                Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(value);
+                string expected = partitionKey.InternalKey.ToJsonString();
+
+                Assert.AreEqual(expected, partitionKey.ToJsonString());
+                Assert.AreEqual(expected, partitionKey.ToString());
+            }
+
+            Cosmos.PartitionKey hierarchical = new PartitionKeyBuilder().Add("a").Add("b").Build();
+            Assert.AreEqual(hierarchical.InternalKey.ToJsonString(), hierarchical.ToJsonString());
         }
 
         [TestMethod]

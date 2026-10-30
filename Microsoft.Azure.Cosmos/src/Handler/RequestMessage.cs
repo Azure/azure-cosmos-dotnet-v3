@@ -82,8 +82,8 @@ namespace Microsoft.Azure.Cosmos
             this.Method = method;
             this.RequestUriString = requestUriString;
             this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
-            this.headers = new Lazy<Headers>(() => headers);
-            this.properties = new Lazy<Dictionary<string, object>>(() => properties);
+            this.headers = headers;
+            this.properties = properties;
         }
 
         /// <summary>
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the current <see cref="RequestMessage"/> HTTP headers.
         /// </summary>
-        public virtual Headers Headers => this.headers.Value;
+        public virtual Headers Headers => this.headers ?? this.CreateHeaders();
 
         /// <summary>
         /// Gets or sets the current <see cref="RequestMessage"/> payload.
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal Action<DocumentServiceRequest> OnBeforeSendRequestActions { get; set; }
 
-        internal bool IsPropertiesInitialized => this.properties.IsValueCreated;
+        internal bool IsPropertiesInitialized => this.properties != null;
 
         /// <summary>
         /// The partition key range handler is only needed for read feed on partitioned resources 
@@ -168,11 +168,12 @@ namespace Microsoft.Azure.Cosmos
         /// Request properties Per request context available to handlers. 
         /// These will not be automatically included into the wire.
         /// </summary>
-        public virtual Dictionary<string, object> Properties => this.properties.Value;
+        public virtual Dictionary<string, object> Properties => this.properties ?? this.CreateDictionary();
 
-        private readonly Lazy<Dictionary<string, object>> properties = new Lazy<Dictionary<string, object>>(RequestMessage.CreateDictionary);
+        // Lazily created on first access without the cost of allocating a Lazy<T> for every request
+        private Dictionary<string, object> properties;
 
-        private readonly Lazy<Headers> headers = new Lazy<Headers>(RequestMessage.CreateHeaders);
+        private Headers headers;
 
         private bool disposed;
 
@@ -358,14 +359,14 @@ namespace Microsoft.Azure.Cosmos
             return clone;
         }
 
-        private static Dictionary<string, object> CreateDictionary()
+        private Dictionary<string, object> CreateDictionary()
         {
-            return new Dictionary<string, object>();
+            return Interlocked.CompareExchange(ref this.properties, new Dictionary<string, object>(), null) ?? this.properties;
         }
 
-        private static Headers CreateHeaders()
+        private Headers CreateHeaders()
         {
-            return new Headers();
+            return Interlocked.CompareExchange(ref this.headers, new Headers(), null) ?? this.headers;
         }
 
         private void OnBeforeRequestHandler(DocumentServiceRequest serviceRequest)
