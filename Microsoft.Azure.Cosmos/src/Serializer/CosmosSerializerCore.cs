@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosSerializer customSerializer;
         private readonly CosmosSerializer sqlQuerySpecSerializer;
         private CosmosSerializer patchOperationSerializer;
+        private CosmosSerializer distributedTransactionPatchSerializer;
 
         internal CosmosSerializerCore(
             CosmosSerializer customSerializer = null)
@@ -89,6 +90,20 @@ namespace Microsoft.Azure.Cosmos
         {
             CosmosSerializer serializer = this.GetSerializer<T>(canUseBinaryEncodingForPointOperations);
             return serializer.ToStream<T>(input);
+        }
+
+        internal Stream ToStreamForDistributedTransaction<T>(T input)
+        {
+            if (typeof(T) == typeof(PatchSpec))
+            {
+                this.distributedTransactionPatchSerializer ??= PatchOperationsJsonConverter.CreatePatchOperationsSerializer(
+                    cosmosSerializer: this.customSerializer ?? CosmosSerializerCore.propertiesSerializer,
+                    propertiesSerializer: CosmosSerializerCore.propertiesSerializer,
+                    serializeAsText: true);
+                return this.distributedTransactionPatchSerializer.ToStream(input);
+            }
+
+            return CosmosSerializationUtil.ToStreamForTextJson(this.GetSerializer<T>(), input);
         }
 
         internal Stream ToStreamSqlQuerySpec(SqlQuerySpec input, ResourceType resourceType)

@@ -79,6 +79,12 @@ namespace Microsoft.Azure.Cosmos
             if (this.body.IsEmpty && this.ResourceStream != null)
             {
                 this.body = await BatchExecUtils.StreamToMemoryAsync(this.ResourceStream, cancellationToken);
+
+                // DTx embeds documents in text JSON, unlike the binary-compatible batch envelope.
+                if (CosmosSerializationUtil.TryConvertBinaryToText(this.body, out byte[] textBody))
+                {
+                    this.body = textBody;
+                }
             }
         }
     }
@@ -113,15 +119,16 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal override Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
+        internal override async Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.Resource != null)
             {
-                this.ResourceStream = serializerCore.ToStream(this.Resource);
-                return base.MaterializeResourceAsync(serializerCore, cancellationToken);
+                this.ResourceStream = serializerCore.ToStreamForDistributedTransaction(this.Resource);
+                using (this.ResourceStream)
+                {
+                    await base.MaterializeResourceAsync(serializerCore, cancellationToken);
+                }
             }
-
-            return Task.CompletedTask;
         }
     }
 }
