@@ -78,22 +78,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return false;
             }
 
-            Debug.Assert(buffer1.Length >= lengthToCompare, "invalid lengthToCompare");
             Debug.Assert(buffer2Index > -1 && buffer2Index < buffer2.Length, "invalid index");
-            if ((buffer2.Length - buffer2Index) < lengthToCompare)
+
+            if (buffer2Index < 0 || buffer1.Length < lengthToCompare || (buffer2.Length - buffer2Index) < lengthToCompare)
             {
                 return false;
             }
 
-            for (int index = 0; index < buffer1.Length && index < lengthToCompare; ++index)
+            // Compare every authentication-tag byte without a data-dependent early exit.
+            int accumulatedDifference = 0;
+            for (int index = 0; index < lengthToCompare; ++index)
             {
-                if (buffer1[index] != buffer2[buffer2Index + index])
-                {
-                    return false;
-                }
+                accumulatedDifference |= buffer1[index] ^ buffer2[buffer2Index + index];
             }
 
-            return true;
+            return accumulatedDifference == 0;
         }
 
         /// <summary>
