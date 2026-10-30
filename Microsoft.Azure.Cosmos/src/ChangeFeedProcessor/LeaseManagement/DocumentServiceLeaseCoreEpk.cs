@@ -61,7 +61,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         }
 
         [JsonIgnore]
-        public override string ConcurrencyToken => this.ETag;
+        public override string ConcurrencyToken
+        {
+            get => this.ETag;
+            set => this.ETag = value;
+        }
 
         [JsonProperty("properties")]
         public override Dictionary<string, string> Properties { get; set; } = new Dictionary<string, string>();
