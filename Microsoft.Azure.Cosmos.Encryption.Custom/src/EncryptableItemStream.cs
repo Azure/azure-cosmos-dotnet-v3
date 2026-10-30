@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// Instead, typed APIs can be used with EncryptableItemStream as input type, which takes item input in the form of stream.
     /// </summary>
     /// <example>
-    /// This example takes in a item in stream format, encrypts it and writes to Cosmos container.
+    /// This example takes in an item in stream format, encrypts it and writes to Cosmos container.
     /// <code language="c#">
     /// <![CDATA[
     ///     ItemResponse<EncryptableItemStream> createResponse = await encryptionContainer.CreateItemAsync<EncryptableItemStream>(

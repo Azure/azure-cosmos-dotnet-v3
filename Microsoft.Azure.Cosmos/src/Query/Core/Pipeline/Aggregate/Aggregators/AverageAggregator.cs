@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             /// <returns>The sum of two AverageInfo structs</returns>
             public static AverageInfo operator +(AverageInfo info1, AverageInfo info2)
             {
-                // For a query taking the average of a items where any of the items is not a number results in Undefined / 0 documents.
+                // For a query taking the average of an items where any of the items is not a number results in Undefined / 0 documents.
                 // We replicated that here by checking if the sum has a value.
                 if (!info1.Sum.HasValue || !info2.Sum.HasValue)
                 {
