@@ -45,6 +45,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe during client-side processing. Cancellation does not guarantee that a write transaction has not committed.</param>
         /// <returns>A <see cref="Task{TResult}"/> containing a <see cref="DistributedTransactionResponse"/> that represents the result of the transaction.</returns>
+        /// <exception cref="ArgumentException">Thrown when a transaction contains a <see cref="DistributedTransactionRequestOptions.SessionToken"/> the SDK cannot interpret.</exception>
         /// <exception cref="InvalidOperationException">Thrown if the transaction has no operations or execution has already started on this instance.</exception>
         /// <exception cref="OperationCanceledException">Thrown when cancellation is observed before or during execution. A write transaction may still have committed.</exception>
         public abstract Task<DistributedTransactionResponse> ExecuteTransactionAsync(CancellationToken cancellationToken = default);

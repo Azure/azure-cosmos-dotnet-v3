@@ -55,7 +55,18 @@ namespace Microsoft.Azure.Cosmos
 
         internal string PartitionKeyJson { get; set; }
 
-        internal string SessionToken => string.IsNullOrWhiteSpace(this.RequestOptions?.SessionToken) ? null : this.RequestOptions.SessionToken;
+        internal string SessionToken => string.IsNullOrWhiteSpace(this.RequestOptions?.SessionToken) ? this.ResolvedSessionToken : this.RequestOptions.SessionToken;
+
+        internal string ResolvedSessionToken { get; set; }
+
+        /// <summary>
+        /// The partition key range this operation was routed to at request time.
+        /// </summary>
+        /// <remarks>
+        /// Recorded for operations without explicit tokens before the session-token send gate, so comparison
+        /// with the server's range detects a split or move even when the gate withheld a token.
+        /// </remarks>
+        internal string ResolvedPartitionKeyRangeId { get; set; }
 
         internal string IfMatch => this.RequestOptions?.IfMatchEtag;
 
