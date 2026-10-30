@@ -1,12 +1,12 @@
 # File: templates/build-test-aad.yml
 #
 # Live-account AAD (Microsoft Entra ID) integration tests (TestCategory=MultiRegionAad).
-# These authenticate to a real, AAD-only Cosmos DB account (dotnet-v3-multiregion) using a real
+# These authenticate to the configured live Cosmos DB account using a real
 # Entra token (data-plane RBAC), via an Azure Resource Manager service connection that uses
 # Workload Identity Federation (no client secret -- secrets are blocked by tenant policy).
 #
-# The connection's identity is an app registration in the SAME tenant as the account
-# (dotnet-v3-aad-ci-app), which holds the Cosmos DB Built-in Data Contributor data-plane role on
+# The connection's identity is an app registration in the SAME tenant as the account,
+# which holds the Cosmos DB Built-in Data Contributor data-plane role on
 # the account. The AzureCLI@2 task logs `az` in as that identity; the SDK's DefaultAzureCredential
 # (AzureCliCredential) then acquires Cosmos data-plane tokens. (A co-tenant app registration is
 # required because Cosmos data-plane RBAC cannot grant a role to a principal in another tenant --
@@ -29,7 +29,7 @@
 #      result, rejects every failed or skipped/inconclusive/not-executed result, and fails closed when
 #      no TRX was produced at all.
 #
-# Falsification (how to prove the lane really fails): point 'AadAccountEndpoint' at a nonexistent
+# Falsification (how to prove the lane really fails): point 'MultiRegionConnectionString' at a nonexistent
 # account, or rename the pre-created container so the fixture is missing, and re-run. The test task
 # fails because of guard (1); even if guard (1) were removed, guard (2) still fails the job because
 # every result is skipped/inconclusive instead of passed.
@@ -39,7 +39,7 @@ parameters:
   OS: 'Windows'
   Arguments: ' --filter "TestCategory=MultiRegionAad" --verbosity normal '
   CategoryListName: ' MultiRegionAad '
-  AadAccountEndpoint: ''
+  MultiRegionConnectionString: ''
   AadServiceConnection: ''
   # Fail the tests (instead of skipping them) when a live AAD prerequisite is not satisfied.
   StrictMode: true
@@ -96,7 +96,9 @@ jobs:
           ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} `
           --logger 'trx;LogFileName=MultiRegionAad.trx'
     env:
-      COSMOSDB_MULTI_REGION_AAD: ${{ parameters.AadAccountEndpoint }}
+      COSMOSDB_MULTI_REGION: ${{ parameters.MultiRegionConnectionString }}
+      # Reuse the normal account; ignore any stale optional local-test endpoint override.
+      COSMOSDB_MULTI_REGION_AAD: ''
       COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL: true
       # Fail closed: an unsatisfied prerequisite (missing endpoint/credential, 401/403 from a missing
       # data-plane role assignment, 404 from a missing database/container) fails the test instead of
