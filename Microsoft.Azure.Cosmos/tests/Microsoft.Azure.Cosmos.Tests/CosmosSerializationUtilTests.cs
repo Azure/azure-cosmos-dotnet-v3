@@ -32,6 +32,32 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [DataRow(null, null, "JsonText,CosmosBinary+Base64Strings+NumberArrays+UInt64")]
+        [DataRow(null, (int)SupportedSerializationFeatures.None, "JsonText,CosmosBinary")]
+        [DataRow(null, (int)SupportedSerializationFeatures.NumberArrays, "JsonText,CosmosBinary+NumberArrays")]
+        [DataRow((int)SupportedSerializationFormats.CosmosBinary, (int)SupportedSerializationFeatures.None, "CosmosBinary")]
+        [DataRow((int)SupportedSerializationFormats.CosmosBinary, (int)SupportedSerializationFeatures.Base64Strings, "CosmosBinary+Base64Strings")]
+        [DataRow((int)SupportedSerializationFormats.CosmosBinary, (int)SupportedSerializationFeatures.NumberArrays, "CosmosBinary+NumberArrays")]
+        [DataRow((int)SupportedSerializationFormats.CosmosBinary, (int)SupportedSerializationFeatures.UInt64, "CosmosBinary+UInt64")]
+        [DataRow((int)SupportedSerializationFormats.CosmosBinary, (int)(SupportedSerializationFeatures.Base64Strings | SupportedSerializationFeatures.NumberArrays), "CosmosBinary+Base64Strings+NumberArrays")]
+        [DataRow((int)SupportedSerializationFormats.CosmosBinary, (int)(SupportedSerializationFeatures.Base64Strings | SupportedSerializationFeatures.UInt64), "CosmosBinary+Base64Strings+UInt64")]
+        [DataRow((int)SupportedSerializationFormats.CosmosBinary, (int)(SupportedSerializationFeatures.NumberArrays | SupportedSerializationFeatures.UInt64), "CosmosBinary+NumberArrays+UInt64")]
+        [DataRow((int)SupportedSerializationFormats.CosmosBinary, (int)(SupportedSerializationFeatures.Base64Strings | SupportedSerializationFeatures.NumberArrays | SupportedSerializationFeatures.UInt64), "CosmosBinary+Base64Strings+NumberArrays+UInt64")]
+        [DataRow((int)(SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow), (int)SupportedSerializationFeatures.None, "CosmosBinary, HybridRow")]
+        [DataRow((int)SupportedSerializationFormats.JsonText, (int)SupportedSerializationFeatures.UInt64, "JsonText")]
+        [DataRow((int)SupportedSerializationFormats.HybridRow, (int)SupportedSerializationFeatures.Base64Strings, "HybridRow")]
+        [DataRow((int)SupportedSerializationFormats.None, (int)SupportedSerializationFeatures.NumberArrays, "None")]
+        public void GetSupportedSerializationFormatsAndFeatures_HonorsFeatureSelection(
+            int? formats,
+            int? features,
+            string expected)
+        {
+            Assert.AreEqual(expected, CosmosSerializationUtil.GetSupportedSerializationFormatsAndFeatures(
+                (SupportedSerializationFormats?)formats,
+                (SupportedSerializationFeatures?)features));
+        }
+
+        [TestMethod]
         [DataRow("{\"value\":\"SGVsbG8gV29ybGQhSGVsbG8gV29ybGQ=\"}", (int)JsonWriteOptions.EnableBase64Strings)]
         [DataRow("[1000,1001,1002,1003,1004,1005,1006,1007]", (int)JsonWriteOptions.EnableNumberArrays)]
         [DataRow("{\"value\":18446744073709551615}", (int)JsonWriteOptions.EnableUInt64Values)]

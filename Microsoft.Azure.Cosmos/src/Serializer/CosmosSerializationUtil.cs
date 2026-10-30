@@ -23,11 +23,31 @@ namespace Microsoft.Azure.Cosmos
 
         private static readonly CamelCaseNamingStrategy camelCaseNamingStrategy = new CamelCaseNamingStrategy();
 
-        internal static string GetSupportedSerializationFormatsAndFeatures(SupportedSerializationFormats formats)
+        internal static string GetSupportedSerializationFormatsAndFeatures(
+            SupportedSerializationFormats? formats,
+            SupportedSerializationFeatures? features = null)
         {
-            return formats.ToString().Replace(
+            if (!formats.HasValue && !features.HasValue)
+            {
+                return CosmosSerializationUtil.DefaultSupportedSerializationFormats;
+            }
+
+            string supportedFormats = formats.HasValue
+                ? formats.Value.ToString()
+                : string.Join(",", SupportedSerializationFormats.JsonText, SupportedSerializationFormats.CosmosBinary);
+            string binaryFormat = CosmosSerializationUtil.SupportedBinarySerializationFormat;
+            if (features.HasValue)
+            {
+                binaryFormat = nameof(SupportedSerializationFormats.CosmosBinary);
+                if (features.Value != SupportedSerializationFeatures.None)
+                {
+                    binaryFormat += "+" + features.Value.ToString().Replace(", ", "+");
+                }
+            }
+
+            return supportedFormats.Replace(
                 nameof(SupportedSerializationFormats.CosmosBinary),
-                CosmosSerializationUtil.SupportedBinarySerializationFormat);
+                binaryFormat);
         }
 
         internal static string GetStringWithPropertyNamingPolicy(CosmosLinqSerializerOptions options, string name)
