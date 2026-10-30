@@ -722,7 +722,8 @@ namespace Microsoft.Azure.Cosmos
                     readFeedPaginationOptions,
                     requestOptions,
                     this,
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    feedRange: feedRange);
             }
 
             return QueryIterator.Create(

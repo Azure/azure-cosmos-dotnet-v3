@@ -35,6 +35,57 @@ namespace Microsoft.Azure.Cosmos
 
         public Documents.Routing.Range<string> Range { get; }
 
+        internal static FeedRangeEpk TryCreateFromFeedRange(
+            FeedRangeInternal feedRange,
+            Documents.PartitionKeyDefinition partitionKeyDefinition)
+        {
+            if (feedRange is FeedRangeEpk feedRangeEpk)
+            {
+                return feedRangeEpk;
+            }
+
+            if (!(feedRange is FeedRangePartitionKey feedRangePartitionKey) ||
+                partitionKeyDefinition?.Kind != Documents.PartitionKind.MultiHash)
+            {
+                return null;
+            }
+
+            int? componentCount =
+                feedRangePartitionKey.PartitionKey.InternalKey?.Components?.Count;
+            int? pathCount = partitionKeyDefinition.Paths?.Count;
+            if (!componentCount.HasValue ||
+                !pathCount.HasValue ||
+                componentCount.Value >= pathCount.Value)
+            {
+                return null;
+            }
+
+            return new FeedRangeEpk(
+                feedRangePartitionKey.PartitionKey.InternalKey
+                    .GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
+        }
+
+        internal FeedRangeEpk GetClippedRange(Documents.Routing.Range<string> range)
+        {
+            if (range == null)
+            {
+                throw new ArgumentNullException(nameof(range));
+            }
+
+            string min = string.CompareOrdinal(range.Min, this.Range.Min) < 0
+                ? this.Range.Min
+                : range.Min;
+            string max = string.CompareOrdinal(range.Max, this.Range.Max) > 0
+                ? this.Range.Max
+                : range.Max;
+
+            return new FeedRangeEpk(new Documents.Routing.Range<string>(
+                min,
+                max,
+                isMinInclusive: true,
+                isMaxInclusive: false));
+        }
+
         internal override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,

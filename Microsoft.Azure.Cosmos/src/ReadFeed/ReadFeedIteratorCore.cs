@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
     {
         private readonly TryCatch<CrossPartitionReadFeedAsyncEnumerator> monadicEnumerator;
         private readonly QueryRequestOptions queryRequestOptions;
+        private readonly FeedRangeInternal feedRange;
         private bool hasMoreResults;
 
         public ReadFeedIteratorCore(
@@ -36,11 +37,13 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             ReadFeedExecutionOptions readFeedPaginationOptions,
             QueryRequestOptions queryRequestOptions,
             ContainerInternal container,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            FeedRangeInternal feedRange = null)
         {
             this.container = container;
 
             this.queryRequestOptions = queryRequestOptions;
+            this.feedRange = feedRange;
 
             this.SetupInfoForTelemetry(
                 databaseName: container?.Database?.Id,
@@ -117,7 +120,12 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                             string max = ((CosmosString)rangeObject["max"]).Value;
                             CosmosElement token = continuationObject["token"];
 
-                            FeedRangeInternal feedRange = new FeedRangeEpk(new Documents.Routing.Range<string>(min, max, isMinInclusive: true, isMaxInclusive: false));
+                            FeedRangeInternal continuationFeedRange = new FeedRangeEpk(
+                                new Documents.Routing.Range<string>(
+                                    min,
+                                    max,
+                                    isMinInclusive: true,
+                                    isMaxInclusive: false));
                             ReadFeedState state;
                             if (token is CosmosNull)
                             {
@@ -149,7 +157,10 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                                 }
                             }
 
-                            FeedRangeState<ReadFeedState> feedRangeState = new FeedRangeState<ReadFeedState>(feedRange, state);
+                            FeedRangeState<ReadFeedState> feedRangeState =
+                                new FeedRangeState<ReadFeedState>(
+                                    continuationFeedRange,
+                                    state);
                             feedRangeStates.Add(ReadFeedFeedRangeStateSerializer.ToCosmosElement(feedRangeState));
                         }
                     }
@@ -162,21 +173,26 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             TryCatch<ReadFeedCrossFeedRangeState> monadicReadFeedState;
             if (continuationToken == null)
             {
-                FeedRange feedRange;
-                if ((this.queryRequestOptions != null) && this.queryRequestOptions.PartitionKey.HasValue)
+                FeedRange initialFeedRange;
+                if (this.feedRange != null)
                 {
-                    feedRange = new FeedRangePartitionKey(this.queryRequestOptions.PartitionKey.Value);
+                    initialFeedRange = this.feedRange;
+                }
+                else if ((this.queryRequestOptions != null) && this.queryRequestOptions.PartitionKey.HasValue)
+                {
+                    initialFeedRange = new FeedRangePartitionKey(this.queryRequestOptions.PartitionKey.Value);
                 }
                 else if ((this.queryRequestOptions != null) && (this.queryRequestOptions.FeedRange != null))
                 {
-                    feedRange = this.queryRequestOptions.FeedRange;
+                    initialFeedRange = this.queryRequestOptions.FeedRange;
                 }
                 else
                 {
-                    feedRange = FeedRangeEpk.FullRange;
+                    initialFeedRange = FeedRangeEpk.FullRange;
                 }
 
-                monadicReadFeedState = TryCatch<ReadFeedCrossFeedRangeState>.FromResult(ReadFeedCrossFeedRangeState.CreateFromBeginning(feedRange));
+                monadicReadFeedState = TryCatch<ReadFeedCrossFeedRangeState>.FromResult(
+                    ReadFeedCrossFeedRangeState.CreateFromBeginning(initialFeedRange));
             }
             else
             {
@@ -315,7 +331,11 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 }
 
                 FeedRangeInternal outerFeedRange;
-                if ((this.queryRequestOptions != null) && this.queryRequestOptions.PartitionKey.HasValue)
+                if (this.feedRange != null)
+                {
+                    outerFeedRange = this.feedRange;
+                }
+                else if ((this.queryRequestOptions != null) && this.queryRequestOptions.PartitionKey.HasValue)
                 {
                     outerFeedRange = new FeedRangePartitionKey(this.queryRequestOptions.PartitionKey.Value);
                 }
@@ -327,6 +347,9 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 {
                     outerFeedRange = FeedRangeEpk.FullRange;
                 }
+                outerFeedRange = ReadFeedIteratorCore.GetContinuationFeedRange(
+                    outerFeedRange,
+                    crossFeedRangeState);
 
                 FeedRangeCompositeContinuation feedRangeCompositeContinuation = new FeedRangeCompositeContinuation(
                     containerRid: string.Empty,
@@ -361,6 +384,51 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             {
                 Content = page.Content,
             };
+        }
+
+        internal static FeedRangeInternal GetContinuationFeedRange(
+            FeedRangeInternal configuredFeedRange,
+            CrossFeedRangeState<ReadFeedState> crossFeedRangeState)
+        {
+            if (!(configuredFeedRange is FeedRangePartitionKey))
+            {
+                return configuredFeedRange;
+            }
+
+            List<FeedRangeEpk> childRanges = new List<FeedRangeEpk>();
+            foreach (FeedRangeState<ReadFeedState> feedRangeState in crossFeedRangeState.Value.Span)
+            {
+                if (feedRangeState.FeedRange is FeedRangeEpk feedRangeEpk)
+                {
+                    childRanges.Add(feedRangeEpk);
+                }
+            }
+
+            if (childRanges.Count == 0)
+            {
+                return configuredFeedRange;
+            }
+
+            string min = childRanges[0].Range.Min;
+            string max = childRanges[0].Range.Max;
+            for (int i = 1; i < childRanges.Count; i++)
+            {
+                if (string.CompareOrdinal(childRanges[i].Range.Min, min) < 0)
+                {
+                    min = childRanges[i].Range.Min;
+                }
+
+                if (string.CompareOrdinal(childRanges[i].Range.Max, max) > 0)
+                {
+                    max = childRanges[i].Range.Max;
+                }
+            }
+
+            return new FeedRangeEpk(new Documents.Routing.Range<string>(
+                min,
+                max,
+                isMinInclusive: true,
+                isMaxInclusive: false));
         }
     }
 }

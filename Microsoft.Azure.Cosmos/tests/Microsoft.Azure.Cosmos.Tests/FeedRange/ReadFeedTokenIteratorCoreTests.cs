@@ -147,6 +147,70 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         }
 
         [TestMethod]
+        public async Task ReadFeedIteratorCore_UsesExplicitFeedRange()
+        {
+            const int numItems = 100;
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
+            IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
+                trace: NoOpTrace.Singleton,
+                cancellationToken: default);
+            FeedRangeInternal expectedFeedRange = ranges[0];
+
+            int expectedCount = await DrainIteratorAsync(CreateReadFeedIterator(
+                documentContainer,
+                continuationToken: null,
+                pageSize: 10,
+                queryRequestOptions: new QueryRequestOptions
+                {
+                    FeedRange = expectedFeedRange,
+                }));
+            int actualCount = await DrainIteratorAsync(CreateReadFeedIterator(
+                documentContainer,
+                continuationToken: null,
+                pageSize: 10,
+                feedRange: expectedFeedRange));
+
+            Assert.AreEqual(expectedCount, actualCount);
+            Assert.IsTrue(actualCount < numItems);
+        }
+
+        [TestMethod]
+        public void ReadFeedIteratorCore_ContinuationUsesEpkHull()
+        {
+            Microsoft.Azure.Cosmos.PartitionKey partitionKey =
+                new Microsoft.Azure.Cosmos.PartitionKey("tenant-a");
+            CrossFeedRangeState<ReadFeedState> state =
+                new CrossFeedRangeState<ReadFeedState>(
+                    new FeedRangeState<ReadFeedState>[]
+                    {
+                        new FeedRangeState<ReadFeedState>(
+                            new FeedRangeEpk(
+                                new Documents.Routing.Range<string>(
+                                    "AA",
+                                    "BB",
+                                    isMinInclusive: true,
+                                    isMaxInclusive: false)),
+                            ReadFeedState.Beginning()),
+                        new FeedRangeState<ReadFeedState>(
+                            new FeedRangeEpk(
+                                new Documents.Routing.Range<string>(
+                                    "BB",
+                                    "CC",
+                                    isMinInclusive: true,
+                                    isMaxInclusive: false)),
+                            ReadFeedState.Beginning()),
+                    });
+
+            FeedRangeEpk continuationFeedRange =
+                (FeedRangeEpk)ReadFeedIteratorCore.GetContinuationFeedRange(
+                    new FeedRangePartitionKey(partitionKey),
+                    state);
+
+            Assert.AreEqual("AA", continuationFeedRange.Range.Min);
+            Assert.AreEqual("CC", continuationFeedRange.Range.Max);
+        }
+
+        [TestMethod]
         public async Task ReadFeedIteratorCore_ResponseHeaders()
         {
             int numItems = 100;
@@ -183,15 +247,30 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         private static FeedIteratorInternal CreateReadFeedIterator(
             IDocumentContainer documentContainer,
             string continuationToken,
-            int pageSize)
+            int pageSize,
+            QueryRequestOptions queryRequestOptions = null,
+            FeedRangeInternal feedRange = null)
         {
             return new ReadFeedIteratorCore(
                 documentContainer,
-                queryRequestOptions: null,
+                queryRequestOptions: queryRequestOptions,
                 continuationToken: continuationToken,
                 readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: pageSize),
                 cancellationToken: default,
-                container: null);
+                container: null,
+                feedRange: feedRange);
+        }
+
+        private static async Task<int> DrainIteratorAsync(FeedIterator iterator)
+        {
+            int count = 0;
+            while (iterator.HasMoreResults)
+            {
+                ResponseMessage message = await iterator.ReadNextAsync();
+                count += GetDocuments(message.Content).Count;
+            }
+
+            return count;
         }
 
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(
