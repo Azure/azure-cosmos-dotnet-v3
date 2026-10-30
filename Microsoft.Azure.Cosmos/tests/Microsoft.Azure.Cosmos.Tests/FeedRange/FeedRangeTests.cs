@@ -32,6 +32,70 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         }
 
         [TestMethod]
+        public void FeedRangeEPK_TryCreateFromPartialPartitionKey()
+        {
+            Documents.PartitionKeyDefinition partitionKeyDefinition =
+                new Documents.PartitionKeyDefinition
+                {
+                    Kind = Documents.PartitionKind.MultiHash,
+                };
+            partitionKeyDefinition.Paths.Add("/tenant");
+            partitionKeyDefinition.Paths.Add("/user");
+            PartitionKey partialPartitionKey = new PartitionKeyBuilder()
+                .Add("tenant-a")
+                .Build();
+
+            FeedRangeEpk feedRangeEpk = FeedRangeEpk.TryCreateFromFeedRange(
+                new FeedRangePartitionKey(partialPartitionKey),
+                partitionKeyDefinition);
+
+            Assert.IsNotNull(feedRangeEpk);
+            Assert.AreEqual(
+                partialPartitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(
+                    partitionKeyDefinition),
+                feedRangeEpk.Range);
+        }
+
+        [TestMethod]
+        public void FeedRangeEPK_TryCreateFromCompletePartitionKeyReturnsNull()
+        {
+            Documents.PartitionKeyDefinition partitionKeyDefinition =
+                new Documents.PartitionKeyDefinition
+                {
+                    Kind = Documents.PartitionKind.MultiHash,
+                };
+            partitionKeyDefinition.Paths.Add("/tenant");
+            partitionKeyDefinition.Paths.Add("/user");
+            PartitionKey partitionKey = new PartitionKeyBuilder()
+                .Add("tenant-a")
+                .Add("user-a")
+                .Build();
+
+            FeedRangeEpk feedRangeEpk = FeedRangeEpk.TryCreateFromFeedRange(
+                new FeedRangePartitionKey(partitionKey),
+                partitionKeyDefinition);
+
+            Assert.IsNull(feedRangeEpk);
+        }
+
+        [TestMethod]
+        public void FeedRangeEPK_GetClippedRange()
+        {
+            FeedRangeEpk parentFeedRange = new FeedRangeEpk(
+                new Documents.Routing.Range<string>("AA", "DD", true, false));
+
+            FeedRangeEpk leftChild = parentFeedRange.GetClippedRange(
+                new Documents.Routing.Range<string>("00", "BB", true, false));
+            FeedRangeEpk rightChild = parentFeedRange.GetClippedRange(
+                new Documents.Routing.Range<string>("CC", "FF", true, false));
+
+            Assert.AreEqual("AA", leftChild.Range.Min);
+            Assert.AreEqual("BB", leftChild.Range.Max);
+            Assert.AreEqual("CC", rightChild.Range.Min);
+            Assert.AreEqual("DD", rightChild.Range.Max);
+        }
+
+        [TestMethod]
         public void FeedRangePK_PK()
         {
             PartitionKey partitionKey = new PartitionKey("test");
