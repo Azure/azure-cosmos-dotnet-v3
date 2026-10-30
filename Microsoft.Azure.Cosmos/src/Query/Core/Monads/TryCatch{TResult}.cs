@@ -242,8 +242,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 
         public static TryCatch<TResult> FromException(Exception exception)
         {
-            // Skipping a stack frame, since we don't want this method showing up in the stack trace.
-            StackTrace stackTrace = new StackTrace(skipFrames: 1);
+            StackTrace stackTrace;
+            if (exception is ExceptionWithStackTraceException existingWrapper)
+            {
+                stackTrace = existingWrapper.stackTrace;
+            }
+            else if (exception is CosmosException || exception is Microsoft.Azure.Documents.DocumentClientException)
+            {
+                stackTrace = new StackTrace(exception);
+            }
+            else
+            {
+                stackTrace = new StackTrace(skipFrames: 1);
+            }
 #pragma warning disable CDX1000 // DontConvertExceptionToObject
             return new TryCatch<TResult>(
                 new ExceptionWithStackTraceException(
