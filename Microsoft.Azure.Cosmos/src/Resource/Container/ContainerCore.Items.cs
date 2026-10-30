@@ -723,6 +723,7 @@ namespace Microsoft.Azure.Cosmos
                     requestOptions,
                     this,
                     cancellationToken: default,
+                    useLengthAwareRangeComparer: this.ClientContext.ClientOptions.UseLengthAwareRangeComparer,
                     feedRange: feedRange);
             }
 
@@ -796,7 +797,8 @@ namespace Microsoft.Azure.Cosmos
                     continuationToken: continuationToken,
                     readFeedPaginationOptions: readFeedPaginationOptions,
                     container: this,
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    useLengthAwareRangeComparer: this.ClientContext.ClientOptions.UseLengthAwareRangeComparer);
             }
 
             return feedIterator;

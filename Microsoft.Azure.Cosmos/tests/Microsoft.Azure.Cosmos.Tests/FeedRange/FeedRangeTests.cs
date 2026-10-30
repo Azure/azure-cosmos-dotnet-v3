@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Add("tenant-a")
                 .Build();
 
-            FeedRangeEpk feedRangeEpk = FeedRangeEpk.TryCreateFromFeedRange(
+            FeedRangeEpk feedRangeEpk = FeedRangeEpk.TryCreateFromPartialPartitionKey(
                 new FeedRangePartitionKey(partialPartitionKey),
                 partitionKeyDefinition);
 
@@ -71,28 +71,30 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Add("user-a")
                 .Build();
 
-            FeedRangeEpk feedRangeEpk = FeedRangeEpk.TryCreateFromFeedRange(
+            FeedRangeEpk feedRangeEpk = FeedRangeEpk.TryCreateFromPartialPartitionKey(
                 new FeedRangePartitionKey(partitionKey),
                 partitionKeyDefinition);
 
             Assert.IsNull(feedRangeEpk);
         }
 
-        [TestMethod]
-        public void FeedRangeEPK_GetClippedRange()
+        [DataTestMethod]
+        [DataRow(true, "AA00", "DD000")]
+        [DataRow(false, "AA000", "DD00")]
+        public void FeedRangeEPK_GetClippedRange(
+            bool useLengthAwareRangeComparer,
+            string expectedMin,
+            string expectedMax)
         {
             FeedRangeEpk parentFeedRange = new FeedRangeEpk(
-                new Documents.Routing.Range<string>("AA", "DD", true, false));
+                new Documents.Routing.Range<string>("AA000", "DD00", true, false));
 
-            FeedRangeEpk leftChild = parentFeedRange.GetClippedRange(
-                new Documents.Routing.Range<string>("00", "BB", true, false));
-            FeedRangeEpk rightChild = parentFeedRange.GetClippedRange(
-                new Documents.Routing.Range<string>("CC", "FF", true, false));
+            FeedRangeEpk clippedRange = parentFeedRange.GetClippedRange(
+                new Documents.Routing.Range<string>("AA00", "DD000", true, false),
+                useLengthAwareRangeComparer);
 
-            Assert.AreEqual("AA", leftChild.Range.Min);
-            Assert.AreEqual("BB", leftChild.Range.Max);
-            Assert.AreEqual("CC", rightChild.Range.Min);
-            Assert.AreEqual("DD", rightChild.Range.Max);
+            Assert.AreEqual(expectedMin, clippedRange.Range.Min);
+            Assert.AreEqual(expectedMax, clippedRange.Range.Max);
         }
 
         [TestMethod]

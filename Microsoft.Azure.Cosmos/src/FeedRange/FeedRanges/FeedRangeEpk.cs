@@ -35,16 +35,11 @@ namespace Microsoft.Azure.Cosmos
 
         public Documents.Routing.Range<string> Range { get; }
 
-        internal static FeedRangeEpk TryCreateFromFeedRange(
-            FeedRangeInternal feedRange,
+        internal static FeedRangeEpk TryCreateFromPartialPartitionKey(
+            FeedRangePartitionKey feedRangePartitionKey,
             Documents.PartitionKeyDefinition partitionKeyDefinition)
         {
-            if (feedRange is FeedRangeEpk feedRangeEpk)
-            {
-                return feedRangeEpk;
-            }
-
-            if (!(feedRange is FeedRangePartitionKey feedRangePartitionKey) ||
+            if (feedRangePartitionKey == null ||
                 partitionKeyDefinition?.Kind != Documents.PartitionKind.MultiHash)
             {
                 return null;
@@ -65,25 +60,19 @@ namespace Microsoft.Azure.Cosmos
                     .GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
         }
 
-        internal FeedRangeEpk GetClippedRange(Documents.Routing.Range<string> range)
+        internal FeedRangeEpk GetClippedRange(
+            Documents.Routing.Range<string> range,
+            bool useLengthAwareRangeComparer)
         {
             if (range == null)
             {
                 throw new ArgumentNullException(nameof(range));
             }
 
-            string min = string.CompareOrdinal(range.Min, this.Range.Min) < 0
-                ? this.Range.Min
-                : range.Min;
-            string max = string.CompareOrdinal(range.Max, this.Range.Max) > 0
-                ? this.Range.Max
-                : range.Max;
-
-            return new FeedRangeEpk(new Documents.Routing.Range<string>(
-                min,
-                max,
-                isMinInclusive: true,
-                isMaxInclusive: false));
+            return new FeedRangeEpk(RangeComparerProvider.GetIntersection(
+                this.Range,
+                range,
+                useLengthAwareRangeComparer));
         }
 
         internal override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(

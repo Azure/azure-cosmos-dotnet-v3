@@ -273,10 +273,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             string pkToRead = "pkToRead";
             string otherPK = "otherPK";
+            List<string> expectedIds = new List<string>();
 
             for (int i = 0; i < batchSize; i++)
             {
-                await this.LargerContainer.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity(pk: pkToRead));
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkToRead);
+                expectedIds.Add(item.id);
+                await this.LargerContainer.CreateItemAsync(item);
             }
 
             for (int i = 0; i < batchSize; i++)
@@ -285,7 +288,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             }
 
             ContainerInternal itemsCore = this.LargerContainer;
+            List<string> actualIds = new List<string>();
             FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(
+                feedRange: FeedRangeEpk.FullRange,
+                queryDefinition: null,
+                continuationToken: null,
                 requestOptions: new QueryRequestOptions() { PartitionKey = new PartitionKey(pkToRead), MaxItemCount = 1 });
             while (feedIterator.HasMoreResults)
             {
@@ -299,43 +306,52 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         foreach (ToDoActivity toDoActivity in response)
                         {
                             Assert.AreEqual(pkToRead, toDoActivity.pk);
+                            actualIds.Add(toDoActivity.id);
                         }
                     }
                 }
             }
 
             Assert.AreEqual(firstRunTotal, totalCount);
+            CollectionAssert.AreEquivalent(expectedIds, actualIds);
+            feedIterator.Dispose();
 
             string continuationToken = null;
             totalCount = 0;
+            actualIds.Clear();
             do
             {
-                feedIterator = itemsCore.GetItemQueryStreamIterator(
-                    requestOptions: new QueryRequestOptions() 
-                    { 
+                using (FeedIterator pageIterator = itemsCore.GetItemQueryStreamIterator(
+                    feedRange: FeedRangeEpk.FullRange,
+                    queryDefinition: null,
+                    requestOptions: new QueryRequestOptions()
+                    {
                         PartitionKey = new PartitionKey(pkToRead),
                         MaxItemCount = 1,
                     },
-                    continuationToken: continuationToken);
-
-                using (ResponseMessage responseMessage =
-                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                    continuationToken: continuationToken))
                 {
-                    responseMessage.EnsureSuccessStatusCode();
-
-                    Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
-                    totalCount += response.Count;
-                    foreach (ToDoActivity toDoActivity in response)
+                    using (ResponseMessage responseMessage =
+                        await pageIterator.ReadNextAsync(this.cancellationToken))
                     {
-                        Assert.AreEqual(pkToRead, toDoActivity.pk);
-                    }
+                        responseMessage.EnsureSuccessStatusCode();
 
-                    continuationToken = responseMessage.ContinuationToken;
+                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                        totalCount += response.Count;
+                        foreach (ToDoActivity toDoActivity in response)
+                        {
+                            Assert.AreEqual(pkToRead, toDoActivity.pk);
+                            actualIds.Add(toDoActivity.id);
+                        }
+
+                        continuationToken = responseMessage.ContinuationToken;
+                    }
                 }
             }
             while (continuationToken != null);
 
             Assert.AreEqual(firstRunTotal, totalCount);
+            CollectionAssert.AreEquivalent(expectedIds, actualIds);
         }
 
         /// <summary>
