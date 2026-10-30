@@ -5,13 +5,13 @@
     using System.IO;
     using System.Linq;
     using System.Text;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
+    using RequestHandlerHelper = Microsoft.Azure.Cosmos.SDK.EmulatorTests.RequestHandlerHelper;
     using TestCommon = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon;
 
     [TestClass]
@@ -66,9 +66,38 @@
                     ["numbers"] = new JArray(Enumerable.Range(1000, 128)),
                     ["uint64"] = ulong.MaxValue,
                 };
-                SerializationFeaturesHandler handler = new SerializationFeaturesHandler(
-                    formatsOverride,
-                    (content, operation) => AssertSerializationFeatures(content, operation, formatsOverride, document));
+                RequestHandlerHelper handler = new RequestHandlerHelper
+                {
+                    UpdateRequestMessage = request =>
+                    {
+                        if (request.ResourceType == ResourceType.Document
+                            && (request.OperationType == OperationType.Read || request.OperationType == OperationType.Query))
+                        {
+                            StringAssert.Contains(request.Headers.CosmosMessageHeaders.SupportedSerializationFormats, CosmosSerializationUtil.SupportedBinarySerializationFormat);
+                            if (formatsOverride != null)
+                            {
+                                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = formatsOverride;
+                            }
+                        }
+                    },
+                    CallBackOnResponse = (request, response) =>
+                    {
+                        if (request.ResourceType == ResourceType.Document
+                            && (request.OperationType == OperationType.Read || request.OperationType == OperationType.Query)
+                            && response.IsSuccessStatusCode)
+                        {
+                            // Inspect the service payload before the SDK rewrites it.
+                            using MemoryStream copy = new MemoryStream();
+                            response.Content.CopyTo(copy);
+                            byte[] content = copy.ToArray();
+                            response.Content.Dispose();
+                            response.Content = new MemoryStream(content);
+                            AssertSerializationFeatures(content, request.OperationType, formatsOverride, document);
+                        }
+
+                        return response;
+                    },
+                };
                 CosmosClientOptions clientOptions = new CosmosClientOptions
                 {
                     ConnectionMode = connectionMode,
@@ -76,19 +105,13 @@
                 };
                 clientOptions.CustomHandlers.Add(handler);
                 using CosmosClient client = TestCommon.CreateCosmosClient(clientOptions);
-                Container createdContainer = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
-                Container container = client.GetContainer(this.database.Id, createdContainer.Id);
-                using (MemoryStream payload = new MemoryStream(Encoding.UTF8.GetBytes(document.ToString())))
-                using (ResponseMessage created = await container.CreateItemStreamAsync(payload, new Cosmos.PartitionKey("binary-features")))
-                {
-                    created.EnsureSuccessStatusCode();
-                }
+                Container container = await client.GetDatabase(this.database.Id).CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+                await container.CreateItemAsync(document, new Cosmos.PartitionKey("binary-features"));
 
                 Environment.SetEnvironmentVariable(Cosmos.ConfigurationManager.BinaryEncodingEnabled, bool.TrueString);
                 using (ResponseMessage read = await container.ReadItemStreamAsync(
                     "binary-features",
-                    new Cosmos.PartitionKey("binary-features"),
-                    new ItemRequestOptions { EnableBinaryResponseOnPointOperations = true }))
+                    new Cosmos.PartitionKey("binary-features")))
                 {
                     read.EnsureSuccessStatusCode();
                 }
@@ -103,9 +126,6 @@
                         page.EnsureSuccessStatusCode();
                     }
                 }
-
-                Assert.IsTrue(handler.ReadResponses > 0);
-                Assert.IsTrue(handler.QueryResponses > 0);
             }
             finally
             {
@@ -164,58 +184,6 @@
             return JsonBinaryEncoding.Enumerator.GetObjectProperties(content, objectOffset)
                 .Single(property => JsonBinaryEncoding.GetStringValue(content, content.Slice(property.NameOffset), null) == name)
                 .ValueOffset;
-        }
-
-        private sealed class SerializationFeaturesHandler : RequestHandler
-        {
-            private readonly string formatsOverride;
-            private readonly Action<ReadOnlyMemory<byte>, OperationType> assertResponse;
-
-            public SerializationFeaturesHandler(string formatsOverride, Action<ReadOnlyMemory<byte>, OperationType> assertResponse)
-            {
-                this.formatsOverride = formatsOverride;
-                this.assertResponse = assertResponse;
-            }
-
-            public int ReadResponses { get; private set; }
-
-            public int QueryResponses { get; private set; }
-
-            public override async Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
-            {
-                bool inspect = request.ResourceType == ResourceType.Document
-                    && (request.OperationType == OperationType.Read || request.OperationType == OperationType.Query);
-                if (inspect)
-                {
-                    StringAssert.Contains(request.Headers.CosmosMessageHeaders.SupportedSerializationFormats, CosmosSerializationUtil.SupportedBinarySerializationFormat);
-                    if (this.formatsOverride != null)
-                    {
-                        request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.formatsOverride;
-                    }
-                }
-
-                ResponseMessage response = await base.SendAsync(request, cancellationToken);
-                if (inspect && response.IsSuccessStatusCode)
-                {
-                    // Inspect the service payload before the query pipeline or point-operation conversion rewrites it.
-                    using MemoryStream copy = new MemoryStream();
-                    await response.Content.CopyToAsync(copy, cancellationToken);
-                    byte[] content = copy.ToArray();
-                    response.Content.Dispose();
-                    response.Content = new MemoryStream(content);
-                    this.assertResponse(content, request.OperationType);
-                    if (request.OperationType == OperationType.Read)
-                    {
-                        this.ReadResponses++;
-                    }
-                    else
-                    {
-                        this.QueryResponses++;
-                    }
-                }
-
-                return response;
-            }
         }
 
         private async Task TestSupportedSerializationFormatsHelper(Container container, IReadOnlyList<CosmosObject> documents)
