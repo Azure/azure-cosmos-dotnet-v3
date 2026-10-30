@@ -66,6 +66,7 @@
                     ["numbers"] = new JArray(Enumerable.Range(1000, 128)),
                     ["uint64"] = ulong.MaxValue,
                 };
+
                 RequestHandlerHelper handler = new RequestHandlerHelper
                 {
                     UpdateRequestMessage = request =>
@@ -98,6 +99,7 @@
                         return response;
                     },
                 };
+
                 CosmosClientOptions clientOptions = new CosmosClientOptions
                 {
                     ConnectionMode = connectionMode,

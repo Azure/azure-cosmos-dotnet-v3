@@ -263,7 +263,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the binary serialization features advertised for query responses.
         /// Null advertises all supported features; None disables feature extensions.
-        /// Ignored when the selected formats do not include CosmosBinary.
         /// </summary>
         internal SupportedSerializationFeatures? SupportedSerializationFeatures { get; set; }
 
