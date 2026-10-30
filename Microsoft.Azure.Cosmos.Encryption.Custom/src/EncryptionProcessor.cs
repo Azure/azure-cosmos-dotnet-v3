@@ -413,14 +413,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             try
             {
-                await foreach (Stream itemStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(content, cancellationToken).ConfigureAwait(false))
+                await foreach (Stream itemStream in JsonArrayStreamSplitter.SplitIntoSubstreamsAsync(
+                    content,
+                    cancellationToken,
+                    includeNonObjectItems: true).ConfigureAwait(false))
                 {
-                    StreamDecryptableItem item = new (
-                        itemStream,
-                        encryptor,
-                        cosmosSerializer);
+                    try
+                    {
+                        // The splitter starts each item at its first token, without envelope whitespace.
+                        bool isJsonObject = itemStream.ReadByte() == '{';
+                        itemStream.Position = 0;
 
-                    decryptableItems.Add(item);
+                        StreamDecryptableItem item = new (
+                            itemStream,
+                            encryptor,
+                            cosmosSerializer,
+                            isJsonObject);
+
+                        decryptableItems.Add(item);
+                    }
+                    catch
+                    {
+                        await itemStream.DisposeAsync().ConfigureAwait(false);
+                        throw;
+                    }
                 }
 
                 return decryptableItems;
@@ -484,19 +500,53 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             CancellationToken cancellationToken)
         {
-            try
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
+            if (!content.CanRead || (content.CanWrite && content.CanSeek))
             {
                 return await MdeEncryptionProcessor.DecryptJsonArrayStreamInPlaceAsync(
                     content,
                     encryptor,
-                    CosmosDiagnosticsContext.Create(null),
-                    cancellationToken);
+                    diagnosticsContext,
+                    cancellationToken).ConfigureAwait(false);
             }
-            catch (NotSupportedException)
-            {
-                content.Position = 0;
 
-                return await DecryptJsonArrayNewtonsoftAsync(content, encryptor, cancellationToken);
+            PooledMemoryStream ownedContent = new ();
+            try
+            {
+                long? originalPosition = content.CanSeek
+                    ? content.Position
+                    : null;
+
+                try
+                {
+                    if (originalPosition.HasValue)
+                    {
+                        content.Position = 0;
+                    }
+
+                    await content.CopyToAsync(ownedContent, cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    if (originalPosition.HasValue)
+                    {
+                        content.Position = originalPosition.Value;
+                    }
+                }
+
+                ownedContent.Position = 0;
+                await MdeEncryptionProcessor.DecryptJsonArrayStreamInPlaceAsync(
+                    ownedContent,
+                    encryptor,
+                    diagnosticsContext,
+                    cancellationToken).ConfigureAwait(false);
+
+                return ownedContent;
+            }
+            catch
+            {
+                await ownedContent.DisposeAsync().ConfigureAwait(false);
+                throw;
             }
         }
 #endif

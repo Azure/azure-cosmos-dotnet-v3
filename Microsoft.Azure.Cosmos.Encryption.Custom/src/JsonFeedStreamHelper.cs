@@ -20,7 +20,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             bool finalBlock,
             ref JsonReaderState readerState,
             ref JsonArrayTraversalState traversalState,
-            JsonSegmentWriter writeSegment)
+            JsonSegmentWriter writeSegment,
+            bool includeNonObjectItems = false)
         {
             Utf8JsonReader reader = new (dataSegment, finalBlock, readerState);
             int lastConsumed = 0;
@@ -38,7 +39,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 JsonTokenType tokenType = reader.TokenType;
 
-                bool documentCompleted = UpdateTraversalState(ref traversalState, tokenType, reader.CurrentDepth, ref reader);
+                bool documentCompleted = UpdateTraversalState(
+                    ref traversalState,
+                    tokenType,
+                    reader.CurrentDepth,
+                    ref reader,
+                    includeNonObjectItems);
 
                 ReadOnlySpan<byte> tokenSegment = dataSegment.Slice(tokenStart, tokenEnd - tokenStart);
                 writeSegment(tokenSegment, traversalState.DocumentOpen);
@@ -87,7 +93,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return buffer;
         }
 
-        private static bool UpdateTraversalState(ref JsonArrayTraversalState traversalState, JsonTokenType tokenType, int readerDepth, ref Utf8JsonReader reader)
+        private static bool UpdateTraversalState(
+            ref JsonArrayTraversalState traversalState,
+            JsonTokenType tokenType,
+            int readerDepth,
+            ref Utf8JsonReader reader,
+            bool includeNonObjectItems)
         {
             if (traversalState.EnvelopeDepth < 0 && tokenType != JsonTokenType.StartObject)
             {
@@ -144,10 +155,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         traversalState.DocumentsArrayDepth = readerDepth;
                         traversalState.PendingDocumentsArray = false;
                     }
+                    else if (includeNonObjectItems &&
+                             traversalState.DocumentsArrayDepth >= 0 &&
+                             readerDepth == traversalState.DocumentsArrayDepth + 1)
+                    {
+                        traversalState.DocumentOpen = true;
+                    }
 
                     break;
 
                 case JsonTokenType.EndArray:
+                    if (includeNonObjectItems &&
+                        traversalState.DocumentOpen &&
+                        traversalState.DocumentsArrayDepth >= 0 &&
+                        readerDepth == traversalState.DocumentsArrayDepth + 1)
+                    {
+                        return true;
+                    }
+
                     if (traversalState.DocumentsArrayDepth >= 0 && readerDepth == traversalState.DocumentsArrayDepth)
                     {
                         traversalState.DocumentsArrayDepth = -1;
@@ -173,6 +198,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     if (traversalState.PendingDocumentsArray)
                     {
                         throw new InvalidOperationException(DocumentsMustBeArrayMessage);
+                    }
+
+                    if (includeNonObjectItems &&
+                        traversalState.DocumentsArrayDepth >= 0 &&
+                        readerDepth == traversalState.DocumentsArrayDepth + 1 &&
+                        !traversalState.DocumentOpen)
+                    {
+                        traversalState.DocumentOpen = true;
+                        return true;
                     }
 
                     break;
