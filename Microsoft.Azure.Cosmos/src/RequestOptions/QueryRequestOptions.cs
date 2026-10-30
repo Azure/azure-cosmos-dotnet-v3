@@ -260,6 +260,12 @@ namespace Microsoft.Azure.Cosmos
 
         internal SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
 
+        /// <summary>
+        /// Gets or sets the binary serialization features advertised for query responses.
+        /// Null advertises all supported features; None disables feature extensions.
+        /// </summary>
+        internal SupportedSerializationFeatures? SupportedSerializationFeatures { get; set; }
+
         internal bool? ReturnResultsInDeterministicOrder { get; set; }
 
         internal TestInjections TestSettings { get; set; }
@@ -325,7 +331,9 @@ namespace Microsoft.Azure.Cosmos
             //  for OperationType Query but has a bug where it returns a binary response for ReadFeed API when partition key is also specified in the request.
             if (request.OperationType == OperationType.Query)
             {
-                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.SupportedSerializationFormats?.ToString() ?? DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
+                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = CosmosSerializationUtil.GetSupportedSerializationFormatsAndFeatures(
+                    this.SupportedSerializationFormats,
+                    this.SupportedSerializationFeatures);
             }
 
             if (this.StartId != null)

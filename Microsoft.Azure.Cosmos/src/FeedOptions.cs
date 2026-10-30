@@ -69,6 +69,7 @@ namespace Microsoft.Azure.Cosmos
             this.MergeStaticId = options.MergeStaticId;
             this.Properties = options.Properties;
             this.SupportedSerializationFormats = options.SupportedSerializationFormats;
+            this.SupportedSerializationFeatures = options.SupportedSerializationFeatures;
         }
 
         /// <summary>
@@ -401,6 +402,12 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the SupportedSerializationFormats for the query response from the service.
         /// </summary>
         public SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
+
+        /// <summary>
+        /// Gets or sets the binary serialization features advertised for query responses.
+        /// Null advertises all supported features; None disables feature extensions.
+        /// </summary>
+        public SupportedSerializationFeatures? SupportedSerializationFeatures { get; set; }
 
         public bool EnableGroupBy { get; set; }
 

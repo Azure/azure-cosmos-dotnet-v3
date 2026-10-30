@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     internal class RequestInvokerHandler : RequestHandler
     {
         private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
-        private static readonly string BinarySerializationFormat = SupportedSerializationFormats.CosmosBinary.ToString();
         private static (bool, ResponseMessage) clientIsValid = (false, null);
 
         private readonly CosmosClient client;
@@ -76,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             if (ConfigurationManager.IsBinaryEncodingEnabled()
                 && RequestInvokerHandler.IsPointOperationSupportedForBinaryEncoding(request))
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, RequestInvokerHandler.BinarySerializationFormat);
+                request.Headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, CosmosSerializationUtil.SupportedBinarySerializationFormat);
             }
 
             await this.ValidateAndSetConsistencyLevelAsync(request);
