@@ -16,3 +16,6 @@
 # explicitly deferred.
 /changelog.md merge=union
 /Microsoft.Azure.Cosmos/FaultInjection/changelog.md merge=union
+
+# The released-package fixture is SHA-256 pinned as UTF-8 without BOM and LF.
+/Microsoft.Azure.Cosmos.Encryption.Custom/tests/EmulatorTests/Fixtures/LegacyPreview07PointOperationFixture.json text eol=lf
