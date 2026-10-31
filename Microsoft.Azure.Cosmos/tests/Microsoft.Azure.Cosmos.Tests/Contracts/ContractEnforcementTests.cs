@@ -49,16 +49,6 @@
                 breakingChangesPattern: "DotNetSDKAPIChanges");
         }
 
-        [TestMethod]
-        public void TelemetryContractChanges()
-        {
-            ContractEnforcement.ValidateContract(
-                dllName: DllName,
-                contractType: ContractType.Telemetry,
-                baselinePattern: "DotNetSDKTelemetryAPI",
-                breakingChangesPattern: "DotNetSDKTelemetryAPIChanges");
-        }
-
         /// <summary>
         /// This test validates that the contract enforcement is actually checking for differences
         /// by verifying that mismatched JSON strings are properly detected and result in a failure.

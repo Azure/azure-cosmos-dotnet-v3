@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using System.Net.Http;
     using System.Net;
     using System.Text;
@@ -153,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         private void Init()
         {
-            this.collectionCache = new Mock<ClientCollectionCache>(null, new ServerStoreModel(null), null, null, null, false, null);
+            this.collectionCache = new Mock<ClientCollectionCache>(null, new ServerStoreModel(null), null, null, false, null);
 
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("test");
             containerProperties.PartitionKey = partitionKeyDefinition;
@@ -212,13 +211,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy(), false);
 
-            this.telemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob("perf-test-client",
-                                                                this.ConnectionPolicy,
-                                                                new Mock<AuthorizationTokenProvider>().Object,
-                                                                new Mock<CosmosHttpClient>().Object,
-                                                                this.ServiceEndpoint,
-                                                                this.GlobalEndpointManager,
-                                                                default);
             this.InitStoreModels();
         }
 

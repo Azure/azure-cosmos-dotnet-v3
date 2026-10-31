@@ -113,7 +113,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 #else
             Assert.IsTrue(clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing);
 #endif
-            Assert.IsTrue(clientOptions.CosmosClientTelemetryOptions.DisableSendingMetricsToService);
 
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)

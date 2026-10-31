@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos
             scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.SubStatusCode, (int)exception.SubStatusCode);
             scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.RequestCharge, (int)exception.RequestCharge);
             scope.AddAttribute(OpenTelemetryAttributeKeys.Region, 
-                ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics?.GetContactedRegions()));
+                OpenTelemetryHelper.GetContactedRegions(exception.Diagnostics?.GetContactedRegions()));
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
 
             if (!DiagnosticsFilterHelper.IsSuccessfulResponse(exception.StatusCode, (int)exception.SubStatusCode))

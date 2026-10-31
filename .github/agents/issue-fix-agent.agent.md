@@ -1004,21 +1004,21 @@ local_test_validation_policy:
 pipeline_test_arguments:
   source: "templates/build-test.yml"
   
-  # Pipeline 1: Client Telemetry, Query, ChangeFeed, ReadFeed, Batch
+  # Pipeline 1: Query, ChangeFeed, ReadFeed, Batch
   emulator_pipeline_1:
-    name: "Client Telemetry, Query, ChangeFeed, ReadFeed, Batch"
-    filter: '--filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory !=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed) & TestCategory!=Ignore"'
+    name: "Query, ChangeFeed, ReadFeed, Batch"
+    filter: '--filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory !=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed) & TestCategory!=Ignore"'
     command: |
-      dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory !=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed) & TestCategory!=Ignore" --verbosity normal --configuration Release /p:OS=Windows
+      dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory !=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed) & TestCategory!=Ignore" --verbosity normal --configuration Release /p:OS=Windows
     env:
       AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: "true"
       
   # Pipeline 2: Others (everything not in Pipeline 1)
   emulator_pipeline_2:
     name: "Others"
-    filter: '--filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory !=ThinClient & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory!=Ignore"'
+    filter: '--filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory !=ThinClient & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory!=Ignore"'
     command: |
-      dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory !=ThinClient & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory!=Ignore" --verbosity normal --configuration Release /p:OS=Windows
+      dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory !=ThinClient & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory!=Ignore" --verbosity normal --configuration Release /p:OS=Windows
     env:
       AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: "true"
       
@@ -1051,14 +1051,14 @@ local_test_commands:
     name: "Emulator Tests - Query, ChangeFeed, ReadFeed, Batch"
     command: |
       $env:AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED = "true"
-      dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory !=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed) & TestCategory!=Ignore" --verbosity normal --configuration Release /p:OS=Windows
+      dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory !=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed) & TestCategory!=Ignore" --verbosity normal --configuration Release /p:OS=Windows
     time: "~20-30 minutes"
     
   emulator_tests_pipeline_2:
     name: "Emulator Tests - Others"
     command: |
       $env:AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED = "true"
-      dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory !=ThinClient & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory!=Ignore" --verbosity normal --configuration Release /p:OS=Windows
+      dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory !=ThinClient & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory!=Ignore" --verbosity normal --configuration Release /p:OS=Windows
     time: "~20-30 minutes"
 
   full_local_validation_script:
@@ -1074,12 +1074,12 @@ local_test_commands:
       
       # 2. Emulator Tests - Pipeline 1 (Query, ChangeFeed, ReadFeed, Batch)
       Write-Host "=== Running Emulator Tests (Pipeline 1) ===" -ForegroundColor Cyan
-      dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory !=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed) & TestCategory!=Ignore" --verbosity normal --configuration Release /p:OS=Windows
+      dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory !=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed) & TestCategory!=Ignore" --verbosity normal --configuration Release /p:OS=Windows
       if ($LASTEXITCODE -ne 0) { Write-Host "❌ Emulator tests (Pipeline 1) failed" -ForegroundColor Red; exit 1 }
       
       # 3. Emulator Tests - Pipeline 2 (Others)
       Write-Host "=== Running Emulator Tests (Pipeline 2) ===" -ForegroundColor Cyan
-      dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory !=ThinClient & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory!=Ignore" --verbosity normal --configuration Release /p:OS=Windows
+      dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory !=ThinClient & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory!=Ignore" --verbosity normal --configuration Release /p:OS=Windows
       if ($LASTEXITCODE -ne 0) { Write-Host "❌ Emulator tests (Pipeline 2) failed" -ForegroundColor Red; exit 1 }
       
       Write-Host "✅ All local tests passed!" -ForegroundColor Green
@@ -2142,7 +2142,7 @@ local_testing_strategy:
       step_3:
         name: "Run emulator tests (Pipeline 1 - Query, ReadFeed, Batch, ChangeFeed)"
         command: |
-          dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests -c Release --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed) & TestCategory!=Ignore" --verbosity normal
+          dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests -c Release --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed) & TestCategory!=Ignore" --verbosity normal
         expected: "All pass"
         time: "~10-15 minutes"
         source: "templates/build-test.yml:EmulatorPipeline1Arguments"
@@ -2150,7 +2150,7 @@ local_testing_strategy:
       step_4:
         name: "Run emulator tests (Pipeline 2 - Others)"
         command: |
-          dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests -c Release --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ThinClient & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory!=Ignore" --verbosity normal
+          dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests -c Release --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ThinClient & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory!=Ignore" --verbosity normal
         expected: "All pass"
         time: "~10-15 minutes"
         source: "templates/build-test.yml:EmulatorPipeline2Arguments"
@@ -2173,11 +2173,11 @@ local_testing_strategy:
     
     emulator_pipeline_1:
       name: "Query, ChangeFeed, ReadFeed, Batch"
-      filter: '--filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed) & TestCategory!=Ignore" --verbosity normal'
+      filter: '--filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed) & TestCategory!=Ignore" --verbosity normal'
       
     emulator_pipeline_2:
       name: "Others (excluding Pipeline 1 categories)"
-      filter: '--filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ThinClient & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory!=Ignore" --verbosity normal'
+      filter: '--filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ThinClient & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory!=Ignore" --verbosity normal'
       
     emulator_pipeline_3:
       name: "MultiRegion"
@@ -4152,7 +4152,7 @@ ci_monitoring:
     emulator_tests:
       timing: "30-60 minutes"
       checks:
-        - "dotnet-v3-ci (EmulatorTests Release - Client Telemetry, Query, ChangeFeed, ReadFeed, Batch)"
+        - "dotnet-v3-ci (EmulatorTests Release - Query, ChangeFeed, ReadFeed, Batch)"
         - "dotnet-v3-ci (EmulatorTests Release - MultiMaster)"
         - "dotnet-v3-ci (EmulatorTests Release - MultiRegion)"
         - "dotnet-v3-ci (EmulatorTests Release - Others)"

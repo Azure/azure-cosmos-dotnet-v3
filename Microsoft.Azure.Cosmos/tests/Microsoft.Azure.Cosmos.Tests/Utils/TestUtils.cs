@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             // Prepare mocked caches.
-            Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false, null);
+            Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, false, null);
             Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false, false, null);
 
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("test");
