@@ -102,8 +102,7 @@ All are `trigger: none`, run by a release owner, set `Packaging.EnableSBOMSignin
 publish to Azure blob storage via the **`azuresdkpartnerdrops`** service connection (container
 `drops`, prefix `cosmosdb/csharp/<version>` or a package-specific prefix).
 
-- **`azure-pipelines-official.yml`** — two stages: **Gate** (`static-tools` → `build-test` →
-  a 120-min `TelemetryToService` job running `ClientTelemetryRelease` category) → **Publish**
+- **`azure-pipelines-official.yml`** — two stages: **Gate** (`static-tools` + `build-test`) → **Publish**
   (`nuget-pack` with `ReleasePackage: true`, version from `Directory.Build.props`).
 - **`azure-pipelines-encryption-official.yml`** / **`-encryption-custom-official.yml`** —
   gate + build/pack/publish for the two encryption satellite packages, using their
@@ -214,8 +213,7 @@ categories is how you predict *where* a test runs.
 | `MultiMaster` | `build-test.yml` MultiMaster job, live `COSMOSDB_MULTIMASTER` account. |
 | `MultiRegionAad` | `build-test-aad.yml`, live AAD account (see below). |
 | `ThinClient` | `build-thinclient.yml`. |
-| `ClientTelemetryEmulator` / `Query` / `ReadFeed` / `Batch` / `ChangeFeed` | Emulator **bucket 1**. |
-| `ClientTelemetryRelease` | Official release `TelemetryToService` job only. |
+| `Query` / `ReadFeed` / `Batch` / `ChangeFeed` | Emulator **bucket 1**. |
 | `LongRunning` | Excluded from the fast buckets. |
 | everything else | Emulator **bucket 2** ("Others"). |
 
