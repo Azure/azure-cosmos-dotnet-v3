@@ -123,6 +123,17 @@ jobs:
       arguments: -p:Optimize=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false
       versioningScheme: OFF
 
+  - task: DotNetCoreCLI@2
+    displayName: PREVIEW Microsoft.Azure.Cosmos.Encryption.Tests
+    condition: succeeded()
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos.Encryption/tests/Microsoft.Azure.Cosmos.Encryption.Tests/*.csproj'
+      arguments: ${{ parameters.Arguments }} --configuration ${{ coalesce(parameters.BuildConfiguration, 'Debug') }} /p:IsPreview=true /p:SdkProjectRef=false /p:OS=${{ parameters.OS }}
+      publishTestResults: true
+      nugetConfigPath: NuGet.config
+      testRunTitle: PREVIEW Microsoft.Azure.Cosmos.Encryption.Tests
+
 # This is the only job in this template that needs the Cosmos DB Emulator, and
 # therefore the only one that requires the pipeline definition to supply the
 # EMULATORMSIURL variable (it is set per-pipeline in the Azure DevOps UI, not in
