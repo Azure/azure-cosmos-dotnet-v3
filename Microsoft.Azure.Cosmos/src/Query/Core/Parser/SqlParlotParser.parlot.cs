@@ -14,8 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
     internal static partial class SqlParlotParser
     {
-        [GenerateParser(nameof(TryParseCore))]
-        [IncludeUsings("Microsoft.Azure.Cosmos.SqlObjects")]
+        [GenerateParser(nameof(TryParse))]
         private static Parser<SqlQuery> Build()
         {
             // Keywords are matched as whole words, as the ANTLR lexer reads the longest token.
@@ -71,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             Parser<SqlIdentifier> identifier = Terms.Scan(ScanIdentifier, IdentifierStartChars.AsSpan())
                 .Then(static span => SqlIdentifier.Create(span.ToString()));
             Parser<SqlParameter> parameter = Terms.Scan(ScanParameter, "@".AsSpan())
-                .Then(static span => Microsoft.Azure.Cosmos.SqlObjects.SqlParameter.Create(span.ToString()));
+                .Then(static span => SqlParameter.Create(span.ToString()));
             Parser<SqlNumberLiteral> number = Terms.Scan(ScanNumber, NumberStartChars.AsSpan())
                 .Then(static span => SqlParlotParser.CreateNumberLiteral(span.Span));
             Parser<SqlStringLiteral> stringLiteral = Terms.Scan(ScanString, "\"'".AsSpan())
@@ -129,21 +128,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 parenthesizedQuery.Then(static q => (SqlScalarExpression)SqlSubqueryScalarExpression.Create(q)),
                 Between(lParen, scalarExpression, rParen));
 
-            // primary_expression '.' identifier | primary_expression '[' scalar_expression ']'
-            Parser<Postfix> postfix = OneOf(
-                dot.SkipAnd(identifier).Then(static id => new Postfix(id, null)),
-                Between(lBracket, scalarExpression, rBracket).Then(static index => new Postfix(null, index)));
-
-            Parser<SqlScalarExpression> primaryExpression = primaryBase.And(ZeroOrMany(postfix))
-                .Then(static t => SqlParlotParser.ApplyPostfixes(t.Item1, t.Item2));
-
-            // unary_scalar_expression and binary_scalar_expression, from the level that binds the tightest.
-            Parser<SqlScalarExpression> binaryExpression = primaryExpression.Operators()
+            // primary_expression, then unary_scalar_expression and binary_scalar_expression, from the level that binds
+            // the tightest.
+            Parser<SqlScalarExpression> binaryExpression = primaryBase.Operators()
+                .Postfix(
+                    (dot.SkipAnd(identifier), static (e, id) => SqlPropertyRefScalarExpression.Create(e, id)),
+                    (Between(lBracket, scalarExpression, rBracket), static (e, index) => SqlMemberIndexerScalarExpression.Create(e, index)))
                 .Unary(
-                    (Terms.Scan(ScanMinus, "-".AsSpan()).When(static (c, s) => SqlParlotParser.EnsureSufficientExecutionStack()), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Minus, e)),
-                    (Terms.Scan(ScanPlus, "+".AsSpan()).When(static (c, s) => SqlParlotParser.EnsureSufficientExecutionStack()), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Plus, e)),
-                    (Terms.Char('~').When(static (c, s) => SqlParlotParser.EnsureSufficientExecutionStack()).Then(static _ => default(Parlot.TextSpan)), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.BitwiseNot, e)),
-                    (kNot.When(static (c, s) => SqlParlotParser.EnsureSufficientExecutionStack()).Then(static _ => default(Parlot.TextSpan)), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Not, e)))
+                    (Terms.Scan(ScanMinus, "-".AsSpan()), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Minus, e)),
+                    (Terms.Scan(ScanPlus, "+".AsSpan()), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Plus, e)),
+                    (Terms.Char('~').Then(static _ => default(Parlot.TextSpan)), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.BitwiseNot, e)),
+                    (kNot.Then(static _ => default(Parlot.TextSpan)), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Not, e)))
                 .LeftAssociative(
                     (Terms.Char('*'), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Multiply, a, b)),
                     (Terms.Char('/'), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Divide, a, b)),
@@ -191,17 +186,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 .When(static (c, t) => SqlParlotParser.IsValidLogical(t.Item1, t.Item2, t.Item3))
                 .Then(static t => SqlParlotParser.CreateLogical(t.Item1, t.Item2, t.Item3));
 
-            // scalar_expression '?' scalar_expression ':' scalar_expression, where the alternative can't contain
-            // a conditional or coalesce expression, which makes conditionals left associative.
-            Parser<SqlScalarExpression> conditionalExpression = scalarPrimary.LeftAssociative(
-                new[] { Terms.Char('?').WhenNotFollowedBy(Literals.Char('?')).SkipAnd(scalarExpression).AndSkip(colon) },
-                static (condition, alternative, consequent) => SqlConditionalScalarExpression.Create(condition, consequent, alternative));
-
-            // scalar_expression '??' scalar_expression, where the right operand can't contain a coalesce expression.
-            scalarExpression.Parser = If(
-                static () => SqlParlotParser.EnsureSufficientExecutionStack(),
-                conditionalExpression.LeftAssociative(
-                    (Terms.Text("??"), static (left, right) => SqlCoalesceScalarExpression.Create(left, right))));
+            // scalar_expression '?' scalar_expression ':' scalar_expression and scalar_expression '??' scalar_expression.
+            // The alternative of a conditional can't contain a conditional or a coalesce expression, which makes
+            // conditionals left associative, and the right operand of a coalesce expression can't contain one.
+            scalarExpression.Parser = scalarPrimary.Operators()
+                .Ternary(
+                    Terms.Char('?').WhenNotFollowedBy(Literals.Char('?')),
+                    scalarExpression,
+                    colon,
+                    static (condition, consequent, alternative) => SqlConditionalScalarExpression.Create(condition, consequent, alternative),
+                    rightAssociative: false)
+                .LeftAssociative((Terms.Text("??"), static (left, right) => SqlCoalesceScalarExpression.Create(left, right)));
 
             // SELECT
             Parser<SqlTopSpec> topSpec = kTop.SkipAnd(OneOf(
@@ -261,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             Parser<SqlOffsetLimitClause> offsetLimitClause = kOffset.SkipAnd(offsetCount).AndSkip(kLimit).And(limitCount)
                 .Then(static t => SqlOffsetLimitClause.Create(t.Item1, t.Item2));
 
-            sqlQuery.Parser = If(static () => SqlParlotParser.EnsureSufficientExecutionStack(), selectClause
+            sqlQuery.Parser = selectClause
                 .And(ZeroOrOne(fromClause))
                 .And(ZeroOrOne(whereClause))
                 .And(ZeroOrOne(groupByClause))
@@ -273,14 +268,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                     t.Item3.Count == 0 ? null : t.Item3[0],
                     t.Item4.Count == 0 ? null : t.Item4[0],
                     t.Item5.Count == 0 ? null : t.Item5[0],
-                    t.Item6.Count == 0 ? null : t.Item6[0])));
+                    t.Item6.Count == 0 ? null : t.Item6[0]));
 
-            Parser<Parlot.TextSpan> whiteSpace = Literals.AnyOf(" \t\r\n");
-
+            // The white space is space, tab, carriage return and line feed.
             return sqlQuery
-                .AndSkip(ZeroOrOne(whiteSpace))
+                .AndSkip(ZeroOrOne(Literals.WhiteSpace(includeNewLines: true)))
                 .Eof()
-                .WithWhiteSpaceParser(whiteSpace);
+                .WithWhiteSpaceSet(Parlot.WhiteSpaceSet.SpaceTabCrLf);
         }
     }
 }

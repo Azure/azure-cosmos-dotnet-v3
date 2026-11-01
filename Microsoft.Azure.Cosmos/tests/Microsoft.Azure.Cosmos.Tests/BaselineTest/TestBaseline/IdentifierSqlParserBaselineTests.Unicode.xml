@@ -68,7 +68,7 @@
       <Query><![CDATA[SELECT c.12a FROM c]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 10.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -86,7 +86,7 @@
       <Query><![CDATA[SELECT c.ab:cd FROM c]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 12.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -95,7 +95,7 @@
       <Query><![CDATA[SELECT c.ab{cd} FROM c]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 12.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -104,7 +104,7 @@
       <Query><![CDATA[SELECT c.ab(cd) FROM c]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 12.]]></Exception>
     </Output>
   </Result>
 </Results>

@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #define PARLOT_STANDALONE
 #define PARLOT_STRING_ONLY
+#define PARLOT_NO_GENERIC_MATH
 #nullable enable
 namespace Parlot.Generated;
 
@@ -42,11 +43,13 @@ namespace Parlot.Generated;
 /// <remarks>
 /// Each set is a bit in the char table Parlot already reads, so selecting one keeps the white space checks to a single
 /// lookup per char. A set's line breaks are its new lines, which <see cref="Fluent.ParseContext.UseNewLines"/> keeps from being
-/// skipped. Use <see cref="Fluent.ParseContext.WhiteSpaceParser"/> for any other set, or to skip comments.
+/// skipped. The table has no room for more sets: use <see cref="Fluent.ParseContext.WhiteSpaceParser"/> for any other set, or to skip comments.
 /// </remarks>
 internal enum WhiteSpaceSet : byte
 {
     Default = 0,
 
     Ascii = 1,
+
+    SpaceTabCrLf = 2,
 }

@@ -23,7 +23,7 @@
       <Query><![CDATA[SELECT * WHEE true]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 10.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@
       <Query><![CDATA[SELECT * WHERE true, true]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 20.]]></Exception>
     </Output>
   </Result>
 </Results>

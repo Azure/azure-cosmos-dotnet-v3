@@ -14,7 +14,7 @@
       <Query><![CDATA[SELECT VALUE (SELECT *]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 23.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -23,7 +23,7 @@
       <Query><![CDATA[SELECT VALUE SELECT *)]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 14.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@
       <Query><![CDATA[SELECT VALUE SELECT *]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 14.]]></Exception>
     </Output>
   </Result>
 </Results>

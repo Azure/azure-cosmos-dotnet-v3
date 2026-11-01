@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #define PARLOT_STANDALONE
 #define PARLOT_STRING_ONLY
+#define PARLOT_NO_GENERIC_MATH
 #nullable enable
 using System;
 using System.Runtime.CompilerServices;
@@ -67,6 +68,9 @@ internal class Cursor
     private int _lastLine;
     private int _lastColumn;
 
+    // The furthest absolute offset the cursor was moved back from, see FurthestOffset
+    private int _furthestOffset;
+
     // HitEndFlag is set unconditionally on the cold end-of-buffer paths; only observable through HitEnd when the buffer is not final.
     // IsFinal shares the byte so that the cursor, which is allocated for each parse, doesn't grow.
     private byte _flags;
@@ -88,7 +92,7 @@ internal class Cursor
         }
 
         _offset = position.Offset;
-        _originOffset = _lastOffset = position.Offset;
+        _originOffset = _lastOffset = _furthestOffset = position.Offset;
         _originLine = _lastLine = position.Line;
         _originColumn = _lastColumn = position.Column;
         Eof = _offset == _textLength;
@@ -430,6 +434,12 @@ internal class Cursor
 
     private void ResetPositionNotInlined(int offset)
     {
+        // A parser moves the cursor back when it fails after reading: the position it read up to is a candidate for the
+        // furthest failure. Only this path, which runs when the cursor actually moves, pays the comparison.
+        var from = _offset + _base;
+        var furthest = _furthestOffset;
+        _furthestOffset = from > furthest ? from : furthest;
+
         _offset = offset - _base;
 
         // A single unsigned compare covers both the end of the buffer and, in compacting mode, a discarded position.
@@ -460,6 +470,28 @@ internal class Cursor
             // Eof might have been recorded
             Eof = true;
             _flags |= HitEndFlag;
+        }
+    }
+
+    internal int FurthestOffset
+    {
+        get
+        {
+            var offset = _offset + _base;
+            return offset > _furthestOffset ? offset : _furthestOffset;
+        }
+    }
+
+    /// <summary>
+    /// Records an absolute offset a parser read up to without moving the cursor there, before it failed.
+    /// </summary>
+    /// <remarks>Generated span code reads the text through a local position and calls it on its failure path.</remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void RecordFailure(int offset)
+    {
+        if (offset > _furthestOffset)
+        {
+            _furthestOffset = offset;
         }
     }
 

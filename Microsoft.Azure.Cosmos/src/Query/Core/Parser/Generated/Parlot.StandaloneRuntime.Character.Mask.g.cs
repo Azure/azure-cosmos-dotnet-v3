@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #define PARLOT_STANDALONE
 #define PARLOT_STRING_ONLY
+#define PARLOT_NO_GENERIC_MATH
 #nullable enable
 using System;
 
@@ -47,7 +48,9 @@ internal enum CharacterMask : byte
     WhiteSpace = 4,
     WhiteSpaceOrNewLine = 8,
     AsciiWhiteSpace = 16,
-    AsciiWhiteSpaceOrNewLine = 32
+    AsciiWhiteSpaceOrNewLine = 32,
+    SpaceTabCrLfWhiteSpace = 64,
+    SpaceTabCrLfWhiteSpaceOrNewLine = 128
 }
 
 #if !NET8_0_OR_GREATER

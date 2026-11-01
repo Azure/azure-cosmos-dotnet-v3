@@ -41,7 +41,7 @@
       <Query><![CDATA[SELECT * ORDERBYRANK FullTextScore(c.text, ["keyword"])]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 15.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -50,7 +50,7 @@
       <Query><![CDATA[SELECT * ORDER BY RANKS FullTextScore(c.text, ["keyword"])]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 25.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -59,7 +59,7 @@
       <Query><![CDATA[SELECT * ORDER BY RANK 1]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 24.]]></Exception>
     </Output>
   </Result>
 </Results>

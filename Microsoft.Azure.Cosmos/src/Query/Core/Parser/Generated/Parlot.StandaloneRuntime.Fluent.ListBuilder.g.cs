@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #define PARLOT_STANDALONE
 #define PARLOT_STRING_ONLY
+#define PARLOT_NO_GENERIC_MATH
 #nullable enable
 using System;
 using System.Buffers;
@@ -147,15 +148,15 @@ internal struct ListBuilder<T>
         switch (_count)
         {
             case 0:
-                return [];
+                return Array.Empty<T>();
             case 1:
-                return [_item0];
+                return new[] { _item0 };
             case 2:
-                return [_item0, _item1];
+                return new[] { _item0, _item1 };
             case 3:
-                return [_item0, _item1, _item2];
+                return new[] { _item0, _item1, _item2 };
             case 4:
-                return [_item0, _item1, _item2, _item3];
+                return new[] { _item0, _item1, _item2, _item3 };
         }
 
         var scratch = _scratch!;

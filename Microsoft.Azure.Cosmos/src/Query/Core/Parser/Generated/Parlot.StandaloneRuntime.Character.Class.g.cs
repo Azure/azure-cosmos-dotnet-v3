@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #define PARLOT_STANDALONE
 #define PARLOT_STRING_ONLY
+#define PARLOT_NO_GENERIC_MATH
 #nullable enable
 namespace Parlot.Generated;
 
@@ -61,6 +62,12 @@ internal static partial class Character
     public const string AsciiNewLines = "\n\r\v";
 
     public const string AsciiWhiteSpaceOrNewLines = AsciiWhiteSpaces + AsciiNewLines;
+
+    public const string SpaceTabCrLfWhiteSpaces = "\t ";
+
+    public const string SpaceTabCrLfNewLines = "\n\r";
+
+    public const string SpaceTabCrLfWhiteSpaceOrNewLines = SpaceTabCrLfWhiteSpaces + SpaceTabCrLfNewLines;
 
     // The chars which can start a default identifier, for the parsers to declare as their expected chars
     internal static readonly char[] _identifierStartChars = DefaultIdentifierStart.ToCharArray();

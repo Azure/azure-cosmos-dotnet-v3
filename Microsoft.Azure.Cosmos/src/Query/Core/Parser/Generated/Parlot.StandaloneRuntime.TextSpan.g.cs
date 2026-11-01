@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #define PARLOT_STANDALONE
 #define PARLOT_STRING_ONLY
+#define PARLOT_NO_GENERIC_MATH
 #nullable enable
 using System;
 #if NET8_0_OR_GREATER
@@ -63,7 +64,7 @@ internal readonly struct TextSpan : IEquatable<string>, IEquatable<TextSpan>
     public readonly int Offset;
     public readonly string? Buffer;
 
-    public ReadOnlySpan<char> Span => Buffer == null ? [] : Buffer.AsSpan(Offset, Length);
+    public ReadOnlySpan<char> Span => Buffer == null ? default : Buffer.AsSpan(Offset, Length);
 
     public override string ToString()
     {

@@ -41,8 +41,7 @@
 		<RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
 		<NoWarn>NU5125</NoWarn>
 		<Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
-		<!-- C# 12 for the generated SQL parser, see SqlParlotParser below. -->
-		<LangVersion>12</LangVersion>
+		<LangVersion>$(LangVersion)</LangVersion>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>
 	
@@ -128,7 +127,7 @@
 		<PackageReference Include="Azure.Core" Version="1.44.1" />
 		<PackageReference Include="System.Collections.Immutable" Version="1.7.0" />
 		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
-		<PackageReference Include="System.Numerics.Vectors" Version="$(SystemNumericsVectorsVersion)" />
+		<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
 		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="10.0.2" NoWarn="NU1903" PrivateAssets="All" />
 
@@ -137,9 +136,9 @@
 		<PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
 
 		<!--HybridRow Dependencies-->
-		<PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-		<PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
-		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
+		<PackageReference Include="System.Memory" Version="4.5.5" />
+		<PackageReference Include="System.Buffers" Version="4.5.1" />
+		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
 		<PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
 		<PackageReference Include="System.ValueTuple" Version="4.5.0" />
 		<PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.0" />
@@ -150,7 +149,7 @@
     <PackageReference Include="Microsoft.Codex.Analyzers" Version="1.0.5" PrivateAssets="All" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
-  </ItemGroup>
+  </ItemGroup>	
 
   <!--
     SQL query parser. Query/Core/Parser/SqlParlotParser.parlot.cs is a Parlot grammar that the Parlot source generator
@@ -159,65 +158,33 @@
     After changing the grammar, regenerate the parser with:
       dotnet build Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj -p:RegenerateSqlParser=true
   -->
-  <PropertyGroup>
-    <SystemMemoryVersion>4.5.5</SystemMemoryVersion>
-    <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
-    <SystemNumericsVectorsVersion>4.5.0</SystemNumericsVectorsVersion>
-    <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
-  </PropertyGroup>
-
   <ItemGroup>
     <Compile Remove="Query/Core/Parser/*.parlot.cs" />
     <None Include="Query/Core/Parser/*.parlot.cs" />
   </ItemGroup>
 
-  <!-- The generator compiles the grammar against the System.Memory version it was built with. -->
   <PropertyGroup Condition=" '$(RegenerateSqlParser)' == 'true' ">
-    <SystemMemoryVersion>4.6.3</SystemMemoryVersion>
-    <SystemBuffersVersion>4.6.1</SystemBuffersVersion>
-    <SystemNumericsVectorsVersion>4.6.1</SystemNumericsVectorsVersion>
-    <SystemRuntimeCompilerServicesUnsafeVersion>6.1.2</SystemRuntimeCompilerServicesUnsafeVersion>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)SqlParlotParser</CompilerGeneratedFilesOutputPath>
-    <!-- Parlot preview builds, for the Operators() precedence parser. -->
+    <!-- The same output on every machine. -->
+    <ParlotLineDirectives>none</ParlotLineDirectives>
+    <!-- Parlot preview builds. -->
     <RestoreAdditionalProjectSources>https://f.feedz.io/sebastienros/parlot/nuget/index.json</RestoreAdditionalProjectSources>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(RegenerateSqlParser)' == 'true' ">
-    <PackageReference Include="Parlot.SourceGenerator" Version="[2.0.0-preview-1043]" PrivateAssets="All" />
+    <PackageReference Include="Parlot.SourceGenerator" Version="[2.0.0-preview-1059]" PrivateAssets="All" />
     <Compile Remove="Query/Core/Parser/Generated/*.cs" />
   </ItemGroup>
-
-  <UsingTask TaskName="CopySqlParlotParser" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
-    <ParameterGroup>
-      <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
-      <Destination ParameterType="System.String" Required="true" />
-    </ParameterGroup>
-    <Task>
-      <Using Namespace="System.IO" />
-      <Using Namespace="System.Linq" />
-      <Code Type="Fragment" Language="cs"><![CDATA[
-        // #line directives hold the absolute path of the grammar on the machine that generated the parser.
-        foreach (string path in Directory.GetFiles(Destination, "*.cs"))
-        {
-            File.Delete(path);
-        }
-
-        foreach (ITaskItem file in Files)
-        {
-            string[] lines = File.ReadAllLines(file.ItemSpec).Where(line => !line.StartsWith("#line")).ToArray();
-            File.WriteAllLines(Path.Combine(Destination, Path.GetFileName(file.ItemSpec)), lines, new System.Text.UTF8Encoding(true));
-        }
-      ]]></Code>
-    </Task>
-  </UsingTask>
 
   <Target Name="RegenerateSqlParlotParser" AfterTargets="CoreCompile" Condition=" '$(RegenerateSqlParser)' == 'true' ">
     <ItemGroup>
       <_SqlParlotParserFile Include="$(CompilerGeneratedFilesOutputPath)/Parlot.SourceGenerator/Parlot.SourceGenerator.ParserSourceGenerator/*.cs" />
+      <_SqlParlotParserPreviousFile Include="$(MSBuildProjectDirectory)/Query/Core/Parser/Generated/*.cs" />
     </ItemGroup>
     <Error Condition=" '@(_SqlParlotParserFile)' == '' " Text="The Parlot source generator didn't generate the SQL parser." />
-    <CopySqlParlotParser Files="@(_SqlParlotParserFile)" Destination="$(MSBuildProjectDirectory)/Query/Core/Parser/Generated" />
+    <Delete Files="@(_SqlParlotParserPreviousFile)" />
+    <Copy SourceFiles="@(_SqlParlotParserFile)" DestinationFolder="$(MSBuildProjectDirectory)/Query/Core/Parser/Generated" />
     <Message Importance="high" Text="Regenerated the SQL parser in Query/Core/Parser/Generated, rebuild without RegenerateSqlParser." />
   </Target>	
 

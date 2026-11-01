@@ -41,7 +41,7 @@
       <Query><![CDATA[SELECT VALUE $42]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 14.]]></Exception>
     </Output>
   </Result>
 </Results>

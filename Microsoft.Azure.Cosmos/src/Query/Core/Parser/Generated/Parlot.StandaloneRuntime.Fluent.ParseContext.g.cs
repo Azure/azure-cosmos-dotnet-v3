@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #define PARLOT_STANDALONE
 #define PARLOT_STRING_ONLY
+#define PARLOT_NO_GENERIC_MATH
 #nullable enable
 using System;
 using System.Collections.Generic;
@@ -157,6 +158,10 @@ internal class ParseContext
 
     // A byte is enough since only its low bits are tested, and it wraps around at a multiple of the check interval
     private byte _cancellationCheckCount;
+
+    // The recursive parsers entered since the stack was last checked, see EnsureSufficientStack(). Starts at 0 so that the
+    // first entry checks it.
+    private byte _stackCheckCount;
 
 #if PARLOT_STANDALONE
     private int _recursionDepth { get => _coldState?.RecursionDepth ?? 0; set => GetColdState().RecursionDepth = value; }
@@ -336,7 +341,12 @@ internal class ParseContext
 
     public WhiteSpaceSet WhiteSpaceSet
     {
-        get => WhiteSpaceMask == (byte)CharacterMask.WhiteSpace ? WhiteSpaceSet.Default : WhiteSpaceSet.Ascii;
+        get => WhiteSpaceMask switch
+        {
+            (byte)CharacterMask.WhiteSpace => WhiteSpaceSet.Default,
+            (byte)CharacterMask.AsciiWhiteSpace => WhiteSpaceSet.Ascii,
+            _ => WhiteSpaceSet.SpaceTabCrLf,
+        };
         set
         {
             var mask = Character.GetWhiteSpaceMask(value);
@@ -814,6 +824,52 @@ internal class ParseContext
         }
 
         _recursionDepth++;
+    }
+
+    /// <summary>
+    /// Throws a <see cref="ParseException"/> when the stack of the thread is too deep to enter a recursive parser safely,
+    /// such that deeply nested input fails the parse instead of overflowing the stack. Called on each entry into a
+    /// <c>Deferred</c>, <c>Unary</c> or prefix operator parser, whether <see cref="MaxRecursionDepth"/> is set or not.
+    /// </summary>
+    /// <remarks>
+    /// The stack is checked on every 16th entry: any 16 consecutive entries contain a check, so the parsers never recurse
+    /// more than 16 levels below the last one, which the margin of the runtime's check (64 KB or more) leaves room for.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void EnsureSufficientStack()
+    {
+        const int mask = 0xF;
+
+        if ((unchecked(_stackCheckCount++) & mask) == 0)
+        {
+            CheckStack();
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void CheckStack()
+    {
+#if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            ThrowInsufficientStack();
+        }
+#else
+        try
+        {
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+        }
+        catch (InsufficientExecutionStackException)
+        {
+            ThrowInsufficientStack();
+        }
+#endif
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void ThrowInsufficientStack()
+    {
+        throw new ParseException("The input is nested too deeply to be parsed on the remaining stack.", Scanner.Cursor.Position);
     }
 
     /// <summary>

@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #define PARLOT_STANDALONE
 #define PARLOT_STRING_ONLY
+#define PARLOT_NO_GENERIC_MATH
 #nullable enable
 using System;
 using System.Buffers;
@@ -247,6 +248,7 @@ internal static partial class Character
     {
         WhiteSpaceSet.Default => (byte)CharacterMask.WhiteSpace,
         WhiteSpaceSet.Ascii => (byte)CharacterMask.AsciiWhiteSpace,
+        WhiteSpaceSet.SpaceTabCrLf => (byte)CharacterMask.SpaceTabCrLfWhiteSpace,
         _ => ThrowInvalidWhiteSpaceSet(set),
     };
 

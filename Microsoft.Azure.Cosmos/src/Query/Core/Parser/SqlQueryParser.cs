@@ -17,10 +17,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 #endif
     static class SqlQueryParser
     {
-        private const string SyntaxErrorMessage = "The query has a syntax error.";
-
-        private const string NestingErrorMessage = "The query is nested too deeply to be parsed.";
-
         public static class Monadic
         {
             public static TryCatch<SqlQuery> Parse(string text)
@@ -35,14 +31,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 {
                     // The grammar can accept inputs that are rejected when building the AST
                     // (e.g. an OFFSET / LIMIT / TOP literal that is not an integer or overflows Int64), these throw.
-                    if (!SqlParlotParser.TryParse(text, out sqlQuery))
+                    // A query nested too deeply for the remaining stack fails too, where the stack ran out.
+                    if (!SqlParlotParser.TryParse(text, out sqlQuery, out (int Offset, int Line, int Column) failure))
                     {
-                        return TryCatch<SqlQuery>.FromException(new ParseException(SyntaxErrorMessage));
+                        return TryCatch<SqlQuery>.FromException(
+                            new ParseException($"The query has a syntax error at line {failure.Line}, column {failure.Column}."));
                     }
-                }
-                catch (InsufficientExecutionStackException ex)
-                {
-                    return TryCatch<SqlQuery>.FromException(new ParseException(NestingErrorMessage, ex));
                 }
                 catch (Exception ex)
                 {

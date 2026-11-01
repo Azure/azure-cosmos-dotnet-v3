@@ -59,7 +59,7 @@
       <Query><![CDATA[SELECT VALUE 1 BETWEEN 3 ?? 4 AND 5 AND 6]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 26.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -68,7 +68,7 @@
       <Query><![CDATA[SELECT VALUE SELECT 1 NOT BETWEEN 2 AND 1 NOT IN (1, 2, 3)]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 14.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -77,7 +77,7 @@
       <Query><![CDATA[SELECT VALUE 1 BETWEEN 2 AND 3 BETWEEN 4 AND 5]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 32.]]></Exception>
     </Output>
   </Result>
 </Results>

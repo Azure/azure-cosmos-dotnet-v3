@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #define PARLOT_STANDALONE
 #define PARLOT_STRING_ONLY
+#define PARLOT_NO_GENERIC_MATH
 #nullable enable
 using System;
 using System.Globalization;
@@ -122,7 +123,9 @@ internal static partial class Numbers
         return charsRead > 0;
     }
 
-#if NET8_0_OR_GREATER
+// The embedded runtime of a consumer compiled with C# 10 defines PARLOT_NO_GENERIC_MATH: it can't compile static
+// abstract interface members, and its generated parsers call the fixed overloads instead.
+#if NET8_0_OR_GREATER && !PARLOT_NO_GENERIC_MATH
     /// <summary>
     /// Parses digits in the specified radix.
     /// </summary>
@@ -289,7 +292,7 @@ internal static partial class Numbers
 
 // INumber<T> arrived in .NET 7; net472 and netstandard2.0 lack the type entirely,
 // so this whole generic lane is modern-only and cannot be polyfilled.
-#if NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER && !PARLOT_NO_GENERIC_MATH
         /// <summary>
         /// Parses a number, using a fast path for plain sequences of digits.
         /// </summary>

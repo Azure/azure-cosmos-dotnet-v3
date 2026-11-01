@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Globalization;
-    using System.Runtime.CompilerServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.SqlObjects;
 
@@ -29,9 +28,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
         public const string NumberStartChars = "+-.0123456789";
 
-        public static bool TryParse(string text, out SqlQuery sqlQuery) => TryParseCore(text, out sqlQuery);
-
-        private static partial bool TryParseCore(string text, out SqlQuery sqlQuery);
+        // On failure, returns where the parse went wrong: the furthest position the parser reached.
+        public static partial bool TryParse(string text, out SqlQuery sqlQuery, out (int Offset, int Line, int Column) failure);
 
         // LEX_IDENTIFIER that is not a reserved keyword (ALL, FIRST and LAST are keywords that remain identifiers).
         public static int ScanIdentifier(ReadOnlySpan<char> span)
@@ -171,14 +169,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
         public static int ScanPlus(ReadOnlySpan<char> span) => ScanSign(span, '+');
 
-        // The parser is recursive: a deeply nested query fails with an InsufficientExecutionStackException
-        // instead of overflowing the stack, which would terminate the process.
-        public static bool EnsureSufficientExecutionStack()
-        {
-            RuntimeHelpers.EnsureSufficientExecutionStack();
-            return true;
-        }
-
         public static SqlNumberLiteral CreateNumberLiteral(ReadOnlySpan<char> text)
         {
             // Same conversion as the former ANTLR visitor: long.TryParse (current culture), then double.Parse (invariant).
@@ -252,19 +242,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             }
 
             return builder.MoveToImmutable();
-        }
-
-        public static SqlScalarExpression ApplyPostfixes(SqlScalarExpression expression, IReadOnlyList<Postfix> postfixes)
-        {
-            for (int i = 0; i < postfixes.Count; i++)
-            {
-                Postfix postfix = postfixes[i];
-                expression = postfix.Identifier != null
-                    ? SqlPropertyRefScalarExpression.Create(expression, postfix.Identifier)
-                    : SqlMemberIndexerScalarExpression.Create(expression, postfix.Index);
-            }
-
-            return expression;
         }
 
         public static SqlPathExpression CreatePath(IReadOnlyList<PathSegment> segments)
@@ -428,19 +405,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             In,
             Like,
             Between,
-        }
-
-        public readonly struct Postfix
-        {
-            public Postfix(SqlIdentifier identifier, SqlScalarExpression index)
-            {
-                this.Identifier = identifier;
-                this.Index = index;
-            }
-
-            public SqlIdentifier Identifier { get; }
-
-            public SqlScalarExpression Index { get; }
         }
 
         public readonly struct PathSegment

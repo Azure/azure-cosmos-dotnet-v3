@@ -32,7 +32,7 @@
       <Query><![CDATA[SELECT * ORDER BY 1 ASC,]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 25.]]></Exception>
     </Output>
   </Result>
 </Results>

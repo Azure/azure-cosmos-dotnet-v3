@@ -23,7 +23,7 @@
       <Query><![CDATA[SELECT VALUE c.array[]]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[The query has a syntax error.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 16.]]></Exception>
     </Output>
   </Result>
 </Results>

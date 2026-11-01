@@ -18,132 +18,119 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             {
             }
 
-        private static global::System.Boolean ___Parlot_5_Build_lambda0() => SqlParlotParser.EnsureSufficientExecutionStack();
-        private static global::System.Int32 ___Parlot_5_Build_lambda1(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanNumber(arg0);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral ___Parlot_5_Build_lambda2(global::Parlot.Generated.TextSpan span) => SqlParlotParser.CreateNumberLiteral(span.Span);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec ___Parlot_5_Build_lambda3(global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral n) => SqlTopSpec.Create(n);
-        private static global::System.Int32 ___Parlot_5_Build_lambda4(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanParameter(arg0);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameter ___Parlot_5_Build_lambda5(global::Parlot.Generated.TextSpan span) => Microsoft.Azure.Cosmos.SqlObjects.SqlParameter.Create(span.ToString());
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec ___Parlot_5_Build_lambda6(global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameter p) => SqlTopSpec.Create(p);
-        private static global::System.Int32 ___Parlot_5_Build_lambda7(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanIdentifier(arg0);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier ___Parlot_5_Build_lambda8(global::Parlot.Generated.TextSpan span) => SqlIdentifier.Create(span.ToString());
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem ___Parlot_5_Build_lambda9(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>> t) => SqlSelectItem.Create(t.Item1, t.Item2.Count == 0 ? null : t.Item2[0]);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec ___Parlot_5_Build_lambda10(global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem> items) => (SqlSelectSpec)SqlSelectListSpec.Create(SqlParlotParser.ToImmutableArray(items));
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec ___Parlot_5_Build_lambda11(global::System.Char _) => (SqlSelectSpec)SqlSelectStarSpec.Create();
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec ___Parlot_5_Build_lambda12(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression e) => (SqlSelectSpec)SqlSelectValueSpec.Create(e);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause ___Parlot_5_Build_lambda13(global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>, global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec> t) => SqlSelectClause.Create(t.Item3, t.Item2.Count == 0 ? null : t.Item2[0], t.Item1.Count != 0);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection ___Parlot_5_Build_lambda14(global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery q) => (SqlCollection)SqlSubqueryCollection.Create(q);
-        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment ___Parlot_5_Build_lambda15(global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier id) => new PathSegment(id, null, null);
-        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment ___Parlot_5_Build_lambda16(global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral n) => new PathSegment(null, n, null);
-        private static global::System.Int32 ___Parlot_5_Build_lambda17(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanString(arg0);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral ___Parlot_5_Build_lambda18(global::Parlot.Generated.TextSpan span) => SqlStringLiteral.Create(SqlParlotParser.GetStringValue(span.Span));
-        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment ___Parlot_5_Build_lambda19(global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral s) => new PathSegment(null, null, s);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection ___Parlot_5_Build_lambda20(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment>> t) => (SqlCollection)SqlInputPathCollection.Create(t.Item1, SqlParlotParser.CreatePath(t.Item2));
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression ___Parlot_5_Build_lambda21(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>> t) => (SqlCollectionExpression)SqlAliasedCollectionExpression.Create(t.Item1, t.Item2.Count == 0 ? null : t.Item2[0]);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression ___Parlot_5_Build_lambda22(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection> t) => (SqlCollectionExpression)SqlArrayIteratorCollectionExpression.Create(t.Item1, t.Item2);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression ___Parlot_5_Build_lambda23(global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression left, global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression right) => (SqlCollectionExpression)SqlJoinCollectionExpression.Create(left, right);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause ___Parlot_5_Build_lambda24(global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression c) => SqlFromClause.Create(c);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause ___Parlot_5_Build_lambda25(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression e) => SqlWhereClause.Create(e);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause ___Parlot_5_Build_lambda26(global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> items) => SqlGroupByClause.Create(SqlParlotParser.ToImmutableArray(items));
-        private static global::System.Boolean ___Parlot_5_Build_lambda27(global::System.String _) => false;
-        private static global::System.Boolean ___Parlot_5_Build_lambda28(global::System.String _) => true;
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem ___Parlot_5_Build_lambda29(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>> t) => SqlOrderByItem.Create(t.Item1, t.Item2.Count != 0 && t.Item2[0]);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause ___Parlot_5_Build_lambda30(global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> items) => SqlOrderByClause.Create(false, SqlParlotParser.ToImmutableArray(items));
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression ___Parlot_5_Build_lambda31(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => SqlFunctionCallScalarExpression.Create(t.Item1, false, SqlParlotParser.ToImmutableArray(t.Item2));
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression ___Parlot_5_Build_lambda32(global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => SqlFunctionCallScalarExpression.Create(SqlIdentifier.Create(t.Item1), false, SqlParlotParser.ToImmutableArray(t.Item2));
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression ___Parlot_5_Build_lambda33(global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => SqlFunctionCallScalarExpression.Create(SqlIdentifier.Create(t.Item1), false, SqlParlotParser.ToImmutableArray(t.Item2));
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression ___Parlot_5_Build_lambda34(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => SqlFunctionCallScalarExpression.Create(t.Item1, true, SqlParlotParser.ToImmutableArray(t.Item2));
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem ___Parlot_5_Build_lambda35(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>> t) => SqlOrderByItem.Create(t.Item1, t.Item2.Count == 0 ? null : t.Item2[0]);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause ___Parlot_5_Build_lambda36(global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> items) => SqlOrderByClause.Create(true, SqlParlotParser.ToImmutableArray(items));
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec ___Parlot_5_Build_lambda37(global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral n) => SqlOffsetSpec.Create(n);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec ___Parlot_5_Build_lambda38(global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameter p) => SqlOffsetSpec.Create(p);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec ___Parlot_5_Build_lambda39(global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral n) => SqlLimitSpec.Create(n);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec ___Parlot_5_Build_lambda40(global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameter p) => SqlLimitSpec.Create(p);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause ___Parlot_5_Build_lambda41(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec, global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec> t) => SqlOffsetLimitClause.Create(t.Item1, t.Item2);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery ___Parlot_5_Build_lambda42(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause>> t) => SqlQuery.Create(
+        private static global::System.Int32 ___Parlot_5_Build_lambda0(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanNumber(arg0);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral ___Parlot_5_Build_lambda1(global::Parlot.Generated.TextSpan span) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.CreateNumberLiteral(span.Span);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec ___Parlot_5_Build_lambda2(global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral n) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec.Create(n);
+        private static global::System.Int32 ___Parlot_5_Build_lambda3(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanParameter(arg0);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameter ___Parlot_5_Build_lambda4(global::Parlot.Generated.TextSpan span) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameter.Create(span.ToString());
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec ___Parlot_5_Build_lambda5(global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameter p) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec.Create(p);
+        private static global::System.Int32 ___Parlot_5_Build_lambda6(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanIdentifier(arg0);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier ___Parlot_5_Build_lambda7(global::Parlot.Generated.TextSpan span) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier.Create(span.ToString());
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem ___Parlot_5_Build_lambda8(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>> t) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem.Create(t.Item1, t.Item2.Count == 0 ? null : t.Item2[0]);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec ___Parlot_5_Build_lambda9(global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem> items) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec)global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectListSpec.Create(global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ToImmutableArray(items));
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec ___Parlot_5_Build_lambda10(global::System.Char _) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec)global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectStarSpec.Create();
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec ___Parlot_5_Build_lambda11(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression e) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec)global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectValueSpec.Create(e);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause ___Parlot_5_Build_lambda12(global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>, global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec> t) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause.Create(t.Item3, t.Item2.Count == 0 ? null : t.Item2[0], t.Item1.Count != 0);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection ___Parlot_5_Build_lambda13(global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery q) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection)global::Microsoft.Azure.Cosmos.SqlObjects.SqlSubqueryCollection.Create(q);
+        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment ___Parlot_5_Build_lambda14(global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier id) => new global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment(id, null, null);
+        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment ___Parlot_5_Build_lambda15(global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral n) => new global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment(null, n, null);
+        private static global::System.Int32 ___Parlot_5_Build_lambda16(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanString(arg0);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral ___Parlot_5_Build_lambda17(global::Parlot.Generated.TextSpan span) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral.Create(global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.GetStringValue(span.Span));
+        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment ___Parlot_5_Build_lambda18(global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral s) => new global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment(null, null, s);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection ___Parlot_5_Build_lambda19(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment>> t) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection)global::Microsoft.Azure.Cosmos.SqlObjects.SqlInputPathCollection.Create(t.Item1, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.CreatePath(t.Item2));
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression ___Parlot_5_Build_lambda20(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>> t) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlAliasedCollectionExpression.Create(t.Item1, t.Item2.Count == 0 ? null : t.Item2[0]);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression ___Parlot_5_Build_lambda21(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection> t) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlArrayIteratorCollectionExpression.Create(t.Item1, t.Item2);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression ___Parlot_5_Build_lambda22(global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression left, global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression right) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlJoinCollectionExpression.Create(left, right);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause ___Parlot_5_Build_lambda23(global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression c) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause.Create(c);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause ___Parlot_5_Build_lambda24(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression e) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause.Create(e);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause ___Parlot_5_Build_lambda25(global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> items) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause.Create(global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ToImmutableArray(items));
+        private static global::System.Boolean ___Parlot_5_Build_lambda26(global::System.String _) => false;
+        private static global::System.Boolean ___Parlot_5_Build_lambda27(global::System.String _) => true;
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem ___Parlot_5_Build_lambda28(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>> t) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem.Create(t.Item1, t.Item2.Count != 0 && t.Item2[0]);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause ___Parlot_5_Build_lambda29(global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> items) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause.Create(false, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ToImmutableArray(items));
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression ___Parlot_5_Build_lambda30(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression.Create(t.Item1, false, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ToImmutableArray(t.Item2));
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression ___Parlot_5_Build_lambda31(global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier.Create(t.Item1), false, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ToImmutableArray(t.Item2));
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression ___Parlot_5_Build_lambda32(global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier.Create(t.Item1), false, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ToImmutableArray(t.Item2));
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression ___Parlot_5_Build_lambda33(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression.Create(t.Item1, true, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ToImmutableArray(t.Item2));
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem ___Parlot_5_Build_lambda34(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>> t) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem.Create(t.Item1, t.Item2.Count == 0 ? null : t.Item2[0]);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause ___Parlot_5_Build_lambda35(global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> items) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause.Create(true, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ToImmutableArray(items));
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec ___Parlot_5_Build_lambda36(global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral n) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec.Create(n);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec ___Parlot_5_Build_lambda37(global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameter p) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec.Create(p);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec ___Parlot_5_Build_lambda38(global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral n) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec.Create(n);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec ___Parlot_5_Build_lambda39(global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameter p) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec.Create(p);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause ___Parlot_5_Build_lambda40(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec, global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec> t) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause.Create(t.Item1, t.Item2);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery ___Parlot_5_Build_lambda41(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause>> t) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery.Create(
                     t.Item1,
                     t.Item2.Count == 0 ? null : t.Item2[0],
                     t.Item3.Count == 0 ? null : t.Item3[0],
                     t.Item4.Count == 0 ? null : t.Item4[0],
                     t.Item5.Count == 0 ? null : t.Item5[0],
                     t.Item6.Count == 0 ? null : t.Item6[0]);
-        private static global::System.Boolean ___Parlot_5_Build_lambda43() => SqlParlotParser.EnsureSufficientExecutionStack();
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda44(global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral s) => (SqlScalarExpression)SqlLiteralScalarExpression.Create(s);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda45(global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery q) => (SqlScalarExpression)SqlSubqueryScalarExpression.Create(q);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda46(global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral n) => (SqlScalarExpression)SqlLiteralScalarExpression.Create(n);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda47(global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameter p) => (SqlScalarExpression)SqlParameterRefScalarExpression.Create(p);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda48(global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery q) => (SqlScalarExpression)SqlArrayScalarExpression.Create(q);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda49(global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery q) => (SqlScalarExpression)SqlAllScalarExpression.Create(q);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda50(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>> t) => t.Item2.Count == 0
-                        ? (SqlScalarExpression)SqlPropertyRefScalarExpression.Create(null, t.Item1)
-                        : SqlFunctionCallScalarExpression.Create(t.Item1, false, SqlParlotParser.ToImmutableArray(t.Item2[0]));
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda51(global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery q) => (SqlScalarExpression)SqlExistsScalarExpression.Create(q);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda52(global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery q) => (SqlScalarExpression)SqlFirstScalarExpression.Create(q);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda53(global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery q) => (SqlScalarExpression)SqlLastScalarExpression.Create(q);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda54(global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => (SqlScalarExpression)SqlFunctionCallScalarExpression.Create(SqlIdentifier.Create(t.Item1), false, SqlParlotParser.ToImmutableArray(t.Item2));
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda55(global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => (SqlScalarExpression)SqlFunctionCallScalarExpression.Create(SqlIdentifier.Create(t.Item1), false, SqlParlotParser.ToImmutableArray(t.Item2));
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda56(global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> items) => (SqlScalarExpression)SqlArrayCreateScalarExpression.Create(SqlParlotParser.ToImmutableArray(items));
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda57(global::System.String _) => (SqlScalarExpression)SqlLiteralScalarExpression.Create(SqlNullLiteral.Create());
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda58(global::System.String _) => (SqlScalarExpression)SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(true));
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty ___Parlot_5_Build_lambda59(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> t) => SqlObjectProperty.Create(SqlPropertyName.Create(t.Item1.Value), t.Item2);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda60(global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty> properties) => (SqlScalarExpression)SqlObjectCreateScalarExpression.Create(SqlParlotParser.ToImmutableArray(properties));
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda61(global::System.String _) => (SqlScalarExpression)SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(false));
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda62(global::System.String _) => (SqlScalarExpression)SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda63(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => (SqlScalarExpression)SqlFunctionCallScalarExpression.Create(t.Item1, true, SqlParlotParser.ToImmutableArray(t.Item2));
-        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix ___Parlot_5_Build_lambda64(global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier id) => new Postfix(id, null);
-        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix ___Parlot_5_Build_lambda65(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression index) => new Postfix(null, index);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda66(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix>> t) => SqlParlotParser.ApplyPostfixes(t.Item1, t.Item2);
-        private static global::System.Int32 ___Parlot_5_Build_lambda67(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanPlus(arg0);
-        private static global::System.Boolean ___Parlot_5_Build_lambda68(global::Parlot.Generated.Fluent.ParseContext c, global::Parlot.Generated.TextSpan s) => SqlParlotParser.EnsureSufficientExecutionStack();
-        private static global::System.Int32 ___Parlot_5_Build_lambda69(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanMinus(arg0);
-        private static global::System.Boolean ___Parlot_5_Build_lambda70(global::Parlot.Generated.Fluent.ParseContext c, global::Parlot.Generated.TextSpan s) => SqlParlotParser.EnsureSufficientExecutionStack();
-        private static global::System.Boolean ___Parlot_5_Build_lambda71(global::Parlot.Generated.Fluent.ParseContext c, global::System.String s) => SqlParlotParser.EnsureSufficientExecutionStack();
-        private static global::Parlot.Generated.TextSpan ___Parlot_5_Build_lambda72(global::System.String _) => default(Parlot.Generated.TextSpan);
-        private static global::System.Boolean ___Parlot_5_Build_lambda73(global::Parlot.Generated.Fluent.ParseContext c, global::System.Char s) => SqlParlotParser.EnsureSufficientExecutionStack();
-        private static global::Parlot.Generated.TextSpan ___Parlot_5_Build_lambda74(global::System.Char _) => default(Parlot.Generated.TextSpan);
-        private static global::System.Int32 ___Parlot_5_Build_lambda75(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanPlus(arg0);
-        private static global::System.Int32 ___Parlot_5_Build_lambda76(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanMinus(arg0);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda77(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression e) => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Minus, e);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda78(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression e) => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Plus, e);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda79(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression e) => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.BitwiseNot, e);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda80(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression e) => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Not, e);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda81(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Multiply, a, b);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda82(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Divide, a, b);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda83(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Modulo, a, b);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda84(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Add, a, b);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda85(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Subtract, a, b);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda86(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.GreaterThanOrEqual, a, b);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda87(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.LessThanOrEqual, a, b);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda88(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.LessThan, a, b);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda89(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.GreaterThan, a, b);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda90(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Equal, a, b);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda91(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.NotEqual, a, b);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda92(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.BitwiseAnd, a, b);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda93(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.BitwiseXor, a, b);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda94(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.BitwiseOr, a, b);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda95(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.StringConcat, a, b);
-        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix ___Parlot_5_Build_lambda96(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> t) => new Suffix(SuffixKind.Between, default, t.Item1, t.Item2, null);
-        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix ___Parlot_5_Build_lambda97(global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> list) => new Suffix(SuffixKind.In, SqlParlotParser.ToImmutableArray(list), null, null, null);
-        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix ___Parlot_5_Build_lambda98(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral>> t) => new Suffix(SuffixKind.Like, default, t.Item1, null, t.Item2.Count == 0 ? null : t.Item2[0]);
-        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix ___Parlot_5_Build_lambda99(global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> t) => t.Item2.WithNot(t.Item1.Count != 0);
-        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf ___Parlot_5_Build_lambda100(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>> t) => SqlParlotParser.CreateLeaf(t.Item1, t.Item2);
-        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix ___Parlot_5_Build_lambda101(global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> t) => t.Item2.WithNot(t.Item1.Count != 0);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda102(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>> t) => SqlParlotParser.CreateLeaf(t.Item1, t.Item2).Expression;
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda103(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression left, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression right) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.And, left, right);
-        private static global::System.Boolean ___Parlot_5_Build_lambda104(global::Parlot.Generated.Fluent.ParseContext c, global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => SqlParlotParser.IsValidLogical(t.Item1, t.Item2, t.Item3);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda105(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => SqlParlotParser.CreateLogical(t.Item1, t.Item2, t.Item3);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda106(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression condition, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression alternative, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression consequent) => SqlConditionalScalarExpression.Create(condition, consequent, alternative);
-        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda107(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression left, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression right) => SqlCoalesceScalarExpression.Create(left, right);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda42(global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral s) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlLiteralScalarExpression.Create(s);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda43(global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery q) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlSubqueryScalarExpression.Create(q);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda44(global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral n) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlLiteralScalarExpression.Create(n);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda45(global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameter p) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameterRefScalarExpression.Create(p);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda46(global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery q) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlArrayScalarExpression.Create(q);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda47(global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery q) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlAllScalarExpression.Create(q);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda48(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>> t) => t.Item2.Count == 0
+                        ? (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlPropertyRefScalarExpression.Create(null, t.Item1)
+                        : global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression.Create(t.Item1, false, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ToImmutableArray(t.Item2[0]));
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda49(global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery q) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlExistsScalarExpression.Create(q);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda50(global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery q) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlFirstScalarExpression.Create(q);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda51(global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery q) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlLastScalarExpression.Create(q);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda52(global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier.Create(t.Item1), false, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ToImmutableArray(t.Item2));
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda53(global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier.Create(t.Item1), false, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ToImmutableArray(t.Item2));
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda54(global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> items) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlArrayCreateScalarExpression.Create(global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ToImmutableArray(items));
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda55(global::System.String _) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlLiteralScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlNullLiteral.Create());
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda56(global::System.String _) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlLiteralScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBooleanLiteral.Create(true));
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty ___Parlot_5_Build_lambda57(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> t) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlPropertyName.Create(t.Item1.Value), t.Item2);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda58(global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty> properties) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectCreateScalarExpression.Create(global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ToImmutableArray(properties));
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda59(global::System.String _) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlLiteralScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBooleanLiteral.Create(false));
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda60(global::System.String _) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlLiteralScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlUndefinedLiteral.Create());
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda61(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => (global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression)global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression.Create(t.Item1, true, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ToImmutableArray(t.Item2));
+        private static global::System.Int32 ___Parlot_5_Build_lambda62(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanPlus(arg0);
+        private static global::System.Int32 ___Parlot_5_Build_lambda63(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanMinus(arg0);
+        private static global::Parlot.Generated.TextSpan ___Parlot_5_Build_lambda64(global::System.String _) => default(global::Parlot.Generated.TextSpan);
+        private static global::Parlot.Generated.TextSpan ___Parlot_5_Build_lambda65(global::System.Char _) => default(global::Parlot.Generated.TextSpan);
+        private static global::System.Int32 ___Parlot_5_Build_lambda66(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanPlus(arg0);
+        private static global::System.Int32 ___Parlot_5_Build_lambda67(global::System.ReadOnlySpan<global::System.Char> arg0) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ScanMinus(arg0);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda68(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression e) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlUnaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlUnaryScalarOperatorKind.Minus, e);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda69(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression e) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlUnaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlUnaryScalarOperatorKind.Plus, e);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda70(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression e) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlUnaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlUnaryScalarOperatorKind.BitwiseNot, e);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda71(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression e) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlUnaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlUnaryScalarOperatorKind.Not, e);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda72(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.Multiply, a, b);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda73(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.Divide, a, b);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda74(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.Modulo, a, b);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda75(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.Add, a, b);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda76(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.Subtract, a, b);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda77(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.GreaterThanOrEqual, a, b);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda78(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.LessThanOrEqual, a, b);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda79(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.LessThan, a, b);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda80(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.GreaterThan, a, b);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda81(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.Equal, a, b);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda82(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.NotEqual, a, b);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda83(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.BitwiseAnd, a, b);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda84(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.BitwiseXor, a, b);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda85(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.BitwiseOr, a, b);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda86(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression a, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression b) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.StringConcat, a, b);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda87(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression e, global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier id) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlPropertyRefScalarExpression.Create(e, id);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda88(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression e, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression index) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlMemberIndexerScalarExpression.Create(e, index);
+        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix ___Parlot_5_Build_lambda89(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> t) => new global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix(global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.SuffixKind.Between, default, t.Item1, t.Item2, null);
+        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix ___Parlot_5_Build_lambda90(global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> list) => new global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix(global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.SuffixKind.In, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.ToImmutableArray(list), null, null, null);
+        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix ___Parlot_5_Build_lambda91(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral>> t) => new global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix(global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.SuffixKind.Like, default, t.Item1, null, t.Item2.Count == 0 ? null : t.Item2[0]);
+        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix ___Parlot_5_Build_lambda92(global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> t) => t.Item2.WithNot(t.Item1.Count != 0);
+        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf ___Parlot_5_Build_lambda93(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>> t) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.CreateLeaf(t.Item1, t.Item2);
+        private static global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix ___Parlot_5_Build_lambda94(global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> t) => t.Item2.WithNot(t.Item1.Count != 0);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda95(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>> t) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.CreateLeaf(t.Item1, t.Item2).Expression;
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda96(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression left, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression right) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarExpression.Create(global::Microsoft.Azure.Cosmos.SqlObjects.SqlBinaryScalarOperatorKind.And, left, right);
+        private static global::System.Boolean ___Parlot_5_Build_lambda97(global::Parlot.Generated.Fluent.ParseContext c, global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.IsValidLogical(t.Item1, t.Item2, t.Item3);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda98(global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> t) => global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.CreateLogical(t.Item1, t.Item2, t.Item3);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda99(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression left, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression right) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlCoalesceScalarExpression.Create(left, right);
+        private static global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression ___Parlot_5_Build_lambda100(global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression condition, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression consequent, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression alternative) => global::Microsoft.Azure.Cosmos.SqlObjects.SqlConditionalScalarExpression.Create(condition, consequent, alternative);
 
         // Static fields for parser data
-        #if NET8_0_OR_GREATER
-        private static readonly global::System.Buffers.SearchValues<char> ___Parlot_5_Build_anyof3 = global::System.Buffers.SearchValues.Create(" \t\r\n");
-        #else
-        private const ulong ___Parlot_5_Build_anyof3_low = 0x100002600UL;
-        private const ulong ___Parlot_5_Build_anyof3_high = 0x0UL;
-        #endif
-        private static readonly global::Parlot.Generated.Fluent.Parser<global::Parlot.Generated.TextSpan> ___Parlot_5_Build_WsWrapper10 = new global::Parlot.Generated.Fluent.DelegateParser<global::Parlot.Generated.TextSpan>(__Parlot_5_Build_WhiteSpace_0);
-        private static readonly int[] ___Parlot_5_Build_static0 = new int[] { 0, 0, 0, 0, 1, 1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 5, 6, 7, 8 };
+        private static readonly int[] ___Parlot_5_Build_static0 = new int[] { 1, 1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4, 4, 5, 5, 6, 7, 8, 9 };
+        private static readonly int[] ___Parlot_5_Build_static1 = new int[] { 1 };
 
         [global::System.Runtime.CompilerServices.MethodImpl(global::System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         internal static bool __Parlot_5_Build_Core(global::Parlot.Generated.Fluent.ParseContext context, ref global::Parlot.Generated.ParseResult<global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery> result)
@@ -155,15 +142,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
             bool success0 = false;
             global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value1 = default;
-            var previousWhiteSpaceParser2 = context.WhiteSpaceParser;
-            context.WhiteSpaceParser = ___Parlot_5_Build_WsWrapper10;
+            var previousWhiteSpaceSet2 = context.WhiteSpaceSet;
+            context.WhiteSpaceSet = global::Parlot.Generated.WhiteSpaceSet.SpaceTabCrLf;
             try
             {
-                success0 = __Parlot_5_Build_WithWhiteSpace_1(context, out value1);
+                success0 = __Parlot_5_Build_WithWhiteSpaceSet_0(context, out value1);
             }
             finally
             {
-                context.WhiteSpaceParser = previousWhiteSpaceParser2;
+                context.WhiteSpaceSet = previousWhiteSpaceSet2;
             }
 
             if (success0)
@@ -191,6 +178,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 return false;
             }
 
+            context.EnsureSufficientStack();
             var previous = state.__parlotDeferred0;
             state.__parlotDeferred0 = offset;
             var success = Deferred_0_Core(context, out value);
@@ -204,15 +192,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success31 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value32 = default;
-            if (___Parlot_5_Build_lambda0())
+            bool success17 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value18 = default;
+            if (__Parlot_5_Build_Then_20_5(context, out var parsed19Value))
             {
-                success31 = __Parlot_5_Build_If_Then_5(context, out value32);
+                value18 = ___Parlot_5_Build_lambda41(parsed19Value);
+                success17 = true;
             }
 
-            value = value32;
-            return success31;
+            value = value18;
+            return success17;
         }
 
         private static bool Deferred_1(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
@@ -225,6 +214,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 return false;
             }
 
+            context.EnsureSufficientStack();
             var previous = state.__parlotDeferred1;
             state.__parlotDeferred1 = offset;
             var success = Deferred_1_Core(context, out value);
@@ -238,194 +228,195 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success729 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value730 = default;
-            if (___Parlot_5_Build_lambda43())
-            {
-                success729 = __Parlot_5_Build_If_Then_188(context, out value730);
-            }
-
-            value = value730;
-            return success729;
-        }
-
-        private static bool __Parlot_5_Build_WhiteSpace_0(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+            bool success715 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value716 = default;
+            var next717 = -1;
+            var nextPosition717 = 0;
+            success715 = climb717(1, out value716, ref next717, ref nextPosition717);
+            bool climb717(int maxLevel, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression climbed, ref int next, ref int nextPosition)
+{
+    var lowest = 0;
+    var lookup = true;
+    if (!__Parlot_5_Build_Operators717_187(context, out climbed))
+    {
+        return false;
+    }
+    while (true)
+    {
+        if (lookup)
         {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            var span4 = cursor.Span;
-            var start5 = cursor.Offset;
-            #if NET8_0_OR_GREATER
-            var index7 = span4.IndexOfAnyExcept(___Parlot_5_Build_anyof3);
-            var size6 = index7 == -1 ? span4.Length : index7;
-            #else
-            var size6 = 0;
-            var maxLength9 = span4.Length;
-            for (var i = 0; i < maxLength9; i++)
+            if (!lookup717(lowest, ref next, ref nextPosition)) break;
+            lookup = false;
+        }
+        if (next == -1) break;
+        var level = next >= 0 ? ___Parlot_5_Build_static1[next] : -2 - next;
+        if (level > maxLevel) break;
+        var position = nextPosition;
+        switch (level)
+        {
+            case 0:
             {
-                var c = span4[i];
-                var isMember = false;
-                if ((uint)c < 128u)
+                if (!__Parlot_5_Build_Operators717_382(context, out var op))
                 {
-                    if (c < 64)
-                    {
-                        isMember = ((___Parlot_5_Build_anyof3_low >> (c & 63)) & 1UL) != 0;
-                    }
-                    else
-                    {
-                        isMember = ((___Parlot_5_Build_anyof3_high >> (c & 63)) & 1UL) != 0;
-                    }
+                    lowest = 1;
+                    lookup = true;
+                    continue;
                 }
-                if (!isMember)
+                if (!climb717(-1, out var right, ref next, ref nextPosition) || nextPosition == position)
                 {
-                    break;
+                    cursor.ResetPosition(position);
+                    lowest = 1;
+                    lookup = true;
+                    continue;
                 }
-                size6++;
+                climbed = ___Parlot_5_Build_lambda100(climbed, op, right);
+                continue;
             }
-            #endif
-            if (size6 < 1)
+            case 1:
             {
-                if (size6 == span4.Length) cursor.MarkHitEnd();
-                value = default;
-                return false;
+                var op = next;
+                if (!climb717(0, out var right, ref next, ref nextPosition) || nextPosition == position)
+                {
+                    cursor.ResetPosition(position);
+                    lowest = 2;
+                    lookup = true;
+                    continue;
+                }
+                switch (op)
+                {
+                    case 0: climbed = ___Parlot_5_Build_lambda99(climbed, right); break;
+                }
+                continue;
             }
-            cursor.AdvanceNoNewLines(size6);
-            value = cursor.CreateSpan(start5, size6);
+        }
+    }
+    return true;
+}
+            bool lookup717(int lowest, ref int next, ref int nextPosition)
+{
+    nextPosition = cursor.Offset;
+    if (lowest <= 0)
+    {
+        if (__Parlot_5_Build_Operators717_379(context, out next))
+        {
+            if (next < 0) cursor.ResetPosition(nextPosition);
             return true;
         }
+    }
+    else if (lowest <= 1)
+    {
+        if (__Parlot_5_Build_Operators717_381(context, out next)) return true;
+    }
+    next = -1;
+    return false;
+}
 
-        private static bool __Parlot_5_Build_SequenceAndSkip_P1_3(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success16 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value17 = default;
-            success16 = Deferred_0(context, out value17);
-
-            value = value17;
-            return success16;
+            value = value716;
+            return success715;
         }
 
-        private static bool __Parlot_5_Build_SequenceAndSkip_P2_4(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Parlot.Generated.TextSpan> value)
+        private static bool __Parlot_5_Build_SequenceAndSkip_P1_2(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success18 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::Parlot.Generated.TextSpan> value19 = default;
-            int optionalStart22 = 0;
-            global::System.ReadOnlySpan<char> rest25 = default;
-            int size26 = 0;
-            var span20 = cursor.Span;
-            var spanStart20 = cursor.Offset;
-            var pos20 = 0;
-            optionalStart22 = pos20;
-            rest25 = span20.Slice(pos20);
-            {
-                #if NET8_0_OR_GREATER
-                var index27 = rest25.IndexOfAnyExcept(___Parlot_5_Build_anyof3);
-                var size26Count = index27 == -1 ? rest25.Length : index27;
-                #else
-                var size26Count = 0;
-                var maxLength29 = rest25.Length;
-                for (var i = 0; i < maxLength29; i++)
-                {
-                    var c = rest25[i];
-                    var isMember = false;
-                    if ((uint)c < 128u)
-                    {
-                        if (c < 64)
-                        {
-                            isMember = ((___Parlot_5_Build_anyof3_low >> (c & 63)) & 1UL) != 0;
-                        }
-                        else
-                        {
-                            isMember = ((___Parlot_5_Build_anyof3_high >> (c & 63)) & 1UL) != 0;
-                        }
-                    }
-                    if (!isMember)
-                    {
-                        break;
-                    }
-                    size26Count++;
-                }
-                #endif
-                size26 = size26Count;
-            }
-            if (size26 < 1)
-            {
-                if (size26 == rest25.Length) cursor.MarkHitEnd();
-                goto notFound23;
-            }
-            pos20 += size26;
-            goto optionalDone24;
-            notFound23: pos20 = optionalStart22;
-            optionalDone24: ;
-            cursor.AdvanceWithinBuffer(pos20);
-            success18 = true;
+            bool success8 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value9 = default;
+            success8 = Deferred_0(context, out value9);
 
-            value = value19;
-            return success18;
+            value = value9;
+            return success8;
         }
 
-        private static bool __Parlot_5_Build_Eof_2(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
+        // WhiteSpaceLiteral
+        private static bool __Parlot_5_Build_ZeroOrOne_Parser_4(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success13 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value14 = default;
-            var start15 = cursor.Offset;
-            success13 = false;
-            if (__Parlot_5_Build_SequenceAndSkip_P1_3(context, out value14))
+            bool success12 = false;
+            global::Parlot.Generated.TextSpan value13 = default;
+            var start14 = cursor.Offset;
+            scanner.SkipWhiteSpaceOrNewLine(context.WhiteSpaceOrNewLineMask);
+            var end15 = cursor.Offset;
+            if (start14 != end15)
             {
-                if (__Parlot_5_Build_SequenceAndSkip_P2_4(context, out _))
+                success12 = true;
+            }
+
+            value = value13;
+            return success12;
+        }
+
+        private static bool __Parlot_5_Build_SequenceAndSkip_P2_3(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Parlot.Generated.TextSpan> value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success10 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::Parlot.Generated.TextSpan> value11 = global::System.Array.Empty<global::Parlot.Generated.TextSpan>();
+            __Parlot_5_Build_ZeroOrOne_Parser_4(context, out _);
+
+            value = value11;
+            return success10;
+        }
+
+        private static bool __Parlot_5_Build_Eof_1(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success5 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value6 = default;
+            var start7 = cursor.Offset;
+            success5 = false;
+            if (__Parlot_5_Build_SequenceAndSkip_P1_2(context, out value6))
+            {
+                if (__Parlot_5_Build_SequenceAndSkip_P2_3(context, out _))
                 {
-                    success13 = true;
+                    success5 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start15);
+                    cursor.ResetPosition(start7);
                 }
             }
             else
             {
-                cursor.ResetPosition(start15);
+                cursor.ResetPosition(start7);
             }
 
-            value = value14;
-            return success13;
+            value = value6;
+            return success5;
         }
 
-        private static bool __Parlot_5_Build_WithWhiteSpace_1(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
+        private static bool __Parlot_5_Build_WithWhiteSpaceSet_0(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success11 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value12 = default;
-            var start30 = cursor.Offset;
-            if (__Parlot_5_Build_Eof_2(context, out value12) && cursor.Eof)
+            bool success3 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value4 = default;
+            var start16 = cursor.Offset;
+            if (__Parlot_5_Build_Eof_1(context, out value4) && cursor.Eof)
             {
-                success11 = true;
+                success3 = true;
             }
             else
             {
-                cursor.ResetPosition(start30);
+                cursor.ResetPosition(start16);
             }
 
-            value = value12;
-            return success11;
+            value = value4;
+            return success3;
         }
 
-        private static bool __Parlot_5_Build_Keyword_17(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_16(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -441,70 +432,70 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_16(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_15(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success67 = false;
-            global::System.String value68 = default;
-            var start69 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_17(context, out _))
+            bool success51 = false;
+            global::System.String value52 = default;
+            var start53 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_16(context, out _))
             {
-                var boundary71 = cursor.Eof;
-                if (!boundary71)
+                var boundary55 = cursor.Eof;
+                if (!boundary55)
                 {
-                    var next72 = cursor.Current;
-                    boundary71 = next72 < 128
-                        ? (((next72 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next72 & 63)) & 1UL) == 0
+                    var next56 = cursor.Current;
+                    boundary55 = next56 < 128
+                        ? (((next56 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next56 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary71)
+                if (boundary55)
                 {
-                    success67 = true;
+                    success51 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start69);
+                    cursor.ResetPosition(start53);
                 }
             }
 
-            value = value68;
-            return success67;
+            value = value52;
+            return success51;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_15(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_14(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success65 = false;
-            global::System.String value66 = default;
-            var shortcut73 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart74 = cursor.Offset;
-            if (!shortcut73)
+            bool success49 = false;
+            global::System.String value50 = default;
+            var shortcut57 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart58 = cursor.Offset;
+            if (!shortcut57)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart74 = cursor.Offset;
-                success65 = __Parlot_5_Build_SkipWS_16(context, out _);
-                if (!success65)
+                contentStart58 = cursor.Offset;
+                success49 = __Parlot_5_Build_SkipWS_15(context, out _);
+                if (!success49)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success65 = __Parlot_5_Build_SkipWS_16(context, out _);
+                success49 = __Parlot_5_Build_SkipWS_15(context, out _);
             }
 
-            value = value66;
-            return success65;
+            value = value50;
+            return success49;
         }
 
-        private static bool __Parlot_5_Build_Keyword_21(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_20(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -520,7 +511,133 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_20(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_19(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success63 = false;
+            global::System.String value64 = default;
+            var start65 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_20(context, out value64))
+            {
+                var boundary67 = cursor.Eof;
+                if (!boundary67)
+                {
+                    var next68 = cursor.Current;
+                    boundary67 = next68 < 128
+                        ? (((next68 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next68 & 63)) & 1UL) == 0
+                        : true;
+                }
+                if (boundary67)
+                {
+                    success63 = true;
+                }
+                else
+                {
+                    cursor.ResetPosition(start65);
+                }
+            }
+
+            value = value64;
+            return success63;
+        }
+
+        private static bool __Parlot_5_Build_ZeroOrOne_Parser_18(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success61 = false;
+            global::System.String value62 = default;
+            var shortcut69 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart70 = cursor.Offset;
+            if (!shortcut69)
+            {
+                var start = cursor.Offset;
+                context.SkipWhiteSpace();
+                contentStart70 = cursor.Offset;
+                success61 = __Parlot_5_Build_SkipWS_19(context, out value62);
+                if (!success61)
+                {
+                    cursor.ResetPosition(start);
+                }
+            }
+            else
+            {
+                success61 = __Parlot_5_Build_SkipWS_19(context, out value62);
+            }
+
+            value = value62;
+            return success61;
+        }
+
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_17(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.String> value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success59 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::System.String> value60 = global::System.Array.Empty<global::System.String>();
+            if (__Parlot_5_Build_ZeroOrOne_Parser_18(context, out var itemValue71))
+            {
+                value60 = new global::System.String[] { itemValue71 };
+            }
+
+            value = value60;
+            return success59;
+        }
+
+        private static bool __Parlot_5_Build_Sequence_P1_13(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.String> value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success46 = false;
+            global::System.Collections.Generic.IReadOnlyList<global::System.String> value47 = default;
+            var start48 = cursor.Offset;
+            success46 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_14(context, out _))
+            {
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_17(context, out value47))
+                {
+                    success46 = true;
+                }
+                else
+                {
+                    cursor.ResetPosition(start48);
+                }
+            }
+            else
+            {
+                cursor.ResetPosition(start48);
+            }
+
+            value = value47;
+            return success46;
+        }
+
+        private static bool __Parlot_5_Build_Keyword_25(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            if (cursor.Match("top".AsSpan(), global::System.StringComparison.OrdinalIgnoreCase))
+            {
+                cursor.AdvanceNoNewLines(3);
+                value = default;
+                return true;
+            }
+            value = default;
+            return false;
+        }
+
+        private static bool __Parlot_5_Build_SkipWS_24(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -529,7 +646,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             bool success79 = false;
             global::System.String value80 = default;
             var start81 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_21(context, out value80))
+            if (__Parlot_5_Build_Keyword_25(context, out _))
             {
                 var boundary83 = cursor.Eof;
                 if (!boundary83)
@@ -553,7 +670,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return success79;
         }
 
-        private static bool __Parlot_5_Build_ZeroOrOne_Parser_19(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_23(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -568,7 +685,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
                 contentStart86 = cursor.Offset;
-                success77 = __Parlot_5_Build_SkipWS_20(context, out value78);
+                success77 = __Parlot_5_Build_SkipWS_24(context, out _);
                 if (!success77)
                 {
                     cursor.ResetPosition(start);
@@ -576,459 +693,333 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             }
             else
             {
-                success77 = __Parlot_5_Build_SkipWS_20(context, out value78);
+                success77 = __Parlot_5_Build_SkipWS_24(context, out _);
             }
 
             value = value78;
             return success77;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_18(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.String> value)
+        // SpanScanner
+        private static bool __Parlot_5_Build_SkipWS_30(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success75 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::System.String> value76 = global::System.Array.Empty<global::System.String>();
-            if (__Parlot_5_Build_ZeroOrOne_Parser_19(context, out var itemValue87))
+            bool success101 = false;
+            global::Parlot.Generated.TextSpan value102 = default;
+            var span103 = cursor.Span;
+            var size104 = ___Parlot_5_Build_lambda0(span103);
+            if (size104 > 0)
             {
-                value76 = new global::System.String[] { itemValue87 };
+                if (size104 > span103.Length)
+                {
+                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size104} chars while only {span103.Length} were available.");
+                }
+                var start105 = cursor.Offset;
+                cursor.AdvanceNoNewLines(size104);
+                value102 = cursor.CreateSpan(start105, size104);
+                success101 = true;
+            }
+            else if (size104 < 0)
+            {
+                cursor.MarkHitEnd();
             }
 
-            value = value76;
-            return success75;
+            value = value102;
+            return success101;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_14(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.String> value)
+        private static bool __Parlot_5_Build_Then_98_29(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success62 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::System.String> value63 = default;
-            var start64 = cursor.Offset;
-            success62 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_15(context, out _))
+            bool success99 = false;
+            global::Parlot.Generated.TextSpan value100 = default;
+            var shortcut106 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart107 = cursor.Offset;
+            if (!shortcut106)
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_18(context, out value63))
+                var start = cursor.Offset;
+                context.SkipWhiteSpace();
+                contentStart107 = cursor.Offset;
+                success99 = __Parlot_5_Build_SkipWS_30(context, out value100);
+                if (!success99)
                 {
-                    success62 = true;
-                }
-                else
-                {
-                    cursor.ResetPosition(start64);
+                    cursor.ResetPosition(start);
                 }
             }
             else
             {
-                cursor.ResetPosition(start64);
+                success99 = __Parlot_5_Build_SkipWS_30(context, out value100);
             }
 
-            value = value63;
-            return success62;
+            value = value100;
+            return success99;
         }
 
-        private static bool __Parlot_5_Build_Keyword_26(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            if (cursor.Match("top".AsSpan(), global::System.StringComparison.OrdinalIgnoreCase))
-            {
-                cursor.AdvanceNoNewLines(3);
-                value = default;
-                return true;
-            }
-            value = default;
-            return false;
-        }
-
-        private static bool __Parlot_5_Build_SkipWS_25(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Then_94_28(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
             bool success95 = false;
-            global::System.String value96 = default;
-            var start97 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_26(context, out _))
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral value96 = default;
+            if (__Parlot_5_Build_Then_98_29(context, out var parsed97Value))
             {
-                var boundary99 = cursor.Eof;
-                if (!boundary99)
-                {
-                    var next100 = cursor.Current;
-                    boundary99 = next100 < 128
-                        ? (((next100 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next100 & 63)) & 1UL) == 0
-                        : true;
-                }
-                if (boundary99)
-                {
-                    success95 = true;
-                }
-                else
-                {
-                    cursor.ResetPosition(start97);
-                }
+                value96 = ___Parlot_5_Build_lambda1(parsed97Value);
+                success95 = true;
             }
 
             value = value96;
             return success95;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_24(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_OneOf_27(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success93 = false;
-            global::System.String value94 = default;
-            var shortcut101 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart102 = cursor.Offset;
-            if (!shortcut101)
+            bool success91 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value92 = default;
+            if (__Parlot_5_Build_Then_94_28(context, out var parsed93Value))
             {
-                var start = cursor.Offset;
-                context.SkipWhiteSpace();
-                contentStart102 = cursor.Offset;
-                success93 = __Parlot_5_Build_SkipWS_25(context, out _);
-                if (!success93)
-                {
-                    cursor.ResetPosition(start);
-                }
-            }
-            else
-            {
-                success93 = __Parlot_5_Build_SkipWS_25(context, out _);
+                value92 = ___Parlot_5_Build_lambda2(parsed93Value);
+                success91 = true;
             }
 
-            value = value94;
-            return success93;
+            value = value92;
+            return success91;
         }
 
         // SpanScanner
-        private static bool __Parlot_5_Build_SkipWS_31(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        private static bool __Parlot_5_Build_SkipWS_34(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success117 = false;
-            global::Parlot.Generated.TextSpan value118 = default;
-            var span119 = cursor.Span;
-            var size120 = ___Parlot_5_Build_lambda1(span119);
-            if (size120 > 0)
+            bool success118 = false;
+            global::Parlot.Generated.TextSpan value119 = default;
+            var span120 = cursor.Span;
+            var size121 = ___Parlot_5_Build_lambda3(span120);
+            if (size121 > 0)
             {
-                if (size120 > span119.Length)
+                if (size121 > span120.Length)
                 {
-                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size120} chars while only {span119.Length} were available.");
+                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size121} chars while only {span120.Length} were available.");
                 }
-                var start121 = cursor.Offset;
-                cursor.AdvanceNoNewLines(size120);
-                value118 = cursor.CreateSpan(start121, size120);
-                success117 = true;
+                var start122 = cursor.Offset;
+                cursor.AdvanceNoNewLines(size121);
+                value119 = cursor.CreateSpan(start122, size121);
+                success118 = true;
             }
-            else if (size120 < 0)
+            else if (size121 < 0)
             {
                 cursor.MarkHitEnd();
             }
 
-            value = value118;
-            return success117;
+            value = value119;
+            return success118;
         }
 
-        private static bool __Parlot_5_Build_Then_114_30(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        private static bool __Parlot_5_Build_Then_115_33(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success115 = false;
-            global::Parlot.Generated.TextSpan value116 = default;
-            var shortcut122 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart123 = cursor.Offset;
-            if (!shortcut122)
+            bool success116 = false;
+            global::Parlot.Generated.TextSpan value117 = default;
+            var shortcut123 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart124 = cursor.Offset;
+            if (!shortcut123)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart123 = cursor.Offset;
-                success115 = __Parlot_5_Build_SkipWS_31(context, out value116);
-                if (!success115)
+                contentStart124 = cursor.Offset;
+                success116 = __Parlot_5_Build_SkipWS_34(context, out value117);
+                if (!success116)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success115 = __Parlot_5_Build_SkipWS_31(context, out value116);
+                success116 = __Parlot_5_Build_SkipWS_34(context, out value117);
             }
 
-            value = value116;
-            return success115;
+            value = value117;
+            return success116;
         }
 
-        private static bool __Parlot_5_Build_Then_110_29(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral value)
+        private static bool __Parlot_5_Build_Then_111_32(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameter value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success111 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral value112 = default;
-            if (__Parlot_5_Build_Then_114_30(context, out var parsed113Value))
+            bool success112 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameter value113 = default;
+            if (__Parlot_5_Build_Then_115_33(context, out var parsed114Value))
             {
-                value112 = ___Parlot_5_Build_lambda2(parsed113Value);
-                success111 = true;
+                value113 = ___Parlot_5_Build_lambda4(parsed114Value);
+                success112 = true;
             }
 
-            value = value112;
-            return success111;
+            value = value113;
+            return success112;
         }
 
-        private static bool __Parlot_5_Build_OneOf_28(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value)
+        private static bool __Parlot_5_Build_OneOf_31(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success107 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value108 = default;
-            if (__Parlot_5_Build_Then_110_29(context, out var parsed109Value))
+            bool success108 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value109 = default;
+            if (__Parlot_5_Build_Then_111_32(context, out var parsed110Value))
             {
-                value108 = ___Parlot_5_Build_lambda3(parsed109Value);
-                success107 = true;
+                value109 = ___Parlot_5_Build_lambda5(parsed110Value);
+                success108 = true;
             }
 
-            value = value108;
-            return success107;
+            value = value109;
+            return success108;
         }
 
-        // SpanScanner
-        private static bool __Parlot_5_Build_SkipWS_35(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_26(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success134 = false;
-            global::Parlot.Generated.TextSpan value135 = default;
-            var span136 = cursor.Span;
-            var size137 = ___Parlot_5_Build_lambda4(span136);
-            if (size137 > 0)
-            {
-                if (size137 > span136.Length)
-                {
-                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size137} chars while only {span136.Length} were available.");
-                }
-                var start138 = cursor.Offset;
-                cursor.AdvanceNoNewLines(size137);
-                value135 = cursor.CreateSpan(start138, size137);
-                success134 = true;
-            }
-            else if (size137 < 0)
-            {
-                cursor.MarkHitEnd();
-            }
-
-            value = value135;
-            return success134;
-        }
-
-        private static bool __Parlot_5_Build_Then_131_34(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success132 = false;
-            global::Parlot.Generated.TextSpan value133 = default;
-            var shortcut139 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart140 = cursor.Offset;
-            if (!shortcut139)
-            {
-                var start = cursor.Offset;
-                context.SkipWhiteSpace();
-                contentStart140 = cursor.Offset;
-                success132 = __Parlot_5_Build_SkipWS_35(context, out value133);
-                if (!success132)
-                {
-                    cursor.ResetPosition(start);
-                }
-            }
-            else
-            {
-                success132 = __Parlot_5_Build_SkipWS_35(context, out value133);
-            }
-
-            value = value133;
-            return success132;
-        }
-
-        private static bool __Parlot_5_Build_Then_127_33(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameter value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success128 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlParameter value129 = default;
-            if (__Parlot_5_Build_Then_131_34(context, out var parsed130Value))
-            {
-                value129 = ___Parlot_5_Build_lambda5(parsed130Value);
-                success128 = true;
-            }
-
-            value = value129;
-            return success128;
-        }
-
-        private static bool __Parlot_5_Build_OneOf_32(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success124 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value125 = default;
-            if (__Parlot_5_Build_Then_127_33(context, out var parsed126Value))
-            {
-                value125 = ___Parlot_5_Build_lambda6(parsed126Value);
-                success124 = true;
-            }
-
-            value = value125;
-            return success124;
-        }
-
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_27(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success103 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value104 = default;
-            var start105 = cursor.Offset;
+            bool success87 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value88 = default;
+            var start89 = cursor.Offset;
             context.SkipWhiteSpace();
-            var current106 = cursor.Current;
-            switch (current106)
+            var current90 = cursor.Current;
+            switch (current90)
             {
                 case '+' or '-' or '.' or >= '0' and <= '9':
                 {
-                    success103 = __Parlot_5_Build_OneOf_28(context, out value104);
+                    success87 = __Parlot_5_Build_OneOf_27(context, out value88);
                     break;
                 }
                 case '@':
                 {
-                    success103 = __Parlot_5_Build_OneOf_32(context, out value104);
+                    success87 = __Parlot_5_Build_OneOf_31(context, out value88);
                     break;
                 }
             }
-            if (!success103)
+            if (!success87)
             {
-                cursor.ResetPosition(start105);
+                cursor.ResetPosition(start89);
             }
 
-            value = value104;
-            return success103;
+            value = value88;
+            return success87;
         }
 
-        private static bool __Parlot_5_Build_ZeroOrOne_Parser_23(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value)
+        private static bool __Parlot_5_Build_ZeroOrOne_Parser_22(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success90 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value91 = default;
-            var start92 = cursor.Offset;
-            success90 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_24(context, out _))
+            bool success74 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec value75 = default;
+            var start76 = cursor.Offset;
+            success74 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_23(context, out _))
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_27(context, out value91))
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_26(context, out value75))
                 {
-                    success90 = true;
+                    success74 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start92);
+                    cursor.ResetPosition(start76);
                 }
             }
             else
             {
-                cursor.ResetPosition(start92);
+                cursor.ResetPosition(start76);
             }
 
-            value = value91;
-            return success90;
+            value = value75;
+            return success74;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P2_22(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec> value)
+        private static bool __Parlot_5_Build_Sequence_P2_21(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success88 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec> value89 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>();
-            if (__Parlot_5_Build_ZeroOrOne_Parser_23(context, out var itemValue141))
+            bool success72 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec> value73 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>();
+            if (__Parlot_5_Build_ZeroOrOne_Parser_22(context, out var itemValue125))
             {
-                value89 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec[] { itemValue141 };
+                value73 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec[] { itemValue125 };
             }
 
-            value = value89;
-            return success88;
+            value = value73;
+            return success72;
         }
 
-        private static bool __Parlot_5_Build_Sequence_Parser_13(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>> value)
+        private static bool __Parlot_5_Build_Sequence_Parser_12(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success59 = false;
-            global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>> value60 = default;
-            var start61 = cursor.Offset;
-            success59 = false;
-            if (__Parlot_5_Build_Sequence_P1_14(context, out var h1Value))
+            bool success43 = false;
+            global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>> value44 = default;
+            var start45 = cursor.Offset;
+            success43 = false;
+            if (__Parlot_5_Build_Sequence_P1_13(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_22(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_21(context, out var h2Value))
                 {
-                    success59 = true;
-                    value60 = new global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>>(h1Value, h2Value);
+                    success43 = true;
+                    value44 = new global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start61);
+                    cursor.ResetPosition(start45);
                 }
             }
             else
             {
-                cursor.ResetPosition(start61);
+                cursor.ResetPosition(start45);
             }
 
-            value = value60;
-            return success59;
+            value = value44;
+            return success43;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_41(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_Sequence_P1_40(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success166 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value167 = default;
-            success166 = Deferred_1(context, out value167);
+            bool success150 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value151 = default;
+            success150 = Deferred_1(context, out value151);
 
-            value = value167;
-            return success166;
+            value = value151;
+            return success150;
         }
 
-        private static bool __Parlot_5_Build_Keyword_46(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_45(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -1044,400 +1035,401 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_45(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success175 = false;
-            global::System.String value176 = default;
-            var start177 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_46(context, out _))
-            {
-                var boundary179 = cursor.Eof;
-                if (!boundary179)
-                {
-                    var next180 = cursor.Current;
-                    boundary179 = next180 < 128
-                        ? (((next180 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next180 & 63)) & 1UL) == 0
-                        : true;
-                }
-                if (boundary179)
-                {
-                    success175 = true;
-                }
-                else
-                {
-                    cursor.ResetPosition(start177);
-                }
-            }
-
-            value = value176;
-            return success175;
-        }
-
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_44(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success173 = false;
-            global::System.String value174 = default;
-            var shortcut181 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart182 = cursor.Offset;
-            if (!shortcut181)
-            {
-                var start = cursor.Offset;
-                context.SkipWhiteSpace();
-                contentStart182 = cursor.Offset;
-                success173 = __Parlot_5_Build_SkipWS_45(context, out _);
-                if (!success173)
-                {
-                    cursor.ResetPosition(start);
-                }
-            }
-            else
-            {
-                success173 = __Parlot_5_Build_SkipWS_45(context, out _);
-            }
-
-            value = value174;
-            return success173;
-        }
-
-        // SpanScanner
-        private static bool __Parlot_5_Build_SkipWS_49(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success189 = false;
-            global::Parlot.Generated.TextSpan value190 = default;
-            var span191 = cursor.Span;
-            var size192 = ___Parlot_5_Build_lambda7(span191);
-            if (size192 > 0)
-            {
-                if (size192 > span191.Length)
-                {
-                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size192} chars while only {span191.Length} were available.");
-                }
-                var start193 = cursor.Offset;
-                cursor.AdvanceNoNewLines(size192);
-                value190 = cursor.CreateSpan(start193, size192);
-                success189 = true;
-            }
-            else if (size192 < 0)
-            {
-                cursor.MarkHitEnd();
-            }
-
-            value = value190;
-            return success189;
-        }
-
-        private static bool __Parlot_5_Build_Then_186_48(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success187 = false;
-            global::Parlot.Generated.TextSpan value188 = default;
-            var shortcut194 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart195 = cursor.Offset;
-            if (!shortcut194)
-            {
-                var start = cursor.Offset;
-                context.SkipWhiteSpace();
-                contentStart195 = cursor.Offset;
-                success187 = __Parlot_5_Build_SkipWS_49(context, out value188);
-                if (!success187)
-                {
-                    cursor.ResetPosition(start);
-                }
-            }
-            else
-            {
-                success187 = __Parlot_5_Build_SkipWS_49(context, out value188);
-            }
-
-            value = value188;
-            return success187;
-        }
-
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_47(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success183 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value184 = default;
-            if (__Parlot_5_Build_Then_186_48(context, out var parsed185Value))
-            {
-                value184 = ___Parlot_5_Build_lambda8(parsed185Value);
-                success183 = true;
-            }
-
-            value = value184;
-            return success183;
-        }
-
-        private static bool __Parlot_5_Build_ZeroOrOne_Parser_43(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success170 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value171 = default;
-            var start172 = cursor.Offset;
-            success170 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_44(context, out _))
-            {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_47(context, out value171))
-                {
-                    success170 = true;
-                }
-                else
-                {
-                    cursor.ResetPosition(start172);
-                }
-            }
-            else
-            {
-                cursor.ResetPosition(start172);
-            }
-
-            value = value171;
-            return success170;
-        }
-
-        private static bool __Parlot_5_Build_Sequence_P2_42(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier> value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success168 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier> value169 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>();
-            if (__Parlot_5_Build_ZeroOrOne_Parser_43(context, out var itemValue196))
-            {
-                value169 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier[] { itemValue196 };
-            }
-
-            value = value169;
-            return success168;
-        }
-
-        private static bool __Parlot_5_Build_Then_162_40(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>> value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success163 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>> value164 = default;
-            var start165 = cursor.Offset;
-            success163 = false;
-            if (__Parlot_5_Build_Sequence_P1_41(context, out var h1Value))
-            {
-                if (__Parlot_5_Build_Sequence_P2_42(context, out var h2Value))
-                {
-                    success163 = true;
-                    value164 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>>(h1Value, h2Value);
-                }
-                else
-                {
-                    cursor.ResetPosition(start165);
-                }
-            }
-            else
-            {
-                cursor.ResetPosition(start165);
-            }
-
-            value = value164;
-            return success163;
-        }
-
-        private static bool __Parlot_5_Build_Separated_Parser_39(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem value)
+        private static bool __Parlot_5_Build_SkipWS_44(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
             bool success159 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem value160 = default;
-            if (__Parlot_5_Build_Then_162_40(context, out var parsed161Value))
+            global::System.String value160 = default;
+            var start161 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_45(context, out _))
             {
-                value160 = ___Parlot_5_Build_lambda9(parsed161Value);
-                success159 = true;
+                var boundary163 = cursor.Eof;
+                if (!boundary163)
+                {
+                    var next164 = cursor.Current;
+                    boundary163 = next164 < 128
+                        ? (((next164 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next164 & 63)) & 1UL) == 0
+                        : true;
+                }
+                if (boundary163)
+                {
+                    success159 = true;
+                }
+                else
+                {
+                    cursor.ResetPosition(start161);
+                }
             }
 
             value = value160;
             return success159;
         }
 
-        private static bool __Parlot_5_Build_Separated_Separator_50(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_43(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success199 = false;
-            global::System.Char value200 = default;
-            bool moved203 = false;
-            var span201 = cursor.Span;
-            var spanStart201 = cursor.Offset;
-            var pos201 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos201 < (uint)span201.Length && global::Parlot.Generated.Character.HasMask(span201[pos201], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span201[pos201], context._skipMask)))
+            bool success157 = false;
+            global::System.String value158 = default;
+            var shortcut165 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart166 = cursor.Offset;
+            if (!shortcut165)
             {
-                cursor.ResetPosition(spanStart201 + pos201);
+                var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                pos201 = cursor.Offset - spanStart201;
-                moved203 = true;
+                contentStart166 = cursor.Offset;
+                success157 = __Parlot_5_Build_SkipWS_44(context, out _);
+                if (!success157)
+                {
+                    cursor.ResetPosition(start);
+                }
             }
-            if ((uint)pos201 >= (uint)span201.Length || span201[pos201] != (char)44)
+            else
             {
-                if (pos201 >= span201.Length) cursor.MarkHitEnd();
-                goto fail202;
+                success157 = __Parlot_5_Build_SkipWS_44(context, out _);
             }
-            pos201++;
-            if (moved203) cursor.ResetPosition(spanStart201 + pos201); else cursor.AdvanceWithinBuffer(pos201);
-            success199 = true;
-            goto done204;
-            fail202: if (moved203) cursor.ResetPosition(spanStart201);
-            done204: ;
 
-            value = value200;
-            return success199;
+            value = value158;
+            return success157;
         }
 
-        private static bool __Parlot_5_Build_Then_149_38(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem> value)
+        // SpanScanner
+        private static bool __Parlot_5_Build_SkipWS_48(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success150 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem> value151 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem>();
-            var list152 = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem>();
-            bool first153 = true;
-            var end154 = cursor.Offset;
+            bool success173 = false;
+            global::Parlot.Generated.TextSpan value174 = default;
+            var span175 = cursor.Span;
+            var size176 = ___Parlot_5_Build_lambda6(span175);
+            if (size176 > 0)
+            {
+                if (size176 > span175.Length)
+                {
+                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size176} chars while only {span175.Length} were available.");
+                }
+                var start177 = cursor.Offset;
+                cursor.AdvanceNoNewLines(size176);
+                value174 = cursor.CreateSpan(start177, size176);
+                success173 = true;
+            }
+            else if (size176 < 0)
+            {
+                cursor.MarkHitEnd();
+            }
+
+            value = value174;
+            return success173;
+        }
+
+        private static bool __Parlot_5_Build_Then_170_47(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success171 = false;
+            global::Parlot.Generated.TextSpan value172 = default;
+            var shortcut178 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart179 = cursor.Offset;
+            if (!shortcut178)
+            {
+                var start = cursor.Offset;
+                context.SkipWhiteSpace();
+                contentStart179 = cursor.Offset;
+                success171 = __Parlot_5_Build_SkipWS_48(context, out value172);
+                if (!success171)
+                {
+                    cursor.ResetPosition(start);
+                }
+            }
+            else
+            {
+                success171 = __Parlot_5_Build_SkipWS_48(context, out value172);
+            }
+
+            value = value172;
+            return success171;
+        }
+
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_46(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success167 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value168 = default;
+            if (__Parlot_5_Build_Then_170_47(context, out var parsed169Value))
+            {
+                value168 = ___Parlot_5_Build_lambda7(parsed169Value);
+                success167 = true;
+            }
+
+            value = value168;
+            return success167;
+        }
+
+        private static bool __Parlot_5_Build_ZeroOrOne_Parser_42(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success154 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value155 = default;
+            var start156 = cursor.Offset;
+            success154 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_43(context, out _))
+            {
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_46(context, out value155))
+                {
+                    success154 = true;
+                }
+                else
+                {
+                    cursor.ResetPosition(start156);
+                }
+            }
+            else
+            {
+                cursor.ResetPosition(start156);
+            }
+
+            value = value155;
+            return success154;
+        }
+
+        private static bool __Parlot_5_Build_Sequence_P2_41(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier> value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success152 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier> value153 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>();
+            if (__Parlot_5_Build_ZeroOrOne_Parser_42(context, out var itemValue180))
+            {
+                value153 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier[] { itemValue180 };
+            }
+
+            value = value153;
+            return success152;
+        }
+
+        private static bool __Parlot_5_Build_Then_146_39(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>> value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success147 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>> value148 = default;
+            var start149 = cursor.Offset;
+            success147 = false;
+            if (__Parlot_5_Build_Sequence_P1_40(context, out var h1Value))
+            {
+                if (__Parlot_5_Build_Sequence_P2_41(context, out var h2Value))
+                {
+                    success147 = true;
+                    value148 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>>(h1Value, h2Value);
+                }
+                else
+                {
+                    cursor.ResetPosition(start149);
+                }
+            }
+            else
+            {
+                cursor.ResetPosition(start149);
+            }
+
+            value = value148;
+            return success147;
+        }
+
+        private static bool __Parlot_5_Build_Separated_Parser_38(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success143 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem value144 = default;
+            if (__Parlot_5_Build_Then_146_39(context, out var parsed145Value))
+            {
+                value144 = ___Parlot_5_Build_lambda8(parsed145Value);
+                success143 = true;
+            }
+
+            value = value144;
+            return success143;
+        }
+
+        private static bool __Parlot_5_Build_Separated_Separator_49(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success183 = false;
+            global::System.Char value184 = default;
+            bool moved187 = false;
+            var span185 = cursor.Span;
+            var spanStart185 = cursor.Offset;
+            var pos185 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos185 < (uint)span185.Length && global::Parlot.Generated.Character.HasMask(span185[pos185], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span185[pos185], context._skipMask)))
+            {
+                cursor.ResetPosition(spanStart185 + pos185);
+                context.SkipWhiteSpace();
+                pos185 = cursor.Offset - spanStart185;
+                moved187 = true;
+            }
+            if ((uint)pos185 >= (uint)span185.Length || span185[pos185] != (char)44)
+            {
+                if (pos185 >= span185.Length) cursor.MarkHitEnd();
+                goto fail186;
+            }
+            pos185++;
+            if (moved187) cursor.ResetPosition(spanStart185 + pos185); else cursor.AdvanceWithinBuffer(pos185);
+            success183 = true;
+            goto done188;
+            fail186: if (moved187) cursor.ResetPosition(spanStart185);
+            done188: ;
+
+            value = value184;
+            return success183;
+        }
+
+        private static bool __Parlot_5_Build_Then_133_37(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem> value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success134 = false;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem> value135 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem>();
+            var list136 = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectItem>();
+            bool first137 = true;
+            var end138 = cursor.Offset;
             try
             {
                 while (true)
                 {
-                    var previousOffset155 = cursor.Offset;
-                    if (!first153)
+                    var previousOffset139 = cursor.Offset;
+                    if (!first137)
                     {
-                        if (!__Parlot_5_Build_Separated_Separator_50(context, out _))
+                        if (!__Parlot_5_Build_Separated_Separator_49(context, out _))
                         {
                             break;
                         }
                     }
-                    if (!__Parlot_5_Build_Separated_Parser_39(context, out var item158))
+                    if (!__Parlot_5_Build_Separated_Parser_38(context, out var item142))
                     {
-                        if (!first153)
+                        if (!first137)
                         {
-                            cursor.ResetPosition(end154);
+                            cursor.ResetPosition(end138);
                             break;
                         }
-                        success150 = false;
+                        success134 = false;
                         break;
                     }
                     else
                     {
-                        end154 = cursor.Offset;
+                        end138 = cursor.Offset;
                     }
-                    if (cursor.Offset == previousOffset155)
+                    if (cursor.Offset == previousOffset139)
                     {
                         break;
                     }
-                    first153 = false;
-                    list152.Add(item158);
+                    first137 = false;
+                    list136.Add(item142);
                 }
-                if (!first153)
+                if (!first137)
                 {
-                    success150 = true;
-                    value151 = list152.ToArray();
+                    success134 = true;
+                    value135 = list136.ToArray();
                 }
                 else
                 {
-                    success150 = false;
+                    success134 = false;
                 }
             }
             finally
             {
-                list152.Release();
+                list136.Release();
             }
 
-            value = value151;
-            return success150;
+            value = value135;
+            return success134;
         }
 
-        private static bool __Parlot_5_Build_OneOf_37(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value)
+        private static bool __Parlot_5_Build_OneOf_36(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success146 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value147 = default;
-            if (__Parlot_5_Build_Then_149_38(context, out var parsed148Value))
+            bool success130 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value131 = default;
+            if (__Parlot_5_Build_Then_133_37(context, out var parsed132Value))
             {
-                value147 = ___Parlot_5_Build_lambda10(parsed148Value);
-                success146 = true;
+                value131 = ___Parlot_5_Build_lambda9(parsed132Value);
+                success130 = true;
             }
 
-            value = value147;
-            return success146;
+            value = value131;
+            return success130;
         }
 
-        private static bool __Parlot_5_Build_OneOf_51(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value)
+        private static bool __Parlot_5_Build_OneOf_50(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success205 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value206 = default;
-            global::System.Char parsed209 = default;
-            bool moved210 = false;
-            var span207 = cursor.Span;
-            var spanStart207 = cursor.Offset;
-            var pos207 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos207 < (uint)span207.Length && global::Parlot.Generated.Character.HasMask(span207[pos207], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span207[pos207], context._skipMask)))
+            bool success189 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value190 = default;
+            global::System.Char parsed193 = default;
+            bool moved194 = false;
+            var span191 = cursor.Span;
+            var spanStart191 = cursor.Offset;
+            var pos191 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos191 < (uint)span191.Length && global::Parlot.Generated.Character.HasMask(span191[pos191], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span191[pos191], context._skipMask)))
             {
-                cursor.ResetPosition(spanStart207 + pos207);
+                cursor.ResetPosition(spanStart191 + pos191);
                 context.SkipWhiteSpace();
-                pos207 = cursor.Offset - spanStart207;
-                moved210 = true;
+                pos191 = cursor.Offset - spanStart191;
+                moved194 = true;
             }
-            if ((uint)pos207 >= (uint)span207.Length || span207[pos207] != (char)42)
+            if ((uint)pos191 >= (uint)span191.Length || span191[pos191] != (char)42)
             {
-                if (pos207 >= span207.Length) cursor.MarkHitEnd();
-                goto fail208;
+                if (pos191 >= span191.Length) cursor.MarkHitEnd();
+                goto fail192;
             }
-            pos207++;
-            parsed209 = (char)42;
-            if (pos207 >= span207.Length) cursor.MarkHitEnd();
-            value206 = ___Parlot_5_Build_lambda11(parsed209);
-            if (moved210) cursor.ResetPosition(spanStart207 + pos207); else cursor.AdvanceWithinBuffer(pos207);
-            success205 = true;
-            goto done211;
-            fail208: if (moved210) cursor.ResetPosition(spanStart207);
-            done211: ;
+            pos191++;
+            parsed193 = (char)42;
+            if (pos191 >= span191.Length) cursor.MarkHitEnd();
+            value190 = ___Parlot_5_Build_lambda10(parsed193);
+            if (moved194) cursor.ResetPosition(spanStart191 + pos191); else cursor.AdvanceWithinBuffer(pos191);
+            success189 = true;
+            goto done195;
+            fail192: cursor.RecordFailure(spanStart191 + pos191);
+            if (moved194) cursor.ResetPosition(spanStart191);
+            done195: ;
 
-            value = value206;
-            return success205;
+            value = value190;
+            return success189;
         }
 
-        private static bool __Parlot_5_Build_Keyword_56(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_55(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -1453,206 +1445,206 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_55(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_54(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success221 = false;
-            global::System.String value222 = default;
-            var start223 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_56(context, out _))
+            bool success205 = false;
+            global::System.String value206 = default;
+            var start207 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_55(context, out _))
             {
-                var boundary225 = cursor.Eof;
-                if (!boundary225)
+                var boundary209 = cursor.Eof;
+                if (!boundary209)
                 {
-                    var next226 = cursor.Current;
-                    boundary225 = next226 < 128
-                        ? (((next226 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next226 & 63)) & 1UL) == 0
+                    var next210 = cursor.Current;
+                    boundary209 = next210 < 128
+                        ? (((next210 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next210 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary225)
+                if (boundary209)
                 {
-                    success221 = true;
+                    success205 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start223);
+                    cursor.ResetPosition(start207);
                 }
             }
 
-            value = value222;
-            return success221;
+            value = value206;
+            return success205;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_54(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_53(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success219 = false;
-            global::System.String value220 = default;
-            var shortcut227 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart228 = cursor.Offset;
-            if (!shortcut227)
+            bool success203 = false;
+            global::System.String value204 = default;
+            var shortcut211 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart212 = cursor.Offset;
+            if (!shortcut211)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart228 = cursor.Offset;
-                success219 = __Parlot_5_Build_SkipWS_55(context, out _);
-                if (!success219)
+                contentStart212 = cursor.Offset;
+                success203 = __Parlot_5_Build_SkipWS_54(context, out _);
+                if (!success203)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success219 = __Parlot_5_Build_SkipWS_55(context, out _);
+                success203 = __Parlot_5_Build_SkipWS_54(context, out _);
             }
 
-            value = value220;
-            return success219;
+            value = value204;
+            return success203;
         }
 
-        private static bool __Parlot_5_Build_Then_215_53(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_Then_199_52(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success216 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value217 = default;
-            var start218 = cursor.Offset;
-            success216 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_54(context, out _))
+            bool success200 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value201 = default;
+            var start202 = cursor.Offset;
+            success200 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_53(context, out _))
             {
-                if (__Parlot_5_Build_Sequence_P1_41(context, out value217))
+                if (__Parlot_5_Build_Sequence_P1_40(context, out value201))
                 {
-                    success216 = true;
+                    success200 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start218);
+                    cursor.ResetPosition(start202);
                 }
             }
             else
             {
-                cursor.ResetPosition(start218);
+                cursor.ResetPosition(start202);
             }
 
-            value = value217;
-            return success216;
+            value = value201;
+            return success200;
         }
 
-        private static bool __Parlot_5_Build_OneOf_52(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value)
+        private static bool __Parlot_5_Build_OneOf_51(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success212 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value213 = default;
-            if (__Parlot_5_Build_Then_215_53(context, out var parsed214Value))
+            bool success196 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value197 = default;
+            if (__Parlot_5_Build_Then_199_52(context, out var parsed198Value))
             {
-                value213 = ___Parlot_5_Build_lambda12(parsed214Value);
-                success212 = true;
+                value197 = ___Parlot_5_Build_lambda11(parsed198Value);
+                success196 = true;
             }
 
-            value = value213;
-            return success212;
+            value = value197;
+            return success196;
         }
 
-        private static bool __Parlot_5_Build_Sequence_Last_36(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value)
+        private static bool __Parlot_5_Build_Sequence_Last_35(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success142 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value143 = default;
-            var start144 = cursor.Offset;
+            bool success126 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec value127 = default;
+            var start128 = cursor.Offset;
             context.SkipWhiteSpace();
-            var current145 = cursor.Current;
-            switch (current145)
+            var current129 = cursor.Current;
+            switch (current129)
             {
                 case '\"' or '\'' or '(' or '+' or '-' or '.' or >= '0' and <= '9' or >= '@' and <= 'U' or >= 'W' and <= '[' or '_' or >= 'a' and <= 'u' or >= 'w' and <= '{' or '~':
                 {
-                    success142 = __Parlot_5_Build_OneOf_37(context, out value143);
+                    success126 = __Parlot_5_Build_OneOf_36(context, out value127);
                     break;
                 }
                 case '*':
                 {
-                    success142 = __Parlot_5_Build_OneOf_51(context, out value143);
+                    success126 = __Parlot_5_Build_OneOf_50(context, out value127);
                     break;
                 }
                 case 'V' or 'v':
                 {
-                    success142 = __Parlot_5_Build_OneOf_52(context, out value143)
-                        || __Parlot_5_Build_OneOf_37(context, out value143);
+                    success126 = __Parlot_5_Build_OneOf_51(context, out value127)
+                        || __Parlot_5_Build_OneOf_36(context, out value127);
                     break;
                 }
             }
-            if (!success142)
+            if (!success126)
             {
-                cursor.ResetPosition(start144);
+                cursor.ResetPosition(start128);
             }
 
-            value = value143;
-            return success142;
+            value = value127;
+            return success126;
         }
 
-        private static bool __Parlot_5_Build_Then_55_12(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>, global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec> value)
+        private static bool __Parlot_5_Build_Then_39_11(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>, global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success56 = false;
-            global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>, global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec> value57 = default;
-            var start58 = cursor.Offset;
-            success56 = false;
-            if (__Parlot_5_Build_Sequence_Parser_13(context, out var hpValue))
+            bool success40 = false;
+            global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>, global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec> value41 = default;
+            var start42 = cursor.Offset;
+            success40 = false;
+            if (__Parlot_5_Build_Sequence_Parser_12(context, out var hpValue))
             {
-                if (__Parlot_5_Build_Sequence_Last_36(context, out var hlValue))
+                if (__Parlot_5_Build_Sequence_Last_35(context, out var hlValue))
                 {
-                    success56 = true;
-                    value57 = new global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>, global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec>(hpValue.Item1, hpValue.Item2, hlValue);
+                    success40 = true;
+                    value41 = new global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlTopSpec>, global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectSpec>(hpValue.Item1, hpValue.Item2, hlValue);
                 }
                 else
                 {
-                    cursor.ResetPosition(start58);
+                    cursor.ResetPosition(start42);
                 }
             }
             else
             {
-                cursor.ResetPosition(start58);
+                cursor.ResetPosition(start42);
             }
 
-            value = value57;
-            return success56;
+            value = value41;
+            return success40;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_11(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause value)
+        private static bool __Parlot_5_Build_Sequence_P1_10(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success52 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause value53 = default;
-            if (__Parlot_5_Build_Then_55_12(context, out var parsed54Value))
+            bool success36 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause value37 = default;
+            if (__Parlot_5_Build_Then_39_11(context, out var parsed38Value))
             {
-                value53 = ___Parlot_5_Build_lambda13(parsed54Value);
-                success52 = true;
+                value37 = ___Parlot_5_Build_lambda12(parsed38Value);
+                success36 = true;
             }
 
-            value = value53;
-            return success52;
+            value = value37;
+            return success36;
         }
 
-        private static bool __Parlot_5_Build_Keyword_62(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_61(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -1668,561 +1660,561 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_61(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_60(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success240 = false;
-            global::System.String value241 = default;
-            var start242 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_62(context, out _))
+            bool success224 = false;
+            global::System.String value225 = default;
+            var start226 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_61(context, out _))
             {
-                var boundary244 = cursor.Eof;
-                if (!boundary244)
+                var boundary228 = cursor.Eof;
+                if (!boundary228)
                 {
-                    var next245 = cursor.Current;
-                    boundary244 = next245 < 128
-                        ? (((next245 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next245 & 63)) & 1UL) == 0
+                    var next229 = cursor.Current;
+                    boundary228 = next229 < 128
+                        ? (((next229 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next229 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary244)
+                if (boundary228)
                 {
-                    success240 = true;
+                    success224 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start242);
+                    cursor.ResetPosition(start226);
                 }
             }
 
-            value = value241;
-            return success240;
+            value = value225;
+            return success224;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_60(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_59(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success238 = false;
-            global::System.String value239 = default;
-            var shortcut246 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart247 = cursor.Offset;
-            if (!shortcut246)
+            bool success222 = false;
+            global::System.String value223 = default;
+            var shortcut230 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart231 = cursor.Offset;
+            if (!shortcut230)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart247 = cursor.Offset;
-                success238 = __Parlot_5_Build_SkipWS_61(context, out _);
-                if (!success238)
+                contentStart231 = cursor.Offset;
+                success222 = __Parlot_5_Build_SkipWS_60(context, out _);
+                if (!success222)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success238 = __Parlot_5_Build_SkipWS_61(context, out _);
+                success222 = __Parlot_5_Build_SkipWS_60(context, out _);
             }
 
-            value = value239;
-            return success238;
+            value = value223;
+            return success222;
         }
 
-        private static bool __Parlot_5_Build_Between_Before_70(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_Between_Before_69(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success275 = false;
-            global::System.Char value276 = default;
-            bool moved279 = false;
-            var span277 = cursor.Span;
-            var spanStart277 = cursor.Offset;
-            var pos277 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos277 < (uint)span277.Length && global::Parlot.Generated.Character.HasMask(span277[pos277], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span277[pos277], context._skipMask)))
+            bool success259 = false;
+            global::System.Char value260 = default;
+            bool moved263 = false;
+            var span261 = cursor.Span;
+            var spanStart261 = cursor.Offset;
+            var pos261 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos261 < (uint)span261.Length && global::Parlot.Generated.Character.HasMask(span261[pos261], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span261[pos261], context._skipMask)))
             {
-                cursor.ResetPosition(spanStart277 + pos277);
+                cursor.ResetPosition(spanStart261 + pos261);
                 context.SkipWhiteSpace();
-                pos277 = cursor.Offset - spanStart277;
-                moved279 = true;
+                pos261 = cursor.Offset - spanStart261;
+                moved263 = true;
             }
-            if ((uint)pos277 >= (uint)span277.Length || span277[pos277] != (char)40)
+            if ((uint)pos261 >= (uint)span261.Length || span261[pos261] != (char)40)
             {
-                if (pos277 >= span277.Length) cursor.MarkHitEnd();
-                goto fail278;
+                if (pos261 >= span261.Length) cursor.MarkHitEnd();
+                goto fail262;
             }
-            pos277++;
-            if (moved279) cursor.ResetPosition(spanStart277 + pos277); else cursor.AdvanceWithinBuffer(pos277);
-            success275 = true;
-            goto done280;
-            fail278: if (moved279) cursor.ResetPosition(spanStart277);
-            done280: ;
+            pos261++;
+            if (moved263) cursor.ResetPosition(spanStart261 + pos261); else cursor.AdvanceWithinBuffer(pos261);
+            success259 = true;
+            goto done264;
+            fail262: if (moved263) cursor.ResetPosition(spanStart261);
+            done264: ;
 
-            value = value276;
-            return success275;
+            value = value260;
+            return success259;
         }
 
-        private static bool __Parlot_5_Build_Between_After_71(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_Between_After_70(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success283 = false;
-            global::System.Char value284 = default;
-            bool moved287 = false;
-            var span285 = cursor.Span;
-            var spanStart285 = cursor.Offset;
-            var pos285 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos285 < (uint)span285.Length && global::Parlot.Generated.Character.HasMask(span285[pos285], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span285[pos285], context._skipMask)))
+            bool success267 = false;
+            global::System.Char value268 = default;
+            bool moved271 = false;
+            var span269 = cursor.Span;
+            var spanStart269 = cursor.Offset;
+            var pos269 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos269 < (uint)span269.Length && global::Parlot.Generated.Character.HasMask(span269[pos269], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span269[pos269], context._skipMask)))
             {
-                cursor.ResetPosition(spanStart285 + pos285);
+                cursor.ResetPosition(spanStart269 + pos269);
                 context.SkipWhiteSpace();
-                pos285 = cursor.Offset - spanStart285;
-                moved287 = true;
+                pos269 = cursor.Offset - spanStart269;
+                moved271 = true;
             }
-            if ((uint)pos285 >= (uint)span285.Length || span285[pos285] != (char)41)
+            if ((uint)pos269 >= (uint)span269.Length || span269[pos269] != (char)41)
             {
-                if (pos285 >= span285.Length) cursor.MarkHitEnd();
-                goto fail286;
+                if (pos269 >= span269.Length) cursor.MarkHitEnd();
+                goto fail270;
             }
-            pos285++;
-            if (moved287) cursor.ResetPosition(spanStart285 + pos285); else cursor.AdvanceWithinBuffer(pos285);
-            success283 = true;
-            goto done288;
-            fail286: if (moved287) cursor.ResetPosition(spanStart285);
-            done288: ;
+            pos269++;
+            if (moved271) cursor.ResetPosition(spanStart269 + pos269); else cursor.AdvanceWithinBuffer(pos269);
+            success267 = true;
+            goto done272;
+            fail270: if (moved271) cursor.ResetPosition(spanStart269);
+            done272: ;
 
-            value = value284;
-            return success283;
+            value = value268;
+            return success267;
         }
 
-        private static bool __Parlot_5_Build_Then_269_69(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
+        private static bool __Parlot_5_Build_Then_253_68(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success270 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value271 = default;
-            var start272 = cursor.Offset;
-            success270 = false;
-            if (__Parlot_5_Build_Between_Before_70(context, out _))
+            bool success254 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value255 = default;
+            var start256 = cursor.Offset;
+            success254 = false;
+            if (__Parlot_5_Build_Between_Before_69(context, out _))
             {
-                if (__Parlot_5_Build_SequenceAndSkip_P1_3(context, out value271))
+                if (__Parlot_5_Build_SequenceAndSkip_P1_2(context, out value255))
                 {
-                    if (__Parlot_5_Build_Between_After_71(context, out _))
+                    if (__Parlot_5_Build_Between_After_70(context, out _))
                     {
-                        success270 = true;
+                        success254 = true;
                     }
                 }
             }
-            if (!success270)
+            if (!success254)
             {
-                cursor.ResetPosition(start272);
+                cursor.ResetPosition(start256);
             }
 
-            value = value271;
-            return success270;
+            value = value255;
+            return success254;
         }
 
-        private static bool __Parlot_5_Build_OneOf_68(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection value)
+        private static bool __Parlot_5_Build_OneOf_67(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success266 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection value267 = default;
-            if (__Parlot_5_Build_Then_269_69(context, out var parsed268Value))
+            bool success250 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection value251 = default;
+            if (__Parlot_5_Build_Then_253_68(context, out var parsed252Value))
             {
-                value267 = ___Parlot_5_Build_lambda14(parsed268Value);
-                success266 = true;
+                value251 = ___Parlot_5_Build_lambda13(parsed252Value);
+                success250 = true;
             }
 
-            value = value267;
-            return success266;
+            value = value251;
+            return success250;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_78(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_77(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success311 = false;
-            global::System.Char value312 = default;
-            bool moved315 = false;
-            var span313 = cursor.Span;
-            var spanStart313 = cursor.Offset;
-            var pos313 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos313 < (uint)span313.Length && global::Parlot.Generated.Character.HasMask(span313[pos313], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span313[pos313], context._skipMask)))
+            bool success295 = false;
+            global::System.Char value296 = default;
+            bool moved299 = false;
+            var span297 = cursor.Span;
+            var spanStart297 = cursor.Offset;
+            var pos297 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos297 < (uint)span297.Length && global::Parlot.Generated.Character.HasMask(span297[pos297], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span297[pos297], context._skipMask)))
             {
-                cursor.ResetPosition(spanStart313 + pos313);
+                cursor.ResetPosition(spanStart297 + pos297);
                 context.SkipWhiteSpace();
-                pos313 = cursor.Offset - spanStart313;
-                moved315 = true;
+                pos297 = cursor.Offset - spanStart297;
+                moved299 = true;
             }
-            if ((uint)pos313 >= (uint)span313.Length || span313[pos313] != (char)46)
+            if ((uint)pos297 >= (uint)span297.Length || span297[pos297] != (char)46)
             {
-                if (pos313 >= span313.Length) cursor.MarkHitEnd();
-                goto fail314;
+                if (pos297 >= span297.Length) cursor.MarkHitEnd();
+                goto fail298;
             }
-            pos313++;
-            if (moved315) cursor.ResetPosition(spanStart313 + pos313); else cursor.AdvanceWithinBuffer(pos313);
-            success311 = true;
-            goto done316;
-            fail314: if (moved315) cursor.ResetPosition(spanStart313);
-            done316: ;
+            pos297++;
+            if (moved299) cursor.ResetPosition(spanStart297 + pos297); else cursor.AdvanceWithinBuffer(pos297);
+            success295 = true;
+            goto done300;
+            fail298: if (moved299) cursor.ResetPosition(spanStart297);
+            done300: ;
 
-            value = value312;
-            return success311;
+            value = value296;
+            return success295;
         }
 
-        private static bool __Parlot_5_Build_Then_305_77(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
+        private static bool __Parlot_5_Build_Then_289_76(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success306 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value307 = default;
-            var start308 = cursor.Offset;
-            success306 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_78(context, out _))
+            bool success290 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value291 = default;
+            var start292 = cursor.Offset;
+            success290 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_77(context, out _))
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_47(context, out value307))
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_46(context, out value291))
                 {
-                    success306 = true;
+                    success290 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start308);
+                    cursor.ResetPosition(start292);
                 }
             }
             else
             {
-                cursor.ResetPosition(start308);
+                cursor.ResetPosition(start292);
             }
 
-            value = value307;
-            return success306;
+            value = value291;
+            return success290;
         }
 
-        private static bool __Parlot_5_Build_OneOf_76(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value)
+        private static bool __Parlot_5_Build_OneOf_75(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success302 = false;
-            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value303 = default;
-            if (__Parlot_5_Build_Then_305_77(context, out var parsed304Value))
+            bool success286 = false;
+            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value287 = default;
+            if (__Parlot_5_Build_Then_289_76(context, out var parsed288Value))
             {
-                value303 = ___Parlot_5_Build_lambda15(parsed304Value);
-                success302 = true;
+                value287 = ___Parlot_5_Build_lambda14(parsed288Value);
+                success286 = true;
             }
 
-            value = value303;
-            return success302;
+            value = value287;
+            return success286;
         }
 
-        private static bool __Parlot_5_Build_Between_Before_81(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_Between_Before_80(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success326 = false;
-            global::System.Char value327 = default;
-            bool moved330 = false;
-            var span328 = cursor.Span;
-            var spanStart328 = cursor.Offset;
-            var pos328 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos328 < (uint)span328.Length && global::Parlot.Generated.Character.HasMask(span328[pos328], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span328[pos328], context._skipMask)))
+            bool success310 = false;
+            global::System.Char value311 = default;
+            bool moved314 = false;
+            var span312 = cursor.Span;
+            var spanStart312 = cursor.Offset;
+            var pos312 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos312 < (uint)span312.Length && global::Parlot.Generated.Character.HasMask(span312[pos312], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span312[pos312], context._skipMask)))
             {
-                cursor.ResetPosition(spanStart328 + pos328);
+                cursor.ResetPosition(spanStart312 + pos312);
                 context.SkipWhiteSpace();
-                pos328 = cursor.Offset - spanStart328;
-                moved330 = true;
+                pos312 = cursor.Offset - spanStart312;
+                moved314 = true;
             }
-            if ((uint)pos328 >= (uint)span328.Length || span328[pos328] != (char)91)
+            if ((uint)pos312 >= (uint)span312.Length || span312[pos312] != (char)91)
             {
-                if (pos328 >= span328.Length) cursor.MarkHitEnd();
-                goto fail329;
+                if (pos312 >= span312.Length) cursor.MarkHitEnd();
+                goto fail313;
             }
-            pos328++;
-            if (moved330) cursor.ResetPosition(spanStart328 + pos328); else cursor.AdvanceWithinBuffer(pos328);
-            success326 = true;
-            goto done331;
-            fail329: if (moved330) cursor.ResetPosition(spanStart328);
-            done331: ;
+            pos312++;
+            if (moved314) cursor.ResetPosition(spanStart312 + pos312); else cursor.AdvanceWithinBuffer(pos312);
+            success310 = true;
+            goto done315;
+            fail313: if (moved314) cursor.ResetPosition(spanStart312);
+            done315: ;
 
-            value = value327;
-            return success326;
+            value = value311;
+            return success310;
         }
 
-        private static bool __Parlot_5_Build_Between_After_82(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_Between_After_81(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success334 = false;
-            global::System.Char value335 = default;
-            bool moved338 = false;
-            var span336 = cursor.Span;
-            var spanStart336 = cursor.Offset;
-            var pos336 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos336 < (uint)span336.Length && global::Parlot.Generated.Character.HasMask(span336[pos336], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span336[pos336], context._skipMask)))
+            bool success318 = false;
+            global::System.Char value319 = default;
+            bool moved322 = false;
+            var span320 = cursor.Span;
+            var spanStart320 = cursor.Offset;
+            var pos320 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos320 < (uint)span320.Length && global::Parlot.Generated.Character.HasMask(span320[pos320], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span320[pos320], context._skipMask)))
             {
-                cursor.ResetPosition(spanStart336 + pos336);
+                cursor.ResetPosition(spanStart320 + pos320);
                 context.SkipWhiteSpace();
-                pos336 = cursor.Offset - spanStart336;
-                moved338 = true;
+                pos320 = cursor.Offset - spanStart320;
+                moved322 = true;
             }
-            if ((uint)pos336 >= (uint)span336.Length || span336[pos336] != (char)93)
+            if ((uint)pos320 >= (uint)span320.Length || span320[pos320] != (char)93)
             {
-                if (pos336 >= span336.Length) cursor.MarkHitEnd();
-                goto fail337;
+                if (pos320 >= span320.Length) cursor.MarkHitEnd();
+                goto fail321;
             }
-            pos336++;
-            if (moved338) cursor.ResetPosition(spanStart336 + pos336); else cursor.AdvanceWithinBuffer(pos336);
-            success334 = true;
-            goto done339;
-            fail337: if (moved338) cursor.ResetPosition(spanStart336);
-            done339: ;
+            pos320++;
+            if (moved322) cursor.ResetPosition(spanStart320 + pos320); else cursor.AdvanceWithinBuffer(pos320);
+            success318 = true;
+            goto done323;
+            fail321: if (moved322) cursor.ResetPosition(spanStart320);
+            done323: ;
 
-            value = value335;
-            return success334;
+            value = value319;
+            return success318;
         }
 
-        private static bool __Parlot_5_Build_Then_320_80(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral value)
+        private static bool __Parlot_5_Build_Then_304_79(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success321 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral value322 = default;
-            var start323 = cursor.Offset;
-            success321 = false;
-            if (__Parlot_5_Build_Between_Before_81(context, out _))
+            bool success305 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlNumberLiteral value306 = default;
+            var start307 = cursor.Offset;
+            success305 = false;
+            if (__Parlot_5_Build_Between_Before_80(context, out _))
             {
-                if (__Parlot_5_Build_Then_110_29(context, out value322))
+                if (__Parlot_5_Build_Then_94_28(context, out value306))
                 {
-                    if (__Parlot_5_Build_Between_After_82(context, out _))
+                    if (__Parlot_5_Build_Between_After_81(context, out _))
                     {
-                        success321 = true;
+                        success305 = true;
                     }
                 }
             }
-            if (!success321)
+            if (!success305)
             {
-                cursor.ResetPosition(start323);
+                cursor.ResetPosition(start307);
             }
 
-            value = value322;
-            return success321;
+            value = value306;
+            return success305;
         }
 
-        private static bool __Parlot_5_Build_OneOf_79(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value)
+        private static bool __Parlot_5_Build_OneOf_78(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success317 = false;
-            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value318 = default;
-            if (__Parlot_5_Build_Then_320_80(context, out var parsed319Value))
+            bool success301 = false;
+            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value302 = default;
+            if (__Parlot_5_Build_Then_304_79(context, out var parsed303Value))
             {
-                value318 = ___Parlot_5_Build_lambda16(parsed319Value);
-                success317 = true;
+                value302 = ___Parlot_5_Build_lambda15(parsed303Value);
+                success301 = true;
             }
 
-            value = value318;
-            return success317;
+            value = value302;
+            return success301;
         }
 
         // SpanScanner
-        private static bool __Parlot_5_Build_SkipWS_87(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        private static bool __Parlot_5_Build_SkipWS_86(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success353 = false;
-            global::Parlot.Generated.TextSpan value354 = default;
-            var span355 = cursor.Span;
-            var size356 = ___Parlot_5_Build_lambda17(span355);
-            if (size356 > 0)
+            bool success337 = false;
+            global::Parlot.Generated.TextSpan value338 = default;
+            var span339 = cursor.Span;
+            var size340 = ___Parlot_5_Build_lambda16(span339);
+            if (size340 > 0)
             {
-                if (size356 > span355.Length)
+                if (size340 > span339.Length)
                 {
-                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size356} chars while only {span355.Length} were available.");
+                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size340} chars while only {span339.Length} were available.");
                 }
-                var start357 = cursor.Offset;
-                cursor.AdvanceNoNewLines(size356);
-                value354 = cursor.CreateSpan(start357, size356);
-                success353 = true;
+                var start341 = cursor.Offset;
+                cursor.AdvanceNoNewLines(size340);
+                value338 = cursor.CreateSpan(start341, size340);
+                success337 = true;
             }
-            else if (size356 < 0)
+            else if (size340 < 0)
             {
                 cursor.MarkHitEnd();
             }
 
-            value = value354;
-            return success353;
+            value = value338;
+            return success337;
         }
 
-        private static bool __Parlot_5_Build_Then_350_86(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        private static bool __Parlot_5_Build_Then_334_85(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success351 = false;
-            global::Parlot.Generated.TextSpan value352 = default;
-            var shortcut358 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart359 = cursor.Offset;
-            if (!shortcut358)
+            bool success335 = false;
+            global::Parlot.Generated.TextSpan value336 = default;
+            var shortcut342 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart343 = cursor.Offset;
+            if (!shortcut342)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart359 = cursor.Offset;
-                success351 = __Parlot_5_Build_SkipWS_87(context, out value352);
-                if (!success351)
+                contentStart343 = cursor.Offset;
+                success335 = __Parlot_5_Build_SkipWS_86(context, out value336);
+                if (!success335)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success351 = __Parlot_5_Build_SkipWS_87(context, out value352);
+                success335 = __Parlot_5_Build_SkipWS_86(context, out value336);
             }
 
-            value = value352;
-            return success351;
+            value = value336;
+            return success335;
         }
 
-        private static bool __Parlot_5_Build_Between_Parser_85(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value)
+        private static bool __Parlot_5_Build_Between_Parser_84(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success347 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value348 = default;
-            if (__Parlot_5_Build_Then_350_86(context, out var parsed349Value))
+            bool success331 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value332 = default;
+            if (__Parlot_5_Build_Then_334_85(context, out var parsed333Value))
             {
-                value348 = ___Parlot_5_Build_lambda18(parsed349Value);
-                success347 = true;
+                value332 = ___Parlot_5_Build_lambda17(parsed333Value);
+                success331 = true;
             }
 
-            value = value348;
-            return success347;
+            value = value332;
+            return success331;
         }
 
-        private static bool __Parlot_5_Build_Then_343_84(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value)
+        private static bool __Parlot_5_Build_Then_327_83(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success344 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value345 = default;
-            var start346 = cursor.Offset;
-            success344 = false;
-            if (__Parlot_5_Build_Between_Before_81(context, out _))
+            bool success328 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value329 = default;
+            var start330 = cursor.Offset;
+            success328 = false;
+            if (__Parlot_5_Build_Between_Before_80(context, out _))
             {
-                if (__Parlot_5_Build_Between_Parser_85(context, out value345))
+                if (__Parlot_5_Build_Between_Parser_84(context, out value329))
                 {
-                    if (__Parlot_5_Build_Between_After_82(context, out _))
+                    if (__Parlot_5_Build_Between_After_81(context, out _))
                     {
-                        success344 = true;
+                        success328 = true;
                     }
                 }
             }
-            if (!success344)
+            if (!success328)
             {
-                cursor.ResetPosition(start346);
+                cursor.ResetPosition(start330);
             }
 
-            value = value345;
-            return success344;
+            value = value329;
+            return success328;
         }
 
-        private static bool __Parlot_5_Build_OneOf_83(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value)
+        private static bool __Parlot_5_Build_OneOf_82(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success340 = false;
-            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value341 = default;
-            if (__Parlot_5_Build_Then_343_84(context, out var parsed342Value))
+            bool success324 = false;
+            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value325 = default;
+            if (__Parlot_5_Build_Then_327_83(context, out var parsed326Value))
             {
-                value341 = ___Parlot_5_Build_lambda19(parsed342Value);
-                success340 = true;
+                value325 = ___Parlot_5_Build_lambda18(parsed326Value);
+                success324 = true;
             }
 
-            value = value341;
-            return success340;
+            value = value325;
+            return success324;
         }
 
-        private static bool __Parlot_5_Build_ZeroOrMany_Parser_75(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value)
+        private static bool __Parlot_5_Build_ZeroOrMany_Parser_74(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success298 = false;
-            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value299 = default;
-            var start300 = cursor.Offset;
+            bool success282 = false;
+            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment value283 = default;
+            var start284 = cursor.Offset;
             context.SkipWhiteSpace();
-            var current301 = cursor.Current;
-            switch (current301)
+            var current285 = cursor.Current;
+            switch (current285)
             {
                 case '.':
                 {
-                    success298 = __Parlot_5_Build_OneOf_76(context, out value299);
+                    success282 = __Parlot_5_Build_OneOf_75(context, out value283);
                     break;
                 }
                 case '[':
                 {
-                    success298 = __Parlot_5_Build_OneOf_79(context, out value299)
-                        || __Parlot_5_Build_OneOf_83(context, out value299);
+                    success282 = __Parlot_5_Build_OneOf_78(context, out value283)
+                        || __Parlot_5_Build_OneOf_82(context, out value283);
                     break;
                 }
             }
-            if (!success298)
+            if (!success282)
             {
-                cursor.ResetPosition(start300);
+                cursor.ResetPosition(start284);
             }
 
-            value = value299;
-            return success298;
+            value = value283;
+            return success282;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P2_74(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment> value)
+        private static bool __Parlot_5_Build_Sequence_P2_73(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success296 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment> value297 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment>();
-            var previousOffset360 = cursor.Offset;
-            if (__Parlot_5_Build_ZeroOrMany_Parser_75(context, out var first361) && cursor.Offset != previousOffset360)
+            bool success280 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment> value281 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment>();
+            var previousOffset344 = cursor.Offset;
+            if (__Parlot_5_Build_ZeroOrMany_Parser_74(context, out var first345) && cursor.Offset != previousOffset344)
             {
-                value297 = listRest362(context, first361);
-                success296 = true;
+                value281 = listRest346(context, first345);
+                success280 = true;
             }
-            static global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment> listRest362(global::Parlot.Generated.Fluent.ParseContext context, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment first)
+            static global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment> listRest346(global::Parlot.Generated.Fluent.ParseContext context, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment first)
 {
     var cursor = context.Scanner.Cursor;
     var list = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment>();
@@ -2232,7 +2224,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         while (true)
         {
             var previousOffset = cursor.Offset;
-            if (!__Parlot_5_Build_ZeroOrMany_Parser_75(context, out var item) || cursor.Offset == previousOffset)
+            if (!__Parlot_5_Build_ZeroOrMany_Parser_74(context, out var item) || cursor.Offset == previousOffset)
             {
                 break;
             }
@@ -2246,203 +2238,203 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
     }
 }
 
-            value = value297;
-            return success296;
+            value = value281;
+            return success280;
         }
 
-        private static bool __Parlot_5_Build_Then_292_73(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment>> value)
+        private static bool __Parlot_5_Build_Then_276_72(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success293 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment>> value294 = default;
-            var start295 = cursor.Offset;
-            success293 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P2_47(context, out var h1Value))
+            bool success277 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment>> value278 = default;
+            var start279 = cursor.Offset;
+            success277 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P2_46(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_74(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_73(context, out var h2Value))
                 {
-                    success293 = true;
-                    value294 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment>>(h1Value, h2Value);
+                    success277 = true;
+                    value278 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.PathSegment>>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start295);
+                    cursor.ResetPosition(start279);
                 }
             }
             else
             {
-                cursor.ResetPosition(start295);
+                cursor.ResetPosition(start279);
             }
 
-            value = value294;
-            return success293;
+            value = value278;
+            return success277;
         }
 
-        private static bool __Parlot_5_Build_OneOf_72(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection value)
+        private static bool __Parlot_5_Build_OneOf_71(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success289 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection value290 = default;
-            if (__Parlot_5_Build_Then_292_73(context, out var parsed291Value))
+            bool success273 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection value274 = default;
+            if (__Parlot_5_Build_Then_276_72(context, out var parsed275Value))
             {
-                value290 = ___Parlot_5_Build_lambda20(parsed291Value);
-                success289 = true;
+                value274 = ___Parlot_5_Build_lambda19(parsed275Value);
+                success273 = true;
             }
 
-            value = value290;
-            return success289;
+            value = value274;
+            return success273;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_67(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection value)
+        private static bool __Parlot_5_Build_Sequence_P1_66(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success262 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection value263 = default;
-            var start264 = cursor.Offset;
+            bool success246 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection value247 = default;
+            var start248 = cursor.Offset;
             context.SkipWhiteSpace();
-            var current265 = cursor.Current;
-            switch (current265)
+            var current249 = cursor.Current;
+            switch (current249)
             {
                 case '(':
                 {
-                    success262 = __Parlot_5_Build_OneOf_68(context, out value263);
+                    success246 = __Parlot_5_Build_OneOf_67(context, out value247);
                     break;
                 }
                 case >= 'A' and <= 'Z' or '_' or >= 'a' and <= 'z':
                 {
-                    success262 = __Parlot_5_Build_OneOf_72(context, out value263);
+                    success246 = __Parlot_5_Build_OneOf_71(context, out value247);
                     break;
                 }
             }
-            if (!success262)
+            if (!success246)
             {
-                cursor.ResetPosition(start264);
+                cursor.ResetPosition(start248);
             }
 
-            value = value263;
-            return success262;
+            value = value247;
+            return success246;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_90(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.String> value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_89(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.String> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success368 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::System.String> value369 = global::System.Array.Empty<global::System.String>();
-            __Parlot_5_Build_SequenceSkipAnd_P1_44(context, out _);
+            bool success352 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::System.String> value353 = global::System.Array.Empty<global::System.String>();
+            __Parlot_5_Build_SequenceSkipAnd_P1_43(context, out _);
 
-            value = value369;
-            return success368;
+            value = value353;
+            return success352;
         }
 
-        private static bool __Parlot_5_Build_ZeroOrOne_Parser_89(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
+        private static bool __Parlot_5_Build_ZeroOrOne_Parser_88(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success365 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value366 = default;
-            var start367 = cursor.Offset;
-            success365 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_90(context, out _))
+            bool success349 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value350 = default;
+            var start351 = cursor.Offset;
+            success349 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_89(context, out _))
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_47(context, out value366))
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_46(context, out value350))
                 {
-                    success365 = true;
+                    success349 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start367);
+                    cursor.ResetPosition(start351);
                 }
             }
             else
             {
-                cursor.ResetPosition(start367);
+                cursor.ResetPosition(start351);
             }
 
-            value = value366;
-            return success365;
+            value = value350;
+            return success349;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P2_88(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier> value)
+        private static bool __Parlot_5_Build_Sequence_P2_87(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success363 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier> value364 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>();
-            if (__Parlot_5_Build_ZeroOrOne_Parser_89(context, out var itemValue370))
+            bool success347 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier> value348 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>();
+            if (__Parlot_5_Build_ZeroOrOne_Parser_88(context, out var itemValue354))
             {
-                value364 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier[] { itemValue370 };
+                value348 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier[] { itemValue354 };
             }
 
-            value = value364;
-            return success363;
+            value = value348;
+            return success347;
         }
 
-        private static bool __Parlot_5_Build_Then_258_66(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>> value)
+        private static bool __Parlot_5_Build_Then_242_65(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success259 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>> value260 = default;
-            var start261 = cursor.Offset;
-            success259 = false;
-            if (__Parlot_5_Build_Sequence_P1_67(context, out var h1Value))
+            bool success243 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>> value244 = default;
+            var start245 = cursor.Offset;
+            success243 = false;
+            if (__Parlot_5_Build_Sequence_P1_66(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_88(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_87(context, out var h2Value))
                 {
-                    success259 = true;
-                    value260 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>>(h1Value, h2Value);
+                    success243 = true;
+                    value244 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier>>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start261);
+                    cursor.ResetPosition(start245);
                 }
             }
             else
             {
-                cursor.ResetPosition(start261);
+                cursor.ResetPosition(start245);
             }
 
-            value = value260;
-            return success259;
+            value = value244;
+            return success243;
         }
 
-        private static bool __Parlot_5_Build_OneOf_65(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value)
+        private static bool __Parlot_5_Build_OneOf_64(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success255 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value256 = default;
-            if (__Parlot_5_Build_Then_258_66(context, out var parsed257Value))
+            bool success239 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value240 = default;
+            if (__Parlot_5_Build_Then_242_65(context, out var parsed241Value))
             {
-                value256 = ___Parlot_5_Build_lambda21(parsed257Value);
-                success255 = true;
+                value240 = ___Parlot_5_Build_lambda20(parsed241Value);
+                success239 = true;
             }
 
-            value = value256;
-            return success255;
+            value = value240;
+            return success239;
         }
 
-        private static bool __Parlot_5_Build_Keyword_96(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_95(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -2458,7 +2450,199 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_95(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_94(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success367 = false;
+            global::System.String value368 = default;
+            var start369 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_95(context, out _))
+            {
+                var boundary371 = cursor.Eof;
+                if (!boundary371)
+                {
+                    var next372 = cursor.Current;
+                    boundary371 = next372 < 128
+                        ? (((next372 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next372 & 63)) & 1UL) == 0
+                        : true;
+                }
+                if (boundary371)
+                {
+                    success367 = true;
+                }
+                else
+                {
+                    cursor.ResetPosition(start369);
+                }
+            }
+
+            value = value368;
+            return success367;
+        }
+
+        private static bool __Parlot_5_Build_SequenceAndSkip_P2_93(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success365 = false;
+            global::System.String value366 = default;
+            var shortcut373 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart374 = cursor.Offset;
+            if (!shortcut373)
+            {
+                var start = cursor.Offset;
+                context.SkipWhiteSpace();
+                contentStart374 = cursor.Offset;
+                success365 = __Parlot_5_Build_SkipWS_94(context, out _);
+                if (!success365)
+                {
+                    cursor.ResetPosition(start);
+                }
+            }
+            else
+            {
+                success365 = __Parlot_5_Build_SkipWS_94(context, out _);
+            }
+
+            value = value366;
+            return success365;
+        }
+
+        private static bool __Parlot_5_Build_Sequence_P1_92(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success362 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value363 = default;
+            var start364 = cursor.Offset;
+            success362 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P2_46(context, out value363))
+            {
+                if (__Parlot_5_Build_SequenceAndSkip_P2_93(context, out _))
+                {
+                    success362 = true;
+                }
+                else
+                {
+                    cursor.ResetPosition(start364);
+                }
+            }
+            else
+            {
+                cursor.ResetPosition(start364);
+            }
+
+            value = value363;
+            return success362;
+        }
+
+        private static bool __Parlot_5_Build_Then_358_91(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection> value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success359 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection> value360 = default;
+            var start361 = cursor.Offset;
+            success359 = false;
+            if (__Parlot_5_Build_Sequence_P1_92(context, out var h1Value))
+            {
+                if (__Parlot_5_Build_Sequence_P1_66(context, out var h2Value))
+                {
+                    success359 = true;
+                    value360 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection>(h1Value, h2Value);
+                }
+                else
+                {
+                    cursor.ResetPosition(start361);
+                }
+            }
+            else
+            {
+                cursor.ResetPosition(start361);
+            }
+
+            value = value360;
+            return success359;
+        }
+
+        private static bool __Parlot_5_Build_OneOf_90(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success355 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value356 = default;
+            if (__Parlot_5_Build_Then_358_91(context, out var parsed357Value))
+            {
+                value356 = ___Parlot_5_Build_lambda21(parsed357Value);
+                success355 = true;
+            }
+
+            value = value356;
+            return success355;
+        }
+
+        private static bool __Parlot_5_Build_LeftAssoc234_63(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success235 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value236 = default;
+            var start237 = cursor.Offset;
+            context.SkipWhiteSpace();
+            var current238 = cursor.Current;
+            switch (current238)
+            {
+                case '(':
+                {
+                    success235 = __Parlot_5_Build_OneOf_64(context, out value236);
+                    break;
+                }
+                case >= 'A' and <= 'Z' or '_' or >= 'a' and <= 'z':
+                {
+                    success235 = __Parlot_5_Build_OneOf_90(context, out value236)
+                        || __Parlot_5_Build_OneOf_64(context, out value236);
+                    break;
+                }
+            }
+            if (!success235)
+            {
+                cursor.ResetPosition(start237);
+            }
+
+            value = value236;
+            return success235;
+        }
+
+        private static bool __Parlot_5_Build_Keyword_100(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            if (cursor.Match("join".AsSpan(), global::System.StringComparison.OrdinalIgnoreCase))
+            {
+                cursor.AdvanceNoNewLines(4);
+                value = default;
+                return true;
+            }
+            value = default;
+            return false;
+        }
+
+        private static bool __Parlot_5_Build_SkipWS_99(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -2467,7 +2651,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             bool success383 = false;
             global::System.String value384 = default;
             var start385 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_96(context, out _))
+            if (__Parlot_5_Build_Keyword_100(context, out _))
             {
                 var boundary387 = cursor.Eof;
                 if (!boundary387)
@@ -2491,7 +2675,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return success383;
         }
 
-        private static bool __Parlot_5_Build_SequenceAndSkip_P2_94(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Operator_98(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -2506,7 +2690,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
                 contentStart390 = cursor.Offset;
-                success381 = __Parlot_5_Build_SkipWS_95(context, out _);
+                success381 = __Parlot_5_Build_SkipWS_99(context, out _);
                 if (!success381)
                 {
                     cursor.ResetPosition(start);
@@ -2514,66 +2698,51 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             }
             else
             {
-                success381 = __Parlot_5_Build_SkipWS_95(context, out _);
+                success381 = __Parlot_5_Build_SkipWS_99(context, out _);
             }
 
             value = value382;
             return success381;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_93(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
+        private static bool __Parlot_5_Build_OneOf_97(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success378 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value379 = default;
-            var start380 = cursor.Offset;
-            success378 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P2_47(context, out value379))
+            bool success379 = false;
+            global::System.Int32 value380 = default;
+            success379 = __Parlot_5_Build_Operator_98(context, out _);
+            if (success379)
             {
-                if (__Parlot_5_Build_SequenceAndSkip_P2_94(context, out _))
-                {
-                    success378 = true;
-                }
-                else
-                {
-                    cursor.ResetPosition(start380);
-                }
-            }
-            else
-            {
-                cursor.ResetPosition(start380);
+                value380 = 0;
             }
 
-            value = value379;
-            return success378;
+            value = value380;
+            return success379;
         }
 
-        private static bool __Parlot_5_Build_Then_374_92(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection> value)
+        private static bool __Parlot_5_Build_LeftAssoc234_96(global::Parlot.Generated.Fluent.ParseContext context, out int value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
             bool success375 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection> value376 = default;
+            global::System.Int32 value376 = default;
             var start377 = cursor.Offset;
-            success375 = false;
-            if (__Parlot_5_Build_Sequence_P1_93(context, out var h1Value))
+            context.SkipWhiteSpace();
+            var current378 = cursor.Current;
+            switch (current378)
             {
-                if (__Parlot_5_Build_Sequence_P1_67(context, out var h2Value))
+                case 'J' or 'j':
                 {
-                    success375 = true;
-                    value376 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollection>(h1Value, h2Value);
-                }
-                else
-                {
-                    cursor.ResetPosition(start377);
+                    success375 = __Parlot_5_Build_OneOf_97(context, out value376);
+                    break;
                 }
             }
-            else
+            if (!success375)
             {
                 cursor.ResetPosition(start377);
             }
@@ -2582,300 +2751,137 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return success375;
         }
 
-        private static bool __Parlot_5_Build_OneOf_91(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_62(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success371 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value372 = default;
-            if (__Parlot_5_Build_Then_374_92(context, out var parsed373Value))
-            {
-                value372 = ___Parlot_5_Build_lambda22(parsed373Value);
-                success371 = true;
-            }
-
-            value = value372;
-            return success371;
-        }
-
-        private static bool __Parlot_5_Build_LeftAssoc250_64(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success251 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value252 = default;
-            var start253 = cursor.Offset;
-            context.SkipWhiteSpace();
-            var current254 = cursor.Current;
-            switch (current254)
-            {
-                case '(':
-                {
-                    success251 = __Parlot_5_Build_OneOf_65(context, out value252);
-                    break;
-                }
-                case >= 'A' and <= 'Z' or '_' or >= 'a' and <= 'z':
-                {
-                    success251 = __Parlot_5_Build_OneOf_91(context, out value252)
-                        || __Parlot_5_Build_OneOf_65(context, out value252);
-                    break;
-                }
-            }
-            if (!success251)
-            {
-                cursor.ResetPosition(start253);
-            }
-
-            value = value252;
-            return success251;
-        }
-
-        private static bool __Parlot_5_Build_Keyword_101(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            if (cursor.Match("join".AsSpan(), global::System.StringComparison.OrdinalIgnoreCase))
-            {
-                cursor.AdvanceNoNewLines(4);
-                value = default;
-                return true;
-            }
-            value = default;
-            return false;
-        }
-
-        private static bool __Parlot_5_Build_SkipWS_100(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success397 = false;
-            global::System.String value398 = default;
-            var start399 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_101(context, out _))
-            {
-                var boundary401 = cursor.Eof;
-                if (!boundary401)
-                {
-                    var next402 = cursor.Current;
-                    boundary401 = next402 < 128
-                        ? (((next402 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next402 & 63)) & 1UL) == 0
-                        : true;
-                }
-                if (boundary401)
-                {
-                    success397 = true;
-                }
-                else
-                {
-                    cursor.ResetPosition(start399);
-                }
-            }
-
-            value = value398;
-            return success397;
-        }
-
-        private static bool __Parlot_5_Build_Operator_99(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success395 = false;
-            global::System.String value396 = default;
-            var shortcut403 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart404 = cursor.Offset;
-            if (!shortcut403)
-            {
-                var start = cursor.Offset;
-                context.SkipWhiteSpace();
-                contentStart404 = cursor.Offset;
-                success395 = __Parlot_5_Build_SkipWS_100(context, out _);
-                if (!success395)
-                {
-                    cursor.ResetPosition(start);
-                }
-            }
-            else
-            {
-                success395 = __Parlot_5_Build_SkipWS_100(context, out _);
-            }
-
-            value = value396;
-            return success395;
-        }
-
-        private static bool __Parlot_5_Build_OneOf_98(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success393 = false;
-            global::System.Int32 value394 = default;
-            success393 = __Parlot_5_Build_Operator_99(context, out _);
-            if (success393)
-            {
-                value394 = 0;
-            }
-
-            value = value394;
-            return success393;
-        }
-
-        private static bool __Parlot_5_Build_LeftAssoc250_97(global::Parlot.Generated.Fluent.ParseContext context, out int value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success391 = false;
-            global::System.Int32 value392 = default;
-            success391 = __Parlot_5_Build_OneOf_98(context, out value392);
-
-            value = value392;
-            return success391;
-        }
-
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_63(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success248 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value249 = default;
-            if (__Parlot_5_Build_LeftAssoc250_64(context, out value249))
+            bool success232 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value233 = default;
+            if (__Parlot_5_Build_LeftAssoc234_63(context, out value233))
             {
                 while (true)
                 {
-                    var opPos405 = cursor.Offset;
-                    if (!__Parlot_5_Build_LeftAssoc250_97(context, out var op406)) break;
-                    if (!__Parlot_5_Build_LeftAssoc250_64(context, out var right407))
+                    var opPos391 = cursor.Offset;
+                    if (!__Parlot_5_Build_LeftAssoc234_96(context, out var op392)) break;
+                    if (!__Parlot_5_Build_LeftAssoc234_63(context, out var right393))
                     {
-                        cursor.ResetPosition(opPos405);
+                        cursor.ResetPosition(opPos391);
                         break;
                     }
-                    if (cursor.Offset == opPos405) break;
-                    switch (op406)
+                    if (cursor.Offset == opPos391) break;
+                    switch (op392)
                     {
                         case 0:
-                            value249 = ___Parlot_5_Build_lambda23(value249, right407);
+                            value233 = ___Parlot_5_Build_lambda22(value233, right393);
                             break;
                     }
                 }
-                success248 = true;
+                success232 = true;
             }
 
-            value = value249;
-            return success248;
+            value = value233;
+            return success232;
         }
 
-        private static bool __Parlot_5_Build_Then_234_59(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value)
+        private static bool __Parlot_5_Build_Then_218_58(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success235 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value236 = default;
-            var start237 = cursor.Offset;
-            success235 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_60(context, out _))
+            bool success219 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlCollectionExpression value220 = default;
+            var start221 = cursor.Offset;
+            success219 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_59(context, out _))
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_63(context, out value236))
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_62(context, out value220))
                 {
-                    success235 = true;
+                    success219 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start237);
+                    cursor.ResetPosition(start221);
                 }
             }
             else
             {
-                cursor.ResetPosition(start237);
+                cursor.ResetPosition(start221);
             }
 
-            value = value236;
-            return success235;
+            value = value220;
+            return success219;
         }
 
-        private static bool __Parlot_5_Build_ZeroOrOne_Parser_58(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause value)
+        private static bool __Parlot_5_Build_ZeroOrOne_Parser_57(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success231 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause value232 = default;
-            if (__Parlot_5_Build_Then_234_59(context, out var parsed233Value))
+            bool success215 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause value216 = default;
+            if (__Parlot_5_Build_Then_218_58(context, out var parsed217Value))
             {
-                value232 = ___Parlot_5_Build_lambda24(parsed233Value);
-                success231 = true;
+                value216 = ___Parlot_5_Build_lambda23(parsed217Value);
+                success215 = true;
             }
 
-            value = value232;
-            return success231;
+            value = value216;
+            return success215;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P2_57(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause> value)
+        private static bool __Parlot_5_Build_Sequence_P2_56(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success229 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause> value230 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>();
-            if (__Parlot_5_Build_ZeroOrOne_Parser_58(context, out var itemValue408))
+            bool success213 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause> value214 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>();
+            if (__Parlot_5_Build_ZeroOrOne_Parser_57(context, out var itemValue394))
             {
-                value230 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause[] { itemValue408 };
+                value214 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause[] { itemValue394 };
             }
 
-            value = value230;
-            return success229;
+            value = value214;
+            return success213;
         }
 
-        private static bool __Parlot_5_Build_Sequence_Parser_10(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>> value)
+        private static bool __Parlot_5_Build_Sequence_Parser_9(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success49 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>> value50 = default;
-            var start51 = cursor.Offset;
-            success49 = false;
-            if (__Parlot_5_Build_Sequence_P1_11(context, out var h1Value))
+            bool success33 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>> value34 = default;
+            var start35 = cursor.Offset;
+            success33 = false;
+            if (__Parlot_5_Build_Sequence_P1_10(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_57(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_56(context, out var h2Value))
                 {
-                    success49 = true;
-                    value50 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>>(h1Value, h2Value);
+                    success33 = true;
+                    value34 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start51);
+                    cursor.ResetPosition(start35);
                 }
             }
             else
             {
-                cursor.ResetPosition(start51);
+                cursor.ResetPosition(start35);
             }
 
-            value = value50;
-            return success49;
+            value = value34;
+            return success33;
         }
 
-        private static bool __Parlot_5_Build_Keyword_107(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_106(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -2891,166 +2897,166 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_106(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_105(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success420 = false;
-            global::System.String value421 = default;
-            var start422 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_107(context, out _))
+            bool success406 = false;
+            global::System.String value407 = default;
+            var start408 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_106(context, out _))
             {
-                var boundary424 = cursor.Eof;
-                if (!boundary424)
+                var boundary410 = cursor.Eof;
+                if (!boundary410)
                 {
-                    var next425 = cursor.Current;
-                    boundary424 = next425 < 128
-                        ? (((next425 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next425 & 63)) & 1UL) == 0
+                    var next411 = cursor.Current;
+                    boundary410 = next411 < 128
+                        ? (((next411 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next411 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary424)
+                if (boundary410)
                 {
-                    success420 = true;
+                    success406 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start422);
+                    cursor.ResetPosition(start408);
                 }
             }
 
-            value = value421;
-            return success420;
+            value = value407;
+            return success406;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_105(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_104(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success418 = false;
-            global::System.String value419 = default;
-            var shortcut426 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart427 = cursor.Offset;
-            if (!shortcut426)
+            bool success404 = false;
+            global::System.String value405 = default;
+            var shortcut412 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart413 = cursor.Offset;
+            if (!shortcut412)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart427 = cursor.Offset;
-                success418 = __Parlot_5_Build_SkipWS_106(context, out _);
-                if (!success418)
+                contentStart413 = cursor.Offset;
+                success404 = __Parlot_5_Build_SkipWS_105(context, out _);
+                if (!success404)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success418 = __Parlot_5_Build_SkipWS_106(context, out _);
+                success404 = __Parlot_5_Build_SkipWS_105(context, out _);
             }
 
-            value = value419;
-            return success418;
+            value = value405;
+            return success404;
         }
 
-        private static bool __Parlot_5_Build_Then_414_104(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_Then_400_103(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success415 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value416 = default;
-            var start417 = cursor.Offset;
-            success415 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_105(context, out _))
+            bool success401 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value402 = default;
+            var start403 = cursor.Offset;
+            success401 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_104(context, out _))
             {
-                if (__Parlot_5_Build_Sequence_P1_41(context, out value416))
+                if (__Parlot_5_Build_Sequence_P1_40(context, out value402))
                 {
-                    success415 = true;
+                    success401 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start417);
+                    cursor.ResetPosition(start403);
                 }
             }
             else
             {
-                cursor.ResetPosition(start417);
+                cursor.ResetPosition(start403);
             }
 
-            value = value416;
-            return success415;
+            value = value402;
+            return success401;
         }
 
-        private static bool __Parlot_5_Build_ZeroOrOne_Parser_103(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause value)
+        private static bool __Parlot_5_Build_ZeroOrOne_Parser_102(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success411 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause value412 = default;
-            if (__Parlot_5_Build_Then_414_104(context, out var parsed413Value))
+            bool success397 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause value398 = default;
+            if (__Parlot_5_Build_Then_400_103(context, out var parsed399Value))
             {
-                value412 = ___Parlot_5_Build_lambda25(parsed413Value);
-                success411 = true;
+                value398 = ___Parlot_5_Build_lambda24(parsed399Value);
+                success397 = true;
             }
 
-            value = value412;
-            return success411;
+            value = value398;
+            return success397;
         }
 
-        private static bool __Parlot_5_Build_Sequence_Last_102(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause> value)
+        private static bool __Parlot_5_Build_Sequence_Last_101(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success409 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause> value410 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>();
-            if (__Parlot_5_Build_ZeroOrOne_Parser_103(context, out var itemValue428))
+            bool success395 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause> value396 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>();
+            if (__Parlot_5_Build_ZeroOrOne_Parser_102(context, out var itemValue414))
             {
-                value410 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause[] { itemValue428 };
+                value396 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause[] { itemValue414 };
             }
 
-            value = value410;
-            return success409;
+            value = value396;
+            return success395;
         }
 
-        private static bool __Parlot_5_Build_Sequence_Parser_9(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>> value)
+        private static bool __Parlot_5_Build_Sequence_Parser_8(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success46 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>> value47 = default;
-            var start48 = cursor.Offset;
-            success46 = false;
-            if (__Parlot_5_Build_Sequence_Parser_10(context, out var hpValue))
+            bool success30 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>> value31 = default;
+            var start32 = cursor.Offset;
+            success30 = false;
+            if (__Parlot_5_Build_Sequence_Parser_9(context, out var hpValue))
             {
-                if (__Parlot_5_Build_Sequence_Last_102(context, out var hlValue))
+                if (__Parlot_5_Build_Sequence_Last_101(context, out var hlValue))
                 {
-                    success46 = true;
-                    value47 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>>(hpValue.Item1, hpValue.Item2, hlValue);
+                    success30 = true;
+                    value31 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>>(hpValue.Item1, hpValue.Item2, hlValue);
                 }
                 else
                 {
-                    cursor.ResetPosition(start48);
+                    cursor.ResetPosition(start32);
                 }
             }
             else
             {
-                cursor.ResetPosition(start48);
+                cursor.ResetPosition(start32);
             }
 
-            value = value47;
-            return success46;
+            value = value31;
+            return success30;
         }
 
-        private static bool __Parlot_5_Build_Keyword_114(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_113(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -3066,70 +3072,70 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_113(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_112(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success443 = false;
-            global::System.String value444 = default;
-            var start445 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_114(context, out _))
+            bool success429 = false;
+            global::System.String value430 = default;
+            var start431 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_113(context, out _))
             {
-                var boundary447 = cursor.Eof;
-                if (!boundary447)
+                var boundary433 = cursor.Eof;
+                if (!boundary433)
                 {
-                    var next448 = cursor.Current;
-                    boundary447 = next448 < 128
-                        ? (((next448 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next448 & 63)) & 1UL) == 0
+                    var next434 = cursor.Current;
+                    boundary433 = next434 < 128
+                        ? (((next434 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next434 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary447)
+                if (boundary433)
                 {
-                    success443 = true;
+                    success429 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start445);
+                    cursor.ResetPosition(start431);
                 }
             }
 
-            value = value444;
-            return success443;
+            value = value430;
+            return success429;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_112(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_111(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success441 = false;
-            global::System.String value442 = default;
-            var shortcut449 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart450 = cursor.Offset;
-            if (!shortcut449)
+            bool success427 = false;
+            global::System.String value428 = default;
+            var shortcut435 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart436 = cursor.Offset;
+            if (!shortcut435)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart450 = cursor.Offset;
-                success441 = __Parlot_5_Build_SkipWS_113(context, out _);
-                if (!success441)
+                contentStart436 = cursor.Offset;
+                success427 = __Parlot_5_Build_SkipWS_112(context, out _);
+                if (!success427)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success441 = __Parlot_5_Build_SkipWS_113(context, out _);
+                success427 = __Parlot_5_Build_SkipWS_112(context, out _);
             }
 
-            value = value442;
-            return success441;
+            value = value428;
+            return success427;
         }
 
-        private static bool __Parlot_5_Build_Keyword_117(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_116(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -3145,259 +3151,259 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_116(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_115(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success453 = false;
-            global::System.String value454 = default;
-            var start455 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_117(context, out _))
+            bool success439 = false;
+            global::System.String value440 = default;
+            var start441 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_116(context, out _))
             {
-                var boundary457 = cursor.Eof;
-                if (!boundary457)
+                var boundary443 = cursor.Eof;
+                if (!boundary443)
                 {
-                    var next458 = cursor.Current;
-                    boundary457 = next458 < 128
-                        ? (((next458 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next458 & 63)) & 1UL) == 0
+                    var next444 = cursor.Current;
+                    boundary443 = next444 < 128
+                        ? (((next444 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next444 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary457)
+                if (boundary443)
                 {
-                    success453 = true;
+                    success439 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start455);
+                    cursor.ResetPosition(start441);
                 }
             }
 
-            value = value454;
-            return success453;
+            value = value440;
+            return success439;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_115(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_114(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success451 = false;
-            global::System.String value452 = default;
-            var shortcut459 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart460 = cursor.Offset;
-            if (!shortcut459)
+            bool success437 = false;
+            global::System.String value438 = default;
+            var shortcut445 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart446 = cursor.Offset;
+            if (!shortcut445)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart460 = cursor.Offset;
-                success451 = __Parlot_5_Build_SkipWS_116(context, out _);
-                if (!success451)
+                contentStart446 = cursor.Offset;
+                success437 = __Parlot_5_Build_SkipWS_115(context, out _);
+                if (!success437)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success451 = __Parlot_5_Build_SkipWS_116(context, out _);
+                success437 = __Parlot_5_Build_SkipWS_115(context, out _);
             }
 
-            value = value452;
-            return success451;
+            value = value438;
+            return success437;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_111(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_110(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success438 = false;
-            global::System.String value439 = default;
-            var start440 = cursor.Offset;
-            success438 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_112(context, out _))
+            bool success424 = false;
+            global::System.String value425 = default;
+            var start426 = cursor.Offset;
+            success424 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_111(context, out _))
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_115(context, out _))
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_114(context, out _))
                 {
-                    success438 = true;
+                    success424 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start440);
+                    cursor.ResetPosition(start426);
                 }
             }
             else
             {
-                cursor.ResetPosition(start440);
+                cursor.ResetPosition(start426);
             }
 
-            value = value439;
-            return success438;
+            value = value425;
+            return success424;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_118(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_117(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success461 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value462 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
-            var list463 = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
-            bool first464 = true;
-            var end465 = cursor.Offset;
+            bool success447 = false;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value448 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
+            var list449 = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
+            bool first450 = true;
+            var end451 = cursor.Offset;
             try
             {
                 while (true)
                 {
-                    var previousOffset466 = cursor.Offset;
-                    if (!first464)
+                    var previousOffset452 = cursor.Offset;
+                    if (!first450)
                     {
-                        if (!__Parlot_5_Build_Separated_Separator_50(context, out _))
+                        if (!__Parlot_5_Build_Separated_Separator_49(context, out _))
                         {
                             break;
                         }
                     }
-                    if (!__Parlot_5_Build_Sequence_P1_41(context, out var item469))
+                    if (!__Parlot_5_Build_Sequence_P1_40(context, out var item455))
                     {
-                        if (!first464)
+                        if (!first450)
                         {
-                            cursor.ResetPosition(end465);
+                            cursor.ResetPosition(end451);
                             break;
                         }
-                        success461 = false;
+                        success447 = false;
                         break;
                     }
                     else
                     {
-                        end465 = cursor.Offset;
+                        end451 = cursor.Offset;
                     }
-                    if (cursor.Offset == previousOffset466)
+                    if (cursor.Offset == previousOffset452)
                     {
                         break;
                     }
-                    first464 = false;
-                    list463.Add(item469);
+                    first450 = false;
+                    list449.Add(item455);
                 }
-                if (!first464)
+                if (!first450)
                 {
-                    success461 = true;
-                    value462 = list463.ToArray();
+                    success447 = true;
+                    value448 = list449.ToArray();
                 }
                 else
                 {
-                    success461 = false;
+                    success447 = false;
                 }
             }
             finally
             {
-                list463.Release();
+                list449.Release();
             }
 
-            value = value462;
-            return success461;
+            value = value448;
+            return success447;
         }
 
-        private static bool __Parlot_5_Build_Then_434_110(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
+        private static bool __Parlot_5_Build_Then_420_109(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success435 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value436 = default;
-            var start437 = cursor.Offset;
-            success435 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_111(context, out _))
+            bool success421 = false;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value422 = default;
+            var start423 = cursor.Offset;
+            success421 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_110(context, out _))
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_118(context, out value436))
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_117(context, out value422))
                 {
-                    success435 = true;
+                    success421 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start437);
+                    cursor.ResetPosition(start423);
                 }
             }
             else
             {
-                cursor.ResetPosition(start437);
+                cursor.ResetPosition(start423);
             }
 
-            value = value436;
-            return success435;
+            value = value422;
+            return success421;
         }
 
-        private static bool __Parlot_5_Build_ZeroOrOne_Parser_109(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause value)
+        private static bool __Parlot_5_Build_ZeroOrOne_Parser_108(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success431 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause value432 = default;
-            if (__Parlot_5_Build_Then_434_110(context, out var parsed433Value))
+            bool success417 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause value418 = default;
+            if (__Parlot_5_Build_Then_420_109(context, out var parsed419Value))
             {
-                value432 = ___Parlot_5_Build_lambda26(parsed433Value);
-                success431 = true;
+                value418 = ___Parlot_5_Build_lambda25(parsed419Value);
+                success417 = true;
             }
 
-            value = value432;
-            return success431;
+            value = value418;
+            return success417;
         }
 
-        private static bool __Parlot_5_Build_Sequence_Last_108(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause> value)
+        private static bool __Parlot_5_Build_Sequence_Last_107(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success429 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause> value430 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>();
-            if (__Parlot_5_Build_ZeroOrOne_Parser_109(context, out var itemValue470))
+            bool success415 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause> value416 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>();
+            if (__Parlot_5_Build_ZeroOrOne_Parser_108(context, out var itemValue456))
             {
-                value430 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause[] { itemValue470 };
+                value416 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause[] { itemValue456 };
             }
 
-            value = value430;
-            return success429;
+            value = value416;
+            return success415;
         }
 
-        private static bool __Parlot_5_Build_Sequence_Parser_8(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>> value)
+        private static bool __Parlot_5_Build_Sequence_Parser_7(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success43 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>> value44 = default;
-            var start45 = cursor.Offset;
-            success43 = false;
-            if (__Parlot_5_Build_Sequence_Parser_9(context, out var hpValue))
+            bool success27 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>> value28 = default;
+            var start29 = cursor.Offset;
+            success27 = false;
+            if (__Parlot_5_Build_Sequence_Parser_8(context, out var hpValue))
             {
-                if (__Parlot_5_Build_Sequence_Last_108(context, out var hlValue))
+                if (__Parlot_5_Build_Sequence_Last_107(context, out var hlValue))
                 {
-                    success43 = true;
-                    value44 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>>(hpValue.Item1, hpValue.Item2, hpValue.Item3, hlValue);
+                    success27 = true;
+                    value28 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>>(hpValue.Item1, hpValue.Item2, hpValue.Item3, hlValue);
                 }
                 else
                 {
-                    cursor.ResetPosition(start45);
+                    cursor.ResetPosition(start29);
                 }
             }
             else
             {
-                cursor.ResetPosition(start45);
+                cursor.ResetPosition(start29);
             }
 
-            value = value44;
-            return success43;
+            value = value28;
+            return success27;
         }
 
-        private static bool __Parlot_5_Build_Keyword_124(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_123(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -3413,67 +3419,37 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_123(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_122(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success481 = false;
-            global::System.String value482 = default;
-            var start483 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_124(context, out _))
+            bool success467 = false;
+            global::System.String value468 = default;
+            var start469 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_123(context, out _))
             {
-                var boundary485 = cursor.Eof;
-                if (!boundary485)
+                var boundary471 = cursor.Eof;
+                if (!boundary471)
                 {
-                    var next486 = cursor.Current;
-                    boundary485 = next486 < 128
-                        ? (((next486 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next486 & 63)) & 1UL) == 0
+                    var next472 = cursor.Current;
+                    boundary471 = next472 < 128
+                        ? (((next472 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next472 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary485)
+                if (boundary471)
                 {
-                    success481 = true;
+                    success467 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start483);
+                    cursor.ResetPosition(start469);
                 }
             }
 
-            value = value482;
-            return success481;
-        }
-
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_122(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success479 = false;
-            global::System.String value480 = default;
-            var shortcut487 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart488 = cursor.Offset;
-            if (!shortcut487)
-            {
-                var start = cursor.Offset;
-                context.SkipWhiteSpace();
-                contentStart488 = cursor.Offset;
-                success479 = __Parlot_5_Build_SkipWS_123(context, out _);
-                if (!success479)
-                {
-                    cursor.ResetPosition(start);
-                }
-            }
-            else
-            {
-                success479 = __Parlot_5_Build_SkipWS_123(context, out _);
-            }
-
-            value = value480;
-            return success479;
+            value = value468;
+            return success467;
         }
 
         private static bool __Parlot_5_Build_SequenceSkipAnd_P1_121(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
@@ -3482,31 +3458,61 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success476 = false;
-            global::System.String value477 = default;
-            var start478 = cursor.Offset;
-            success476 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_122(context, out _))
+            bool success465 = false;
+            global::System.String value466 = default;
+            var shortcut473 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart474 = cursor.Offset;
+            if (!shortcut473)
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_115(context, out _))
+                var start = cursor.Offset;
+                context.SkipWhiteSpace();
+                contentStart474 = cursor.Offset;
+                success465 = __Parlot_5_Build_SkipWS_122(context, out _);
+                if (!success465)
                 {
-                    success476 = true;
-                }
-                else
-                {
-                    cursor.ResetPosition(start478);
+                    cursor.ResetPosition(start);
                 }
             }
             else
             {
-                cursor.ResetPosition(start478);
+                success465 = __Parlot_5_Build_SkipWS_122(context, out _);
             }
 
-            value = value477;
-            return success476;
+            value = value466;
+            return success465;
         }
 
-        private static bool __Parlot_5_Build_Keyword_135(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_120(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success462 = false;
+            global::System.String value463 = default;
+            var start464 = cursor.Offset;
+            success462 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_121(context, out _))
+            {
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_114(context, out _))
+                {
+                    success462 = true;
+                }
+                else
+                {
+                    cursor.ResetPosition(start464);
+                }
+            }
+            else
+            {
+                cursor.ResetPosition(start464);
+            }
+
+            value = value463;
+            return success462;
+        }
+
+        private static bool __Parlot_5_Build_Keyword_134(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -3522,7 +3528,104 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_134(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_133(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success511 = false;
+            global::System.String value512 = default;
+            var start513 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_134(context, out value512))
+            {
+                var boundary515 = cursor.Eof;
+                if (!boundary515)
+                {
+                    var next516 = cursor.Current;
+                    boundary515 = next516 < 128
+                        ? (((next516 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next516 & 63)) & 1UL) == 0
+                        : true;
+                }
+                if (boundary515)
+                {
+                    success511 = true;
+                }
+                else
+                {
+                    cursor.ResetPosition(start513);
+                }
+            }
+
+            value = value512;
+            return success511;
+        }
+
+        private static bool __Parlot_5_Build_Then_508_132(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success509 = false;
+            global::System.String value510 = default;
+            var shortcut517 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart518 = cursor.Offset;
+            if (!shortcut517)
+            {
+                var start = cursor.Offset;
+                context.SkipWhiteSpace();
+                contentStart518 = cursor.Offset;
+                success509 = __Parlot_5_Build_SkipWS_133(context, out value510);
+                if (!success509)
+                {
+                    cursor.ResetPosition(start);
+                }
+            }
+            else
+            {
+                success509 = __Parlot_5_Build_SkipWS_133(context, out value510);
+            }
+
+            value = value510;
+            return success509;
+        }
+
+        private static bool __Parlot_5_Build_OneOf_131(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Boolean value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success505 = false;
+            global::System.Boolean value506 = default;
+            if (__Parlot_5_Build_Then_508_132(context, out var parsed507Value))
+            {
+                value506 = ___Parlot_5_Build_lambda26(parsed507Value);
+                success505 = true;
+            }
+
+            value = value506;
+            return success505;
+        }
+
+        private static bool __Parlot_5_Build_Keyword_138(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            if (cursor.Match("desc".AsSpan(), global::System.StringComparison.OrdinalIgnoreCase))
+            {
+                cursor.AdvanceNoNewLines(4);
+                value = "desc";
+                return true;
+            }
+            value = default;
+            return false;
+        }
+
+        private static bool __Parlot_5_Build_SkipWS_137(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -3531,7 +3634,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             bool success525 = false;
             global::System.String value526 = default;
             var start527 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_135(context, out value526))
+            if (__Parlot_5_Build_Keyword_138(context, out value526))
             {
                 var boundary529 = cursor.Eof;
                 if (!boundary529)
@@ -3555,7 +3658,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return success525;
         }
 
-        private static bool __Parlot_5_Build_Then_522_133(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Then_522_136(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -3570,7 +3673,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
                 contentStart532 = cursor.Offset;
-                success523 = __Parlot_5_Build_SkipWS_134(context, out value524);
+                success523 = __Parlot_5_Build_SkipWS_137(context, out value524);
                 if (!success523)
                 {
                     cursor.ResetPosition(start);
@@ -3578,14 +3681,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             }
             else
             {
-                success523 = __Parlot_5_Build_SkipWS_134(context, out value524);
+                success523 = __Parlot_5_Build_SkipWS_137(context, out value524);
             }
 
             value = value524;
             return success523;
         }
 
-        private static bool __Parlot_5_Build_OneOf_132(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Boolean value)
+        private static bool __Parlot_5_Build_OneOf_135(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Boolean value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -3593,7 +3696,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
             bool success519 = false;
             global::System.Boolean value520 = default;
-            if (__Parlot_5_Build_Then_522_133(context, out var parsed521Value))
+            if (__Parlot_5_Build_Then_522_136(context, out var parsed521Value))
             {
                 value520 = ___Parlot_5_Build_lambda27(parsed521Value);
                 success519 = true;
@@ -3603,284 +3706,187 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return success519;
         }
 
-        private static bool __Parlot_5_Build_Keyword_139(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_ZeroOrOne_Parser_130(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Boolean value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            if (cursor.Match("desc".AsSpan(), global::System.StringComparison.OrdinalIgnoreCase))
-            {
-                cursor.AdvanceNoNewLines(4);
-                value = "desc";
-                return true;
-            }
-            value = default;
-            return false;
-        }
-
-        private static bool __Parlot_5_Build_SkipWS_138(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success539 = false;
-            global::System.String value540 = default;
-            var start541 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_139(context, out value540))
-            {
-                var boundary543 = cursor.Eof;
-                if (!boundary543)
-                {
-                    var next544 = cursor.Current;
-                    boundary543 = next544 < 128
-                        ? (((next544 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next544 & 63)) & 1UL) == 0
-                        : true;
-                }
-                if (boundary543)
-                {
-                    success539 = true;
-                }
-                else
-                {
-                    cursor.ResetPosition(start541);
-                }
-            }
-
-            value = value540;
-            return success539;
-        }
-
-        private static bool __Parlot_5_Build_Then_536_137(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success537 = false;
-            global::System.String value538 = default;
-            var shortcut545 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart546 = cursor.Offset;
-            if (!shortcut545)
-            {
-                var start = cursor.Offset;
-                context.SkipWhiteSpace();
-                contentStart546 = cursor.Offset;
-                success537 = __Parlot_5_Build_SkipWS_138(context, out value538);
-                if (!success537)
-                {
-                    cursor.ResetPosition(start);
-                }
-            }
-            else
-            {
-                success537 = __Parlot_5_Build_SkipWS_138(context, out value538);
-            }
-
-            value = value538;
-            return success537;
-        }
-
-        private static bool __Parlot_5_Build_OneOf_136(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Boolean value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success533 = false;
-            global::System.Boolean value534 = default;
-            if (__Parlot_5_Build_Then_536_137(context, out var parsed535Value))
-            {
-                value534 = ___Parlot_5_Build_lambda28(parsed535Value);
-                success533 = true;
-            }
-
-            value = value534;
-            return success533;
-        }
-
-        private static bool __Parlot_5_Build_ZeroOrOne_Parser_131(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Boolean value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success515 = false;
-            global::System.Boolean value516 = default;
-            var start517 = cursor.Offset;
+            bool success501 = false;
+            global::System.Boolean value502 = default;
+            var start503 = cursor.Offset;
             context.SkipWhiteSpace();
-            var current518 = cursor.Current;
-            switch (current518)
+            var current504 = cursor.Current;
+            switch (current504)
             {
                 case 'A' or 'a':
                 {
-                    success515 = __Parlot_5_Build_OneOf_132(context, out value516);
+                    success501 = __Parlot_5_Build_OneOf_131(context, out value502);
                     break;
                 }
                 case 'D' or 'd':
                 {
-                    success515 = __Parlot_5_Build_OneOf_136(context, out value516);
+                    success501 = __Parlot_5_Build_OneOf_135(context, out value502);
                     break;
                 }
             }
-            if (!success515)
+            if (!success501)
             {
-                cursor.ResetPosition(start517);
+                cursor.ResetPosition(start503);
             }
 
-            value = value516;
-            return success515;
+            value = value502;
+            return success501;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P2_130(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.Boolean> value)
+        private static bool __Parlot_5_Build_Sequence_P2_129(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.Boolean> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success513 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::System.Boolean> value514 = global::System.Array.Empty<global::System.Boolean>();
-            if (__Parlot_5_Build_ZeroOrOne_Parser_131(context, out var itemValue547))
+            bool success499 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::System.Boolean> value500 = global::System.Array.Empty<global::System.Boolean>();
+            if (__Parlot_5_Build_ZeroOrOne_Parser_130(context, out var itemValue533))
             {
-                value514 = new global::System.Boolean[] { itemValue547 };
+                value500 = new global::System.Boolean[] { itemValue533 };
             }
 
-            value = value514;
-            return success513;
+            value = value500;
+            return success499;
         }
 
-        private static bool __Parlot_5_Build_Then_509_129(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>> value)
+        private static bool __Parlot_5_Build_Then_495_128(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success510 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>> value511 = default;
-            var start512 = cursor.Offset;
-            success510 = false;
-            if (__Parlot_5_Build_Sequence_P1_41(context, out var h1Value))
+            bool success496 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>> value497 = default;
+            var start498 = cursor.Offset;
+            success496 = false;
+            if (__Parlot_5_Build_Sequence_P1_40(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_130(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_129(context, out var h2Value))
                 {
-                    success510 = true;
-                    value511 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>>(h1Value, h2Value);
+                    success496 = true;
+                    value497 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start512);
+                    cursor.ResetPosition(start498);
                 }
             }
             else
             {
-                cursor.ResetPosition(start512);
+                cursor.ResetPosition(start498);
             }
 
-            value = value511;
-            return success510;
+            value = value497;
+            return success496;
         }
 
-        private static bool __Parlot_5_Build_Separated_Parser_128(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem value)
+        private static bool __Parlot_5_Build_Separated_Parser_127(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success506 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem value507 = default;
-            if (__Parlot_5_Build_Then_509_129(context, out var parsed508Value))
+            bool success492 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem value493 = default;
+            if (__Parlot_5_Build_Then_495_128(context, out var parsed494Value))
             {
-                value507 = ___Parlot_5_Build_lambda29(parsed508Value);
-                success506 = true;
+                value493 = ___Parlot_5_Build_lambda28(parsed494Value);
+                success492 = true;
             }
 
-            value = value507;
-            return success506;
+            value = value493;
+            return success492;
         }
 
-        private static bool __Parlot_5_Build_Then_496_127(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> value)
+        private static bool __Parlot_5_Build_Then_482_126(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success497 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> value498 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem>();
-            var list499 = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem>();
-            bool first500 = true;
-            var end501 = cursor.Offset;
+            bool success483 = false;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> value484 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem>();
+            var list485 = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem>();
+            bool first486 = true;
+            var end487 = cursor.Offset;
             try
             {
                 while (true)
                 {
-                    var previousOffset502 = cursor.Offset;
-                    if (!first500)
+                    var previousOffset488 = cursor.Offset;
+                    if (!first486)
                     {
-                        if (!__Parlot_5_Build_Separated_Separator_50(context, out _))
+                        if (!__Parlot_5_Build_Separated_Separator_49(context, out _))
                         {
                             break;
                         }
                     }
-                    if (!__Parlot_5_Build_Separated_Parser_128(context, out var item505))
+                    if (!__Parlot_5_Build_Separated_Parser_127(context, out var item491))
                     {
-                        if (!first500)
+                        if (!first486)
                         {
-                            cursor.ResetPosition(end501);
+                            cursor.ResetPosition(end487);
                             break;
                         }
-                        success497 = false;
+                        success483 = false;
                         break;
                     }
                     else
                     {
-                        end501 = cursor.Offset;
+                        end487 = cursor.Offset;
                     }
-                    if (cursor.Offset == previousOffset502)
+                    if (cursor.Offset == previousOffset488)
                     {
                         break;
                     }
-                    first500 = false;
-                    list499.Add(item505);
+                    first486 = false;
+                    list485.Add(item491);
                 }
-                if (!first500)
+                if (!first486)
                 {
-                    success497 = true;
-                    value498 = list499.ToArray();
+                    success483 = true;
+                    value484 = list485.ToArray();
                 }
                 else
                 {
-                    success497 = false;
+                    success483 = false;
                 }
             }
             finally
             {
-                list499.Release();
+                list485.Release();
             }
 
-            value = value498;
-            return success497;
+            value = value484;
+            return success483;
         }
 
-        private static bool __Parlot_5_Build_OneOf_126(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value)
+        private static bool __Parlot_5_Build_OneOf_125(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success493 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value494 = default;
-            if (__Parlot_5_Build_Then_496_127(context, out var parsed495Value))
+            bool success479 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value480 = default;
+            if (__Parlot_5_Build_Then_482_126(context, out var parsed481Value))
             {
-                value494 = ___Parlot_5_Build_lambda30(parsed495Value);
-                success493 = true;
+                value480 = ___Parlot_5_Build_lambda29(parsed481Value);
+                success479 = true;
             }
 
-            value = value494;
-            return success493;
+            value = value480;
+            return success479;
         }
 
-        private static bool __Parlot_5_Build_Keyword_144(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_143(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -3896,211 +3902,211 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_143(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_142(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success557 = false;
-            global::System.String value558 = default;
-            var start559 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_144(context, out _))
+            bool success543 = false;
+            global::System.String value544 = default;
+            var start545 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_143(context, out _))
             {
-                var boundary561 = cursor.Eof;
-                if (!boundary561)
+                var boundary547 = cursor.Eof;
+                if (!boundary547)
                 {
-                    var next562 = cursor.Current;
-                    boundary561 = next562 < 128
-                        ? (((next562 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next562 & 63)) & 1UL) == 0
+                    var next548 = cursor.Current;
+                    boundary547 = next548 < 128
+                        ? (((next548 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next548 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary561)
+                if (boundary547)
                 {
-                    success557 = true;
+                    success543 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start559);
+                    cursor.ResetPosition(start545);
                 }
             }
 
-            value = value558;
-            return success557;
+            value = value544;
+            return success543;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_142(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_141(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success555 = false;
-            global::System.String value556 = default;
-            var shortcut563 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart564 = cursor.Offset;
-            if (!shortcut563)
+            bool success541 = false;
+            global::System.String value542 = default;
+            var shortcut549 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart550 = cursor.Offset;
+            if (!shortcut549)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart564 = cursor.Offset;
-                success555 = __Parlot_5_Build_SkipWS_143(context, out _);
-                if (!success555)
+                contentStart550 = cursor.Offset;
+                success541 = __Parlot_5_Build_SkipWS_142(context, out _);
+                if (!success541)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success555 = __Parlot_5_Build_SkipWS_143(context, out _);
+                success541 = __Parlot_5_Build_SkipWS_142(context, out _);
             }
 
-            value = value556;
-            return success555;
+            value = value542;
+            return success541;
         }
 
-        private static bool __Parlot_5_Build_Between_Parser_152(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
+        private static bool __Parlot_5_Build_Between_Parser_151(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success595 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value596 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
-            var list597 = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
-            bool first598 = true;
-            var end599 = cursor.Offset;
+            bool success581 = false;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value582 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
+            var list583 = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
+            bool first584 = true;
+            var end585 = cursor.Offset;
             try
             {
                 while (true)
                 {
-                    var previousOffset600 = cursor.Offset;
-                    if (!first598)
+                    var previousOffset586 = cursor.Offset;
+                    if (!first584)
                     {
-                        if (!__Parlot_5_Build_Separated_Separator_50(context, out _))
+                        if (!__Parlot_5_Build_Separated_Separator_49(context, out _))
                         {
                             break;
                         }
                     }
-                    if (!__Parlot_5_Build_Sequence_P1_41(context, out var item603))
+                    if (!__Parlot_5_Build_Sequence_P1_40(context, out var item589))
                     {
-                        if (!first598)
+                        if (!first584)
                         {
-                            cursor.ResetPosition(end599);
+                            cursor.ResetPosition(end585);
                             break;
                         }
-                        success595 = false;
+                        success581 = false;
                         break;
                     }
                     else
                     {
-                        end599 = cursor.Offset;
+                        end585 = cursor.Offset;
                     }
-                    if (cursor.Offset == previousOffset600)
+                    if (cursor.Offset == previousOffset586)
                     {
                         break;
                     }
-                    first598 = false;
-                    list597.Add(item603);
+                    first584 = false;
+                    list583.Add(item589);
                 }
-                if (!first598)
+                if (!first584)
                 {
-                    success595 = true;
-                    value596 = list597.ToArray();
+                    success581 = true;
+                    value582 = list583.ToArray();
                 }
                 else
                 {
-                    success595 = true;
+                    success581 = true;
                 }
             }
             finally
             {
-                list597.Release();
+                list583.Release();
             }
 
-            value = value596;
-            return success595;
+            value = value582;
+            return success581;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P2_151(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
+        private static bool __Parlot_5_Build_Sequence_P2_150(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success592 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value593 = default;
-            var start594 = cursor.Offset;
-            success592 = false;
-            if (__Parlot_5_Build_Between_Before_70(context, out _))
+            bool success578 = false;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value579 = default;
+            var start580 = cursor.Offset;
+            success578 = false;
+            if (__Parlot_5_Build_Between_Before_69(context, out _))
             {
-                if (__Parlot_5_Build_Between_Parser_152(context, out value593))
+                if (__Parlot_5_Build_Between_Parser_151(context, out value579))
                 {
-                    if (__Parlot_5_Build_Between_After_71(context, out _))
+                    if (__Parlot_5_Build_Between_After_70(context, out _))
                     {
-                        success592 = true;
+                        success578 = true;
                     }
                 }
             }
-            if (!success592)
+            if (!success578)
             {
-                cursor.ResetPosition(start594);
+                cursor.ResetPosition(start580);
             }
 
-            value = value593;
-            return success592;
+            value = value579;
+            return success578;
         }
 
-        private static bool __Parlot_5_Build_Then_588_150(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
+        private static bool __Parlot_5_Build_Then_574_149(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success589 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value590 = default;
-            var start591 = cursor.Offset;
-            success589 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P2_47(context, out var h1Value))
+            bool success575 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value576 = default;
+            var start577 = cursor.Offset;
+            success575 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P2_46(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_151(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_150(context, out var h2Value))
                 {
-                    success589 = true;
-                    value590 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
+                    success575 = true;
+                    value576 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start591);
+                    cursor.ResetPosition(start577);
                 }
             }
             else
             {
-                cursor.ResetPosition(start591);
+                cursor.ResetPosition(start577);
             }
 
-            value = value590;
-            return success589;
+            value = value576;
+            return success575;
         }
 
-        private static bool __Parlot_5_Build_OneOf_149(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_148(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success585 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value586 = default;
-            if (__Parlot_5_Build_Then_588_150(context, out var parsed587Value))
+            bool success571 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value572 = default;
+            if (__Parlot_5_Build_Then_574_149(context, out var parsed573Value))
             {
-                value586 = ___Parlot_5_Build_lambda31(parsed587Value);
-                success585 = true;
+                value572 = ___Parlot_5_Build_lambda30(parsed573Value);
+                success571 = true;
             }
 
-            value = value586;
-            return success585;
+            value = value572;
+            return success571;
         }
 
-        private static bool __Parlot_5_Build_Keyword_157(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_156(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -4108,132 +4114,132 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
             if (cursor.Match("left".AsSpan(), global::System.StringComparison.OrdinalIgnoreCase))
             {
-                var start616 = cursor.Offset;
+                var start602 = cursor.Offset;
                 cursor.AdvanceNoNewLines(4);
-                var buffer617 = scanner.Buffer;
-                var parsedText618 = cursor.GetSpan(start616, 4);
-                value = parsedText618.SequenceEqual("left".AsSpan())
+                var buffer603 = scanner.Buffer;
+                var parsedText604 = cursor.GetSpan(start602, 4);
+                value = parsedText604.SequenceEqual("left".AsSpan())
                     ? "left"
-                    : 4 == buffer617.Length ? buffer617 : parsedText618.ToString();
+                    : 4 == buffer603.Length ? buffer603 : parsedText604.ToString();
                 return true;
             }
             value = default;
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_156(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_155(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success613 = false;
-            global::System.String value614 = default;
-            var start615 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_157(context, out value614))
+            bool success599 = false;
+            global::System.String value600 = default;
+            var start601 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_156(context, out value600))
             {
-                var boundary619 = cursor.Eof;
-                if (!boundary619)
+                var boundary605 = cursor.Eof;
+                if (!boundary605)
                 {
-                    var next620 = cursor.Current;
-                    boundary619 = next620 < 128
-                        ? (((next620 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next620 & 63)) & 1UL) == 0
+                    var next606 = cursor.Current;
+                    boundary605 = next606 < 128
+                        ? (((next606 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next606 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary619)
+                if (boundary605)
                 {
-                    success613 = true;
+                    success599 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start615);
+                    cursor.ResetPosition(start601);
                 }
             }
 
-            value = value614;
-            return success613;
+            value = value600;
+            return success599;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_155(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Sequence_P1_154(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success611 = false;
-            global::System.String value612 = default;
-            var shortcut621 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart622 = cursor.Offset;
-            if (!shortcut621)
+            bool success597 = false;
+            global::System.String value598 = default;
+            var shortcut607 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart608 = cursor.Offset;
+            if (!shortcut607)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart622 = cursor.Offset;
-                success611 = __Parlot_5_Build_SkipWS_156(context, out value612);
-                if (!success611)
+                contentStart608 = cursor.Offset;
+                success597 = __Parlot_5_Build_SkipWS_155(context, out value598);
+                if (!success597)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success611 = __Parlot_5_Build_SkipWS_156(context, out value612);
+                success597 = __Parlot_5_Build_SkipWS_155(context, out value598);
             }
 
-            value = value612;
-            return success611;
+            value = value598;
+            return success597;
         }
 
-        private static bool __Parlot_5_Build_Then_607_154(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
+        private static bool __Parlot_5_Build_Then_593_153(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success608 = false;
-            global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value609 = default;
-            var start610 = cursor.Offset;
-            success608 = false;
-            if (__Parlot_5_Build_Sequence_P1_155(context, out var h1Value))
+            bool success594 = false;
+            global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value595 = default;
+            var start596 = cursor.Offset;
+            success594 = false;
+            if (__Parlot_5_Build_Sequence_P1_154(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_151(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_150(context, out var h2Value))
                 {
-                    success608 = true;
-                    value609 = new global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
+                    success594 = true;
+                    value595 = new global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start610);
+                    cursor.ResetPosition(start596);
                 }
             }
             else
             {
-                cursor.ResetPosition(start610);
+                cursor.ResetPosition(start596);
             }
 
-            value = value609;
-            return success608;
+            value = value595;
+            return success594;
         }
 
-        private static bool __Parlot_5_Build_OneOf_153(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_152(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success604 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value605 = default;
-            if (__Parlot_5_Build_Then_607_154(context, out var parsed606Value))
+            bool success590 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value591 = default;
+            if (__Parlot_5_Build_Then_593_153(context, out var parsed592Value))
             {
-                value605 = ___Parlot_5_Build_lambda32(parsed606Value);
-                success604 = true;
+                value591 = ___Parlot_5_Build_lambda31(parsed592Value);
+                success590 = true;
             }
 
-            value = value605;
-            return success604;
+            value = value591;
+            return success590;
         }
 
-        private static bool __Parlot_5_Build_Keyword_162(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_161(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -4241,132 +4247,132 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
             if (cursor.Match("right".AsSpan(), global::System.StringComparison.OrdinalIgnoreCase))
             {
-                var start635 = cursor.Offset;
+                var start621 = cursor.Offset;
                 cursor.AdvanceNoNewLines(5);
-                var buffer636 = scanner.Buffer;
-                var parsedText637 = cursor.GetSpan(start635, 5);
-                value = parsedText637.SequenceEqual("right".AsSpan())
+                var buffer622 = scanner.Buffer;
+                var parsedText623 = cursor.GetSpan(start621, 5);
+                value = parsedText623.SequenceEqual("right".AsSpan())
                     ? "right"
-                    : 5 == buffer636.Length ? buffer636 : parsedText637.ToString();
+                    : 5 == buffer622.Length ? buffer622 : parsedText623.ToString();
                 return true;
             }
             value = default;
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_161(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_160(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success632 = false;
-            global::System.String value633 = default;
-            var start634 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_162(context, out value633))
+            bool success618 = false;
+            global::System.String value619 = default;
+            var start620 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_161(context, out value619))
             {
-                var boundary638 = cursor.Eof;
-                if (!boundary638)
+                var boundary624 = cursor.Eof;
+                if (!boundary624)
                 {
-                    var next639 = cursor.Current;
-                    boundary638 = next639 < 128
-                        ? (((next639 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next639 & 63)) & 1UL) == 0
+                    var next625 = cursor.Current;
+                    boundary624 = next625 < 128
+                        ? (((next625 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next625 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary638)
+                if (boundary624)
                 {
-                    success632 = true;
+                    success618 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start634);
+                    cursor.ResetPosition(start620);
                 }
             }
 
-            value = value633;
-            return success632;
+            value = value619;
+            return success618;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_160(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Sequence_P1_159(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success630 = false;
-            global::System.String value631 = default;
-            var shortcut640 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart641 = cursor.Offset;
-            if (!shortcut640)
+            bool success616 = false;
+            global::System.String value617 = default;
+            var shortcut626 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart627 = cursor.Offset;
+            if (!shortcut626)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart641 = cursor.Offset;
-                success630 = __Parlot_5_Build_SkipWS_161(context, out value631);
-                if (!success630)
+                contentStart627 = cursor.Offset;
+                success616 = __Parlot_5_Build_SkipWS_160(context, out value617);
+                if (!success616)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success630 = __Parlot_5_Build_SkipWS_161(context, out value631);
+                success616 = __Parlot_5_Build_SkipWS_160(context, out value617);
             }
 
-            value = value631;
-            return success630;
+            value = value617;
+            return success616;
         }
 
-        private static bool __Parlot_5_Build_Then_626_159(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
+        private static bool __Parlot_5_Build_Then_612_158(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success627 = false;
-            global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value628 = default;
-            var start629 = cursor.Offset;
-            success627 = false;
-            if (__Parlot_5_Build_Sequence_P1_160(context, out var h1Value))
+            bool success613 = false;
+            global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value614 = default;
+            var start615 = cursor.Offset;
+            success613 = false;
+            if (__Parlot_5_Build_Sequence_P1_159(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_151(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_150(context, out var h2Value))
                 {
-                    success627 = true;
-                    value628 = new global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
+                    success613 = true;
+                    value614 = new global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start629);
+                    cursor.ResetPosition(start615);
                 }
             }
             else
             {
-                cursor.ResetPosition(start629);
+                cursor.ResetPosition(start615);
             }
 
-            value = value628;
-            return success627;
+            value = value614;
+            return success613;
         }
 
-        private static bool __Parlot_5_Build_OneOf_158(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_157(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success623 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value624 = default;
-            if (__Parlot_5_Build_Then_626_159(context, out var parsed625Value))
+            bool success609 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value610 = default;
+            if (__Parlot_5_Build_Then_612_158(context, out var parsed611Value))
             {
-                value624 = ___Parlot_5_Build_lambda33(parsed625Value);
-                success623 = true;
+                value610 = ___Parlot_5_Build_lambda32(parsed611Value);
+                success609 = true;
             }
 
-            value = value624;
-            return success623;
+            value = value610;
+            return success609;
         }
 
-        private static bool __Parlot_5_Build_Keyword_169(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_168(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -4382,514 +4388,514 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_168(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_167(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success657 = false;
-            global::System.String value658 = default;
-            var start659 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_169(context, out _))
+            bool success643 = false;
+            global::System.String value644 = default;
+            var start645 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_168(context, out _))
             {
-                var boundary661 = cursor.Eof;
-                if (!boundary661)
+                var boundary647 = cursor.Eof;
+                if (!boundary647)
                 {
-                    var next662 = cursor.Current;
-                    boundary661 = next662 < 128
-                        ? (((next662 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next662 & 63)) & 1UL) == 0
+                    var next648 = cursor.Current;
+                    boundary647 = next648 < 128
+                        ? (((next648 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next648 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary661)
+                if (boundary647)
                 {
-                    success657 = true;
+                    success643 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start659);
+                    cursor.ResetPosition(start645);
                 }
             }
 
-            value = value658;
-            return success657;
+            value = value644;
+            return success643;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_167(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_166(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success655 = false;
-            global::System.String value656 = default;
-            var shortcut663 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart664 = cursor.Offset;
-            if (!shortcut663)
+            bool success641 = false;
+            global::System.String value642 = default;
+            var shortcut649 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart650 = cursor.Offset;
+            if (!shortcut649)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart664 = cursor.Offset;
-                success655 = __Parlot_5_Build_SkipWS_168(context, out _);
-                if (!success655)
+                contentStart650 = cursor.Offset;
+                success641 = __Parlot_5_Build_SkipWS_167(context, out _);
+                if (!success641)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success655 = __Parlot_5_Build_SkipWS_168(context, out _);
+                success641 = __Parlot_5_Build_SkipWS_167(context, out _);
             }
 
-            value = value656;
-            return success655;
+            value = value642;
+            return success641;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_166(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_165(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success652 = false;
-            global::System.Char value653 = default;
-            var start654 = cursor.Offset;
-            success652 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_167(context, out _))
-            {
-                if (__Parlot_5_Build_SequenceSkipAnd_P1_78(context, out _))
-                {
-                    success652 = true;
-                }
-                else
-                {
-                    cursor.ResetPosition(start654);
-                }
-            }
-            else
-            {
-                cursor.ResetPosition(start654);
-            }
-
-            value = value653;
-            return success652;
-        }
-
-        private static bool __Parlot_5_Build_Sequence_P1_165(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success649 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value650 = default;
-            var start651 = cursor.Offset;
-            success649 = false;
+            bool success638 = false;
+            global::System.Char value639 = default;
+            var start640 = cursor.Offset;
+            success638 = false;
             if (__Parlot_5_Build_SequenceSkipAnd_P1_166(context, out _))
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_47(context, out value650))
+                if (__Parlot_5_Build_SequenceSkipAnd_P1_77(context, out _))
                 {
-                    success649 = true;
+                    success638 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start651);
+                    cursor.ResetPosition(start640);
                 }
             }
             else
             {
-                cursor.ResetPosition(start651);
+                cursor.ResetPosition(start640);
             }
 
-            value = value650;
-            return success649;
+            value = value639;
+            return success638;
         }
 
-        private static bool __Parlot_5_Build_Then_645_164(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
+        private static bool __Parlot_5_Build_Sequence_P1_164(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success646 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value647 = default;
-            var start648 = cursor.Offset;
-            success646 = false;
-            if (__Parlot_5_Build_Sequence_P1_165(context, out var h1Value))
+            bool success635 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value636 = default;
+            var start637 = cursor.Offset;
+            success635 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_165(context, out _))
             {
-                if (__Parlot_5_Build_Sequence_P2_151(context, out var h2Value))
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_46(context, out value636))
                 {
-                    success646 = true;
-                    value647 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
+                    success635 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start648);
+                    cursor.ResetPosition(start637);
                 }
             }
             else
             {
-                cursor.ResetPosition(start648);
+                cursor.ResetPosition(start637);
             }
 
-            value = value647;
-            return success646;
+            value = value636;
+            return success635;
         }
 
-        private static bool __Parlot_5_Build_OneOf_163(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value)
+        private static bool __Parlot_5_Build_Then_631_163(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success642 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value643 = default;
-            if (__Parlot_5_Build_Then_645_164(context, out var parsed644Value))
+            bool success632 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value633 = default;
+            var start634 = cursor.Offset;
+            success632 = false;
+            if (__Parlot_5_Build_Sequence_P1_164(context, out var h1Value))
             {
-                value643 = ___Parlot_5_Build_lambda34(parsed644Value);
-                success642 = true;
+                if (__Parlot_5_Build_Sequence_P2_150(context, out var h2Value))
+                {
+                    success632 = true;
+                    value633 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
+                }
+                else
+                {
+                    cursor.ResetPosition(start634);
+                }
+            }
+            else
+            {
+                cursor.ResetPosition(start634);
             }
 
-            value = value643;
-            return success642;
+            value = value633;
+            return success632;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_148(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_162(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success581 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value582 = default;
-            var start583 = cursor.Offset;
+            bool success628 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value629 = default;
+            if (__Parlot_5_Build_Then_631_163(context, out var parsed630Value))
+            {
+                value629 = ___Parlot_5_Build_lambda33(parsed630Value);
+                success628 = true;
+            }
+
+            value = value629;
+            return success628;
+        }
+
+        private static bool __Parlot_5_Build_Sequence_P1_147(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success567 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression value568 = default;
+            var start569 = cursor.Offset;
             context.SkipWhiteSpace();
-            var current584 = cursor.Current;
-            switch (current584)
+            var current570 = cursor.Current;
+            switch (current570)
             {
                 case >= 'A' and <= 'K' or >= 'M' and <= 'Q' or >= 'S' and <= 'Z' or '_' or >= 'a' and <= 'k' or >= 'm' and <= 'q' or 's' or 't' or >= 'v' and <= 'z':
                 {
-                    success581 = __Parlot_5_Build_OneOf_149(context, out value582);
+                    success567 = __Parlot_5_Build_OneOf_148(context, out value568);
                     break;
                 }
                 case 'L' or 'l':
                 {
-                    success581 = __Parlot_5_Build_OneOf_153(context, out value582)
-                        || __Parlot_5_Build_OneOf_149(context, out value582);
+                    success567 = __Parlot_5_Build_OneOf_152(context, out value568)
+                        || __Parlot_5_Build_OneOf_148(context, out value568);
                     break;
                 }
                 case 'R' or 'r':
                 {
-                    success581 = __Parlot_5_Build_OneOf_158(context, out value582)
-                        || __Parlot_5_Build_OneOf_149(context, out value582);
+                    success567 = __Parlot_5_Build_OneOf_157(context, out value568)
+                        || __Parlot_5_Build_OneOf_148(context, out value568);
                     break;
                 }
                 case 'u':
                 {
-                    success581 = __Parlot_5_Build_OneOf_163(context, out value582)
-                        || __Parlot_5_Build_OneOf_149(context, out value582);
+                    success567 = __Parlot_5_Build_OneOf_162(context, out value568)
+                        || __Parlot_5_Build_OneOf_148(context, out value568);
                     break;
                 }
             }
-            if (!success581)
+            if (!success567)
             {
-                cursor.ResetPosition(start583);
+                cursor.ResetPosition(start569);
             }
 
-            value = value582;
-            return success581;
+            value = value568;
+            return success567;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P2_170(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.Boolean> value)
+        private static bool __Parlot_5_Build_Sequence_P2_169(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.Boolean> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success665 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::System.Boolean> value666 = global::System.Array.Empty<global::System.Boolean>();
-            if (__Parlot_5_Build_ZeroOrOne_Parser_131(context, out var itemValue667))
+            bool success651 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::System.Boolean> value652 = global::System.Array.Empty<global::System.Boolean>();
+            if (__Parlot_5_Build_ZeroOrOne_Parser_130(context, out var itemValue653))
             {
-                value666 = new global::System.Boolean[] { itemValue667 };
+                value652 = new global::System.Boolean[] { itemValue653 };
             }
 
-            value = value666;
-            return success665;
+            value = value652;
+            return success651;
         }
 
-        private static bool __Parlot_5_Build_Then_577_147(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>> value)
+        private static bool __Parlot_5_Build_Then_563_146(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success578 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>> value579 = default;
-            var start580 = cursor.Offset;
-            success578 = false;
-            if (__Parlot_5_Build_Sequence_P1_148(context, out var h1Value))
+            bool success564 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>> value565 = default;
+            var start566 = cursor.Offset;
+            success564 = false;
+            if (__Parlot_5_Build_Sequence_P1_147(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_170(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_169(context, out var h2Value))
                 {
-                    success578 = true;
-                    value579 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>>(h1Value, h2Value);
+                    success564 = true;
+                    value565 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFunctionCallScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::System.Boolean>>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start580);
+                    cursor.ResetPosition(start566);
                 }
             }
             else
             {
-                cursor.ResetPosition(start580);
+                cursor.ResetPosition(start566);
             }
 
-            value = value579;
-            return success578;
+            value = value565;
+            return success564;
         }
 
-        private static bool __Parlot_5_Build_Separated_Parser_146(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem value)
+        private static bool __Parlot_5_Build_Separated_Parser_145(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success574 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem value575 = default;
-            if (__Parlot_5_Build_Then_577_147(context, out var parsed576Value))
+            bool success560 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem value561 = default;
+            if (__Parlot_5_Build_Then_563_146(context, out var parsed562Value))
             {
-                value575 = ___Parlot_5_Build_lambda35(parsed576Value);
-                success574 = true;
+                value561 = ___Parlot_5_Build_lambda34(parsed562Value);
+                success560 = true;
             }
 
-            value = value575;
-            return success574;
+            value = value561;
+            return success560;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_145(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_144(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success565 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> value566 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem>();
-            var list567 = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem>();
-            bool first568 = true;
-            var end569 = cursor.Offset;
+            bool success551 = false;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> value552 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem>();
+            var list553 = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem>();
+            bool first554 = true;
+            var end555 = cursor.Offset;
             try
             {
                 while (true)
                 {
-                    var previousOffset570 = cursor.Offset;
-                    if (!first568)
+                    var previousOffset556 = cursor.Offset;
+                    if (!first554)
                     {
-                        if (!__Parlot_5_Build_Separated_Separator_50(context, out _))
+                        if (!__Parlot_5_Build_Separated_Separator_49(context, out _))
                         {
                             break;
                         }
                     }
-                    if (!__Parlot_5_Build_Separated_Parser_146(context, out var item573))
+                    if (!__Parlot_5_Build_Separated_Parser_145(context, out var item559))
                     {
-                        if (!first568)
+                        if (!first554)
                         {
-                            cursor.ResetPosition(end569);
+                            cursor.ResetPosition(end555);
                             break;
                         }
-                        success565 = false;
+                        success551 = false;
                         break;
                     }
                     else
                     {
-                        end569 = cursor.Offset;
+                        end555 = cursor.Offset;
                     }
-                    if (cursor.Offset == previousOffset570)
+                    if (cursor.Offset == previousOffset556)
                     {
                         break;
                     }
-                    first568 = false;
-                    list567.Add(item573);
+                    first554 = false;
+                    list553.Add(item559);
                 }
-                if (!first568)
+                if (!first554)
                 {
-                    success565 = true;
-                    value566 = list567.ToArray();
+                    success551 = true;
+                    value552 = list553.ToArray();
                 }
                 else
                 {
-                    success565 = false;
+                    success551 = false;
                 }
             }
             finally
             {
-                list567.Release();
+                list553.Release();
             }
 
-            value = value566;
-            return success565;
+            value = value552;
+            return success551;
         }
 
-        private static bool __Parlot_5_Build_Then_551_141(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> value)
+        private static bool __Parlot_5_Build_Then_537_140(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success552 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> value553 = default;
-            var start554 = cursor.Offset;
-            success552 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_142(context, out _))
+            bool success538 = false;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByItem> value539 = default;
+            var start540 = cursor.Offset;
+            success538 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_141(context, out _))
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_145(context, out value553))
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_144(context, out value539))
                 {
-                    success552 = true;
+                    success538 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start554);
+                    cursor.ResetPosition(start540);
                 }
             }
             else
             {
-                cursor.ResetPosition(start554);
+                cursor.ResetPosition(start540);
             }
 
-            value = value553;
-            return success552;
+            value = value539;
+            return success538;
         }
 
-        private static bool __Parlot_5_Build_OneOf_140(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value)
+        private static bool __Parlot_5_Build_OneOf_139(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success548 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value549 = default;
-            if (__Parlot_5_Build_Then_551_141(context, out var parsed550Value))
+            bool success534 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value535 = default;
+            if (__Parlot_5_Build_Then_537_140(context, out var parsed536Value))
             {
-                value549 = ___Parlot_5_Build_lambda36(parsed550Value);
-                success548 = true;
+                value535 = ___Parlot_5_Build_lambda35(parsed536Value);
+                success534 = true;
             }
 
-            value = value549;
-            return success548;
+            value = value535;
+            return success534;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_125(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_124(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success489 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value490 = default;
-            var start491 = cursor.Offset;
+            bool success475 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value476 = default;
+            var start477 = cursor.Offset;
             context.SkipWhiteSpace();
-            var current492 = cursor.Current;
-            switch (current492)
+            var current478 = cursor.Current;
+            switch (current478)
             {
                 case '\"' or '\'' or '(' or '+' or '-' or '.' or >= '0' and <= '9' or >= '@' and <= 'Q' or >= 'S' and <= '[' or '_' or >= 'a' and <= 'q' or >= 's' and <= '{' or '~':
                 {
-                    success489 = __Parlot_5_Build_OneOf_126(context, out value490);
+                    success475 = __Parlot_5_Build_OneOf_125(context, out value476);
                     break;
                 }
                 case 'R' or 'r':
                 {
-                    success489 = __Parlot_5_Build_OneOf_140(context, out value490)
-                        || __Parlot_5_Build_OneOf_126(context, out value490);
+                    success475 = __Parlot_5_Build_OneOf_139(context, out value476)
+                        || __Parlot_5_Build_OneOf_125(context, out value476);
                     break;
                 }
             }
-            if (!success489)
+            if (!success475)
             {
-                cursor.ResetPosition(start491);
+                cursor.ResetPosition(start477);
             }
 
-            value = value490;
-            return success489;
+            value = value476;
+            return success475;
         }
 
-        private static bool __Parlot_5_Build_ZeroOrOne_Parser_120(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value)
+        private static bool __Parlot_5_Build_ZeroOrOne_Parser_119(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success473 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value474 = default;
-            var start475 = cursor.Offset;
-            success473 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_121(context, out _))
+            bool success459 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause value460 = default;
+            var start461 = cursor.Offset;
+            success459 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_120(context, out _))
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_125(context, out value474))
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_124(context, out value460))
                 {
-                    success473 = true;
+                    success459 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start475);
+                    cursor.ResetPosition(start461);
                 }
             }
             else
             {
-                cursor.ResetPosition(start475);
+                cursor.ResetPosition(start461);
             }
 
-            value = value474;
-            return success473;
+            value = value460;
+            return success459;
         }
 
-        private static bool __Parlot_5_Build_Sequence_Last_119(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause> value)
+        private static bool __Parlot_5_Build_Sequence_Last_118(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success471 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause> value472 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>();
-            if (__Parlot_5_Build_ZeroOrOne_Parser_120(context, out var itemValue668))
+            bool success457 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause> value458 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>();
+            if (__Parlot_5_Build_ZeroOrOne_Parser_119(context, out var itemValue654))
             {
-                value472 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause[] { itemValue668 };
+                value458 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause[] { itemValue654 };
             }
 
-            value = value472;
-            return success471;
+            value = value458;
+            return success457;
         }
 
-        private static bool __Parlot_5_Build_Sequence_Parser_7(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>> value)
+        private static bool __Parlot_5_Build_Sequence_Parser_6(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success40 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>> value41 = default;
-            var start42 = cursor.Offset;
-            success40 = false;
-            if (__Parlot_5_Build_Sequence_Parser_8(context, out var hpValue))
+            bool success24 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>> value25 = default;
+            var start26 = cursor.Offset;
+            success24 = false;
+            if (__Parlot_5_Build_Sequence_Parser_7(context, out var hpValue))
             {
-                if (__Parlot_5_Build_Sequence_Last_119(context, out var hlValue))
+                if (__Parlot_5_Build_Sequence_Last_118(context, out var hlValue))
                 {
-                    success40 = true;
-                    value41 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>>(hpValue.Item1, hpValue.Item2, hpValue.Item3, hpValue.Item4, hlValue);
+                    success24 = true;
+                    value25 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>>(hpValue.Item1, hpValue.Item2, hpValue.Item3, hpValue.Item4, hlValue);
                 }
                 else
                 {
-                    cursor.ResetPosition(start42);
+                    cursor.ResetPosition(start26);
                 }
             }
             else
             {
-                cursor.ResetPosition(start42);
+                cursor.ResetPosition(start26);
             }
 
-            value = value41;
-            return success40;
+            value = value25;
+            return success24;
         }
 
-        private static bool __Parlot_5_Build_Keyword_178(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_177(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -4905,63 +4911,81 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_177(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_176(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success686 = false;
-            global::System.String value687 = default;
-            var start688 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_178(context, out _))
+            bool success672 = false;
+            global::System.String value673 = default;
+            var start674 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_177(context, out _))
             {
-                var boundary690 = cursor.Eof;
-                if (!boundary690)
+                var boundary676 = cursor.Eof;
+                if (!boundary676)
                 {
-                    var next691 = cursor.Current;
-                    boundary690 = next691 < 128
-                        ? (((next691 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next691 & 63)) & 1UL) == 0
+                    var next677 = cursor.Current;
+                    boundary676 = next677 < 128
+                        ? (((next677 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next677 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary690)
+                if (boundary676)
                 {
-                    success686 = true;
+                    success672 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start688);
+                    cursor.ResetPosition(start674);
                 }
             }
 
-            value = value687;
-            return success686;
+            value = value673;
+            return success672;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_176(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_175(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success684 = false;
-            global::System.String value685 = default;
-            var shortcut692 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart693 = cursor.Offset;
-            if (!shortcut692)
+            bool success670 = false;
+            global::System.String value671 = default;
+            var shortcut678 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart679 = cursor.Offset;
+            if (!shortcut678)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart693 = cursor.Offset;
-                success684 = __Parlot_5_Build_SkipWS_177(context, out _);
-                if (!success684)
+                contentStart679 = cursor.Offset;
+                success670 = __Parlot_5_Build_SkipWS_176(context, out _);
+                if (!success670)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success684 = __Parlot_5_Build_SkipWS_177(context, out _);
+                success670 = __Parlot_5_Build_SkipWS_176(context, out _);
+            }
+
+            value = value671;
+            return success670;
+        }
+
+        private static bool __Parlot_5_Build_OneOf_179(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success684 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value685 = default;
+            if (__Parlot_5_Build_Then_94_28(context, out var parsed686Value))
+            {
+                value685 = ___Parlot_5_Build_lambda36(parsed686Value);
+                success684 = true;
             }
 
             value = value685;
@@ -4974,100 +4998,82 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success698 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value699 = default;
-            if (__Parlot_5_Build_Then_110_29(context, out var parsed700Value))
+            bool success688 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value689 = default;
+            if (__Parlot_5_Build_Then_111_32(context, out var parsed690Value))
             {
-                value699 = ___Parlot_5_Build_lambda37(parsed700Value);
-                success698 = true;
+                value689 = ___Parlot_5_Build_lambda37(parsed690Value);
+                success688 = true;
             }
 
-            value = value699;
-            return success698;
+            value = value689;
+            return success688;
         }
 
-        private static bool __Parlot_5_Build_OneOf_181(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_178(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success702 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value703 = default;
-            if (__Parlot_5_Build_Then_127_33(context, out var parsed704Value))
-            {
-                value703 = ___Parlot_5_Build_lambda38(parsed704Value);
-                success702 = true;
-            }
-
-            value = value703;
-            return success702;
-        }
-
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_179(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success694 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value695 = default;
-            var start696 = cursor.Offset;
+            bool success680 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value681 = default;
+            var start682 = cursor.Offset;
             context.SkipWhiteSpace();
-            var current697 = cursor.Current;
-            switch (current697)
+            var current683 = cursor.Current;
+            switch (current683)
             {
                 case '+' or '-' or '.' or >= '0' and <= '9':
                 {
-                    success694 = __Parlot_5_Build_OneOf_180(context, out value695);
+                    success680 = __Parlot_5_Build_OneOf_179(context, out value681);
                     break;
                 }
                 case '@':
                 {
-                    success694 = __Parlot_5_Build_OneOf_181(context, out value695);
+                    success680 = __Parlot_5_Build_OneOf_180(context, out value681);
                     break;
                 }
             }
-            if (!success694)
+            if (!success680)
             {
-                cursor.ResetPosition(start696);
+                cursor.ResetPosition(start682);
             }
 
-            value = value695;
-            return success694;
+            value = value681;
+            return success680;
         }
 
-        private static bool __Parlot_5_Build_SequenceAndSkip_P1_175(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value)
+        private static bool __Parlot_5_Build_SequenceAndSkip_P1_174(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success681 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value682 = default;
-            var start683 = cursor.Offset;
-            success681 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_176(context, out _))
+            bool success667 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value668 = default;
+            var start669 = cursor.Offset;
+            success667 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_175(context, out _))
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_179(context, out value682))
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_178(context, out value668))
                 {
-                    success681 = true;
+                    success667 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start683);
+                    cursor.ResetPosition(start669);
                 }
             }
             else
             {
-                cursor.ResetPosition(start683);
+                cursor.ResetPosition(start669);
             }
 
-            value = value682;
-            return success681;
+            value = value668;
+            return success667;
         }
 
-        private static bool __Parlot_5_Build_Keyword_184(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_183(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -5083,97 +5089,115 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_183(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_182(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success708 = false;
-            global::System.String value709 = default;
-            var start710 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_184(context, out _))
+            bool success694 = false;
+            global::System.String value695 = default;
+            var start696 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_183(context, out _))
             {
-                var boundary712 = cursor.Eof;
-                if (!boundary712)
+                var boundary698 = cursor.Eof;
+                if (!boundary698)
                 {
-                    var next713 = cursor.Current;
-                    boundary712 = next713 < 128
-                        ? (((next713 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next713 & 63)) & 1UL) == 0
+                    var next699 = cursor.Current;
+                    boundary698 = next699 < 128
+                        ? (((next699 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next699 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary712)
+                if (boundary698)
                 {
-                    success708 = true;
+                    success694 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start710);
+                    cursor.ResetPosition(start696);
                 }
             }
 
-            value = value709;
-            return success708;
+            value = value695;
+            return success694;
         }
 
-        private static bool __Parlot_5_Build_SequenceAndSkip_P2_182(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceAndSkip_P2_181(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success706 = false;
-            global::System.String value707 = default;
-            var shortcut714 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart715 = cursor.Offset;
-            if (!shortcut714)
+            bool success692 = false;
+            global::System.String value693 = default;
+            var shortcut700 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart701 = cursor.Offset;
+            if (!shortcut700)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart715 = cursor.Offset;
-                success706 = __Parlot_5_Build_SkipWS_183(context, out _);
-                if (!success706)
+                contentStart701 = cursor.Offset;
+                success692 = __Parlot_5_Build_SkipWS_182(context, out _);
+                if (!success692)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success706 = __Parlot_5_Build_SkipWS_183(context, out _);
+                success692 = __Parlot_5_Build_SkipWS_182(context, out _);
             }
 
-            value = value707;
-            return success706;
+            value = value693;
+            return success692;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_174(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value)
+        private static bool __Parlot_5_Build_Sequence_P1_173(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success678 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value679 = default;
-            var start680 = cursor.Offset;
-            success678 = false;
-            if (__Parlot_5_Build_SequenceAndSkip_P1_175(context, out value679))
+            bool success664 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec value665 = default;
+            var start666 = cursor.Offset;
+            success664 = false;
+            if (__Parlot_5_Build_SequenceAndSkip_P1_174(context, out value665))
             {
-                if (__Parlot_5_Build_SequenceAndSkip_P2_182(context, out _))
+                if (__Parlot_5_Build_SequenceAndSkip_P2_181(context, out _))
                 {
-                    success678 = true;
+                    success664 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start680);
+                    cursor.ResetPosition(start666);
                 }
             }
             else
             {
-                cursor.ResetPosition(start680);
+                cursor.ResetPosition(start666);
             }
 
-            value = value679;
-            return success678;
+            value = value665;
+            return success664;
+        }
+
+        private static bool __Parlot_5_Build_OneOf_185(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success706 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec value707 = default;
+            if (__Parlot_5_Build_Then_94_28(context, out var parsed708Value))
+            {
+                value707 = ___Parlot_5_Build_lambda38(parsed708Value);
+                success706 = true;
+            }
+
+            value = value707;
+            return success706;
         }
 
         private static bool __Parlot_5_Build_OneOf_186(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec value)
@@ -5182,286 +5206,250 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success720 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec value721 = default;
-            if (__Parlot_5_Build_Then_110_29(context, out var parsed722Value))
+            bool success710 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec value711 = default;
+            if (__Parlot_5_Build_Then_111_32(context, out var parsed712Value))
             {
-                value721 = ___Parlot_5_Build_lambda39(parsed722Value);
-                success720 = true;
+                value711 = ___Parlot_5_Build_lambda39(parsed712Value);
+                success710 = true;
             }
 
-            value = value721;
-            return success720;
+            value = value711;
+            return success710;
         }
 
-        private static bool __Parlot_5_Build_OneOf_187(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec value)
+        private static bool __Parlot_5_Build_Sequence_P2_184(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success724 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec value725 = default;
-            if (__Parlot_5_Build_Then_127_33(context, out var parsed726Value))
-            {
-                value725 = ___Parlot_5_Build_lambda40(parsed726Value);
-                success724 = true;
-            }
-
-            value = value725;
-            return success724;
-        }
-
-        private static bool __Parlot_5_Build_Sequence_P2_185(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success716 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec value717 = default;
-            var start718 = cursor.Offset;
+            bool success702 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec value703 = default;
+            var start704 = cursor.Offset;
             context.SkipWhiteSpace();
-            var current719 = cursor.Current;
-            switch (current719)
+            var current705 = cursor.Current;
+            switch (current705)
             {
                 case '+' or '-' or '.' or >= '0' and <= '9':
                 {
-                    success716 = __Parlot_5_Build_OneOf_186(context, out value717);
+                    success702 = __Parlot_5_Build_OneOf_185(context, out value703);
                     break;
                 }
                 case '@':
                 {
-                    success716 = __Parlot_5_Build_OneOf_187(context, out value717);
+                    success702 = __Parlot_5_Build_OneOf_186(context, out value703);
                     break;
                 }
             }
-            if (!success716)
+            if (!success702)
             {
-                cursor.ResetPosition(start718);
+                cursor.ResetPosition(start704);
             }
 
-            value = value717;
-            return success716;
+            value = value703;
+            return success702;
         }
 
-        private static bool __Parlot_5_Build_Then_674_173(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec, global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec> value)
+        private static bool __Parlot_5_Build_Then_660_172(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec, global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success675 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec, global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec> value676 = default;
-            var start677 = cursor.Offset;
-            success675 = false;
-            if (__Parlot_5_Build_Sequence_P1_174(context, out var h1Value))
+            bool success661 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec, global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec> value662 = default;
+            var start663 = cursor.Offset;
+            success661 = false;
+            if (__Parlot_5_Build_Sequence_P1_173(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_185(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_184(context, out var h2Value))
                 {
-                    success675 = true;
-                    value676 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec, global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec>(h1Value, h2Value);
+                    success661 = true;
+                    value662 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetSpec, global::Microsoft.Azure.Cosmos.SqlObjects.SqlLimitSpec>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start677);
+                    cursor.ResetPosition(start663);
                 }
             }
             else
             {
-                cursor.ResetPosition(start677);
+                cursor.ResetPosition(start663);
             }
 
-            value = value676;
-            return success675;
+            value = value662;
+            return success661;
         }
 
-        private static bool __Parlot_5_Build_ZeroOrOne_Parser_172(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause value)
+        private static bool __Parlot_5_Build_ZeroOrOne_Parser_171(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success671 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause value672 = default;
-            if (__Parlot_5_Build_Then_674_173(context, out var parsed673Value))
+            bool success657 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause value658 = default;
+            if (__Parlot_5_Build_Then_660_172(context, out var parsed659Value))
             {
-                value672 = ___Parlot_5_Build_lambda41(parsed673Value);
-                success671 = true;
+                value658 = ___Parlot_5_Build_lambda40(parsed659Value);
+                success657 = true;
             }
 
-            value = value672;
-            return success671;
+            value = value658;
+            return success657;
         }
 
-        private static bool __Parlot_5_Build_Sequence_Last_171(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause> value)
+        private static bool __Parlot_5_Build_Sequence_Last_170(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success669 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause> value670 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause>();
-            if (__Parlot_5_Build_ZeroOrOne_Parser_172(context, out var itemValue728))
+            bool success655 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause> value656 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause>();
+            if (__Parlot_5_Build_ZeroOrOne_Parser_171(context, out var itemValue714))
             {
-                value670 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause[] { itemValue728 };
+                value656 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause[] { itemValue714 };
             }
 
-            value = value670;
-            return success669;
+            value = value656;
+            return success655;
         }
 
-        private static bool __Parlot_5_Build_Then_36_6(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause>> value)
+        private static bool __Parlot_5_Build_Then_20_5(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success37 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause>> value38 = default;
-            var start39 = cursor.Offset;
-            success37 = false;
-            if (__Parlot_5_Build_Sequence_Parser_7(context, out var hpValue))
+            bool success21 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause>> value22 = default;
+            var start23 = cursor.Offset;
+            success21 = false;
+            if (__Parlot_5_Build_Sequence_Parser_6(context, out var hpValue))
             {
-                if (__Parlot_5_Build_Sequence_Last_171(context, out var hlValue))
+                if (__Parlot_5_Build_Sequence_Last_170(context, out var hlValue))
                 {
-                    success37 = true;
-                    value38 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause>>(hpValue.Item1, hpValue.Item2, hpValue.Item3, hpValue.Item4, hpValue.Item5, hlValue);
+                    success21 = true;
+                    value22 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlSelectClause, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlFromClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlWhereClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlGroupByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOrderByClause>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlOffsetLimitClause>>(hpValue.Item1, hpValue.Item2, hpValue.Item3, hpValue.Item4, hpValue.Item5, hlValue);
                 }
                 else
                 {
-                    cursor.ResetPosition(start39);
+                    cursor.ResetPosition(start23);
                 }
             }
             else
             {
-                cursor.ResetPosition(start39);
+                cursor.ResetPosition(start23);
             }
 
-            value = value38;
-            return success37;
+            value = value22;
+            return success21;
         }
 
-        private static bool __Parlot_5_Build_If_Then_5(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
+        private static bool __Parlot_5_Build_OneOf_195(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success33 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value34 = default;
-            if (__Parlot_5_Build_Then_36_6(context, out var parsed35Value))
+            bool success745 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value746 = default;
+            if (__Parlot_5_Build_Between_Parser_84(context, out var parsed747Value))
             {
-                value34 = ___Parlot_5_Build_lambda42(parsed35Value);
-                success33 = true;
+                value746 = ___Parlot_5_Build_lambda42(parsed747Value);
+                success745 = true;
             }
 
-            value = value34;
-            return success33;
+            value = value746;
+            return success745;
         }
 
-        private static bool __Parlot_5_Build_OneOf_200(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_196(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success771 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value772 = default;
-            if (__Parlot_5_Build_Between_Parser_85(context, out var parsed773Value))
+            bool success749 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value750 = default;
+            if (__Parlot_5_Build_Then_253_68(context, out var parsed751Value))
             {
-                value772 = ___Parlot_5_Build_lambda44(parsed773Value);
-                success771 = true;
+                value750 = ___Parlot_5_Build_lambda43(parsed751Value);
+                success749 = true;
             }
 
-            value = value772;
-            return success771;
+            value = value750;
+            return success749;
         }
 
-        private static bool __Parlot_5_Build_OneOf_201(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_197(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success775 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value776 = default;
-            if (__Parlot_5_Build_Then_269_69(context, out var parsed777Value))
+            bool success753 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value754 = default;
+            var start755 = cursor.Offset;
+            success753 = false;
+            if (__Parlot_5_Build_Between_Before_69(context, out _))
             {
-                value776 = ___Parlot_5_Build_lambda45(parsed777Value);
-                success775 = true;
-            }
-
-            value = value776;
-            return success775;
-        }
-
-        private static bool __Parlot_5_Build_OneOf_202(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success779 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value780 = default;
-            var start781 = cursor.Offset;
-            success779 = false;
-            if (__Parlot_5_Build_Between_Before_70(context, out _))
-            {
-                if (__Parlot_5_Build_Sequence_P1_41(context, out value780))
+                if (__Parlot_5_Build_Sequence_P1_40(context, out value754))
                 {
-                    if (__Parlot_5_Build_Between_After_71(context, out _))
+                    if (__Parlot_5_Build_Between_After_70(context, out _))
                     {
-                        success779 = true;
+                        success753 = true;
                     }
                 }
             }
-            if (!success779)
+            if (!success753)
             {
-                cursor.ResetPosition(start781);
+                cursor.ResetPosition(start755);
             }
 
-            value = value780;
-            return success779;
+            value = value754;
+            return success753;
         }
 
-        private static bool __Parlot_5_Build_OneOf_203(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_198(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success782 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value783 = default;
-            if (__Parlot_5_Build_Then_110_29(context, out var parsed784Value))
+            bool success756 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value757 = default;
+            if (__Parlot_5_Build_Then_94_28(context, out var parsed758Value))
             {
-                value783 = ___Parlot_5_Build_lambda46(parsed784Value);
-                success782 = true;
+                value757 = ___Parlot_5_Build_lambda44(parsed758Value);
+                success756 = true;
             }
 
-            value = value783;
-            return success782;
+            value = value757;
+            return success756;
         }
 
-        private static bool __Parlot_5_Build_OneOf_204(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_199(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success786 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value787 = default;
-            if (__Parlot_5_Build_Then_127_33(context, out var parsed788Value))
+            bool success760 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value761 = default;
+            if (__Parlot_5_Build_Then_111_32(context, out var parsed762Value))
             {
-                value787 = ___Parlot_5_Build_lambda47(parsed788Value);
-                success786 = true;
+                value761 = ___Parlot_5_Build_lambda45(parsed762Value);
+                success760 = true;
             }
 
-            value = value787;
-            return success786;
+            value = value761;
+            return success760;
         }
 
-        private static bool __Parlot_5_Build_Keyword_209(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_204(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -5477,118 +5465,118 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_208(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_203(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success799 = false;
-            global::System.String value800 = default;
-            var start801 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_209(context, out _))
+            bool success773 = false;
+            global::System.String value774 = default;
+            var start775 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_204(context, out _))
             {
-                var boundary803 = cursor.Eof;
-                if (!boundary803)
+                var boundary777 = cursor.Eof;
+                if (!boundary777)
                 {
-                    var next804 = cursor.Current;
-                    boundary803 = next804 < 128
-                        ? (((next804 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next804 & 63)) & 1UL) == 0
+                    var next778 = cursor.Current;
+                    boundary777 = next778 < 128
+                        ? (((next778 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next778 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary803)
+                if (boundary777)
                 {
-                    success799 = true;
+                    success773 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start801);
+                    cursor.ResetPosition(start775);
                 }
             }
 
-            value = value800;
-            return success799;
+            value = value774;
+            return success773;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_207(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_202(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success797 = false;
-            global::System.String value798 = default;
-            var shortcut805 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart806 = cursor.Offset;
-            if (!shortcut805)
+            bool success771 = false;
+            global::System.String value772 = default;
+            var shortcut779 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart780 = cursor.Offset;
+            if (!shortcut779)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart806 = cursor.Offset;
-                success797 = __Parlot_5_Build_SkipWS_208(context, out _);
-                if (!success797)
+                contentStart780 = cursor.Offset;
+                success771 = __Parlot_5_Build_SkipWS_203(context, out _);
+                if (!success771)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success797 = __Parlot_5_Build_SkipWS_208(context, out _);
+                success771 = __Parlot_5_Build_SkipWS_203(context, out _);
             }
 
-            value = value798;
-            return success797;
+            value = value772;
+            return success771;
         }
 
-        private static bool __Parlot_5_Build_Then_793_206(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
+        private static bool __Parlot_5_Build_Then_767_201(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success794 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value795 = default;
-            var start796 = cursor.Offset;
-            success794 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_207(context, out _))
+            bool success768 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value769 = default;
+            var start770 = cursor.Offset;
+            success768 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_202(context, out _))
             {
-                if (__Parlot_5_Build_Then_269_69(context, out value795))
+                if (__Parlot_5_Build_Then_253_68(context, out value769))
                 {
-                    success794 = true;
+                    success768 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start796);
+                    cursor.ResetPosition(start770);
                 }
             }
             else
             {
-                cursor.ResetPosition(start796);
+                cursor.ResetPosition(start770);
             }
 
-            value = value795;
-            return success794;
+            value = value769;
+            return success768;
         }
 
-        private static bool __Parlot_5_Build_OneOf_205(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_200(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success790 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value791 = default;
-            if (__Parlot_5_Build_Then_793_206(context, out var parsed792Value))
+            bool success764 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value765 = default;
+            if (__Parlot_5_Build_Then_767_201(context, out var parsed766Value))
             {
-                value791 = ___Parlot_5_Build_lambda48(parsed792Value);
-                success790 = true;
+                value765 = ___Parlot_5_Build_lambda46(parsed766Value);
+                success764 = true;
             }
 
-            value = value791;
-            return success790;
+            value = value765;
+            return success764;
         }
 
-        private static bool __Parlot_5_Build_Keyword_214(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_209(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -5604,97 +5592,163 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_213(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_208(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success816 = false;
-            global::System.String value817 = default;
-            var start818 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_214(context, out _))
+            bool success790 = false;
+            global::System.String value791 = default;
+            var start792 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_209(context, out _))
             {
-                var boundary820 = cursor.Eof;
-                if (!boundary820)
+                var boundary794 = cursor.Eof;
+                if (!boundary794)
                 {
-                    var next821 = cursor.Current;
-                    boundary820 = next821 < 128
-                        ? (((next821 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next821 & 63)) & 1UL) == 0
+                    var next795 = cursor.Current;
+                    boundary794 = next795 < 128
+                        ? (((next795 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next795 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary820)
+                if (boundary794)
                 {
-                    success816 = true;
+                    success790 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start818);
+                    cursor.ResetPosition(start792);
                 }
             }
 
-            value = value817;
-            return success816;
+            value = value791;
+            return success790;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_212(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_207(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success814 = false;
-            global::System.String value815 = default;
-            var shortcut822 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart823 = cursor.Offset;
-            if (!shortcut822)
+            bool success788 = false;
+            global::System.String value789 = default;
+            var shortcut796 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart797 = cursor.Offset;
+            if (!shortcut796)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart823 = cursor.Offset;
-                success814 = __Parlot_5_Build_SkipWS_213(context, out _);
-                if (!success814)
+                contentStart797 = cursor.Offset;
+                success788 = __Parlot_5_Build_SkipWS_208(context, out _);
+                if (!success788)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success814 = __Parlot_5_Build_SkipWS_213(context, out _);
+                success788 = __Parlot_5_Build_SkipWS_208(context, out _);
             }
 
-            value = value815;
-            return success814;
+            value = value789;
+            return success788;
         }
 
-        private static bool __Parlot_5_Build_Then_810_211(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
+        private static bool __Parlot_5_Build_Then_784_206(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success811 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value812 = default;
-            var start813 = cursor.Offset;
-            success811 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_212(context, out _))
+            bool success785 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value786 = default;
+            var start787 = cursor.Offset;
+            success785 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_207(context, out _))
             {
-                if (__Parlot_5_Build_Then_269_69(context, out value812))
+                if (__Parlot_5_Build_Then_253_68(context, out value786))
                 {
-                    success811 = true;
+                    success785 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start813);
+                    cursor.ResetPosition(start787);
                 }
             }
             else
             {
-                cursor.ResetPosition(start813);
+                cursor.ResetPosition(start787);
             }
 
-            value = value812;
-            return success811;
+            value = value786;
+            return success785;
+        }
+
+        private static bool __Parlot_5_Build_OneOf_205(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success781 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value782 = default;
+            if (__Parlot_5_Build_Then_784_206(context, out var parsed783Value))
+            {
+                value782 = ___Parlot_5_Build_lambda47(parsed783Value);
+                success781 = true;
+            }
+
+            value = value782;
+            return success781;
+        }
+
+        private static bool __Parlot_5_Build_Sequence_P2_212(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success805 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value806 = global::System.Array.Empty<global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>();
+            if (__Parlot_5_Build_Sequence_P2_150(context, out var itemValue807))
+            {
+                value806 = new global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>[] { itemValue807 };
+            }
+
+            value = value806;
+            return success805;
+        }
+
+        private static bool __Parlot_5_Build_Then_801_211(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>> value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success802 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>> value803 = default;
+            var start804 = cursor.Offset;
+            success802 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P2_46(context, out var h1Value))
+            {
+                if (__Parlot_5_Build_Sequence_P2_212(context, out var h2Value))
+                {
+                    success802 = true;
+                    value803 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>>(h1Value, h2Value);
+                }
+                else
+                {
+                    cursor.ResetPosition(start804);
+                }
+            }
+            else
+            {
+                cursor.ResetPosition(start804);
+            }
+
+            value = value803;
+            return success802;
         }
 
         private static bool __Parlot_5_Build_OneOf_210(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
@@ -5703,85 +5757,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success807 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value808 = default;
-            if (__Parlot_5_Build_Then_810_211(context, out var parsed809Value))
+            bool success798 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value799 = default;
+            if (__Parlot_5_Build_Then_801_211(context, out var parsed800Value))
             {
-                value808 = ___Parlot_5_Build_lambda49(parsed809Value);
-                success807 = true;
+                value799 = ___Parlot_5_Build_lambda48(parsed800Value);
+                success798 = true;
             }
 
-            value = value808;
-            return success807;
+            value = value799;
+            return success798;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P2_217(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success831 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value832 = global::System.Array.Empty<global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>();
-            if (__Parlot_5_Build_Sequence_P2_151(context, out var itemValue833))
-            {
-                value832 = new global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>[] { itemValue833 };
-            }
-
-            value = value832;
-            return success831;
-        }
-
-        private static bool __Parlot_5_Build_Then_827_216(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>> value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success828 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>> value829 = default;
-            var start830 = cursor.Offset;
-            success828 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P2_47(context, out var h1Value))
-            {
-                if (__Parlot_5_Build_Sequence_P2_217(context, out var h2Value))
-                {
-                    success828 = true;
-                    value829 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>>(h1Value, h2Value);
-                }
-                else
-                {
-                    cursor.ResetPosition(start830);
-                }
-            }
-            else
-            {
-                cursor.ResetPosition(start830);
-            }
-
-            value = value829;
-            return success828;
-        }
-
-        private static bool __Parlot_5_Build_OneOf_215(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success824 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value825 = default;
-            if (__Parlot_5_Build_Then_827_216(context, out var parsed826Value))
-            {
-                value825 = ___Parlot_5_Build_lambda50(parsed826Value);
-                success824 = true;
-            }
-
-            value = value825;
-            return success824;
-        }
-
-        private static bool __Parlot_5_Build_Keyword_222(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_217(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -5797,118 +5785,118 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_221(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_216(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success843 = false;
-            global::System.String value844 = default;
-            var start845 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_222(context, out _))
+            bool success817 = false;
+            global::System.String value818 = default;
+            var start819 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_217(context, out _))
             {
-                var boundary847 = cursor.Eof;
-                if (!boundary847)
+                var boundary821 = cursor.Eof;
+                if (!boundary821)
                 {
-                    var next848 = cursor.Current;
-                    boundary847 = next848 < 128
-                        ? (((next848 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next848 & 63)) & 1UL) == 0
+                    var next822 = cursor.Current;
+                    boundary821 = next822 < 128
+                        ? (((next822 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next822 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary847)
+                if (boundary821)
                 {
-                    success843 = true;
+                    success817 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start845);
+                    cursor.ResetPosition(start819);
                 }
             }
 
-            value = value844;
-            return success843;
+            value = value818;
+            return success817;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_220(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_215(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success841 = false;
-            global::System.String value842 = default;
-            var shortcut849 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart850 = cursor.Offset;
-            if (!shortcut849)
+            bool success815 = false;
+            global::System.String value816 = default;
+            var shortcut823 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart824 = cursor.Offset;
+            if (!shortcut823)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart850 = cursor.Offset;
-                success841 = __Parlot_5_Build_SkipWS_221(context, out _);
-                if (!success841)
+                contentStart824 = cursor.Offset;
+                success815 = __Parlot_5_Build_SkipWS_216(context, out _);
+                if (!success815)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success841 = __Parlot_5_Build_SkipWS_221(context, out _);
+                success815 = __Parlot_5_Build_SkipWS_216(context, out _);
             }
 
-            value = value842;
-            return success841;
+            value = value816;
+            return success815;
         }
 
-        private static bool __Parlot_5_Build_Then_837_219(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
+        private static bool __Parlot_5_Build_Then_811_214(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success838 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value839 = default;
-            var start840 = cursor.Offset;
-            success838 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_220(context, out _))
+            bool success812 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value813 = default;
+            var start814 = cursor.Offset;
+            success812 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_215(context, out _))
             {
-                if (__Parlot_5_Build_Then_269_69(context, out value839))
+                if (__Parlot_5_Build_Then_253_68(context, out value813))
                 {
-                    success838 = true;
+                    success812 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start840);
+                    cursor.ResetPosition(start814);
                 }
             }
             else
             {
-                cursor.ResetPosition(start840);
+                cursor.ResetPosition(start814);
             }
 
-            value = value839;
-            return success838;
+            value = value813;
+            return success812;
         }
 
-        private static bool __Parlot_5_Build_OneOf_218(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_213(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success834 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value835 = default;
-            if (__Parlot_5_Build_Then_837_219(context, out var parsed836Value))
+            bool success808 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value809 = default;
+            if (__Parlot_5_Build_Then_811_214(context, out var parsed810Value))
             {
-                value835 = ___Parlot_5_Build_lambda51(parsed836Value);
-                success834 = true;
+                value809 = ___Parlot_5_Build_lambda49(parsed810Value);
+                success808 = true;
             }
 
-            value = value835;
-            return success834;
+            value = value809;
+            return success808;
         }
 
-        private static bool __Parlot_5_Build_Keyword_227(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_222(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -5924,118 +5912,118 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_226(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_221(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success860 = false;
-            global::System.String value861 = default;
-            var start862 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_227(context, out _))
+            bool success834 = false;
+            global::System.String value835 = default;
+            var start836 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_222(context, out _))
             {
-                var boundary864 = cursor.Eof;
-                if (!boundary864)
+                var boundary838 = cursor.Eof;
+                if (!boundary838)
                 {
-                    var next865 = cursor.Current;
-                    boundary864 = next865 < 128
-                        ? (((next865 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next865 & 63)) & 1UL) == 0
+                    var next839 = cursor.Current;
+                    boundary838 = next839 < 128
+                        ? (((next839 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next839 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary864)
+                if (boundary838)
                 {
-                    success860 = true;
+                    success834 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start862);
+                    cursor.ResetPosition(start836);
                 }
             }
 
-            value = value861;
-            return success860;
+            value = value835;
+            return success834;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_225(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_220(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success858 = false;
-            global::System.String value859 = default;
-            var shortcut866 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart867 = cursor.Offset;
-            if (!shortcut866)
+            bool success832 = false;
+            global::System.String value833 = default;
+            var shortcut840 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart841 = cursor.Offset;
+            if (!shortcut840)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart867 = cursor.Offset;
-                success858 = __Parlot_5_Build_SkipWS_226(context, out _);
-                if (!success858)
+                contentStart841 = cursor.Offset;
+                success832 = __Parlot_5_Build_SkipWS_221(context, out _);
+                if (!success832)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success858 = __Parlot_5_Build_SkipWS_226(context, out _);
+                success832 = __Parlot_5_Build_SkipWS_221(context, out _);
             }
 
-            value = value859;
-            return success858;
+            value = value833;
+            return success832;
         }
 
-        private static bool __Parlot_5_Build_Then_854_224(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
+        private static bool __Parlot_5_Build_Then_828_219(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success855 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value856 = default;
-            var start857 = cursor.Offset;
-            success855 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_225(context, out _))
+            bool success829 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value830 = default;
+            var start831 = cursor.Offset;
+            success829 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_220(context, out _))
             {
-                if (__Parlot_5_Build_Then_269_69(context, out value856))
+                if (__Parlot_5_Build_Then_253_68(context, out value830))
                 {
-                    success855 = true;
+                    success829 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start857);
+                    cursor.ResetPosition(start831);
                 }
             }
             else
             {
-                cursor.ResetPosition(start857);
+                cursor.ResetPosition(start831);
             }
 
-            value = value856;
-            return success855;
+            value = value830;
+            return success829;
         }
 
-        private static bool __Parlot_5_Build_OneOf_223(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_218(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success851 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value852 = default;
-            if (__Parlot_5_Build_Then_854_224(context, out var parsed853Value))
+            bool success825 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value826 = default;
+            if (__Parlot_5_Build_Then_828_219(context, out var parsed827Value))
             {
-                value852 = ___Parlot_5_Build_lambda52(parsed853Value);
-                success851 = true;
+                value826 = ___Parlot_5_Build_lambda50(parsed827Value);
+                success825 = true;
             }
 
-            value = value852;
-            return success851;
+            value = value826;
+            return success825;
         }
 
-        private static bool __Parlot_5_Build_Keyword_232(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_227(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -6051,97 +6039,146 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_231(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_226(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success877 = false;
-            global::System.String value878 = default;
-            var start879 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_232(context, out _))
+            bool success851 = false;
+            global::System.String value852 = default;
+            var start853 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_227(context, out _))
             {
-                var boundary881 = cursor.Eof;
-                if (!boundary881)
+                var boundary855 = cursor.Eof;
+                if (!boundary855)
                 {
-                    var next882 = cursor.Current;
-                    boundary881 = next882 < 128
-                        ? (((next882 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next882 & 63)) & 1UL) == 0
+                    var next856 = cursor.Current;
+                    boundary855 = next856 < 128
+                        ? (((next856 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next856 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary881)
+                if (boundary855)
                 {
-                    success877 = true;
+                    success851 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start879);
+                    cursor.ResetPosition(start853);
                 }
             }
 
-            value = value878;
-            return success877;
+            value = value852;
+            return success851;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_230(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_225(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success875 = false;
-            global::System.String value876 = default;
-            var shortcut883 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart884 = cursor.Offset;
-            if (!shortcut883)
+            bool success849 = false;
+            global::System.String value850 = default;
+            var shortcut857 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart858 = cursor.Offset;
+            if (!shortcut857)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart884 = cursor.Offset;
-                success875 = __Parlot_5_Build_SkipWS_231(context, out _);
-                if (!success875)
+                contentStart858 = cursor.Offset;
+                success849 = __Parlot_5_Build_SkipWS_226(context, out _);
+                if (!success849)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success875 = __Parlot_5_Build_SkipWS_231(context, out _);
+                success849 = __Parlot_5_Build_SkipWS_226(context, out _);
             }
 
-            value = value876;
-            return success875;
+            value = value850;
+            return success849;
         }
 
-        private static bool __Parlot_5_Build_Then_871_229(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
+        private static bool __Parlot_5_Build_Then_845_224(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success872 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value873 = default;
-            var start874 = cursor.Offset;
-            success872 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_230(context, out _))
+            bool success846 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery value847 = default;
+            var start848 = cursor.Offset;
+            success846 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_225(context, out _))
             {
-                if (__Parlot_5_Build_Then_269_69(context, out value873))
+                if (__Parlot_5_Build_Then_253_68(context, out value847))
                 {
-                    success872 = true;
+                    success846 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start874);
+                    cursor.ResetPosition(start848);
                 }
             }
             else
             {
-                cursor.ResetPosition(start874);
+                cursor.ResetPosition(start848);
             }
 
-            value = value873;
-            return success872;
+            value = value847;
+            return success846;
+        }
+
+        private static bool __Parlot_5_Build_OneOf_223(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success842 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value843 = default;
+            if (__Parlot_5_Build_Then_845_224(context, out var parsed844Value))
+            {
+                value843 = ___Parlot_5_Build_lambda51(parsed844Value);
+                success842 = true;
+            }
+
+            value = value843;
+            return success842;
+        }
+
+        private static bool __Parlot_5_Build_Then_862_229(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success863 = false;
+            global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value864 = default;
+            var start865 = cursor.Offset;
+            success863 = false;
+            if (__Parlot_5_Build_Sequence_P1_154(context, out var h1Value))
+            {
+                if (__Parlot_5_Build_Sequence_P2_150(context, out var h2Value))
+                {
+                    success863 = true;
+                    value864 = new global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
+                }
+                else
+                {
+                    cursor.ResetPosition(start865);
+                }
+            }
+            else
+            {
+                cursor.ResetPosition(start865);
+            }
+
+            value = value864;
+            return success863;
         }
 
         private static bool __Parlot_5_Build_OneOf_228(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
@@ -6150,227 +6187,178 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success868 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value869 = default;
-            if (__Parlot_5_Build_Then_871_229(context, out var parsed870Value))
+            bool success859 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value860 = default;
+            if (__Parlot_5_Build_Then_862_229(context, out var parsed861Value))
             {
-                value869 = ___Parlot_5_Build_lambda53(parsed870Value);
-                success868 = true;
+                value860 = ___Parlot_5_Build_lambda52(parsed861Value);
+                success859 = true;
             }
 
-            value = value869;
-            return success868;
+            value = value860;
+            return success859;
         }
 
-        private static bool __Parlot_5_Build_Then_888_234(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
+        private static bool __Parlot_5_Build_Then_869_231(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success889 = false;
-            global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value890 = default;
-            var start891 = cursor.Offset;
-            success889 = false;
-            if (__Parlot_5_Build_Sequence_P1_155(context, out var h1Value))
+            bool success870 = false;
+            global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value871 = default;
+            var start872 = cursor.Offset;
+            success870 = false;
+            if (__Parlot_5_Build_Sequence_P1_159(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_151(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_150(context, out var h2Value))
                 {
-                    success889 = true;
-                    value890 = new global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
+                    success870 = true;
+                    value871 = new global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start891);
+                    cursor.ResetPosition(start872);
                 }
             }
             else
             {
-                cursor.ResetPosition(start891);
+                cursor.ResetPosition(start872);
             }
 
-            value = value890;
-            return success889;
+            value = value871;
+            return success870;
         }
 
-        private static bool __Parlot_5_Build_OneOf_233(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_230(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success885 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value886 = default;
-            if (__Parlot_5_Build_Then_888_234(context, out var parsed887Value))
+            bool success866 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value867 = default;
+            if (__Parlot_5_Build_Then_869_231(context, out var parsed868Value))
             {
-                value886 = ___Parlot_5_Build_lambda54(parsed887Value);
-                success885 = true;
+                value867 = ___Parlot_5_Build_lambda53(parsed868Value);
+                success866 = true;
             }
 
-            value = value886;
-            return success885;
+            value = value867;
+            return success866;
         }
 
-        private static bool __Parlot_5_Build_Then_895_236(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
+        private static bool __Parlot_5_Build_Between_Parser_234(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success896 = false;
-            global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value897 = default;
-            var start898 = cursor.Offset;
-            success896 = false;
-            if (__Parlot_5_Build_Sequence_P1_160(context, out var h1Value))
-            {
-                if (__Parlot_5_Build_Sequence_P2_151(context, out var h2Value))
-                {
-                    success896 = true;
-                    value897 = new global::System.ValueTuple<global::System.String, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
-                }
-                else
-                {
-                    cursor.ResetPosition(start898);
-                }
-            }
-            else
-            {
-                cursor.ResetPosition(start898);
-            }
-
-            value = value897;
-            return success896;
-        }
-
-        private static bool __Parlot_5_Build_OneOf_235(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success892 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value893 = default;
-            if (__Parlot_5_Build_Then_895_236(context, out var parsed894Value))
-            {
-                value893 = ___Parlot_5_Build_lambda55(parsed894Value);
-                success892 = true;
-            }
-
-            value = value893;
-            return success892;
-        }
-
-        private static bool __Parlot_5_Build_Between_Parser_239(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success906 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value907 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
-            var list908 = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
-            bool first909 = true;
-            var end910 = cursor.Offset;
+            bool success880 = false;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value881 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
+            var list882 = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
+            bool first883 = true;
+            var end884 = cursor.Offset;
             try
             {
                 while (true)
                 {
-                    var previousOffset911 = cursor.Offset;
-                    if (!first909)
+                    var previousOffset885 = cursor.Offset;
+                    if (!first883)
                     {
-                        if (!__Parlot_5_Build_Separated_Separator_50(context, out _))
+                        if (!__Parlot_5_Build_Separated_Separator_49(context, out _))
                         {
                             break;
                         }
                     }
-                    if (!__Parlot_5_Build_Sequence_P1_41(context, out var item914))
+                    if (!__Parlot_5_Build_Sequence_P1_40(context, out var item888))
                     {
-                        if (!first909)
+                        if (!first883)
                         {
-                            cursor.ResetPosition(end910);
+                            cursor.ResetPosition(end884);
                             break;
                         }
-                        success906 = false;
+                        success880 = false;
                         break;
                     }
                     else
                     {
-                        end910 = cursor.Offset;
+                        end884 = cursor.Offset;
                     }
-                    if (cursor.Offset == previousOffset911)
+                    if (cursor.Offset == previousOffset885)
                     {
                         break;
                     }
-                    first909 = false;
-                    list908.Add(item914);
+                    first883 = false;
+                    list882.Add(item888);
                 }
-                if (!first909)
+                if (!first883)
                 {
-                    success906 = true;
-                    value907 = list908.ToArray();
+                    success880 = true;
+                    value881 = list882.ToArray();
                 }
                 else
                 {
-                    success906 = true;
+                    success880 = true;
                 }
             }
             finally
             {
-                list908.Release();
+                list882.Release();
             }
 
-            value = value907;
-            return success906;
+            value = value881;
+            return success880;
         }
 
-        private static bool __Parlot_5_Build_Then_902_238(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
+        private static bool __Parlot_5_Build_Then_876_233(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success903 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value904 = default;
-            var start905 = cursor.Offset;
-            success903 = false;
-            if (__Parlot_5_Build_Between_Before_81(context, out _))
+            bool success877 = false;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value878 = default;
+            var start879 = cursor.Offset;
+            success877 = false;
+            if (__Parlot_5_Build_Between_Before_80(context, out _))
             {
-                if (__Parlot_5_Build_Between_Parser_239(context, out value904))
+                if (__Parlot_5_Build_Between_Parser_234(context, out value878))
                 {
-                    if (__Parlot_5_Build_Between_After_82(context, out _))
+                    if (__Parlot_5_Build_Between_After_81(context, out _))
                     {
-                        success903 = true;
+                        success877 = true;
                     }
                 }
             }
-            if (!success903)
+            if (!success877)
             {
-                cursor.ResetPosition(start905);
+                cursor.ResetPosition(start879);
             }
 
-            value = value904;
-            return success903;
+            value = value878;
+            return success877;
         }
 
-        private static bool __Parlot_5_Build_OneOf_237(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_232(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success899 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value900 = default;
-            if (__Parlot_5_Build_Then_902_238(context, out var parsed901Value))
+            bool success873 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value874 = default;
+            if (__Parlot_5_Build_Then_876_233(context, out var parsed875Value))
             {
-                value900 = ___Parlot_5_Build_lambda56(parsed901Value);
-                success899 = true;
+                value874 = ___Parlot_5_Build_lambda54(parsed875Value);
+                success873 = true;
             }
 
-            value = value900;
-            return success899;
+            value = value874;
+            return success873;
         }
 
-        private static bool __Parlot_5_Build_Keyword_243(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_238(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -6386,88 +6374,88 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_242(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_237(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success921 = false;
-            global::System.String value922 = default;
-            var start923 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_243(context, out value922))
+            bool success895 = false;
+            global::System.String value896 = default;
+            var start897 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_238(context, out value896))
             {
-                var boundary925 = cursor.Eof;
-                if (!boundary925)
+                var boundary899 = cursor.Eof;
+                if (!boundary899)
                 {
-                    var next926 = cursor.Current;
-                    boundary925 = next926 < 128
-                        ? (((next926 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next926 & 63)) & 1UL) == 0
+                    var next900 = cursor.Current;
+                    boundary899 = next900 < 128
+                        ? (((next900 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next900 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary925)
+                if (boundary899)
                 {
-                    success921 = true;
+                    success895 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start923);
+                    cursor.ResetPosition(start897);
                 }
             }
 
-            value = value922;
-            return success921;
+            value = value896;
+            return success895;
         }
 
-        private static bool __Parlot_5_Build_Then_918_241(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Then_892_236(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success919 = false;
-            global::System.String value920 = default;
-            var shortcut927 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart928 = cursor.Offset;
-            if (!shortcut927)
+            bool success893 = false;
+            global::System.String value894 = default;
+            var shortcut901 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart902 = cursor.Offset;
+            if (!shortcut901)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart928 = cursor.Offset;
-                success919 = __Parlot_5_Build_SkipWS_242(context, out value920);
-                if (!success919)
+                contentStart902 = cursor.Offset;
+                success893 = __Parlot_5_Build_SkipWS_237(context, out value894);
+                if (!success893)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success919 = __Parlot_5_Build_SkipWS_242(context, out value920);
+                success893 = __Parlot_5_Build_SkipWS_237(context, out value894);
             }
 
-            value = value920;
-            return success919;
+            value = value894;
+            return success893;
         }
 
-        private static bool __Parlot_5_Build_OneOf_240(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_235(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success915 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value916 = default;
-            if (__Parlot_5_Build_Then_918_241(context, out var parsed917Value))
+            bool success889 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value890 = default;
+            if (__Parlot_5_Build_Then_892_236(context, out var parsed891Value))
             {
-                value916 = ___Parlot_5_Build_lambda57(parsed917Value);
-                success915 = true;
+                value890 = ___Parlot_5_Build_lambda55(parsed891Value);
+                success889 = true;
             }
 
-            value = value916;
-            return success915;
+            value = value890;
+            return success889;
         }
 
-        private static bool __Parlot_5_Build_Keyword_247(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_242(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -6483,382 +6471,382 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_246(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_241(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success935 = false;
-            global::System.String value936 = default;
-            var start937 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_247(context, out value936))
+            bool success909 = false;
+            global::System.String value910 = default;
+            var start911 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_242(context, out value910))
             {
-                var boundary939 = cursor.Eof;
-                if (!boundary939)
+                var boundary913 = cursor.Eof;
+                if (!boundary913)
                 {
-                    var next940 = cursor.Current;
-                    boundary939 = next940 < 128
-                        ? (((next940 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next940 & 63)) & 1UL) == 0
+                    var next914 = cursor.Current;
+                    boundary913 = next914 < 128
+                        ? (((next914 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next914 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary939)
+                if (boundary913)
                 {
-                    success935 = true;
+                    success909 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start937);
+                    cursor.ResetPosition(start911);
                 }
             }
 
-            value = value936;
-            return success935;
+            value = value910;
+            return success909;
         }
 
-        private static bool __Parlot_5_Build_Then_932_245(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Then_906_240(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success933 = false;
-            global::System.String value934 = default;
-            var shortcut941 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart942 = cursor.Offset;
-            if (!shortcut941)
+            bool success907 = false;
+            global::System.String value908 = default;
+            var shortcut915 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart916 = cursor.Offset;
+            if (!shortcut915)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart942 = cursor.Offset;
-                success933 = __Parlot_5_Build_SkipWS_246(context, out value934);
-                if (!success933)
+                contentStart916 = cursor.Offset;
+                success907 = __Parlot_5_Build_SkipWS_241(context, out value908);
+                if (!success907)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success933 = __Parlot_5_Build_SkipWS_246(context, out value934);
+                success907 = __Parlot_5_Build_SkipWS_241(context, out value908);
             }
 
-            value = value934;
-            return success933;
+            value = value908;
+            return success907;
         }
 
-        private static bool __Parlot_5_Build_OneOf_244(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_239(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success929 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value930 = default;
-            if (__Parlot_5_Build_Then_932_245(context, out var parsed931Value))
+            bool success903 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value904 = default;
+            if (__Parlot_5_Build_Then_906_240(context, out var parsed905Value))
             {
-                value930 = ___Parlot_5_Build_lambda58(parsed931Value);
-                success929 = true;
+                value904 = ___Parlot_5_Build_lambda56(parsed905Value);
+                success903 = true;
             }
 
-            value = value930;
-            return success929;
+            value = value904;
+            return success903;
         }
 
-        private static bool __Parlot_5_Build_Between_Before_250(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_Between_Before_245(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success952 = false;
-            global::System.Char value953 = default;
-            bool moved956 = false;
-            var span954 = cursor.Span;
-            var spanStart954 = cursor.Offset;
-            var pos954 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos954 < (uint)span954.Length && global::Parlot.Generated.Character.HasMask(span954[pos954], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span954[pos954], context._skipMask)))
+            bool success926 = false;
+            global::System.Char value927 = default;
+            bool moved930 = false;
+            var span928 = cursor.Span;
+            var spanStart928 = cursor.Offset;
+            var pos928 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos928 < (uint)span928.Length && global::Parlot.Generated.Character.HasMask(span928[pos928], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span928[pos928], context._skipMask)))
             {
-                cursor.ResetPosition(spanStart954 + pos954);
+                cursor.ResetPosition(spanStart928 + pos928);
                 context.SkipWhiteSpace();
-                pos954 = cursor.Offset - spanStart954;
-                moved956 = true;
+                pos928 = cursor.Offset - spanStart928;
+                moved930 = true;
             }
-            if ((uint)pos954 >= (uint)span954.Length || span954[pos954] != (char)123)
+            if ((uint)pos928 >= (uint)span928.Length || span928[pos928] != (char)123)
             {
-                if (pos954 >= span954.Length) cursor.MarkHitEnd();
-                goto fail955;
+                if (pos928 >= span928.Length) cursor.MarkHitEnd();
+                goto fail929;
             }
-            pos954++;
-            if (moved956) cursor.ResetPosition(spanStart954 + pos954); else cursor.AdvanceWithinBuffer(pos954);
-            success952 = true;
-            goto done957;
-            fail955: if (moved956) cursor.ResetPosition(spanStart954);
-            done957: ;
+            pos928++;
+            if (moved930) cursor.ResetPosition(spanStart928 + pos928); else cursor.AdvanceWithinBuffer(pos928);
+            success926 = true;
+            goto done931;
+            fail929: if (moved930) cursor.ResetPosition(spanStart928);
+            done931: ;
 
-            value = value953;
-            return success952;
+            value = value927;
+            return success926;
         }
 
-        private static bool __Parlot_5_Build_SequenceAndSkip_P2_255(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_SequenceAndSkip_P2_250(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success979 = false;
-            global::System.Char value980 = default;
-            bool moved983 = false;
-            var span981 = cursor.Span;
-            var spanStart981 = cursor.Offset;
-            var pos981 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos981 < (uint)span981.Length && global::Parlot.Generated.Character.HasMask(span981[pos981], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span981[pos981], context._skipMask)))
+            bool success953 = false;
+            global::System.Char value954 = default;
+            bool moved957 = false;
+            var span955 = cursor.Span;
+            var spanStart955 = cursor.Offset;
+            var pos955 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos955 < (uint)span955.Length && global::Parlot.Generated.Character.HasMask(span955[pos955], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span955[pos955], context._skipMask)))
             {
-                cursor.ResetPosition(spanStart981 + pos981);
+                cursor.ResetPosition(spanStart955 + pos955);
                 context.SkipWhiteSpace();
-                pos981 = cursor.Offset - spanStart981;
-                moved983 = true;
+                pos955 = cursor.Offset - spanStart955;
+                moved957 = true;
             }
-            if ((uint)pos981 >= (uint)span981.Length || span981[pos981] != (char)58)
+            if ((uint)pos955 >= (uint)span955.Length || span955[pos955] != (char)58)
             {
-                if (pos981 >= span981.Length) cursor.MarkHitEnd();
-                goto fail982;
+                if (pos955 >= span955.Length) cursor.MarkHitEnd();
+                goto fail956;
             }
-            pos981++;
-            if (moved983) cursor.ResetPosition(spanStart981 + pos981); else cursor.AdvanceWithinBuffer(pos981);
-            success979 = true;
-            goto done984;
-            fail982: if (moved983) cursor.ResetPosition(spanStart981);
-            done984: ;
+            pos955++;
+            if (moved957) cursor.ResetPosition(spanStart955 + pos955); else cursor.AdvanceWithinBuffer(pos955);
+            success953 = true;
+            goto done958;
+            fail956: if (moved957) cursor.ResetPosition(spanStart955);
+            done958: ;
 
-            value = value980;
-            return success979;
+            value = value954;
+            return success953;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_254(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value)
+        private static bool __Parlot_5_Build_Sequence_P1_249(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success974 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value975 = default;
-            var start976 = cursor.Offset;
-            success974 = false;
-            if (__Parlot_5_Build_Between_Parser_85(context, out value975))
+            bool success948 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value949 = default;
+            var start950 = cursor.Offset;
+            success948 = false;
+            if (__Parlot_5_Build_Between_Parser_84(context, out value949))
             {
-                if (__Parlot_5_Build_SequenceAndSkip_P2_255(context, out _))
+                if (__Parlot_5_Build_SequenceAndSkip_P2_250(context, out _))
                 {
-                    success974 = true;
+                    success948 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start976);
+                    cursor.ResetPosition(start950);
                 }
             }
             else
             {
-                cursor.ResetPosition(start976);
+                cursor.ResetPosition(start950);
             }
 
-            value = value975;
-            return success974;
+            value = value949;
+            return success948;
         }
 
-        private static bool __Parlot_5_Build_Then_970_253(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
+        private static bool __Parlot_5_Build_Then_944_248(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success971 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value972 = default;
-            var start973 = cursor.Offset;
-            success971 = false;
-            if (__Parlot_5_Build_Sequence_P1_254(context, out var h1Value))
+            bool success945 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value946 = default;
+            var start947 = cursor.Offset;
+            success945 = false;
+            if (__Parlot_5_Build_Sequence_P1_249(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P1_41(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P1_40(context, out var h2Value))
                 {
-                    success971 = true;
-                    value972 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>(h1Value, h2Value);
+                    success945 = true;
+                    value946 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start973);
+                    cursor.ResetPosition(start947);
                 }
             }
             else
             {
-                cursor.ResetPosition(start973);
+                cursor.ResetPosition(start947);
             }
 
-            value = value972;
-            return success971;
+            value = value946;
+            return success945;
         }
 
-        private static bool __Parlot_5_Build_Separated_Parser_252(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty value)
+        private static bool __Parlot_5_Build_Separated_Parser_247(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success967 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty value968 = default;
-            if (__Parlot_5_Build_Then_970_253(context, out var parsed969Value))
+            bool success941 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty value942 = default;
+            if (__Parlot_5_Build_Then_944_248(context, out var parsed943Value))
             {
-                value968 = ___Parlot_5_Build_lambda59(parsed969Value);
-                success967 = true;
+                value942 = ___Parlot_5_Build_lambda57(parsed943Value);
+                success941 = true;
             }
 
-            value = value968;
-            return success967;
+            value = value942;
+            return success941;
         }
 
-        private static bool __Parlot_5_Build_Between_Parser_251(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty> value)
+        private static bool __Parlot_5_Build_Between_Parser_246(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success958 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty> value959 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty>();
-            var list960 = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty>();
-            bool first961 = true;
-            var end962 = cursor.Offset;
+            bool success932 = false;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty> value933 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty>();
+            var list934 = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty>();
+            bool first935 = true;
+            var end936 = cursor.Offset;
             try
             {
                 while (true)
                 {
-                    var previousOffset963 = cursor.Offset;
-                    if (!first961)
+                    var previousOffset937 = cursor.Offset;
+                    if (!first935)
                     {
-                        if (!__Parlot_5_Build_Separated_Separator_50(context, out _))
+                        if (!__Parlot_5_Build_Separated_Separator_49(context, out _))
                         {
                             break;
                         }
                     }
-                    if (!__Parlot_5_Build_Separated_Parser_252(context, out var item966))
+                    if (!__Parlot_5_Build_Separated_Parser_247(context, out var item940))
                     {
-                        if (!first961)
+                        if (!first935)
                         {
-                            cursor.ResetPosition(end962);
+                            cursor.ResetPosition(end936);
                             break;
                         }
-                        success958 = false;
+                        success932 = false;
                         break;
                     }
                     else
                     {
-                        end962 = cursor.Offset;
+                        end936 = cursor.Offset;
                     }
-                    if (cursor.Offset == previousOffset963)
+                    if (cursor.Offset == previousOffset937)
                     {
                         break;
                     }
-                    first961 = false;
-                    list960.Add(item966);
+                    first935 = false;
+                    list934.Add(item940);
                 }
-                if (!first961)
+                if (!first935)
                 {
-                    success958 = true;
-                    value959 = list960.ToArray();
+                    success932 = true;
+                    value933 = list934.ToArray();
                 }
                 else
                 {
-                    success958 = true;
+                    success932 = true;
                 }
             }
             finally
             {
-                list960.Release();
+                list934.Release();
             }
 
-            value = value959;
-            return success958;
+            value = value933;
+            return success932;
         }
 
-        private static bool __Parlot_5_Build_Between_After_256(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_Between_After_251(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success987 = false;
-            global::System.Char value988 = default;
-            bool moved991 = false;
-            var span989 = cursor.Span;
-            var spanStart989 = cursor.Offset;
-            var pos989 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos989 < (uint)span989.Length && global::Parlot.Generated.Character.HasMask(span989[pos989], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span989[pos989], context._skipMask)))
+            bool success961 = false;
+            global::System.Char value962 = default;
+            bool moved965 = false;
+            var span963 = cursor.Span;
+            var spanStart963 = cursor.Offset;
+            var pos963 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos963 < (uint)span963.Length && global::Parlot.Generated.Character.HasMask(span963[pos963], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span963[pos963], context._skipMask)))
             {
-                cursor.ResetPosition(spanStart989 + pos989);
+                cursor.ResetPosition(spanStart963 + pos963);
                 context.SkipWhiteSpace();
-                pos989 = cursor.Offset - spanStart989;
-                moved991 = true;
+                pos963 = cursor.Offset - spanStart963;
+                moved965 = true;
             }
-            if ((uint)pos989 >= (uint)span989.Length || span989[pos989] != (char)125)
+            if ((uint)pos963 >= (uint)span963.Length || span963[pos963] != (char)125)
             {
-                if (pos989 >= span989.Length) cursor.MarkHitEnd();
-                goto fail990;
+                if (pos963 >= span963.Length) cursor.MarkHitEnd();
+                goto fail964;
             }
-            pos989++;
-            if (moved991) cursor.ResetPosition(spanStart989 + pos989); else cursor.AdvanceWithinBuffer(pos989);
-            success987 = true;
-            goto done992;
-            fail990: if (moved991) cursor.ResetPosition(spanStart989);
-            done992: ;
+            pos963++;
+            if (moved965) cursor.ResetPosition(spanStart963 + pos963); else cursor.AdvanceWithinBuffer(pos963);
+            success961 = true;
+            goto done966;
+            fail964: if (moved965) cursor.ResetPosition(spanStart963);
+            done966: ;
 
-            value = value988;
-            return success987;
+            value = value962;
+            return success961;
         }
 
-        private static bool __Parlot_5_Build_Then_946_249(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty> value)
+        private static bool __Parlot_5_Build_Then_920_244(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success947 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty> value948 = default;
-            var start949 = cursor.Offset;
-            success947 = false;
-            if (__Parlot_5_Build_Between_Before_250(context, out _))
+            bool success921 = false;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlObjectProperty> value922 = default;
+            var start923 = cursor.Offset;
+            success921 = false;
+            if (__Parlot_5_Build_Between_Before_245(context, out _))
             {
-                if (__Parlot_5_Build_Between_Parser_251(context, out value948))
+                if (__Parlot_5_Build_Between_Parser_246(context, out value922))
                 {
-                    if (__Parlot_5_Build_Between_After_256(context, out _))
+                    if (__Parlot_5_Build_Between_After_251(context, out _))
                     {
-                        success947 = true;
+                        success921 = true;
                     }
                 }
             }
-            if (!success947)
+            if (!success921)
             {
-                cursor.ResetPosition(start949);
+                cursor.ResetPosition(start923);
             }
 
-            value = value948;
-            return success947;
+            value = value922;
+            return success921;
         }
 
-        private static bool __Parlot_5_Build_OneOf_248(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_243(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success943 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value944 = default;
-            if (__Parlot_5_Build_Then_946_249(context, out var parsed945Value))
+            bool success917 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value918 = default;
+            if (__Parlot_5_Build_Then_920_244(context, out var parsed919Value))
             {
-                value944 = ___Parlot_5_Build_lambda60(parsed945Value);
-                success943 = true;
+                value918 = ___Parlot_5_Build_lambda58(parsed919Value);
+                success917 = true;
             }
 
-            value = value944;
-            return success943;
+            value = value918;
+            return success917;
         }
 
-        private static bool __Parlot_5_Build_Keyword_260(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_255(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -6874,88 +6862,88 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_259(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_254(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1000 = false;
-            global::System.String value1001 = default;
-            var start1002 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_260(context, out value1001))
+            bool success974 = false;
+            global::System.String value975 = default;
+            var start976 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_255(context, out value975))
             {
-                var boundary1004 = cursor.Eof;
-                if (!boundary1004)
+                var boundary978 = cursor.Eof;
+                if (!boundary978)
                 {
-                    var next1005 = cursor.Current;
-                    boundary1004 = next1005 < 128
-                        ? (((next1005 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next1005 & 63)) & 1UL) == 0
+                    var next979 = cursor.Current;
+                    boundary978 = next979 < 128
+                        ? (((next979 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next979 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary1004)
+                if (boundary978)
                 {
-                    success1000 = true;
+                    success974 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1002);
+                    cursor.ResetPosition(start976);
                 }
             }
 
-            value = value1001;
-            return success1000;
+            value = value975;
+            return success974;
         }
 
-        private static bool __Parlot_5_Build_Then_997_258(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Then_971_253(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success998 = false;
-            global::System.String value999 = default;
-            var shortcut1006 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart1007 = cursor.Offset;
-            if (!shortcut1006)
+            bool success972 = false;
+            global::System.String value973 = default;
+            var shortcut980 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart981 = cursor.Offset;
+            if (!shortcut980)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart1007 = cursor.Offset;
-                success998 = __Parlot_5_Build_SkipWS_259(context, out value999);
-                if (!success998)
+                contentStart981 = cursor.Offset;
+                success972 = __Parlot_5_Build_SkipWS_254(context, out value973);
+                if (!success972)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success998 = __Parlot_5_Build_SkipWS_259(context, out value999);
+                success972 = __Parlot_5_Build_SkipWS_254(context, out value973);
             }
 
-            value = value999;
-            return success998;
+            value = value973;
+            return success972;
         }
 
-        private static bool __Parlot_5_Build_OneOf_257(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_252(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success994 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value995 = default;
-            if (__Parlot_5_Build_Then_997_258(context, out var parsed996Value))
+            bool success968 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value969 = default;
+            if (__Parlot_5_Build_Then_971_253(context, out var parsed970Value))
             {
-                value995 = ___Parlot_5_Build_lambda61(parsed996Value);
-                success994 = true;
+                value969 = ___Parlot_5_Build_lambda59(parsed970Value);
+                success968 = true;
             }
 
-            value = value995;
-            return success994;
+            value = value969;
+            return success968;
         }
 
-        private static bool __Parlot_5_Build_Keyword_264(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_259(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -6971,304 +6959,304 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_263(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_258(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1015 = false;
-            global::System.String value1016 = default;
-            var start1017 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_264(context, out value1016))
+            bool success989 = false;
+            global::System.String value990 = default;
+            var start991 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_259(context, out value990))
             {
-                var boundary1019 = cursor.Eof;
-                if (!boundary1019)
+                var boundary993 = cursor.Eof;
+                if (!boundary993)
                 {
-                    var next1020 = cursor.Current;
-                    boundary1019 = next1020 < 128
-                        ? (((next1020 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next1020 & 63)) & 1UL) == 0
+                    var next994 = cursor.Current;
+                    boundary993 = next994 < 128
+                        ? (((next994 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next994 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary1019)
+                if (boundary993)
                 {
-                    success1015 = true;
+                    success989 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1017);
+                    cursor.ResetPosition(start991);
                 }
             }
 
-            value = value1016;
-            return success1015;
+            value = value990;
+            return success989;
         }
 
-        private static bool __Parlot_5_Build_Then_1012_262(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Then_986_257(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1013 = false;
-            global::System.String value1014 = default;
-            var shortcut1021 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart1022 = cursor.Offset;
-            if (!shortcut1021)
+            bool success987 = false;
+            global::System.String value988 = default;
+            var shortcut995 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart996 = cursor.Offset;
+            if (!shortcut995)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart1022 = cursor.Offset;
-                success1013 = __Parlot_5_Build_SkipWS_263(context, out value1014);
-                if (!success1013)
+                contentStart996 = cursor.Offset;
+                success987 = __Parlot_5_Build_SkipWS_258(context, out value988);
+                if (!success987)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success1013 = __Parlot_5_Build_SkipWS_263(context, out value1014);
+                success987 = __Parlot_5_Build_SkipWS_258(context, out value988);
             }
 
-            value = value1014;
-            return success1013;
+            value = value988;
+            return success987;
         }
 
-        private static bool __Parlot_5_Build_OneOf_261(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_256(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1009 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1010 = default;
-            if (__Parlot_5_Build_Then_1012_262(context, out var parsed1011Value))
+            bool success983 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value984 = default;
+            if (__Parlot_5_Build_Then_986_257(context, out var parsed985Value))
             {
-                value1010 = ___Parlot_5_Build_lambda62(parsed1011Value);
-                success1009 = true;
+                value984 = ___Parlot_5_Build_lambda60(parsed985Value);
+                success983 = true;
             }
 
-            value = value1010;
-            return success1009;
+            value = value984;
+            return success983;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_268(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_263(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1033 = false;
-            global::System.Char value1034 = default;
-            var start1035 = cursor.Offset;
-            success1033 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_167(context, out _))
+            bool success1007 = false;
+            global::System.Char value1008 = default;
+            var start1009 = cursor.Offset;
+            success1007 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_166(context, out _))
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P1_78(context, out _))
+                if (__Parlot_5_Build_SequenceSkipAnd_P1_77(context, out _))
                 {
-                    success1033 = true;
+                    success1007 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1035);
+                    cursor.ResetPosition(start1009);
                 }
             }
             else
             {
-                cursor.ResetPosition(start1035);
+                cursor.ResetPosition(start1009);
             }
 
-            value = value1034;
-            return success1033;
+            value = value1008;
+            return success1007;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_267(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
+        private static bool __Parlot_5_Build_Sequence_P1_262(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1030 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value1031 = default;
-            var start1032 = cursor.Offset;
-            success1030 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_268(context, out _))
+            bool success1004 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value1005 = default;
+            var start1006 = cursor.Offset;
+            success1004 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_263(context, out _))
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_47(context, out value1031))
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_46(context, out value1005))
                 {
-                    success1030 = true;
+                    success1004 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1032);
+                    cursor.ResetPosition(start1006);
                 }
             }
             else
             {
-                cursor.ResetPosition(start1032);
+                cursor.ResetPosition(start1006);
             }
 
-            value = value1031;
-            return success1030;
+            value = value1005;
+            return success1004;
         }
 
-        private static bool __Parlot_5_Build_Then_1026_266(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
+        private static bool __Parlot_5_Build_Then_1000_261(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1027 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value1028 = default;
-            var start1029 = cursor.Offset;
-            success1027 = false;
-            if (__Parlot_5_Build_Sequence_P1_267(context, out var h1Value))
+            bool success1001 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value1002 = default;
+            var start1003 = cursor.Offset;
+            success1001 = false;
+            if (__Parlot_5_Build_Sequence_P1_262(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_151(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_150(context, out var h2Value))
                 {
-                    success1027 = true;
-                    value1028 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
+                    success1001 = true;
+                    value1002 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start1029);
+                    cursor.ResetPosition(start1003);
                 }
             }
             else
             {
-                cursor.ResetPosition(start1029);
+                cursor.ResetPosition(start1003);
             }
 
-            value = value1028;
-            return success1027;
+            value = value1002;
+            return success1001;
         }
 
-        private static bool __Parlot_5_Build_OneOf_265(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_260(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1023 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1024 = default;
-            if (__Parlot_5_Build_Then_1026_266(context, out var parsed1025Value))
+            bool success997 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value998 = default;
+            if (__Parlot_5_Build_Then_1000_261(context, out var parsed999Value))
             {
-                value1024 = ___Parlot_5_Build_lambda63(parsed1025Value);
-                success1023 = true;
+                value998 = ___Parlot_5_Build_lambda61(parsed999Value);
+                success997 = true;
             }
 
-            value = value1024;
-            return success1023;
+            value = value998;
+            return success997;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_199(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_Operators740_194(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success767 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value768 = default;
-            var start769 = cursor.Offset;
+            bool success741 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value742 = default;
+            var start743 = cursor.Offset;
             context.SkipWhiteSpace();
-            var current770 = cursor.Current;
-            switch (current770)
+            var current744 = cursor.Current;
+            switch (current744)
             {
                 case '\"' or '\'':
                 {
-                    success767 = __Parlot_5_Build_OneOf_200(context, out value768);
+                    success741 = __Parlot_5_Build_OneOf_195(context, out value742);
                     break;
                 }
                 case '(':
                 {
-                    success767 = __Parlot_5_Build_OneOf_201(context, out value768)
-                        || __Parlot_5_Build_OneOf_202(context, out value768);
+                    success741 = __Parlot_5_Build_OneOf_196(context, out value742)
+                        || __Parlot_5_Build_OneOf_197(context, out value742);
                     break;
                 }
                 case '+' or '-' or '.' or >= '0' and <= '9':
                 {
-                    success767 = __Parlot_5_Build_OneOf_203(context, out value768);
+                    success741 = __Parlot_5_Build_OneOf_198(context, out value742);
                     break;
                 }
                 case '@':
                 {
-                    success767 = __Parlot_5_Build_OneOf_204(context, out value768);
+                    success741 = __Parlot_5_Build_OneOf_199(context, out value742);
                     break;
                 }
                 case 'A' or 'a':
                 {
-                    success767 = __Parlot_5_Build_OneOf_205(context, out value768)
-                        || __Parlot_5_Build_OneOf_210(context, out value768)
-                        || __Parlot_5_Build_OneOf_215(context, out value768);
+                    success741 = __Parlot_5_Build_OneOf_200(context, out value742)
+                        || __Parlot_5_Build_OneOf_205(context, out value742)
+                        || __Parlot_5_Build_OneOf_210(context, out value742);
                     break;
                 }
                 case 'B' or 'C' or 'D' or >= 'G' and <= 'K' or >= 'M' and <= 'Q' or >= 'S' and <= 'Z' or '_' or 'b' or 'c' or 'd' or >= 'g' and <= 'k' or 'm' or 'o' or 'p' or 'q' or 's' or >= 'v' and <= 'z':
                 {
-                    success767 = __Parlot_5_Build_OneOf_215(context, out value768);
+                    success741 = __Parlot_5_Build_OneOf_210(context, out value742);
                     break;
                 }
                 case 'E' or 'e':
                 {
-                    success767 = __Parlot_5_Build_OneOf_218(context, out value768)
-                        || __Parlot_5_Build_OneOf_215(context, out value768);
+                    success741 = __Parlot_5_Build_OneOf_213(context, out value742)
+                        || __Parlot_5_Build_OneOf_210(context, out value742);
                     break;
                 }
                 case 'F':
                 {
-                    success767 = __Parlot_5_Build_OneOf_223(context, out value768)
-                        || __Parlot_5_Build_OneOf_215(context, out value768);
+                    success741 = __Parlot_5_Build_OneOf_218(context, out value742)
+                        || __Parlot_5_Build_OneOf_210(context, out value742);
                     break;
                 }
                 case 'L' or 'l':
                 {
-                    success767 = __Parlot_5_Build_OneOf_228(context, out value768)
-                        || __Parlot_5_Build_OneOf_233(context, out value768)
-                        || __Parlot_5_Build_OneOf_215(context, out value768);
+                    success741 = __Parlot_5_Build_OneOf_223(context, out value742)
+                        || __Parlot_5_Build_OneOf_228(context, out value742)
+                        || __Parlot_5_Build_OneOf_210(context, out value742);
                     break;
                 }
                 case 'R' or 'r':
                 {
-                    success767 = __Parlot_5_Build_OneOf_235(context, out value768)
-                        || __Parlot_5_Build_OneOf_215(context, out value768);
+                    success741 = __Parlot_5_Build_OneOf_230(context, out value742)
+                        || __Parlot_5_Build_OneOf_210(context, out value742);
                     break;
                 }
                 case '[':
                 {
-                    success767 = __Parlot_5_Build_OneOf_237(context, out value768);
+                    success741 = __Parlot_5_Build_OneOf_232(context, out value742);
                     break;
                 }
                 case 'n':
                 {
-                    success767 = __Parlot_5_Build_OneOf_240(context, out value768)
-                        || __Parlot_5_Build_OneOf_215(context, out value768);
+                    success741 = __Parlot_5_Build_OneOf_235(context, out value742)
+                        || __Parlot_5_Build_OneOf_210(context, out value742);
                     break;
                 }
                 case 't':
                 {
-                    success767 = __Parlot_5_Build_OneOf_244(context, out value768)
-                        || __Parlot_5_Build_OneOf_215(context, out value768);
+                    success741 = __Parlot_5_Build_OneOf_239(context, out value742)
+                        || __Parlot_5_Build_OneOf_210(context, out value742);
                     break;
                 }
                 case '{':
                 {
-                    success767 = __Parlot_5_Build_OneOf_248(context, out value768);
+                    success741 = __Parlot_5_Build_OneOf_243(context, out value742);
                     break;
                 }
                 case 'f':
                 {
-                    switch (DispatchPrefix993(cursor.Span.Slice(1)))
+                    switch (DispatchPrefix967(cursor.Span.Slice(1)))
                     {
                         case 0:
                         {
-                            success767 = __Parlot_5_Build_OneOf_257(context, out value768)
-                                || __Parlot_5_Build_OneOf_223(context, out value768)
-                                || __Parlot_5_Build_OneOf_215(context, out value768);
+                            success741 = __Parlot_5_Build_OneOf_252(context, out value742)
+                                || __Parlot_5_Build_OneOf_218(context, out value742)
+                                || __Parlot_5_Build_OneOf_210(context, out value742);
                             break;
                         }
                         case 1:
                         {
-                            success767 = __Parlot_5_Build_OneOf_223(context, out value768)
-                                || __Parlot_5_Build_OneOf_215(context, out value768);
+                            success741 = __Parlot_5_Build_OneOf_218(context, out value742)
+                                || __Parlot_5_Build_OneOf_210(context, out value742);
                             break;
                         }
                     }
@@ -7276,34 +7264,34 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 }
                 case 'u':
                 {
-                    switch (DispatchPrefix1008(cursor.Span.Slice(1)))
+                    switch (DispatchPrefix982(cursor.Span.Slice(1)))
                     {
                         case 0:
                         {
-                            success767 = __Parlot_5_Build_OneOf_261(context, out value768)
-                                || __Parlot_5_Build_OneOf_215(context, out value768);
+                            success741 = __Parlot_5_Build_OneOf_256(context, out value742)
+                                || __Parlot_5_Build_OneOf_210(context, out value742);
                             break;
                         }
                         case 1:
                         {
-                            success767 = __Parlot_5_Build_OneOf_265(context, out value768)
-                                || __Parlot_5_Build_OneOf_215(context, out value768);
+                            success741 = __Parlot_5_Build_OneOf_260(context, out value742)
+                                || __Parlot_5_Build_OneOf_210(context, out value742);
                             break;
                         }
                         case 2:
                         {
-                            success767 = __Parlot_5_Build_OneOf_215(context, out value768);
+                            success741 = __Parlot_5_Build_OneOf_210(context, out value742);
                             break;
                         }
                     }
                     break;
                 }
             }
-            if (!success767)
+            if (!success741)
             {
-                cursor.ResetPosition(start769);
+                cursor.ResetPosition(start743);
             }
-            static int DispatchPrefix993(System.ReadOnlySpan<char> text)
+            static int DispatchPrefix967(System.ReadOnlySpan<char> text)
             {
             if (text.Length < 4) return 1;
 var input = text.Slice(0, 4);
@@ -7315,7 +7303,7 @@ break;
 } return 1;
 
             }
-            static int DispatchPrefix1008(System.ReadOnlySpan<char> text)
+            static int DispatchPrefix982(System.ReadOnlySpan<char> text)
             {
             if (text.Length < 2) return 2;
 var input = text.Slice(0, 2);
@@ -7347,434 +7335,167 @@ break;
 
             }
 
-            value = value768;
-            return success767;
-        }
-
-        private static bool __Parlot_5_Build_Then_1045_272(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1046 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value1047 = default;
-            var start1048 = cursor.Offset;
-            success1046 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_78(context, out _))
-            {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_47(context, out value1047))
-                {
-                    success1046 = true;
-                }
-                else
-                {
-                    cursor.ResetPosition(start1048);
-                }
-            }
-            else
-            {
-                cursor.ResetPosition(start1048);
-            }
-
-            value = value1047;
-            return success1046;
-        }
-
-        private static bool __Parlot_5_Build_OneOf_271(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1042 = false;
-            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix value1043 = default;
-            if (__Parlot_5_Build_Then_1045_272(context, out var parsed1044Value))
-            {
-                value1043 = ___Parlot_5_Build_lambda64(parsed1044Value);
-                success1042 = true;
-            }
-
-            value = value1043;
-            return success1042;
-        }
-
-        private static bool __Parlot_5_Build_Then_1052_274(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1053 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1054 = default;
-            var start1055 = cursor.Offset;
-            success1053 = false;
-            if (__Parlot_5_Build_Between_Before_81(context, out _))
-            {
-                if (__Parlot_5_Build_Sequence_P1_41(context, out value1054))
-                {
-                    if (__Parlot_5_Build_Between_After_82(context, out _))
-                    {
-                        success1053 = true;
-                    }
-                }
-            }
-            if (!success1053)
-            {
-                cursor.ResetPosition(start1055);
-            }
-
-            value = value1054;
-            return success1053;
-        }
-
-        private static bool __Parlot_5_Build_OneOf_273(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1049 = false;
-            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix value1050 = default;
-            if (__Parlot_5_Build_Then_1052_274(context, out var parsed1051Value))
-            {
-                value1050 = ___Parlot_5_Build_lambda65(parsed1051Value);
-                success1049 = true;
-            }
-
-            value = value1050;
-            return success1049;
-        }
-
-        private static bool __Parlot_5_Build_ZeroOrMany_Parser_270(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1038 = false;
-            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix value1039 = default;
-            var start1040 = cursor.Offset;
-            context.SkipWhiteSpace();
-            var current1041 = cursor.Current;
-            switch (current1041)
-            {
-                case '.':
-                {
-                    success1038 = __Parlot_5_Build_OneOf_271(context, out value1039);
-                    break;
-                }
-                case '[':
-                {
-                    success1038 = __Parlot_5_Build_OneOf_273(context, out value1039);
-                    break;
-                }
-            }
-            if (!success1038)
-            {
-                cursor.ResetPosition(start1040);
-            }
-
-            value = value1039;
-            return success1038;
-        }
-
-        private static bool __Parlot_5_Build_Sequence_P2_269(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix> value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1036 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix> value1037 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix>();
-            var previousOffset1056 = cursor.Offset;
-            if (__Parlot_5_Build_ZeroOrMany_Parser_270(context, out var first1057) && cursor.Offset != previousOffset1056)
-            {
-                value1037 = listRest1058(context, first1057);
-                success1036 = true;
-            }
-            static global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix> listRest1058(global::Parlot.Generated.Fluent.ParseContext context, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix first)
-{
-    var cursor = context.Scanner.Cursor;
-    var list = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix>();
-    list.Add(first);
-    try
-    {
-        while (true)
-        {
-            var previousOffset = cursor.Offset;
-            if (!__Parlot_5_Build_ZeroOrMany_Parser_270(context, out var item) || cursor.Offset == previousOffset)
-            {
-                break;
-            }
-            list.Add(item);
-        }
-        return list.ToArray();
-    }
-    finally
-    {
-        list.Release();
-    }
-}
-
-            value = value1037;
-            return success1036;
-        }
-
-        private static bool __Parlot_5_Build_Then_763_198(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix>> value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success764 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix>> value765 = default;
-            var start766 = cursor.Offset;
-            success764 = false;
-            if (__Parlot_5_Build_Sequence_P1_199(context, out var h1Value))
-            {
-                if (__Parlot_5_Build_Sequence_P2_269(context, out var h2Value))
-                {
-                    success764 = true;
-                    value765 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Postfix>>(h1Value, h2Value);
-                }
-                else
-                {
-                    cursor.ResetPosition(start766);
-                }
-            }
-            else
-            {
-                cursor.ResetPosition(start766);
-            }
-
-            value = value765;
-            return success764;
-        }
-
-        private static bool __Parlot_5_Build_Operators759_197(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success760 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value761 = default;
-            if (__Parlot_5_Build_Then_763_198(context, out var parsed762Value))
-            {
-                value761 = ___Parlot_5_Build_lambda66(parsed762Value);
-                success760 = true;
-            }
-
-            value = value761;
-            return success760;
+            value = value742;
+            return success741;
         }
 
         // SpanScanner
-        private static bool __Parlot_5_Build_SkipWS_279(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        private static bool __Parlot_5_Build_SkipWS_267(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1070 = false;
-            global::Parlot.Generated.TextSpan value1071 = default;
-            var span1072 = cursor.Span;
-            var size1073 = ___Parlot_5_Build_lambda67(span1072);
-            if (size1073 > 0)
+            bool success1018 = false;
+            global::Parlot.Generated.TextSpan value1019 = default;
+            var span1020 = cursor.Span;
+            var size1021 = ___Parlot_5_Build_lambda62(span1020);
+            if (size1021 > 0)
             {
-                if (size1073 > span1072.Length)
+                if (size1021 > span1020.Length)
                 {
-                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size1073} chars while only {span1072.Length} were available.");
+                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size1021} chars while only {span1020.Length} were available.");
                 }
-                var start1074 = cursor.Offset;
-                cursor.AdvanceNoNewLines(size1073);
-                value1071 = cursor.CreateSpan(start1074, size1073);
-                success1070 = true;
+                var start1022 = cursor.Offset;
+                cursor.AdvanceNoNewLines(size1021);
+                success1018 = true;
             }
-            else if (size1073 < 0)
+            else if (size1021 < 0)
             {
                 cursor.MarkHitEnd();
             }
 
-            value = value1071;
-            return success1070;
+            value = value1019;
+            return success1018;
         }
 
-        private static bool __Parlot_5_Build_When_278(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        private static bool __Parlot_5_Build_Operator_266(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1068 = false;
-            global::Parlot.Generated.TextSpan value1069 = default;
-            var shortcut1075 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart1076 = cursor.Offset;
-            if (!shortcut1075)
+            bool success1016 = false;
+            global::Parlot.Generated.TextSpan value1017 = default;
+            var shortcut1023 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart1024 = cursor.Offset;
+            if (!shortcut1023)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart1076 = cursor.Offset;
-                success1068 = __Parlot_5_Build_SkipWS_279(context, out value1069);
-                if (!success1068)
+                contentStart1024 = cursor.Offset;
+                success1016 = __Parlot_5_Build_SkipWS_267(context, out _);
+                if (!success1016)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success1068 = __Parlot_5_Build_SkipWS_279(context, out value1069);
+                success1016 = __Parlot_5_Build_SkipWS_267(context, out _);
             }
 
-            value = value1069;
-            return success1068;
+            value = value1017;
+            return success1016;
         }
 
-        private static bool __Parlot_5_Build_Operator_277(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        private static bool __Parlot_5_Build_OneOf_265(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1065 = false;
-            global::Parlot.Generated.TextSpan value1066 = default;
-            var start1067 = cursor.Offset;
-            if (__Parlot_5_Build_When_278(context, out var innerValue1077) && ___Parlot_5_Build_lambda68(context, innerValue1077))
+            bool success1014 = false;
+            global::System.Int32 value1015 = default;
+            success1014 = __Parlot_5_Build_Operator_266(context, out _);
+            if (success1014)
             {
-                success1065 = true;
-            }
-            else
-            {
-                cursor.ResetPosition(start1067);
-                success1065 = false;
+                value1015 = 1;
             }
 
-            value = value1066;
-            return success1065;
-        }
-
-        private static bool __Parlot_5_Build_OneOf_276(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1063 = false;
-            global::System.Int32 value1064 = default;
-            success1063 = __Parlot_5_Build_Operator_277(context, out _);
-            if (success1063)
-            {
-                value1064 = 1;
-            }
-
-            value = value1064;
-            return success1063;
+            value = value1015;
+            return success1014;
         }
 
         // SpanScanner
-        private static bool __Parlot_5_Build_SkipWS_283(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        private static bool __Parlot_5_Build_SkipWS_270(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1085 = false;
-            global::Parlot.Generated.TextSpan value1086 = default;
-            var span1087 = cursor.Span;
-            var size1088 = ___Parlot_5_Build_lambda69(span1087);
-            if (size1088 > 0)
+            bool success1029 = false;
+            global::Parlot.Generated.TextSpan value1030 = default;
+            var span1031 = cursor.Span;
+            var size1032 = ___Parlot_5_Build_lambda63(span1031);
+            if (size1032 > 0)
             {
-                if (size1088 > span1087.Length)
+                if (size1032 > span1031.Length)
                 {
-                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size1088} chars while only {span1087.Length} were available.");
+                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size1032} chars while only {span1031.Length} were available.");
                 }
-                var start1089 = cursor.Offset;
-                cursor.AdvanceNoNewLines(size1088);
-                value1086 = cursor.CreateSpan(start1089, size1088);
-                success1085 = true;
+                var start1033 = cursor.Offset;
+                cursor.AdvanceNoNewLines(size1032);
+                success1029 = true;
             }
-            else if (size1088 < 0)
+            else if (size1032 < 0)
             {
                 cursor.MarkHitEnd();
             }
 
-            value = value1086;
-            return success1085;
+            value = value1030;
+            return success1029;
         }
 
-        private static bool __Parlot_5_Build_When_282(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        private static bool __Parlot_5_Build_Operator_269(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1083 = false;
-            global::Parlot.Generated.TextSpan value1084 = default;
-            var shortcut1090 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart1091 = cursor.Offset;
-            if (!shortcut1090)
+            bool success1027 = false;
+            global::Parlot.Generated.TextSpan value1028 = default;
+            var shortcut1034 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart1035 = cursor.Offset;
+            if (!shortcut1034)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart1091 = cursor.Offset;
-                success1083 = __Parlot_5_Build_SkipWS_283(context, out value1084);
-                if (!success1083)
+                contentStart1035 = cursor.Offset;
+                success1027 = __Parlot_5_Build_SkipWS_270(context, out _);
+                if (!success1027)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success1083 = __Parlot_5_Build_SkipWS_283(context, out value1084);
+                success1027 = __Parlot_5_Build_SkipWS_270(context, out _);
             }
 
-            value = value1084;
-            return success1083;
+            value = value1028;
+            return success1027;
         }
 
-        private static bool __Parlot_5_Build_Operator_281(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        private static bool __Parlot_5_Build_OneOf_268(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1080 = false;
-            global::Parlot.Generated.TextSpan value1081 = default;
-            var start1082 = cursor.Offset;
-            if (__Parlot_5_Build_When_282(context, out var innerValue1092) && ___Parlot_5_Build_lambda70(context, innerValue1092))
+            bool success1025 = false;
+            global::System.Int32 value1026 = default;
+            success1025 = __Parlot_5_Build_Operator_269(context, out _);
+            if (success1025)
             {
-                success1080 = true;
-            }
-            else
-            {
-                cursor.ResetPosition(start1082);
-                success1080 = false;
+                value1026 = 0;
             }
 
-            value = value1081;
-            return success1080;
+            value = value1026;
+            return success1025;
         }
 
-        private static bool __Parlot_5_Build_OneOf_280(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1078 = false;
-            global::System.Int32 value1079 = default;
-            success1078 = __Parlot_5_Build_Operator_281(context, out _);
-            if (success1078)
-            {
-                value1079 = 0;
-            }
-
-            value = value1079;
-            return success1078;
-        }
-
-        private static bool __Parlot_5_Build_Keyword_289(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_275(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -7790,276 +7511,653 @@ break;
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_288(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_274(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1104 = false;
-            global::System.String value1105 = default;
-            var start1106 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_289(context, out value1105))
+            bool success1044 = false;
+            global::System.String value1045 = default;
+            var start1046 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_275(context, out value1045))
             {
-                var boundary1108 = cursor.Eof;
-                if (!boundary1108)
+                var boundary1048 = cursor.Eof;
+                if (!boundary1048)
                 {
-                    var next1109 = cursor.Current;
-                    boundary1108 = next1109 < 128
-                        ? (((next1109 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next1109 & 63)) & 1UL) == 0
+                    var next1049 = cursor.Current;
+                    boundary1048 = next1049 < 128
+                        ? (((next1049 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next1049 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary1108)
+                if (boundary1048)
                 {
-                    success1104 = true;
+                    success1044 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1106);
+                    cursor.ResetPosition(start1046);
                 }
             }
 
-            value = value1105;
-            return success1104;
+            value = value1045;
+            return success1044;
         }
 
-        private static bool __Parlot_5_Build_When_287(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Then_1041_273(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1102 = false;
-            global::System.String value1103 = default;
-            var shortcut1110 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart1111 = cursor.Offset;
-            if (!shortcut1110)
+            bool success1042 = false;
+            global::System.String value1043 = default;
+            var shortcut1050 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart1051 = cursor.Offset;
+            if (!shortcut1050)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart1111 = cursor.Offset;
-                success1102 = __Parlot_5_Build_SkipWS_288(context, out value1103);
-                if (!success1102)
+                contentStart1051 = cursor.Offset;
+                success1042 = __Parlot_5_Build_SkipWS_274(context, out value1043);
+                if (!success1042)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success1102 = __Parlot_5_Build_SkipWS_288(context, out value1103);
+                success1042 = __Parlot_5_Build_SkipWS_274(context, out value1043);
             }
 
-            value = value1103;
-            return success1102;
+            value = value1043;
+            return success1042;
         }
 
-        private static bool __Parlot_5_Build_Then_1098_286(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Operator_272(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1038 = false;
+            global::Parlot.Generated.TextSpan value1039 = default;
+            if (__Parlot_5_Build_Then_1041_273(context, out var parsed1040Value))
+            {
+                ___Parlot_5_Build_lambda64(parsed1040Value);
+                success1038 = true;
+            }
+
+            value = value1039;
+            return success1038;
+        }
+
+        private static bool __Parlot_5_Build_OneOf_271(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1036 = false;
+            global::System.Int32 value1037 = default;
+            success1036 = __Parlot_5_Build_Operator_272(context, out _);
+            if (success1036)
+            {
+                value1037 = 3;
+            }
+
+            value = value1037;
+            return success1036;
+        }
+
+        private static bool __Parlot_5_Build_Operator_277(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1054 = false;
+            global::Parlot.Generated.TextSpan value1055 = default;
+            global::System.Char parsed1058 = default;
+            bool moved1059 = false;
+            var span1056 = cursor.Span;
+            var spanStart1056 = cursor.Offset;
+            var pos1056 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos1056 < (uint)span1056.Length && global::Parlot.Generated.Character.HasMask(span1056[pos1056], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1056[pos1056], context._skipMask)))
+            {
+                cursor.ResetPosition(spanStart1056 + pos1056);
+                context.SkipWhiteSpace();
+                pos1056 = cursor.Offset - spanStart1056;
+                moved1059 = true;
+            }
+            if ((uint)pos1056 >= (uint)span1056.Length || span1056[pos1056] != (char)126)
+            {
+                if (pos1056 >= span1056.Length) cursor.MarkHitEnd();
+                goto fail1057;
+            }
+            pos1056++;
+            parsed1058 = (char)126;
+            if (pos1056 >= span1056.Length) cursor.MarkHitEnd();
+            ___Parlot_5_Build_lambda65(parsed1058);
+            if (moved1059) cursor.ResetPosition(spanStart1056 + pos1056); else cursor.AdvanceWithinBuffer(pos1056);
+            success1054 = true;
+            goto done1060;
+            fail1057: cursor.RecordFailure(spanStart1056 + pos1056);
+            if (moved1059) cursor.ResetPosition(spanStart1056);
+            done1060: ;
+
+            value = value1055;
+            return success1054;
+        }
+
+        private static bool __Parlot_5_Build_OneOf_276(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1052 = false;
+            global::System.Int32 value1053 = default;
+            success1052 = __Parlot_5_Build_Operator_277(context, out _);
+            if (success1052)
+            {
+                value1053 = 2;
+            }
+
+            value = value1053;
+            return success1052;
+        }
+
+        private static bool __Parlot_5_Build_Operators740_264(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1010 = false;
+            global::System.Int32 value1011 = default;
+            var start1012 = cursor.Offset;
+            context.SkipWhiteSpace();
+            var current1013 = cursor.Current;
+            switch (current1013)
+            {
+                case '+':
+                {
+                    success1010 = __Parlot_5_Build_OneOf_265(context, out value1011);
+                    break;
+                }
+                case '-':
+                {
+                    success1010 = __Parlot_5_Build_OneOf_268(context, out value1011);
+                    break;
+                }
+                case 'N' or 'n':
+                {
+                    success1010 = __Parlot_5_Build_OneOf_271(context, out value1011);
+                    break;
+                }
+                case '~':
+                {
+                    success1010 = __Parlot_5_Build_OneOf_276(context, out value1011);
+                    break;
+                }
+            }
+            if (!success1010)
+            {
+                cursor.ResetPosition(start1012);
+            }
+
+            value = value1011;
+            return success1010;
+        }
+
+        private static bool __Parlot_5_Build_Operator_280(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1069 = false;
+            global::System.Char value1070 = default;
+            bool moved1073 = false;
+            var span1071 = cursor.Span;
+            var spanStart1071 = cursor.Offset;
+            var pos1071 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos1071 < (uint)span1071.Length && global::Parlot.Generated.Character.HasMask(span1071[pos1071], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1071[pos1071], context._skipMask)))
+            {
+                cursor.ResetPosition(spanStart1071 + pos1071);
+                context.SkipWhiteSpace();
+                pos1071 = cursor.Offset - spanStart1071;
+                moved1073 = true;
+            }
+            if ((uint)pos1071 >= (uint)span1071.Length || span1071[pos1071] != (char)37)
+            {
+                if (pos1071 >= span1071.Length) cursor.MarkHitEnd();
+                goto fail1072;
+            }
+            pos1071++;
+            if (moved1073) cursor.ResetPosition(spanStart1071 + pos1071); else cursor.AdvanceWithinBuffer(pos1071);
+            success1069 = true;
+            goto done1074;
+            fail1072: if (moved1073) cursor.ResetPosition(spanStart1071);
+            done1074: ;
+
+            value = value1070;
+            return success1069;
+        }
+
+        private static bool __Parlot_5_Build_OneOf_279(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1065 = false;
+            global::System.Int32 value1066 = default;
+            success1065 = __Parlot_5_Build_Operator_280(context, out _);
+            if (success1065)
+            {
+                value1066 = 6;
+            }
+
+            value = value1066;
+            return success1065;
+        }
+
+        private static bool __Parlot_5_Build_Operator_282(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1079 = false;
+            global::System.Char value1080 = default;
+            bool moved1083 = false;
+            var span1081 = cursor.Span;
+            var spanStart1081 = cursor.Offset;
+            var pos1081 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos1081 < (uint)span1081.Length && global::Parlot.Generated.Character.HasMask(span1081[pos1081], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1081[pos1081], context._skipMask)))
+            {
+                cursor.ResetPosition(spanStart1081 + pos1081);
+                context.SkipWhiteSpace();
+                pos1081 = cursor.Offset - spanStart1081;
+                moved1083 = true;
+            }
+            if ((uint)pos1081 >= (uint)span1081.Length || span1081[pos1081] != (char)42)
+            {
+                if (pos1081 >= span1081.Length) cursor.MarkHitEnd();
+                goto fail1082;
+            }
+            pos1081++;
+            if (moved1083) cursor.ResetPosition(spanStart1081 + pos1081); else cursor.AdvanceWithinBuffer(pos1081);
+            success1079 = true;
+            goto done1084;
+            fail1082: if (moved1083) cursor.ResetPosition(spanStart1081);
+            done1084: ;
+
+            value = value1080;
+            return success1079;
+        }
+
+        private static bool __Parlot_5_Build_OneOf_281(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1075 = false;
+            global::System.Int32 value1076 = default;
+            success1075 = __Parlot_5_Build_Operator_282(context, out _);
+            if (success1075)
+            {
+                value1076 = 4;
+            }
+
+            value = value1076;
+            return success1075;
+        }
+
+        private static bool __Parlot_5_Build_Operator_284(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1089 = false;
+            global::System.Char value1090 = default;
+            bool moved1093 = false;
+            var span1091 = cursor.Span;
+            var spanStart1091 = cursor.Offset;
+            var pos1091 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos1091 < (uint)span1091.Length && global::Parlot.Generated.Character.HasMask(span1091[pos1091], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1091[pos1091], context._skipMask)))
+            {
+                cursor.ResetPosition(spanStart1091 + pos1091);
+                context.SkipWhiteSpace();
+                pos1091 = cursor.Offset - spanStart1091;
+                moved1093 = true;
+            }
+            if ((uint)pos1091 >= (uint)span1091.Length || span1091[pos1091] != (char)47)
+            {
+                if (pos1091 >= span1091.Length) cursor.MarkHitEnd();
+                goto fail1092;
+            }
+            pos1091++;
+            if (moved1093) cursor.ResetPosition(spanStart1091 + pos1091); else cursor.AdvanceWithinBuffer(pos1091);
+            success1089 = true;
+            goto done1094;
+            fail1092: if (moved1093) cursor.ResetPosition(spanStart1091);
+            done1094: ;
+
+            value = value1090;
+            return success1089;
+        }
+
+        private static bool __Parlot_5_Build_OneOf_283(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1085 = false;
+            global::System.Int32 value1086 = default;
+            success1085 = __Parlot_5_Build_Operator_284(context, out _);
+            if (success1085)
+            {
+                value1086 = 5;
+            }
+
+            value = value1086;
+            return success1085;
+        }
+
+        private static bool __Parlot_5_Build_Operators740_278(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1061 = false;
+            global::System.Int32 value1062 = default;
+            var start1063 = cursor.Offset;
+            context.SkipWhiteSpace();
+            var current1064 = cursor.Current;
+            switch (current1064)
+            {
+                case '%':
+                {
+                    success1061 = __Parlot_5_Build_OneOf_279(context, out value1062);
+                    break;
+                }
+                case '*':
+                {
+                    success1061 = __Parlot_5_Build_OneOf_281(context, out value1062);
+                    break;
+                }
+                case '/':
+                {
+                    success1061 = __Parlot_5_Build_OneOf_283(context, out value1062);
+                    break;
+                }
+            }
+            if (!success1061)
+            {
+                cursor.ResetPosition(start1063);
+            }
+
+            value = value1062;
+            return success1061;
+        }
+
+        // SpanScanner
+        private static bool __Parlot_5_Build_SkipWS_288(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1103 = false;
+            global::Parlot.Generated.TextSpan value1104 = default;
+            var span1105 = cursor.Span;
+            var size1106 = ___Parlot_5_Build_lambda66(span1105);
+            if (size1106 > 0)
+            {
+                if (size1106 > span1105.Length)
+                {
+                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size1106} chars while only {span1105.Length} were available.");
+                }
+                var start1107 = cursor.Offset;
+                cursor.AdvanceNoNewLines(size1106);
+                success1103 = true;
+            }
+            else if (size1106 < 0)
+            {
+                cursor.MarkHitEnd();
+            }
+
+            value = value1104;
+            return success1103;
+        }
+
+        private static bool __Parlot_5_Build_Operator_287(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1101 = false;
+            global::Parlot.Generated.TextSpan value1102 = default;
+            var shortcut1108 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart1109 = cursor.Offset;
+            if (!shortcut1108)
+            {
+                var start = cursor.Offset;
+                context.SkipWhiteSpace();
+                contentStart1109 = cursor.Offset;
+                success1101 = __Parlot_5_Build_SkipWS_288(context, out _);
+                if (!success1101)
+                {
+                    cursor.ResetPosition(start);
+                }
+            }
+            else
+            {
+                success1101 = __Parlot_5_Build_SkipWS_288(context, out _);
+            }
+
+            value = value1102;
+            return success1101;
+        }
+
+        private static bool __Parlot_5_Build_OneOf_286(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
             bool success1099 = false;
-            global::System.String value1100 = default;
-            var start1101 = cursor.Offset;
-            if (__Parlot_5_Build_When_287(context, out var innerValue1112) && ___Parlot_5_Build_lambda71(context, innerValue1112))
+            global::System.Int32 value1100 = default;
+            success1099 = __Parlot_5_Build_Operator_287(context, out _);
+            if (success1099)
             {
-                success1099 = true;
-                value1100 = innerValue1112;
-            }
-            else
-            {
-                cursor.ResetPosition(start1101);
-                success1099 = false;
+                value1100 = 7;
             }
 
             value = value1100;
             return success1099;
         }
 
-        private static bool __Parlot_5_Build_Operator_285(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        // SpanScanner
+        private static bool __Parlot_5_Build_SkipWS_291(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1114 = false;
+            global::Parlot.Generated.TextSpan value1115 = default;
+            var span1116 = cursor.Span;
+            var size1117 = ___Parlot_5_Build_lambda67(span1116);
+            if (size1117 > 0)
+            {
+                if (size1117 > span1116.Length)
+                {
+                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size1117} chars while only {span1116.Length} were available.");
+                }
+                var start1118 = cursor.Offset;
+                cursor.AdvanceNoNewLines(size1117);
+                success1114 = true;
+            }
+            else if (size1117 < 0)
+            {
+                cursor.MarkHitEnd();
+            }
+
+            value = value1115;
+            return success1114;
+        }
+
+        private static bool __Parlot_5_Build_Operator_290(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1112 = false;
+            global::Parlot.Generated.TextSpan value1113 = default;
+            var shortcut1119 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart1120 = cursor.Offset;
+            if (!shortcut1119)
+            {
+                var start = cursor.Offset;
+                context.SkipWhiteSpace();
+                contentStart1120 = cursor.Offset;
+                success1112 = __Parlot_5_Build_SkipWS_291(context, out _);
+                if (!success1112)
+                {
+                    cursor.ResetPosition(start);
+                }
+            }
+            else
+            {
+                success1112 = __Parlot_5_Build_SkipWS_291(context, out _);
+            }
+
+            value = value1113;
+            return success1112;
+        }
+
+        private static bool __Parlot_5_Build_OneOf_289(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1110 = false;
+            global::System.Int32 value1111 = default;
+            success1110 = __Parlot_5_Build_Operator_290(context, out _);
+            if (success1110)
+            {
+                value1111 = 8;
+            }
+
+            value = value1111;
+            return success1110;
+        }
+
+        private static bool __Parlot_5_Build_Operators740_285(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
             bool success1095 = false;
-            global::Parlot.Generated.TextSpan value1096 = default;
-            if (__Parlot_5_Build_Then_1098_286(context, out var parsed1097Value))
+            global::System.Int32 value1096 = default;
+            var start1097 = cursor.Offset;
+            context.SkipWhiteSpace();
+            var current1098 = cursor.Current;
+            switch (current1098)
             {
-                ___Parlot_5_Build_lambda72(parsed1097Value);
-                success1095 = true;
+                case '+':
+                {
+                    success1095 = __Parlot_5_Build_OneOf_286(context, out value1096);
+                    break;
+                }
+                case '-':
+                {
+                    success1095 = __Parlot_5_Build_OneOf_289(context, out value1096);
+                    break;
+                }
+            }
+            if (!success1095)
+            {
+                cursor.ResetPosition(start1097);
             }
 
             value = value1096;
             return success1095;
         }
 
-        private static bool __Parlot_5_Build_OneOf_284(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        private static bool __Parlot_5_Build_Operator_294(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1093 = false;
-            global::System.Int32 value1094 = default;
-            success1093 = __Parlot_5_Build_Operator_285(context, out _);
-            if (success1093)
+            bool success1129 = false;
+            global::System.String value1130 = default;
+            bool moved1133 = false;
+            var span1131 = cursor.Span;
+            var spanStart1131 = cursor.Offset;
+            var pos1131 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos1131 < (uint)span1131.Length && global::Parlot.Generated.Character.HasMask(span1131[pos1131], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1131[pos1131], context._skipMask)))
             {
-                value1094 = 3;
-            }
-
-            value = value1094;
-            return success1093;
-        }
-
-        private static bool __Parlot_5_Build_When_293(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1124 = false;
-            global::System.Char value1125 = default;
-            bool moved1128 = false;
-            var span1126 = cursor.Span;
-            var spanStart1126 = cursor.Offset;
-            var pos1126 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos1126 < (uint)span1126.Length && global::Parlot.Generated.Character.HasMask(span1126[pos1126], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1126[pos1126], context._skipMask)))
-            {
-                cursor.ResetPosition(spanStart1126 + pos1126);
+                cursor.ResetPosition(spanStart1131 + pos1131);
                 context.SkipWhiteSpace();
-                pos1126 = cursor.Offset - spanStart1126;
-                moved1128 = true;
+                pos1131 = cursor.Offset - spanStart1131;
+                moved1133 = true;
             }
-            if ((uint)pos1126 >= (uint)span1126.Length || span1126[pos1126] != (char)126)
+            if (!global::System.MemoryExtensions.StartsWith(span1131.Slice(pos1131), "<=".AsSpan()))
             {
-                if (pos1126 >= span1126.Length) cursor.MarkHitEnd();
-                goto fail1127;
+                if (span1131.Length - pos1131 < 2 && global::System.MemoryExtensions.StartsWith("<=".AsSpan(), span1131.Slice(pos1131))) cursor.MarkHitEnd();
+                goto fail1132;
             }
-            pos1126++;
-            value1125 = (char)126;
-            if (moved1128) cursor.ResetPosition(spanStart1126 + pos1126); else cursor.AdvanceWithinBuffer(pos1126);
-            success1124 = true;
-            goto done1129;
-            fail1127: if (moved1128) cursor.ResetPosition(spanStart1126);
-            done1129: ;
+            pos1131 += 2;
+            if (moved1133) cursor.ResetPosition(spanStart1131 + pos1131); else cursor.AdvanceWithinBuffer(pos1131);
+            success1129 = true;
+            goto done1134;
+            fail1132: if (moved1133) cursor.ResetPosition(spanStart1131);
+            done1134: ;
 
-            value = value1125;
-            return success1124;
+            value = value1130;
+            return success1129;
         }
 
-        private static bool __Parlot_5_Build_Then_1118_292(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_OneOf_293(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1119 = false;
-            global::System.Char value1120 = default;
-            var start1121 = cursor.Offset;
-            if (__Parlot_5_Build_When_293(context, out var innerValue1130) && ___Parlot_5_Build_lambda73(context, innerValue1130))
+            bool success1125 = false;
+            global::System.Int32 value1126 = default;
+            success1125 = __Parlot_5_Build_Operator_294(context, out _);
+            if (success1125)
             {
-                success1119 = true;
-                value1120 = innerValue1130;
-            }
-            else
-            {
-                cursor.ResetPosition(start1121);
-                success1119 = false;
+                value1126 = 10;
             }
 
-            value = value1120;
-            return success1119;
+            value = value1126;
+            return success1125;
         }
 
-        private static bool __Parlot_5_Build_Operator_291(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1115 = false;
-            global::Parlot.Generated.TextSpan value1116 = default;
-            if (__Parlot_5_Build_Then_1118_292(context, out var parsed1117Value))
-            {
-                ___Parlot_5_Build_lambda74(parsed1117Value);
-                success1115 = true;
-            }
-
-            value = value1116;
-            return success1115;
-        }
-
-        private static bool __Parlot_5_Build_OneOf_290(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1113 = false;
-            global::System.Int32 value1114 = default;
-            success1113 = __Parlot_5_Build_Operator_291(context, out _);
-            if (success1113)
-            {
-                value1114 = 2;
-            }
-
-            value = value1114;
-            return success1113;
-        }
-
-        private static bool __Parlot_5_Build_Operators759_275(global::Parlot.Generated.Fluent.ParseContext context, out int value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1059 = false;
-            global::System.Int32 value1060 = default;
-            var start1061 = cursor.Offset;
-            context.SkipWhiteSpace();
-            var current1062 = cursor.Current;
-            switch (current1062)
-            {
-                case '+':
-                {
-                    success1059 = __Parlot_5_Build_OneOf_276(context, out value1060);
-                    break;
-                }
-                case '-':
-                {
-                    success1059 = __Parlot_5_Build_OneOf_280(context, out value1060);
-                    break;
-                }
-                case 'N' or 'n':
-                {
-                    success1059 = __Parlot_5_Build_OneOf_284(context, out value1060);
-                    break;
-                }
-                case '~':
-                {
-                    success1059 = __Parlot_5_Build_OneOf_290(context, out value1060);
-                    break;
-                }
-            }
-            if (!success1059)
-            {
-                cursor.ResetPosition(start1061);
-            }
-
-            value = value1060;
-            return success1059;
-        }
-
-        private static bool __Parlot_5_Build_Operator_296(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_Operator_296(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
             bool success1139 = false;
-            global::System.Char value1140 = default;
+            global::System.String value1140 = default;
             bool moved1143 = false;
             var span1141 = cursor.Span;
             var spanStart1141 = cursor.Offset;
@@ -8071,7 +8169,7 @@ break;
                 pos1141 = cursor.Offset - spanStart1141;
                 moved1143 = true;
             }
-            if ((uint)pos1141 >= (uint)span1141.Length || span1141[pos1141] != (char)37)
+            if ((uint)pos1141 >= (uint)span1141.Length || span1141[pos1141] != '<')
             {
                 if (pos1141 >= span1141.Length) cursor.MarkHitEnd();
                 goto fail1142;
@@ -8098,21 +8196,21 @@ break;
             success1135 = __Parlot_5_Build_Operator_296(context, out _);
             if (success1135)
             {
-                value1136 = 6;
+                value1136 = 11;
             }
 
             value = value1136;
             return success1135;
         }
 
-        private static bool __Parlot_5_Build_Operator_298(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_Operator_298(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
             bool success1149 = false;
-            global::System.Char value1150 = default;
+            global::System.String value1150 = default;
             bool moved1153 = false;
             var span1151 = cursor.Span;
             var spanStart1151 = cursor.Offset;
@@ -8124,12 +8222,12 @@ break;
                 pos1151 = cursor.Offset - spanStart1151;
                 moved1153 = true;
             }
-            if ((uint)pos1151 >= (uint)span1151.Length || span1151[pos1151] != (char)42)
+            if (!global::System.MemoryExtensions.StartsWith(span1151.Slice(pos1151), ">=".AsSpan()))
             {
-                if (pos1151 >= span1151.Length) cursor.MarkHitEnd();
+                if (span1151.Length - pos1151 < 2 && global::System.MemoryExtensions.StartsWith(">=".AsSpan(), span1151.Slice(pos1151))) cursor.MarkHitEnd();
                 goto fail1152;
             }
-            pos1151++;
+            pos1151 += 2;
             if (moved1153) cursor.ResetPosition(spanStart1151 + pos1151); else cursor.AdvanceWithinBuffer(pos1151);
             success1149 = true;
             goto done1154;
@@ -8151,21 +8249,21 @@ break;
             success1145 = __Parlot_5_Build_Operator_298(context, out _);
             if (success1145)
             {
-                value1146 = 4;
+                value1146 = 9;
             }
 
             value = value1146;
             return success1145;
         }
 
-        private static bool __Parlot_5_Build_Operator_300(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_Operator_300(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
             bool success1159 = false;
-            global::System.Char value1160 = default;
+            global::System.String value1160 = default;
             bool moved1163 = false;
             var span1161 = cursor.Span;
             var spanStart1161 = cursor.Offset;
@@ -8177,7 +8275,7 @@ break;
                 pos1161 = cursor.Offset - spanStart1161;
                 moved1163 = true;
             }
-            if ((uint)pos1161 >= (uint)span1161.Length || span1161[pos1161] != (char)47)
+            if ((uint)pos1161 >= (uint)span1161.Length || span1161[pos1161] != '>')
             {
                 if (pos1161 >= span1161.Length) cursor.MarkHitEnd();
                 goto fail1162;
@@ -8204,109 +8302,81 @@ break;
             success1155 = __Parlot_5_Build_Operator_300(context, out _);
             if (success1155)
             {
-                value1156 = 5;
+                value1156 = 12;
             }
 
             value = value1156;
             return success1155;
         }
 
-        private static bool __Parlot_5_Build_Operators759_294(global::Parlot.Generated.Fluent.ParseContext context, out int value)
+        private static bool __Parlot_5_Build_Operators740_292(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1131 = false;
-            global::System.Int32 value1132 = default;
-            var start1133 = cursor.Offset;
+            bool success1121 = false;
+            global::System.Int32 value1122 = default;
+            var start1123 = cursor.Offset;
             context.SkipWhiteSpace();
-            var current1134 = cursor.Current;
-            switch (current1134)
+            var current1124 = cursor.Current;
+            switch (current1124)
             {
-                case '%':
+                case '<':
                 {
-                    success1131 = __Parlot_5_Build_OneOf_295(context, out value1132);
+                    success1121 = __Parlot_5_Build_OneOf_293(context, out value1122)
+                        || __Parlot_5_Build_OneOf_295(context, out value1122);
                     break;
                 }
-                case '*':
+                case '>':
                 {
-                    success1131 = __Parlot_5_Build_OneOf_297(context, out value1132);
-                    break;
-                }
-                case '/':
-                {
-                    success1131 = __Parlot_5_Build_OneOf_299(context, out value1132);
+                    success1121 = __Parlot_5_Build_OneOf_297(context, out value1122)
+                        || __Parlot_5_Build_OneOf_299(context, out value1122);
                     break;
                 }
             }
-            if (!success1131)
+            if (!success1121)
             {
-                cursor.ResetPosition(start1133);
+                cursor.ResetPosition(start1123);
             }
 
-            value = value1132;
-            return success1131;
+            value = value1122;
+            return success1121;
         }
 
-        // SpanScanner
-        private static bool __Parlot_5_Build_SkipWS_304(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        private static bool __Parlot_5_Build_Operator_303(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
             bool success1173 = false;
-            global::Parlot.Generated.TextSpan value1174 = default;
+            global::System.String value1174 = default;
+            bool moved1177 = false;
             var span1175 = cursor.Span;
-            var size1176 = ___Parlot_5_Build_lambda75(span1175);
-            if (size1176 > 0)
+            var spanStart1175 = cursor.Offset;
+            var pos1175 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos1175 < (uint)span1175.Length && global::Parlot.Generated.Character.HasMask(span1175[pos1175], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1175[pos1175], context._skipMask)))
             {
-                if (size1176 > span1175.Length)
-                {
-                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size1176} chars while only {span1175.Length} were available.");
-                }
-                var start1177 = cursor.Offset;
-                cursor.AdvanceNoNewLines(size1176);
-                success1173 = true;
+                cursor.ResetPosition(spanStart1175 + pos1175);
+                context.SkipWhiteSpace();
+                pos1175 = cursor.Offset - spanStart1175;
+                moved1177 = true;
             }
-            else if (size1176 < 0)
+            if (!global::System.MemoryExtensions.StartsWith(span1175.Slice(pos1175), "!=".AsSpan()))
             {
-                cursor.MarkHitEnd();
+                if (span1175.Length - pos1175 < 2 && global::System.MemoryExtensions.StartsWith("!=".AsSpan(), span1175.Slice(pos1175))) cursor.MarkHitEnd();
+                goto fail1176;
             }
+            pos1175 += 2;
+            if (moved1177) cursor.ResetPosition(spanStart1175 + pos1175); else cursor.AdvanceWithinBuffer(pos1175);
+            success1173 = true;
+            goto done1178;
+            fail1176: if (moved1177) cursor.ResetPosition(spanStart1175);
+            done1178: ;
 
             value = value1174;
             return success1173;
-        }
-
-        private static bool __Parlot_5_Build_Operator_303(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1171 = false;
-            global::Parlot.Generated.TextSpan value1172 = default;
-            var shortcut1178 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart1179 = cursor.Offset;
-            if (!shortcut1178)
-            {
-                var start = cursor.Offset;
-                context.SkipWhiteSpace();
-                contentStart1179 = cursor.Offset;
-                success1171 = __Parlot_5_Build_SkipWS_304(context, out _);
-                if (!success1171)
-                {
-                    cursor.ResetPosition(start);
-                }
-            }
-            else
-            {
-                success1171 = __Parlot_5_Build_SkipWS_304(context, out _);
-            }
-
-            value = value1172;
-            return success1171;
         }
 
         private static bool __Parlot_5_Build_OneOf_302(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
@@ -8320,92 +8390,67 @@ break;
             success1169 = __Parlot_5_Build_Operator_303(context, out _);
             if (success1169)
             {
-                value1170 = 7;
+                value1170 = 14;
             }
 
             value = value1170;
             return success1169;
         }
 
-        // SpanScanner
-        private static bool __Parlot_5_Build_SkipWS_307(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
+        private static bool __Parlot_5_Build_Operator_305(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1184 = false;
-            global::Parlot.Generated.TextSpan value1185 = default;
-            var span1186 = cursor.Span;
-            var size1187 = ___Parlot_5_Build_lambda76(span1186);
-            if (size1187 > 0)
+            bool success1183 = false;
+            global::System.String value1184 = default;
+            bool moved1187 = false;
+            var span1185 = cursor.Span;
+            var spanStart1185 = cursor.Offset;
+            var pos1185 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos1185 < (uint)span1185.Length && global::Parlot.Generated.Character.HasMask(span1185[pos1185], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1185[pos1185], context._skipMask)))
             {
-                if (size1187 > span1186.Length)
-                {
-                    throw new global::System.InvalidOperationException($"The scanner returned a token of {size1187} chars while only {span1186.Length} were available.");
-                }
-                var start1188 = cursor.Offset;
-                cursor.AdvanceNoNewLines(size1187);
-                success1184 = true;
-            }
-            else if (size1187 < 0)
-            {
-                cursor.MarkHitEnd();
-            }
-
-            value = value1185;
-            return success1184;
-        }
-
-        private static bool __Parlot_5_Build_Operator_306(global::Parlot.Generated.Fluent.ParseContext context, out global::Parlot.Generated.TextSpan value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1182 = false;
-            global::Parlot.Generated.TextSpan value1183 = default;
-            var shortcut1189 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart1190 = cursor.Offset;
-            if (!shortcut1189)
-            {
-                var start = cursor.Offset;
+                cursor.ResetPosition(spanStart1185 + pos1185);
                 context.SkipWhiteSpace();
-                contentStart1190 = cursor.Offset;
-                success1182 = __Parlot_5_Build_SkipWS_307(context, out _);
-                if (!success1182)
-                {
-                    cursor.ResetPosition(start);
-                }
+                pos1185 = cursor.Offset - spanStart1185;
+                moved1187 = true;
             }
-            else
+            if ((uint)pos1185 >= (uint)span1185.Length || span1185[pos1185] != '=')
             {
-                success1182 = __Parlot_5_Build_SkipWS_307(context, out _);
+                if (pos1185 >= span1185.Length) cursor.MarkHitEnd();
+                goto fail1186;
             }
+            pos1185++;
+            if (moved1187) cursor.ResetPosition(spanStart1185 + pos1185); else cursor.AdvanceWithinBuffer(pos1185);
+            success1183 = true;
+            goto done1188;
+            fail1186: if (moved1187) cursor.ResetPosition(spanStart1185);
+            done1188: ;
 
-            value = value1183;
-            return success1182;
+            value = value1184;
+            return success1183;
         }
 
-        private static bool __Parlot_5_Build_OneOf_305(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        private static bool __Parlot_5_Build_OneOf_304(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1180 = false;
-            global::System.Int32 value1181 = default;
-            success1180 = __Parlot_5_Build_Operator_306(context, out _);
-            if (success1180)
+            bool success1179 = false;
+            global::System.Int32 value1180 = default;
+            success1179 = __Parlot_5_Build_Operator_305(context, out _);
+            if (success1179)
             {
-                value1181 = 8;
+                value1180 = 13;
             }
 
-            value = value1181;
-            return success1180;
+            value = value1180;
+            return success1179;
         }
 
-        private static bool __Parlot_5_Build_Operators759_301(global::Parlot.Generated.Fluent.ParseContext context, out int value)
+        private static bool __Parlot_5_Build_Operators740_301(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -8418,14 +8463,14 @@ break;
             var current1168 = cursor.Current;
             switch (current1168)
             {
-                case '+':
+                case '!':
                 {
                     success1165 = __Parlot_5_Build_OneOf_302(context, out value1166);
                     break;
                 }
-                case '-':
+                case '=':
                 {
-                    success1165 = __Parlot_5_Build_OneOf_305(context, out value1166);
+                    success1165 = __Parlot_5_Build_OneOf_304(context, out value1166);
                     break;
                 }
             }
@@ -8438,173 +8483,176 @@ break;
             return success1165;
         }
 
-        private static bool __Parlot_5_Build_Operator_310(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Operator_308(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1199 = false;
-            global::System.String value1200 = default;
-            bool moved1203 = false;
-            var span1201 = cursor.Span;
-            var spanStart1201 = cursor.Offset;
-            var pos1201 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos1201 < (uint)span1201.Length && global::Parlot.Generated.Character.HasMask(span1201[pos1201], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1201[pos1201], context._skipMask)))
+            bool success1197 = false;
+            global::System.Char value1198 = default;
+            bool moved1201 = false;
+            var span1199 = cursor.Span;
+            var spanStart1199 = cursor.Offset;
+            var pos1199 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos1199 < (uint)span1199.Length && global::Parlot.Generated.Character.HasMask(span1199[pos1199], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1199[pos1199], context._skipMask)))
             {
-                cursor.ResetPosition(spanStart1201 + pos1201);
+                cursor.ResetPosition(spanStart1199 + pos1199);
                 context.SkipWhiteSpace();
-                pos1201 = cursor.Offset - spanStart1201;
-                moved1203 = true;
+                pos1199 = cursor.Offset - spanStart1199;
+                moved1201 = true;
             }
-            if (!global::System.MemoryExtensions.StartsWith(span1201.Slice(pos1201), "<=".AsSpan()))
+            if ((uint)pos1199 >= (uint)span1199.Length || span1199[pos1199] != (char)38)
             {
-                if (span1201.Length - pos1201 < 2 && global::System.MemoryExtensions.StartsWith("<=".AsSpan(), span1201.Slice(pos1201))) cursor.MarkHitEnd();
-                goto fail1202;
+                if (pos1199 >= span1199.Length) cursor.MarkHitEnd();
+                goto fail1200;
             }
-            pos1201 += 2;
-            if (moved1203) cursor.ResetPosition(spanStart1201 + pos1201); else cursor.AdvanceWithinBuffer(pos1201);
-            success1199 = true;
-            goto done1204;
-            fail1202: if (moved1203) cursor.ResetPosition(spanStart1201);
-            done1204: ;
+            pos1199++;
+            if (moved1201) cursor.ResetPosition(spanStart1199 + pos1199); else cursor.AdvanceWithinBuffer(pos1199);
+            success1197 = true;
+            goto done1202;
+            fail1200: if (moved1201) cursor.ResetPosition(spanStart1199);
+            done1202: ;
 
-            value = value1200;
-            return success1199;
+            value = value1198;
+            return success1197;
         }
 
-        private static bool __Parlot_5_Build_OneOf_309(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        private static bool __Parlot_5_Build_OneOf_307(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1195 = false;
-            global::System.Int32 value1196 = default;
-            success1195 = __Parlot_5_Build_Operator_310(context, out _);
-            if (success1195)
+            bool success1193 = false;
+            global::System.Int32 value1194 = default;
+            success1193 = __Parlot_5_Build_Operator_308(context, out _);
+            if (success1193)
             {
-                value1196 = 10;
+                value1194 = 15;
             }
 
-            value = value1196;
-            return success1195;
+            value = value1194;
+            return success1193;
         }
 
-        private static bool __Parlot_5_Build_Operator_312(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Operators740_306(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1209 = false;
-            global::System.String value1210 = default;
-            bool moved1213 = false;
-            var span1211 = cursor.Span;
-            var spanStart1211 = cursor.Offset;
-            var pos1211 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos1211 < (uint)span1211.Length && global::Parlot.Generated.Character.HasMask(span1211[pos1211], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1211[pos1211], context._skipMask)))
+            bool success1189 = false;
+            global::System.Int32 value1190 = default;
+            var start1191 = cursor.Offset;
+            context.SkipWhiteSpace();
+            var current1192 = cursor.Current;
+            switch (current1192)
             {
-                cursor.ResetPosition(spanStart1211 + pos1211);
+                case '&':
+                {
+                    success1189 = __Parlot_5_Build_OneOf_307(context, out value1190);
+                    break;
+                }
+            }
+            if (!success1189)
+            {
+                cursor.ResetPosition(start1191);
+            }
+
+            value = value1190;
+            return success1189;
+        }
+
+        private static bool __Parlot_5_Build_Operator_311(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1211 = false;
+            global::System.Char value1212 = default;
+            bool moved1215 = false;
+            var span1213 = cursor.Span;
+            var spanStart1213 = cursor.Offset;
+            var pos1213 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos1213 < (uint)span1213.Length && global::Parlot.Generated.Character.HasMask(span1213[pos1213], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1213[pos1213], context._skipMask)))
+            {
+                cursor.ResetPosition(spanStart1213 + pos1213);
                 context.SkipWhiteSpace();
-                pos1211 = cursor.Offset - spanStart1211;
-                moved1213 = true;
+                pos1213 = cursor.Offset - spanStart1213;
+                moved1215 = true;
             }
-            if ((uint)pos1211 >= (uint)span1211.Length || span1211[pos1211] != '<')
+            if ((uint)pos1213 >= (uint)span1213.Length || span1213[pos1213] != (char)94)
             {
-                if (pos1211 >= span1211.Length) cursor.MarkHitEnd();
-                goto fail1212;
+                if (pos1213 >= span1213.Length) cursor.MarkHitEnd();
+                goto fail1214;
             }
-            pos1211++;
-            if (moved1213) cursor.ResetPosition(spanStart1211 + pos1211); else cursor.AdvanceWithinBuffer(pos1211);
-            success1209 = true;
-            goto done1214;
-            fail1212: if (moved1213) cursor.ResetPosition(spanStart1211);
-            done1214: ;
+            pos1213++;
+            if (moved1215) cursor.ResetPosition(spanStart1213 + pos1213); else cursor.AdvanceWithinBuffer(pos1213);
+            success1211 = true;
+            goto done1216;
+            fail1214: if (moved1215) cursor.ResetPosition(spanStart1213);
+            done1216: ;
 
-            value = value1210;
-            return success1209;
+            value = value1212;
+            return success1211;
         }
 
-        private static bool __Parlot_5_Build_OneOf_311(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        private static bool __Parlot_5_Build_OneOf_310(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1205 = false;
-            global::System.Int32 value1206 = default;
-            success1205 = __Parlot_5_Build_Operator_312(context, out _);
-            if (success1205)
+            bool success1207 = false;
+            global::System.Int32 value1208 = default;
+            success1207 = __Parlot_5_Build_Operator_311(context, out _);
+            if (success1207)
             {
-                value1206 = 11;
+                value1208 = 16;
             }
 
-            value = value1206;
-            return success1205;
+            value = value1208;
+            return success1207;
         }
 
-        private static bool __Parlot_5_Build_Operator_314(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Operators740_309(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1219 = false;
-            global::System.String value1220 = default;
-            bool moved1223 = false;
-            var span1221 = cursor.Span;
-            var spanStart1221 = cursor.Offset;
-            var pos1221 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos1221 < (uint)span1221.Length && global::Parlot.Generated.Character.HasMask(span1221[pos1221], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1221[pos1221], context._skipMask)))
+            bool success1203 = false;
+            global::System.Int32 value1204 = default;
+            var start1205 = cursor.Offset;
+            context.SkipWhiteSpace();
+            var current1206 = cursor.Current;
+            switch (current1206)
             {
-                cursor.ResetPosition(spanStart1221 + pos1221);
-                context.SkipWhiteSpace();
-                pos1221 = cursor.Offset - spanStart1221;
-                moved1223 = true;
+                case '^':
+                {
+                    success1203 = __Parlot_5_Build_OneOf_310(context, out value1204);
+                    break;
+                }
             }
-            if (!global::System.MemoryExtensions.StartsWith(span1221.Slice(pos1221), ">=".AsSpan()))
+            if (!success1203)
             {
-                if (span1221.Length - pos1221 < 2 && global::System.MemoryExtensions.StartsWith(">=".AsSpan(), span1221.Slice(pos1221))) cursor.MarkHitEnd();
-                goto fail1222;
+                cursor.ResetPosition(start1205);
             }
-            pos1221 += 2;
-            if (moved1223) cursor.ResetPosition(spanStart1221 + pos1221); else cursor.AdvanceWithinBuffer(pos1221);
-            success1219 = true;
-            goto done1224;
-            fail1222: if (moved1223) cursor.ResetPosition(spanStart1221);
-            done1224: ;
 
-            value = value1220;
-            return success1219;
+            value = value1204;
+            return success1203;
         }
 
-        private static bool __Parlot_5_Build_OneOf_313(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1215 = false;
-            global::System.Int32 value1216 = default;
-            success1215 = __Parlot_5_Build_Operator_314(context, out _);
-            if (success1215)
-            {
-                value1216 = 9;
-            }
-
-            value = value1216;
-            return success1215;
-        }
-
-        private static bool __Parlot_5_Build_Operator_316(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_WhenNotFollowedBy_Main_315(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
             bool success1229 = false;
-            global::System.String value1230 = default;
+            global::System.Char value1230 = default;
             bool moved1233 = false;
             var span1231 = cursor.Span;
             var spanStart1231 = cursor.Offset;
@@ -8616,7 +8664,7 @@ break;
                 pos1231 = cursor.Offset - spanStart1231;
                 moved1233 = true;
             }
-            if ((uint)pos1231 >= (uint)span1231.Length || span1231[pos1231] != '>')
+            if ((uint)pos1231 >= (uint)span1231.Length || span1231[pos1231] != (char)124)
             {
                 if (pos1231 >= span1231.Length) cursor.MarkHitEnd();
                 goto fail1232;
@@ -8632,57 +8680,107 @@ break;
             return success1229;
         }
 
-        private static bool __Parlot_5_Build_OneOf_315(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        private static bool __Parlot_5_Build_WhenNotFollowedBy_Lookahead_316(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Object value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1225 = false;
-            global::System.Int32 value1226 = default;
-            success1225 = __Parlot_5_Build_Operator_316(context, out _);
-            if (success1225)
+            bool success1235 = false;
+            global::System.Object value1236 = default;
+            var span1237 = cursor.Span;
+            var spanStart1237 = cursor.Offset;
+            var pos1237 = 0;
+            if ((uint)pos1237 >= (uint)span1237.Length || span1237[pos1237] != (char)124)
             {
-                value1226 = 12;
+                if (pos1237 >= span1237.Length) cursor.MarkHitEnd();
+                goto fail1238;
             }
+            pos1237++;
+            cursor.AdvanceWithinBuffer(pos1237);
+            success1235 = true;
+            fail1238: ;
 
-            value = value1226;
-            return success1225;
+            value = value1236;
+            return success1235;
         }
 
-        private static bool __Parlot_5_Build_Operators759_308(global::Parlot.Generated.Fluent.ParseContext context, out int value)
+        private static bool __Parlot_5_Build_Operator_314(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1191 = false;
-            global::System.Int32 value1192 = default;
-            var start1193 = cursor.Offset;
-            context.SkipWhiteSpace();
-            var current1194 = cursor.Current;
-            switch (current1194)
+            bool success1223 = false;
+            global::System.Char value1224 = default;
+            var start1225 = cursor.Offset;
+            if (!__Parlot_5_Build_WhenNotFollowedBy_Main_315(context, out _))
             {
-                case '<':
-                {
-                    success1191 = __Parlot_5_Build_OneOf_309(context, out value1192)
-                        || __Parlot_5_Build_OneOf_311(context, out value1192);
-                    break;
-                }
-                case '>':
-                {
-                    success1191 = __Parlot_5_Build_OneOf_313(context, out value1192)
-                        || __Parlot_5_Build_OneOf_315(context, out value1192);
-                    break;
-                }
+                success1223 = false;
             }
-            if (!success1191)
+            else
             {
-                cursor.ResetPosition(start1193);
+                var beforeLookahead1226 = cursor.Offset;
+                if (__Parlot_5_Build_WhenNotFollowedBy_Lookahead_316(context, out _))
+                {
+                    cursor.ResetPosition(start1225);
+                    success1223 = false;
+                }
+                else
+                {
+                    cursor.ResetPosition(beforeLookahead1226);
+                    success1223 = true;
+                }
             }
 
-            value = value1192;
-            return success1191;
+            value = value1224;
+            return success1223;
+        }
+
+        private static bool __Parlot_5_Build_OneOf_313(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1221 = false;
+            global::System.Int32 value1222 = default;
+            success1221 = __Parlot_5_Build_Operator_314(context, out _);
+            if (success1221)
+            {
+                value1222 = 17;
+            }
+
+            value = value1222;
+            return success1221;
+        }
+
+        private static bool __Parlot_5_Build_Operators740_312(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1217 = false;
+            global::System.Int32 value1218 = default;
+            var start1219 = cursor.Offset;
+            context.SkipWhiteSpace();
+            var current1220 = cursor.Current;
+            switch (current1220)
+            {
+                case '|':
+                {
+                    success1217 = __Parlot_5_Build_OneOf_313(context, out value1218);
+                    break;
+                }
+            }
+            if (!success1217)
+            {
+                cursor.ResetPosition(start1219);
+            }
+
+            value = value1218;
+            return success1217;
         }
 
         private static bool __Parlot_5_Build_Operator_319(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
@@ -8691,33 +8789,33 @@ break;
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1243 = false;
-            global::System.String value1244 = default;
-            bool moved1247 = false;
-            var span1245 = cursor.Span;
-            var spanStart1245 = cursor.Offset;
-            var pos1245 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos1245 < (uint)span1245.Length && global::Parlot.Generated.Character.HasMask(span1245[pos1245], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1245[pos1245], context._skipMask)))
+            bool success1247 = false;
+            global::System.String value1248 = default;
+            bool moved1251 = false;
+            var span1249 = cursor.Span;
+            var spanStart1249 = cursor.Offset;
+            var pos1249 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos1249 < (uint)span1249.Length && global::Parlot.Generated.Character.HasMask(span1249[pos1249], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1249[pos1249], context._skipMask)))
             {
-                cursor.ResetPosition(spanStart1245 + pos1245);
+                cursor.ResetPosition(spanStart1249 + pos1249);
                 context.SkipWhiteSpace();
-                pos1245 = cursor.Offset - spanStart1245;
-                moved1247 = true;
+                pos1249 = cursor.Offset - spanStart1249;
+                moved1251 = true;
             }
-            if (!global::System.MemoryExtensions.StartsWith(span1245.Slice(pos1245), "!=".AsSpan()))
+            if (!global::System.MemoryExtensions.StartsWith(span1249.Slice(pos1249), "||".AsSpan()))
             {
-                if (span1245.Length - pos1245 < 2 && global::System.MemoryExtensions.StartsWith("!=".AsSpan(), span1245.Slice(pos1245))) cursor.MarkHitEnd();
-                goto fail1246;
+                if (span1249.Length - pos1249 < 2 && global::System.MemoryExtensions.StartsWith("||".AsSpan(), span1249.Slice(pos1249))) cursor.MarkHitEnd();
+                goto fail1250;
             }
-            pos1245 += 2;
-            if (moved1247) cursor.ResetPosition(spanStart1245 + pos1245); else cursor.AdvanceWithinBuffer(pos1245);
-            success1243 = true;
-            goto done1248;
-            fail1246: if (moved1247) cursor.ResetPosition(spanStart1245);
-            done1248: ;
+            pos1249 += 2;
+            if (moved1251) cursor.ResetPosition(spanStart1249 + pos1249); else cursor.AdvanceWithinBuffer(pos1249);
+            success1247 = true;
+            goto done1252;
+            fail1250: if (moved1251) cursor.ResetPosition(spanStart1249);
+            done1252: ;
 
-            value = value1244;
-            return success1243;
+            value = value1248;
+            return success1247;
         }
 
         private static bool __Parlot_5_Build_OneOf_318(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
@@ -8726,158 +8824,153 @@ break;
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
+            bool success1243 = false;
+            global::System.Int32 value1244 = default;
+            success1243 = __Parlot_5_Build_Operator_319(context, out _);
+            if (success1243)
+            {
+                value1244 = 18;
+            }
+
+            value = value1244;
+            return success1243;
+        }
+
+        private static bool __Parlot_5_Build_Operators740_317(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
             bool success1239 = false;
             global::System.Int32 value1240 = default;
-            success1239 = __Parlot_5_Build_Operator_319(context, out _);
-            if (success1239)
+            var start1241 = cursor.Offset;
+            context.SkipWhiteSpace();
+            var current1242 = cursor.Current;
+            switch (current1242)
             {
-                value1240 = 14;
+                case '|':
+                {
+                    success1239 = __Parlot_5_Build_OneOf_318(context, out value1240);
+                    break;
+                }
+            }
+            if (!success1239)
+            {
+                cursor.ResetPosition(start1241);
             }
 
             value = value1240;
             return success1239;
         }
 
-        private static bool __Parlot_5_Build_Operator_321(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_OneOf_321(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1257 = false;
+            global::System.Int32 value1258 = default;
+            success1257 = true;
+            value1258 = -2;
+
+            value = value1258;
+            return success1257;
+        }
+
+        private static bool __Parlot_5_Build_Operators740_320(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
             bool success1253 = false;
-            global::System.String value1254 = default;
-            bool moved1257 = false;
-            var span1255 = cursor.Span;
-            var spanStart1255 = cursor.Offset;
-            var pos1255 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos1255 < (uint)span1255.Length && global::Parlot.Generated.Character.HasMask(span1255[pos1255], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1255[pos1255], context._skipMask)))
+            global::System.Int32 value1254 = default;
+            var start1255 = cursor.Offset;
+            context.SkipWhiteSpace();
+            var current1256 = cursor.Current;
+            switch (current1256)
             {
-                cursor.ResetPosition(spanStart1255 + pos1255);
-                context.SkipWhiteSpace();
-                pos1255 = cursor.Offset - spanStart1255;
-                moved1257 = true;
+                case '!':
+                {
+                    success1253 = __Parlot_5_Build_OneOf_302(context, out value1254);
+                    break;
+                }
+                case '%':
+                {
+                    success1253 = __Parlot_5_Build_OneOf_279(context, out value1254);
+                    break;
+                }
+                case '&':
+                {
+                    success1253 = __Parlot_5_Build_OneOf_307(context, out value1254);
+                    break;
+                }
+                case '*':
+                {
+                    success1253 = __Parlot_5_Build_OneOf_281(context, out value1254);
+                    break;
+                }
+                case '+':
+                {
+                    success1253 = __Parlot_5_Build_OneOf_286(context, out value1254);
+                    break;
+                }
+                case '-':
+                {
+                    success1253 = __Parlot_5_Build_OneOf_289(context, out value1254);
+                    break;
+                }
+                case '.' or '[':
+                {
+                    success1253 = __Parlot_5_Build_OneOf_321(context, out value1254);
+                    break;
+                }
+                case '/':
+                {
+                    success1253 = __Parlot_5_Build_OneOf_283(context, out value1254);
+                    break;
+                }
+                case '<':
+                {
+                    success1253 = __Parlot_5_Build_OneOf_293(context, out value1254)
+                        || __Parlot_5_Build_OneOf_295(context, out value1254);
+                    break;
+                }
+                case '=':
+                {
+                    success1253 = __Parlot_5_Build_OneOf_304(context, out value1254);
+                    break;
+                }
+                case '>':
+                {
+                    success1253 = __Parlot_5_Build_OneOf_297(context, out value1254)
+                        || __Parlot_5_Build_OneOf_299(context, out value1254);
+                    break;
+                }
+                case '^':
+                {
+                    success1253 = __Parlot_5_Build_OneOf_310(context, out value1254);
+                    break;
+                }
+                case '|':
+                {
+                    success1253 = __Parlot_5_Build_OneOf_313(context, out value1254)
+                        || __Parlot_5_Build_OneOf_318(context, out value1254);
+                    break;
+                }
             }
-            if ((uint)pos1255 >= (uint)span1255.Length || span1255[pos1255] != '=')
+            if (!success1253)
             {
-                if (pos1255 >= span1255.Length) cursor.MarkHitEnd();
-                goto fail1256;
+                cursor.ResetPosition(start1255);
             }
-            pos1255++;
-            if (moved1257) cursor.ResetPosition(spanStart1255 + pos1255); else cursor.AdvanceWithinBuffer(pos1255);
-            success1253 = true;
-            goto done1258;
-            fail1256: if (moved1257) cursor.ResetPosition(spanStart1255);
-            done1258: ;
 
             value = value1254;
             return success1253;
         }
 
-        private static bool __Parlot_5_Build_OneOf_320(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1249 = false;
-            global::System.Int32 value1250 = default;
-            success1249 = __Parlot_5_Build_Operator_321(context, out _);
-            if (success1249)
-            {
-                value1250 = 13;
-            }
-
-            value = value1250;
-            return success1249;
-        }
-
-        private static bool __Parlot_5_Build_Operators759_317(global::Parlot.Generated.Fluent.ParseContext context, out int value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1235 = false;
-            global::System.Int32 value1236 = default;
-            var start1237 = cursor.Offset;
-            context.SkipWhiteSpace();
-            var current1238 = cursor.Current;
-            switch (current1238)
-            {
-                case '!':
-                {
-                    success1235 = __Parlot_5_Build_OneOf_318(context, out value1236);
-                    break;
-                }
-                case '=':
-                {
-                    success1235 = __Parlot_5_Build_OneOf_320(context, out value1236);
-                    break;
-                }
-            }
-            if (!success1235)
-            {
-                cursor.ResetPosition(start1237);
-            }
-
-            value = value1236;
-            return success1235;
-        }
-
-        private static bool __Parlot_5_Build_Operator_324(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1265 = false;
-            global::System.Char value1266 = default;
-            bool moved1269 = false;
-            var span1267 = cursor.Span;
-            var spanStart1267 = cursor.Offset;
-            var pos1267 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos1267 < (uint)span1267.Length && global::Parlot.Generated.Character.HasMask(span1267[pos1267], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1267[pos1267], context._skipMask)))
-            {
-                cursor.ResetPosition(spanStart1267 + pos1267);
-                context.SkipWhiteSpace();
-                pos1267 = cursor.Offset - spanStart1267;
-                moved1269 = true;
-            }
-            if ((uint)pos1267 >= (uint)span1267.Length || span1267[pos1267] != (char)38)
-            {
-                if (pos1267 >= span1267.Length) cursor.MarkHitEnd();
-                goto fail1268;
-            }
-            pos1267++;
-            if (moved1269) cursor.ResetPosition(spanStart1267 + pos1267); else cursor.AdvanceWithinBuffer(pos1267);
-            success1265 = true;
-            goto done1270;
-            fail1268: if (moved1269) cursor.ResetPosition(spanStart1267);
-            done1270: ;
-
-            value = value1266;
-            return success1265;
-        }
-
-        private static bool __Parlot_5_Build_OneOf_323(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1261 = false;
-            global::System.Int32 value1262 = default;
-            success1261 = __Parlot_5_Build_Operator_324(context, out _);
-            if (success1261)
-            {
-                value1262 = 15;
-            }
-
-            value = value1262;
-            return success1261;
-        }
-
-        private static bool __Parlot_5_Build_Operators759_322(global::Parlot.Generated.Fluent.ParseContext context, out int value)
+        private static bool __Parlot_5_Build_Operators740_322(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -8885,420 +8978,244 @@ break;
 
             bool success1259 = false;
             global::System.Int32 value1260 = default;
-            success1259 = __Parlot_5_Build_OneOf_323(context, out value1260);
+            var start1261 = cursor.Offset;
+            context.SkipWhiteSpace();
+            var current1262 = cursor.Current;
+            switch (current1262)
+            {
+                case '!':
+                {
+                    success1259 = __Parlot_5_Build_OneOf_302(context, out value1260);
+                    break;
+                }
+                case '%':
+                {
+                    success1259 = __Parlot_5_Build_OneOf_279(context, out value1260);
+                    break;
+                }
+                case '&':
+                {
+                    success1259 = __Parlot_5_Build_OneOf_307(context, out value1260);
+                    break;
+                }
+                case '*':
+                {
+                    success1259 = __Parlot_5_Build_OneOf_281(context, out value1260);
+                    break;
+                }
+                case '+':
+                {
+                    success1259 = __Parlot_5_Build_OneOf_286(context, out value1260);
+                    break;
+                }
+                case '-':
+                {
+                    success1259 = __Parlot_5_Build_OneOf_289(context, out value1260);
+                    break;
+                }
+                case '/':
+                {
+                    success1259 = __Parlot_5_Build_OneOf_283(context, out value1260);
+                    break;
+                }
+                case '<':
+                {
+                    success1259 = __Parlot_5_Build_OneOf_293(context, out value1260)
+                        || __Parlot_5_Build_OneOf_295(context, out value1260);
+                    break;
+                }
+                case '=':
+                {
+                    success1259 = __Parlot_5_Build_OneOf_304(context, out value1260);
+                    break;
+                }
+                case '>':
+                {
+                    success1259 = __Parlot_5_Build_OneOf_297(context, out value1260)
+                        || __Parlot_5_Build_OneOf_299(context, out value1260);
+                    break;
+                }
+                case '^':
+                {
+                    success1259 = __Parlot_5_Build_OneOf_310(context, out value1260);
+                    break;
+                }
+                case '|':
+                {
+                    success1259 = __Parlot_5_Build_OneOf_313(context, out value1260)
+                        || __Parlot_5_Build_OneOf_318(context, out value1260);
+                    break;
+                }
+            }
+            if (!success1259)
+            {
+                cursor.ResetPosition(start1261);
+            }
 
             value = value1260;
             return success1259;
         }
 
-        private static bool __Parlot_5_Build_Operator_327(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_Operator_324(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1277 = false;
-            global::System.Char value1278 = default;
-            bool moved1281 = false;
-            var span1279 = cursor.Span;
-            var spanStart1279 = cursor.Offset;
-            var pos1279 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos1279 < (uint)span1279.Length && global::Parlot.Generated.Character.HasMask(span1279[pos1279], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1279[pos1279], context._skipMask)))
+            bool success1265 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier value1266 = default;
+            var start1267 = cursor.Offset;
+            success1265 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_77(context, out _))
             {
-                cursor.ResetPosition(spanStart1279 + pos1279);
-                context.SkipWhiteSpace();
-                pos1279 = cursor.Offset - spanStart1279;
-                moved1281 = true;
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_46(context, out value1266))
+                {
+                    success1265 = true;
+                }
+                else
+                {
+                    cursor.ResetPosition(start1267);
+                }
             }
-            if ((uint)pos1279 >= (uint)span1279.Length || span1279[pos1279] != (char)94)
+            else
             {
-                if (pos1279 >= span1279.Length) cursor.MarkHitEnd();
-                goto fail1280;
+                cursor.ResetPosition(start1267);
             }
-            pos1279++;
-            if (moved1281) cursor.ResetPosition(spanStart1279 + pos1279); else cursor.AdvanceWithinBuffer(pos1279);
-            success1277 = true;
-            goto done1282;
-            fail1280: if (moved1281) cursor.ResetPosition(spanStart1279);
-            done1282: ;
 
-            value = value1278;
-            return success1277;
+            value = value1266;
+            return success1265;
         }
 
-        private static bool __Parlot_5_Build_OneOf_326(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        private static bool __Parlot_5_Build_Operators740_323(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.Int32, global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1273 = false;
-            global::System.Int32 value1274 = default;
-            success1273 = __Parlot_5_Build_Operator_327(context, out _);
-            if (success1273)
+            bool success1263 = false;
+            global::System.ValueTuple<global::System.Int32, global::Microsoft.Azure.Cosmos.SqlObjects.SqlIdentifier> value1264 = default;
+            success1263 = __Parlot_5_Build_Operator_324(context, out var operatorValue1268);
+            if (success1263)
             {
-                value1274 = 16;
+                value1264 = (0, operatorValue1268);
             }
 
-            value = value1274;
-            return success1273;
+            value = value1264;
+            return success1263;
         }
 
-        private static bool __Parlot_5_Build_Operators759_325(global::Parlot.Generated.Fluent.ParseContext context, out int value)
+        private static bool __Parlot_5_Build_Operator_326(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
             bool success1271 = false;
-            global::System.Int32 value1272 = default;
-            success1271 = __Parlot_5_Build_OneOf_326(context, out value1272);
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1272 = default;
+            var start1273 = cursor.Offset;
+            success1271 = false;
+            if (__Parlot_5_Build_Between_Before_80(context, out _))
+            {
+                if (__Parlot_5_Build_Sequence_P1_40(context, out value1272))
+                {
+                    if (__Parlot_5_Build_Between_After_81(context, out _))
+                    {
+                        success1271 = true;
+                    }
+                }
+            }
+            if (!success1271)
+            {
+                cursor.ResetPosition(start1273);
+            }
 
             value = value1272;
             return success1271;
         }
 
-        private static bool __Parlot_5_Build_WhenNotFollowedBy_Main_331(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_Operators740_325(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.Int32, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1293 = false;
-            global::System.Char value1294 = default;
-            bool moved1297 = false;
-            var span1295 = cursor.Span;
-            var spanStart1295 = cursor.Offset;
-            var pos1295 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos1295 < (uint)span1295.Length && global::Parlot.Generated.Character.HasMask(span1295[pos1295], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1295[pos1295], context._skipMask)))
+            bool success1269 = false;
+            global::System.ValueTuple<global::System.Int32, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value1270 = default;
+            success1269 = __Parlot_5_Build_Operator_326(context, out var operatorValue1274);
+            if (success1269)
             {
-                cursor.ResetPosition(spanStart1295 + pos1295);
-                context.SkipWhiteSpace();
-                pos1295 = cursor.Offset - spanStart1295;
-                moved1297 = true;
-            }
-            if ((uint)pos1295 >= (uint)span1295.Length || span1295[pos1295] != (char)124)
-            {
-                if (pos1295 >= span1295.Length) cursor.MarkHitEnd();
-                goto fail1296;
-            }
-            pos1295++;
-            if (moved1297) cursor.ResetPosition(spanStart1295 + pos1295); else cursor.AdvanceWithinBuffer(pos1295);
-            success1293 = true;
-            goto done1298;
-            fail1296: if (moved1297) cursor.ResetPosition(spanStart1295);
-            done1298: ;
-
-            value = value1294;
-            return success1293;
-        }
-
-        private static bool __Parlot_5_Build_WhenNotFollowedBy_Lookahead_332(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Object value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1299 = false;
-            global::System.Object value1300 = default;
-            var span1301 = cursor.Span;
-            var spanStart1301 = cursor.Offset;
-            var pos1301 = 0;
-            if ((uint)pos1301 >= (uint)span1301.Length || span1301[pos1301] != (char)124)
-            {
-                if (pos1301 >= span1301.Length) cursor.MarkHitEnd();
-                goto fail1302;
-            }
-            pos1301++;
-            cursor.AdvanceWithinBuffer(pos1301);
-            success1299 = true;
-            fail1302: ;
-
-            value = value1300;
-            return success1299;
-        }
-
-        private static bool __Parlot_5_Build_Operator_330(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1287 = false;
-            global::System.Char value1288 = default;
-            var start1289 = cursor.Offset;
-            if (!__Parlot_5_Build_WhenNotFollowedBy_Main_331(context, out _))
-            {
-                success1287 = false;
-            }
-            else
-            {
-                var beforeLookahead1290 = cursor.Offset;
-                if (__Parlot_5_Build_WhenNotFollowedBy_Lookahead_332(context, out _))
-                {
-                    cursor.ResetPosition(start1289);
-                    success1287 = false;
-                }
-                else
-                {
-                    cursor.ResetPosition(beforeLookahead1290);
-                    success1287 = true;
-                }
+                value1270 = (0, operatorValue1274);
             }
 
-            value = value1288;
-            return success1287;
+            value = value1270;
+            return success1269;
         }
 
-        private static bool __Parlot_5_Build_OneOf_329(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        private static bool __Parlot_5_Build_Operators740_327(global::Parlot.Generated.Fluent.ParseContext context, out int value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1285 = false;
-            global::System.Int32 value1286 = default;
-            success1285 = __Parlot_5_Build_Operator_330(context, out _);
-            if (success1285)
-            {
-                value1286 = 17;
-            }
+            bool success1275 = false;
+            global::System.Int32 value1276 = default;
+            success1275 = __Parlot_5_Build_Operator_266(context, out _);
 
-            value = value1286;
-            return success1285;
+            value = value1276;
+            return success1275;
         }
 
-        private static bool __Parlot_5_Build_Operators759_328(global::Parlot.Generated.Fluent.ParseContext context, out int value)
+        private static bool __Parlot_5_Build_Operators740_328(global::Parlot.Generated.Fluent.ParseContext context, out int value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1283 = false;
-            global::System.Int32 value1284 = default;
-            success1283 = __Parlot_5_Build_OneOf_329(context, out value1284);
+            bool success1277 = false;
+            global::System.Int32 value1278 = default;
+            success1277 = __Parlot_5_Build_Operator_277(context, out _);
 
-            value = value1284;
-            return success1283;
+            value = value1278;
+            return success1277;
         }
 
-        private static bool __Parlot_5_Build_Operator_335(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Operators740_329(global::Parlot.Generated.Fluent.ParseContext context, out int value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1309 = false;
-            global::System.String value1310 = default;
-            bool moved1313 = false;
-            var span1311 = cursor.Span;
-            var spanStart1311 = cursor.Offset;
-            var pos1311 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos1311 < (uint)span1311.Length && global::Parlot.Generated.Character.HasMask(span1311[pos1311], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1311[pos1311], context._skipMask)))
-            {
-                cursor.ResetPosition(spanStart1311 + pos1311);
-                context.SkipWhiteSpace();
-                pos1311 = cursor.Offset - spanStart1311;
-                moved1313 = true;
-            }
-            if (!global::System.MemoryExtensions.StartsWith(span1311.Slice(pos1311), "||".AsSpan()))
-            {
-                if (span1311.Length - pos1311 < 2 && global::System.MemoryExtensions.StartsWith("||".AsSpan(), span1311.Slice(pos1311))) cursor.MarkHitEnd();
-                goto fail1312;
-            }
-            pos1311 += 2;
-            if (moved1313) cursor.ResetPosition(spanStart1311 + pos1311); else cursor.AdvanceWithinBuffer(pos1311);
-            success1309 = true;
-            goto done1314;
-            fail1312: if (moved1313) cursor.ResetPosition(spanStart1311);
-            done1314: ;
+            bool success1279 = false;
+            global::System.Int32 value1280 = default;
+            success1279 = __Parlot_5_Build_Operator_272(context, out _);
 
-            value = value1310;
-            return success1309;
+            value = value1280;
+            return success1279;
         }
 
-        private static bool __Parlot_5_Build_OneOf_334(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        private static bool __Parlot_5_Build_Sequence_P1_193(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1305 = false;
-            global::System.Int32 value1306 = default;
-            success1305 = __Parlot_5_Build_Operator_335(context, out _);
-            if (success1305)
-            {
-                value1306 = 18;
-            }
-
-            value = value1306;
-            return success1305;
-        }
-
-        private static bool __Parlot_5_Build_Operators759_333(global::Parlot.Generated.Fluent.ParseContext context, out int value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1303 = false;
-            global::System.Int32 value1304 = default;
-            success1303 = __Parlot_5_Build_OneOf_334(context, out value1304);
-
-            value = value1304;
-            return success1303;
-        }
-
-        private static bool __Parlot_5_Build_Operators759_336(global::Parlot.Generated.Fluent.ParseContext context, out int value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1315 = false;
-            global::System.Int32 value1316 = default;
-            var start1317 = cursor.Offset;
-            context.SkipWhiteSpace();
-            var current1318 = cursor.Current;
-            switch (current1318)
-            {
-                case '!':
-                {
-                    success1315 = __Parlot_5_Build_OneOf_318(context, out value1316);
-                    break;
-                }
-                case '%':
-                {
-                    success1315 = __Parlot_5_Build_OneOf_295(context, out value1316);
-                    break;
-                }
-                case '&':
-                {
-                    success1315 = __Parlot_5_Build_OneOf_323(context, out value1316);
-                    break;
-                }
-                case '*':
-                {
-                    success1315 = __Parlot_5_Build_OneOf_297(context, out value1316);
-                    break;
-                }
-                case '+':
-                {
-                    success1315 = __Parlot_5_Build_OneOf_302(context, out value1316);
-                    break;
-                }
-                case '-':
-                {
-                    success1315 = __Parlot_5_Build_OneOf_305(context, out value1316);
-                    break;
-                }
-                case '/':
-                {
-                    success1315 = __Parlot_5_Build_OneOf_299(context, out value1316);
-                    break;
-                }
-                case '<':
-                {
-                    success1315 = __Parlot_5_Build_OneOf_309(context, out value1316)
-                        || __Parlot_5_Build_OneOf_311(context, out value1316);
-                    break;
-                }
-                case '=':
-                {
-                    success1315 = __Parlot_5_Build_OneOf_320(context, out value1316);
-                    break;
-                }
-                case '>':
-                {
-                    success1315 = __Parlot_5_Build_OneOf_313(context, out value1316)
-                        || __Parlot_5_Build_OneOf_315(context, out value1316);
-                    break;
-                }
-                case '^':
-                {
-                    success1315 = __Parlot_5_Build_OneOf_326(context, out value1316);
-                    break;
-                }
-                case '|':
-                {
-                    success1315 = __Parlot_5_Build_OneOf_329(context, out value1316)
-                        || __Parlot_5_Build_OneOf_334(context, out value1316);
-                    break;
-                }
-            }
-            if (!success1315)
-            {
-                cursor.ResetPosition(start1317);
-            }
-
-            value = value1316;
-            return success1315;
-        }
-
-        private static bool __Parlot_5_Build_Operators759_337(global::Parlot.Generated.Fluent.ParseContext context, out int value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1319 = false;
-            global::System.Int32 value1320 = default;
-            success1319 = __Parlot_5_Build_Operator_277(context, out _);
-
-            value = value1320;
-            return success1319;
-        }
-
-        private static bool __Parlot_5_Build_Operators759_338(global::Parlot.Generated.Fluent.ParseContext context, out int value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1321 = false;
-            global::System.Int32 value1322 = default;
-            success1321 = __Parlot_5_Build_Operator_291(context, out _);
-
-            value = value1322;
-            return success1321;
-        }
-
-        private static bool __Parlot_5_Build_Operators759_339(global::Parlot.Generated.Fluent.ParseContext context, out int value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1323 = false;
-            global::System.Int32 value1324 = default;
-            success1323 = __Parlot_5_Build_Operator_285(context, out _);
-
-            value = value1324;
-            return success1323;
-        }
-
-        private static bool __Parlot_5_Build_Sequence_P1_196(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success757 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value758 = default;
-            var next759 = -1;
-            var nextPosition759 = 0;
-            success757 = climb759(8, out value758, ref next759, ref nextPosition759);
-            bool climb759(int maxLevel, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression climbed, ref int next, ref int nextPosition)
+            bool success738 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value739 = default;
+            var next740 = -1;
+            var nextPosition740 = 0;
+            success738 = climb740(9, out value739, ref next740, ref nextPosition740);
+            bool climb740(int maxLevel, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression climbed, ref int next, ref int nextPosition)
 {
     var lowest = 0;
     var lookup = true;
     var start = cursor.Offset;
     var prefixOperator = -1;
     var prefixLevel = -1;
-    if (prefixOperator < 0 && maxLevel >= 0 && prefix759_0(out prefixOperator)) prefixLevel = 0;
+    if (prefixOperator < 0 && maxLevel >= 1 && prefix740_1(out prefixOperator)) prefixLevel = 1;
     if (prefixOperator >= 0)
     {
-        if (!climb759(prefixLevel, out var operand, ref next, ref nextPosition))
+        context.EnsureSufficientStack();
+        if (!climb740(prefixLevel, out var operand, ref next, ref nextPosition))
         {
             cursor.ResetPosition(start);
             climbed = default!;
@@ -9307,14 +9224,14 @@ break;
         climbed = default!;
         switch (prefixOperator)
         {
-            case 0: climbed = ___Parlot_5_Build_lambda77(operand); break;
-            case 1: climbed = ___Parlot_5_Build_lambda78(operand); break;
-            case 2: climbed = ___Parlot_5_Build_lambda79(operand); break;
-            case 3: climbed = ___Parlot_5_Build_lambda80(operand); break;
+            case 0: climbed = ___Parlot_5_Build_lambda68(operand); break;
+            case 1: climbed = ___Parlot_5_Build_lambda69(operand); break;
+            case 2: climbed = ___Parlot_5_Build_lambda70(operand); break;
+            case 3: climbed = ___Parlot_5_Build_lambda71(operand); break;
         }
         lookup = false;
     }
-    else if (!__Parlot_5_Build_Operators759_197(context, out climbed))
+    else if (!__Parlot_5_Build_Operators740_194(context, out climbed))
     {
         return false;
     }
@@ -9322,37 +9239,51 @@ break;
     {
         if (lookup)
         {
-            if (!lookup759(lowest, ref next, ref nextPosition)) break;
+            if (!lookup740(lowest, ref next, ref nextPosition)) break;
             lookup = false;
         }
-        if (next < 0) break;
-        var level = ___Parlot_5_Build_static0[next];
+        if (next == -1) break;
+        var level = next >= 0 ? ___Parlot_5_Build_static0[next] : -2 - next;
         if (level > maxLevel) break;
         var position = nextPosition;
         switch (level)
         {
-            case 1:
+            case 0:
             {
-                var op = next;
-                if (!climb759(0, out var right, ref next, ref nextPosition) || nextPosition == position)
+                if (__Parlot_5_Build_Operators740_323(context, out var postfix0))
                 {
-                    cursor.ResetPosition(position);
-                    lowest = 2;
+                    if (cursor.Offset == position)
+                    {
+                        lowest = 1;
+                        lookup = true;
+                        continue;
+                    }
+                    climbed = ___Parlot_5_Build_lambda87(climbed, postfix0.Item2);
+                    lowest = 0;
                     lookup = true;
                     continue;
                 }
-                switch (op)
+                if (__Parlot_5_Build_Operators740_325(context, out var postfix1))
                 {
-                    case 4: climbed = ___Parlot_5_Build_lambda81(climbed, right); break;
-                    case 5: climbed = ___Parlot_5_Build_lambda82(climbed, right); break;
-                    case 6: climbed = ___Parlot_5_Build_lambda83(climbed, right); break;
+                    if (cursor.Offset == position)
+                    {
+                        lowest = 1;
+                        lookup = true;
+                        continue;
+                    }
+                    climbed = ___Parlot_5_Build_lambda88(climbed, postfix1.Item2);
+                    lowest = 0;
+                    lookup = true;
+                    continue;
                 }
+                lowest = 1;
+                lookup = true;
                 continue;
             }
             case 2:
             {
                 var op = next;
-                if (!climb759(1, out var right, ref next, ref nextPosition) || nextPosition == position)
+                if (!climb740(1, out var right, ref next, ref nextPosition) || nextPosition == position)
                 {
                     cursor.ResetPosition(position);
                     lowest = 3;
@@ -9361,15 +9292,16 @@ break;
                 }
                 switch (op)
                 {
-                    case 7: climbed = ___Parlot_5_Build_lambda84(climbed, right); break;
-                    case 8: climbed = ___Parlot_5_Build_lambda85(climbed, right); break;
+                    case 4: climbed = ___Parlot_5_Build_lambda72(climbed, right); break;
+                    case 5: climbed = ___Parlot_5_Build_lambda73(climbed, right); break;
+                    case 6: climbed = ___Parlot_5_Build_lambda74(climbed, right); break;
                 }
                 continue;
             }
             case 3:
             {
                 var op = next;
-                if (!climb759(2, out var right, ref next, ref nextPosition) || nextPosition == position)
+                if (!climb740(2, out var right, ref next, ref nextPosition) || nextPosition == position)
                 {
                     cursor.ResetPosition(position);
                     lowest = 4;
@@ -9378,17 +9310,15 @@ break;
                 }
                 switch (op)
                 {
-                    case 9: climbed = ___Parlot_5_Build_lambda86(climbed, right); break;
-                    case 10: climbed = ___Parlot_5_Build_lambda87(climbed, right); break;
-                    case 11: climbed = ___Parlot_5_Build_lambda88(climbed, right); break;
-                    case 12: climbed = ___Parlot_5_Build_lambda89(climbed, right); break;
+                    case 7: climbed = ___Parlot_5_Build_lambda75(climbed, right); break;
+                    case 8: climbed = ___Parlot_5_Build_lambda76(climbed, right); break;
                 }
                 continue;
             }
             case 4:
             {
                 var op = next;
-                if (!climb759(3, out var right, ref next, ref nextPosition) || nextPosition == position)
+                if (!climb740(3, out var right, ref next, ref nextPosition) || nextPosition == position)
                 {
                     cursor.ResetPosition(position);
                     lowest = 5;
@@ -9397,15 +9327,17 @@ break;
                 }
                 switch (op)
                 {
-                    case 13: climbed = ___Parlot_5_Build_lambda90(climbed, right); break;
-                    case 14: climbed = ___Parlot_5_Build_lambda91(climbed, right); break;
+                    case 9: climbed = ___Parlot_5_Build_lambda77(climbed, right); break;
+                    case 10: climbed = ___Parlot_5_Build_lambda78(climbed, right); break;
+                    case 11: climbed = ___Parlot_5_Build_lambda79(climbed, right); break;
+                    case 12: climbed = ___Parlot_5_Build_lambda80(climbed, right); break;
                 }
                 continue;
             }
             case 5:
             {
                 var op = next;
-                if (!climb759(4, out var right, ref next, ref nextPosition) || nextPosition == position)
+                if (!climb740(4, out var right, ref next, ref nextPosition) || nextPosition == position)
                 {
                     cursor.ResetPosition(position);
                     lowest = 6;
@@ -9414,14 +9346,15 @@ break;
                 }
                 switch (op)
                 {
-                    case 15: climbed = ___Parlot_5_Build_lambda92(climbed, right); break;
+                    case 13: climbed = ___Parlot_5_Build_lambda81(climbed, right); break;
+                    case 14: climbed = ___Parlot_5_Build_lambda82(climbed, right); break;
                 }
                 continue;
             }
             case 6:
             {
                 var op = next;
-                if (!climb759(5, out var right, ref next, ref nextPosition) || nextPosition == position)
+                if (!climb740(5, out var right, ref next, ref nextPosition) || nextPosition == position)
                 {
                     cursor.ResetPosition(position);
                     lowest = 7;
@@ -9430,14 +9363,14 @@ break;
                 }
                 switch (op)
                 {
-                    case 16: climbed = ___Parlot_5_Build_lambda93(climbed, right); break;
+                    case 15: climbed = ___Parlot_5_Build_lambda83(climbed, right); break;
                 }
                 continue;
             }
             case 7:
             {
                 var op = next;
-                if (!climb759(6, out var right, ref next, ref nextPosition) || nextPosition == position)
+                if (!climb740(6, out var right, ref next, ref nextPosition) || nextPosition == position)
                 {
                     cursor.ResetPosition(position);
                     lowest = 8;
@@ -9446,14 +9379,14 @@ break;
                 }
                 switch (op)
                 {
-                    case 17: climbed = ___Parlot_5_Build_lambda94(climbed, right); break;
+                    case 16: climbed = ___Parlot_5_Build_lambda84(climbed, right); break;
                 }
                 continue;
             }
             case 8:
             {
                 var op = next;
-                if (!climb759(7, out var right, ref next, ref nextPosition) || nextPosition == position)
+                if (!climb740(7, out var right, ref next, ref nextPosition) || nextPosition == position)
                 {
                     cursor.ResetPosition(position);
                     lowest = 9;
@@ -9462,7 +9395,23 @@ break;
                 }
                 switch (op)
                 {
-                    case 18: climbed = ___Parlot_5_Build_lambda95(climbed, right); break;
+                    case 17: climbed = ___Parlot_5_Build_lambda85(climbed, right); break;
+                }
+                continue;
+            }
+            case 9:
+            {
+                var op = next;
+                if (!climb740(8, out var right, ref next, ref nextPosition) || nextPosition == position)
+                {
+                    cursor.ResetPosition(position);
+                    lowest = 10;
+                    lookup = true;
+                    continue;
+                }
+                switch (op)
+                {
+                    case 18: climbed = ___Parlot_5_Build_lambda86(climbed, right); break;
                 }
                 continue;
             }
@@ -9470,46 +9419,55 @@ break;
     }
     return true;
 }
-            bool lookup759(int lowest, ref int next, ref int nextPosition)
+            bool lookup740(int lowest, ref int next, ref int nextPosition)
 {
     nextPosition = cursor.Offset;
-    if (lowest <= 1)
+    if (lowest <= 0)
     {
-        if (__Parlot_5_Build_Operators759_336(context, out next)) return true;
-        next = -1;
-        return false;
+        if (__Parlot_5_Build_Operators740_320(context, out next))
+        {
+            if (next < 0) cursor.ResetPosition(nextPosition);
+            return true;
+        }
     }
-    if (lowest <= 2 && __Parlot_5_Build_Operators759_301(context, out next)) return true;
-    if (lowest <= 3 && __Parlot_5_Build_Operators759_308(context, out next)) return true;
-    if (lowest <= 4 && __Parlot_5_Build_Operators759_317(context, out next)) return true;
-    if (lowest <= 5 && __Parlot_5_Build_Operators759_322(context, out next)) return true;
-    if (lowest <= 6 && __Parlot_5_Build_Operators759_325(context, out next)) return true;
-    if (lowest <= 7 && __Parlot_5_Build_Operators759_328(context, out next)) return true;
-    if (lowest <= 8 && __Parlot_5_Build_Operators759_333(context, out next)) return true;
+    else if (lowest <= 2)
+    {
+        if (__Parlot_5_Build_Operators740_322(context, out next)) return true;
+    }
+    else
+    {
+        if (lowest <= 3 && __Parlot_5_Build_Operators740_285(context, out next)) return true;
+        if (lowest <= 4 && __Parlot_5_Build_Operators740_292(context, out next)) return true;
+        if (lowest <= 5 && __Parlot_5_Build_Operators740_301(context, out next)) return true;
+        if (lowest <= 6 && __Parlot_5_Build_Operators740_306(context, out next)) return true;
+        if (lowest <= 7 && __Parlot_5_Build_Operators740_309(context, out next)) return true;
+        if (lowest <= 8 && __Parlot_5_Build_Operators740_312(context, out next)) return true;
+        if (lowest <= 9 && __Parlot_5_Build_Operators740_317(context, out next)) return true;
+    }
     next = -1;
     return false;
 }
-            bool prefix759_0(out int op)
+            bool prefix740_1(out int op)
 {
     var offset = cursor.Offset;
-    if (!__Parlot_5_Build_Operators759_275(context, out op))
+    if (!__Parlot_5_Build_Operators740_264(context, out op))
     {
         op = -1;
         return false;
     }
     if (cursor.Offset != offset) return true;
     var matched = op;
-    if (matched < 1 && __Parlot_5_Build_Operators759_337(context, out _) && cursor.Offset != offset)
+    if (matched < 1 && __Parlot_5_Build_Operators740_327(context, out _) && cursor.Offset != offset)
     {
         op = 1;
         return true;
     }
-    if (matched < 2 && __Parlot_5_Build_Operators759_338(context, out _) && cursor.Offset != offset)
+    if (matched < 2 && __Parlot_5_Build_Operators740_328(context, out _) && cursor.Offset != offset)
     {
         op = 2;
         return true;
     }
-    if (matched < 3 && __Parlot_5_Build_Operators759_339(context, out _) && cursor.Offset != offset)
+    if (matched < 3 && __Parlot_5_Build_Operators740_329(context, out _) && cursor.Offset != offset)
     {
         op = 3;
         return true;
@@ -9518,28 +9476,28 @@ break;
     return false;
 }
 
-            value = value758;
-            return success757;
+            value = value739;
+            return success738;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_343(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.String> value)
+        private static bool __Parlot_5_Build_Sequence_P1_333(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.String> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1334 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::System.String> value1335 = global::System.Array.Empty<global::System.String>();
-            if (__Parlot_5_Build_When_287(context, out var itemValue1336))
+            bool success1290 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::System.String> value1291 = global::System.Array.Empty<global::System.String>();
+            if (__Parlot_5_Build_Then_1041_273(context, out var itemValue1292))
             {
-                value1335 = new global::System.String[] { itemValue1336 };
+                value1291 = new global::System.String[] { itemValue1292 };
             }
 
-            value = value1335;
-            return success1334;
+            value = value1291;
+            return success1290;
         }
 
-        private static bool __Parlot_5_Build_Keyword_351(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_341(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -9555,100 +9513,100 @@ break;
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_350(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_340(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1356 = false;
-            global::System.String value1357 = default;
-            var start1358 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_351(context, out _))
+            bool success1312 = false;
+            global::System.String value1313 = default;
+            var start1314 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_341(context, out _))
             {
-                var boundary1360 = cursor.Eof;
-                if (!boundary1360)
+                var boundary1316 = cursor.Eof;
+                if (!boundary1316)
                 {
-                    var next1361 = cursor.Current;
-                    boundary1360 = next1361 < 128
-                        ? (((next1361 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next1361 & 63)) & 1UL) == 0
+                    var next1317 = cursor.Current;
+                    boundary1316 = next1317 < 128
+                        ? (((next1317 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next1317 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary1360)
+                if (boundary1316)
                 {
-                    success1356 = true;
+                    success1312 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1358);
+                    cursor.ResetPosition(start1314);
                 }
             }
 
-            value = value1357;
-            return success1356;
+            value = value1313;
+            return success1312;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_349(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_339(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1354 = false;
-            global::System.String value1355 = default;
-            var shortcut1362 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart1363 = cursor.Offset;
-            if (!shortcut1362)
+            bool success1310 = false;
+            global::System.String value1311 = default;
+            var shortcut1318 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart1319 = cursor.Offset;
+            if (!shortcut1318)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart1363 = cursor.Offset;
-                success1354 = __Parlot_5_Build_SkipWS_350(context, out _);
-                if (!success1354)
+                contentStart1319 = cursor.Offset;
+                success1310 = __Parlot_5_Build_SkipWS_340(context, out _);
+                if (!success1310)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success1354 = __Parlot_5_Build_SkipWS_350(context, out _);
+                success1310 = __Parlot_5_Build_SkipWS_340(context, out _);
             }
 
-            value = value1355;
-            return success1354;
+            value = value1311;
+            return success1310;
         }
 
-        private static bool __Parlot_5_Build_SequenceAndSkip_P1_348(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_SequenceAndSkip_P1_338(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1351 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1352 = default;
-            var start1353 = cursor.Offset;
-            success1351 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_349(context, out _))
+            bool success1307 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1308 = default;
+            var start1309 = cursor.Offset;
+            success1307 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_339(context, out _))
             {
-                if (__Parlot_5_Build_Sequence_P1_196(context, out value1352))
+                if (__Parlot_5_Build_Sequence_P1_193(context, out value1308))
                 {
-                    success1351 = true;
+                    success1307 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1353);
+                    cursor.ResetPosition(start1309);
                 }
             }
             else
             {
-                cursor.ResetPosition(start1353);
+                cursor.ResetPosition(start1309);
             }
 
-            value = value1352;
-            return success1351;
+            value = value1308;
+            return success1307;
         }
 
-        private static bool __Parlot_5_Build_Keyword_354(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_344(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -9664,128 +9622,205 @@ break;
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_353(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_343(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1366 = false;
-            global::System.String value1367 = default;
-            var start1368 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_354(context, out _))
+            bool success1322 = false;
+            global::System.String value1323 = default;
+            var start1324 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_344(context, out _))
             {
-                var boundary1370 = cursor.Eof;
-                if (!boundary1370)
+                var boundary1326 = cursor.Eof;
+                if (!boundary1326)
                 {
-                    var next1371 = cursor.Current;
-                    boundary1370 = next1371 < 128
-                        ? (((next1371 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next1371 & 63)) & 1UL) == 0
+                    var next1327 = cursor.Current;
+                    boundary1326 = next1327 < 128
+                        ? (((next1327 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next1327 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary1370)
+                if (boundary1326)
                 {
-                    success1366 = true;
+                    success1322 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1368);
+                    cursor.ResetPosition(start1324);
                 }
             }
 
-            value = value1367;
-            return success1366;
+            value = value1323;
+            return success1322;
         }
 
-        private static bool __Parlot_5_Build_SequenceAndSkip_P2_352(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceAndSkip_P2_342(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1364 = false;
-            global::System.String value1365 = default;
-            var shortcut1372 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart1373 = cursor.Offset;
-            if (!shortcut1372)
+            bool success1320 = false;
+            global::System.String value1321 = default;
+            var shortcut1328 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart1329 = cursor.Offset;
+            if (!shortcut1328)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart1373 = cursor.Offset;
-                success1364 = __Parlot_5_Build_SkipWS_353(context, out _);
-                if (!success1364)
+                contentStart1329 = cursor.Offset;
+                success1320 = __Parlot_5_Build_SkipWS_343(context, out _);
+                if (!success1320)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success1364 = __Parlot_5_Build_SkipWS_353(context, out _);
+                success1320 = __Parlot_5_Build_SkipWS_343(context, out _);
             }
 
-            value = value1365;
-            return success1364;
+            value = value1321;
+            return success1320;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_347(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_Sequence_P1_337(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1348 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1349 = default;
-            var start1350 = cursor.Offset;
-            success1348 = false;
-            if (__Parlot_5_Build_SequenceAndSkip_P1_348(context, out value1349))
+            bool success1304 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1305 = default;
+            var start1306 = cursor.Offset;
+            success1304 = false;
+            if (__Parlot_5_Build_SequenceAndSkip_P1_338(context, out value1305))
             {
-                if (__Parlot_5_Build_SequenceAndSkip_P2_352(context, out _))
+                if (__Parlot_5_Build_SequenceAndSkip_P2_342(context, out _))
                 {
-                    success1348 = true;
+                    success1304 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1350);
+                    cursor.ResetPosition(start1306);
                 }
             }
             else
             {
-                cursor.ResetPosition(start1350);
+                cursor.ResetPosition(start1306);
             }
 
-            value = value1349;
-            return success1348;
+            value = value1305;
+            return success1304;
         }
 
-        private static bool __Parlot_5_Build_Then_1344_346(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
+        private static bool __Parlot_5_Build_Then_1300_336(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1345 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value1346 = default;
-            var start1347 = cursor.Offset;
-            success1345 = false;
-            if (__Parlot_5_Build_Sequence_P1_347(context, out var h1Value))
+            bool success1301 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value1302 = default;
+            var start1303 = cursor.Offset;
+            success1301 = false;
+            if (__Parlot_5_Build_Sequence_P1_337(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P1_196(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P1_193(context, out var h2Value))
                 {
-                    success1345 = true;
-                    value1346 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>(h1Value, h2Value);
+                    success1301 = true;
+                    value1302 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start1347);
+                    cursor.ResetPosition(start1303);
                 }
             }
             else
             {
-                cursor.ResetPosition(start1347);
+                cursor.ResetPosition(start1303);
             }
 
-            value = value1346;
-            return success1345;
+            value = value1302;
+            return success1301;
+        }
+
+        private static bool __Parlot_5_Build_OneOf_335(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1297 = false;
+            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value1298 = default;
+            if (__Parlot_5_Build_Then_1300_336(context, out var parsed1299Value))
+            {
+                value1298 = ___Parlot_5_Build_lambda89(parsed1299Value);
+                success1297 = true;
+            }
+
+            value = value1298;
+            return success1297;
+        }
+
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_347(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1337 = false;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value1338 = default;
+            var start1339 = cursor.Offset;
+            success1337 = false;
+            if (__Parlot_5_Build_Between_Before_69(context, out _))
+            {
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_117(context, out value1338))
+                {
+                    if (__Parlot_5_Build_Between_After_70(context, out _))
+                    {
+                        success1337 = true;
+                    }
+                }
+            }
+            if (!success1337)
+            {
+                cursor.ResetPosition(start1339);
+            }
+
+            value = value1338;
+            return success1337;
+        }
+
+        private static bool __Parlot_5_Build_Then_1333_346(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1334 = false;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value1335 = default;
+            var start1336 = cursor.Offset;
+            success1334 = false;
+            if (__Parlot_5_Build_SequenceAndSkip_P2_93(context, out _))
+            {
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_347(context, out value1335))
+                {
+                    success1334 = true;
+                }
+                else
+                {
+                    cursor.ResetPosition(start1336);
+                }
+            }
+            else
+            {
+                cursor.ResetPosition(start1336);
+            }
+
+            value = value1335;
+            return success1334;
         }
 
         private static bool __Parlot_5_Build_OneOf_345(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value)
@@ -9794,96 +9829,19 @@ break;
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1341 = false;
-            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value1342 = default;
-            if (__Parlot_5_Build_Then_1344_346(context, out var parsed1343Value))
+            bool success1330 = false;
+            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value1331 = default;
+            if (__Parlot_5_Build_Then_1333_346(context, out var parsed1332Value))
             {
-                value1342 = ___Parlot_5_Build_lambda96(parsed1343Value);
-                success1341 = true;
+                value1331 = ___Parlot_5_Build_lambda90(parsed1332Value);
+                success1330 = true;
             }
 
-            value = value1342;
-            return success1341;
+            value = value1331;
+            return success1330;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_357(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1381 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value1382 = default;
-            var start1383 = cursor.Offset;
-            success1381 = false;
-            if (__Parlot_5_Build_Between_Before_70(context, out _))
-            {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_118(context, out value1382))
-                {
-                    if (__Parlot_5_Build_Between_After_71(context, out _))
-                    {
-                        success1381 = true;
-                    }
-                }
-            }
-            if (!success1381)
-            {
-                cursor.ResetPosition(start1383);
-            }
-
-            value = value1382;
-            return success1381;
-        }
-
-        private static bool __Parlot_5_Build_Then_1377_356(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1378 = false;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value1379 = default;
-            var start1380 = cursor.Offset;
-            success1378 = false;
-            if (__Parlot_5_Build_SequenceAndSkip_P2_94(context, out _))
-            {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_357(context, out value1379))
-                {
-                    success1378 = true;
-                }
-                else
-                {
-                    cursor.ResetPosition(start1380);
-                }
-            }
-            else
-            {
-                cursor.ResetPosition(start1380);
-            }
-
-            value = value1379;
-            return success1378;
-        }
-
-        private static bool __Parlot_5_Build_OneOf_355(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1374 = false;
-            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value1375 = default;
-            if (__Parlot_5_Build_Then_1377_356(context, out var parsed1376Value))
-            {
-                value1375 = ___Parlot_5_Build_lambda97(parsed1376Value);
-                success1374 = true;
-            }
-
-            value = value1375;
-            return success1374;
-        }
-
-        private static bool __Parlot_5_Build_Keyword_363(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_353(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -9899,100 +9857,100 @@ break;
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_362(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_352(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1396 = false;
-            global::System.String value1397 = default;
-            var start1398 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_363(context, out _))
+            bool success1352 = false;
+            global::System.String value1353 = default;
+            var start1354 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_353(context, out _))
             {
-                var boundary1400 = cursor.Eof;
-                if (!boundary1400)
+                var boundary1356 = cursor.Eof;
+                if (!boundary1356)
                 {
-                    var next1401 = cursor.Current;
-                    boundary1400 = next1401 < 128
-                        ? (((next1401 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next1401 & 63)) & 1UL) == 0
+                    var next1357 = cursor.Current;
+                    boundary1356 = next1357 < 128
+                        ? (((next1357 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next1357 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary1400)
+                if (boundary1356)
                 {
-                    success1396 = true;
+                    success1352 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1398);
+                    cursor.ResetPosition(start1354);
                 }
             }
 
-            value = value1397;
-            return success1396;
+            value = value1353;
+            return success1352;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_361(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_351(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1394 = false;
-            global::System.String value1395 = default;
-            var shortcut1402 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart1403 = cursor.Offset;
-            if (!shortcut1402)
+            bool success1350 = false;
+            global::System.String value1351 = default;
+            var shortcut1358 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart1359 = cursor.Offset;
+            if (!shortcut1358)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart1403 = cursor.Offset;
-                success1394 = __Parlot_5_Build_SkipWS_362(context, out _);
-                if (!success1394)
+                contentStart1359 = cursor.Offset;
+                success1350 = __Parlot_5_Build_SkipWS_352(context, out _);
+                if (!success1350)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success1394 = __Parlot_5_Build_SkipWS_362(context, out _);
+                success1350 = __Parlot_5_Build_SkipWS_352(context, out _);
             }
 
-            value = value1395;
-            return success1394;
+            value = value1351;
+            return success1350;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_360(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_Sequence_P1_350(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1391 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1392 = default;
-            var start1393 = cursor.Offset;
-            success1391 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_361(context, out _))
+            bool success1347 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1348 = default;
+            var start1349 = cursor.Offset;
+            success1347 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_351(context, out _))
             {
-                if (__Parlot_5_Build_Sequence_P1_196(context, out value1392))
+                if (__Parlot_5_Build_Sequence_P1_193(context, out value1348))
                 {
-                    success1391 = true;
+                    success1347 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1393);
+                    cursor.ResetPosition(start1349);
                 }
             }
             else
             {
-                cursor.ResetPosition(start1393);
+                cursor.ResetPosition(start1349);
             }
 
-            value = value1392;
-            return success1391;
+            value = value1348;
+            return success1347;
         }
 
-        private static bool __Parlot_5_Build_Keyword_368(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_358(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -10008,528 +9966,528 @@ break;
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_367(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_357(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1411 = false;
-            global::System.String value1412 = default;
-            var start1413 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_368(context, out _))
+            bool success1367 = false;
+            global::System.String value1368 = default;
+            var start1369 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_358(context, out _))
             {
-                var boundary1415 = cursor.Eof;
-                if (!boundary1415)
+                var boundary1371 = cursor.Eof;
+                if (!boundary1371)
                 {
-                    var next1416 = cursor.Current;
-                    boundary1415 = next1416 < 128
-                        ? (((next1416 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next1416 & 63)) & 1UL) == 0
+                    var next1372 = cursor.Current;
+                    boundary1371 = next1372 < 128
+                        ? (((next1372 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next1372 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary1415)
+                if (boundary1371)
                 {
-                    success1411 = true;
+                    success1367 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1413);
+                    cursor.ResetPosition(start1369);
                 }
             }
 
-            value = value1412;
-            return success1411;
+            value = value1368;
+            return success1367;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_366(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_356(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1409 = false;
-            global::System.String value1410 = default;
-            var shortcut1417 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart1418 = cursor.Offset;
-            if (!shortcut1417)
+            bool success1365 = false;
+            global::System.String value1366 = default;
+            var shortcut1373 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart1374 = cursor.Offset;
+            if (!shortcut1373)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart1418 = cursor.Offset;
-                success1409 = __Parlot_5_Build_SkipWS_367(context, out _);
-                if (!success1409)
+                contentStart1374 = cursor.Offset;
+                success1365 = __Parlot_5_Build_SkipWS_357(context, out _);
+                if (!success1365)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success1409 = __Parlot_5_Build_SkipWS_367(context, out _);
+                success1365 = __Parlot_5_Build_SkipWS_357(context, out _);
             }
 
-            value = value1410;
-            return success1409;
+            value = value1366;
+            return success1365;
         }
 
-        private static bool __Parlot_5_Build_ZeroOrOne_Parser_365(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value)
+        private static bool __Parlot_5_Build_ZeroOrOne_Parser_355(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1406 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value1407 = default;
-            var start1408 = cursor.Offset;
-            success1406 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_366(context, out _))
+            bool success1362 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral value1363 = default;
+            var start1364 = cursor.Offset;
+            success1362 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_356(context, out _))
             {
-                if (__Parlot_5_Build_Between_Parser_85(context, out value1407))
+                if (__Parlot_5_Build_Between_Parser_84(context, out value1363))
                 {
-                    success1406 = true;
+                    success1362 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1408);
+                    cursor.ResetPosition(start1364);
                 }
             }
             else
             {
-                cursor.ResetPosition(start1408);
+                cursor.ResetPosition(start1364);
             }
 
-            value = value1407;
-            return success1406;
+            value = value1363;
+            return success1362;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P2_364(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral> value)
+        private static bool __Parlot_5_Build_Sequence_P2_354(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1404 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral> value1405 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral>();
-            if (__Parlot_5_Build_ZeroOrOne_Parser_365(context, out var itemValue1419))
+            bool success1360 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral> value1361 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral>();
+            if (__Parlot_5_Build_ZeroOrOne_Parser_355(context, out var itemValue1375))
             {
-                value1405 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral[] { itemValue1419 };
+                value1361 = new global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral[] { itemValue1375 };
             }
 
-            value = value1405;
-            return success1404;
+            value = value1361;
+            return success1360;
         }
 
-        private static bool __Parlot_5_Build_Then_1387_359(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral>> value)
+        private static bool __Parlot_5_Build_Then_1343_349(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1388 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral>> value1389 = default;
-            var start1390 = cursor.Offset;
-            success1388 = false;
-            if (__Parlot_5_Build_Sequence_P1_360(context, out var h1Value))
+            bool success1344 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral>> value1345 = default;
+            var start1346 = cursor.Offset;
+            success1344 = false;
+            if (__Parlot_5_Build_Sequence_P1_350(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_364(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_354(context, out var h2Value))
                 {
-                    success1388 = true;
-                    value1389 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral>>(h1Value, h2Value);
+                    success1344 = true;
+                    value1345 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlStringLiteral>>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start1390);
+                    cursor.ResetPosition(start1346);
                 }
             }
             else
             {
-                cursor.ResetPosition(start1390);
+                cursor.ResetPosition(start1346);
             }
 
-            value = value1389;
-            return success1388;
+            value = value1345;
+            return success1344;
         }
 
-        private static bool __Parlot_5_Build_OneOf_358(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value)
+        private static bool __Parlot_5_Build_OneOf_348(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1384 = false;
-            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value1385 = default;
-            if (__Parlot_5_Build_Then_1387_359(context, out var parsed1386Value))
+            bool success1340 = false;
+            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value1341 = default;
+            if (__Parlot_5_Build_Then_1343_349(context, out var parsed1342Value))
             {
-                value1385 = ___Parlot_5_Build_lambda98(parsed1386Value);
-                success1384 = true;
+                value1341 = ___Parlot_5_Build_lambda91(parsed1342Value);
+                success1340 = true;
             }
 
-            value = value1385;
-            return success1384;
+            value = value1341;
+            return success1340;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P2_344(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value)
+        private static bool __Parlot_5_Build_Sequence_P2_334(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1337 = false;
-            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value1338 = default;
-            var start1339 = cursor.Offset;
+            bool success1293 = false;
+            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value1294 = default;
+            var start1295 = cursor.Offset;
             context.SkipWhiteSpace();
-            var current1340 = cursor.Current;
-            switch (current1340)
+            var current1296 = cursor.Current;
+            switch (current1296)
             {
                 case 'B' or 'b':
                 {
-                    success1337 = __Parlot_5_Build_OneOf_345(context, out value1338);
+                    success1293 = __Parlot_5_Build_OneOf_335(context, out value1294);
                     break;
                 }
                 case 'I' or 'i':
                 {
-                    success1337 = __Parlot_5_Build_OneOf_355(context, out value1338);
+                    success1293 = __Parlot_5_Build_OneOf_345(context, out value1294);
                     break;
                 }
                 case 'L' or 'l':
                 {
-                    success1337 = __Parlot_5_Build_OneOf_358(context, out value1338);
+                    success1293 = __Parlot_5_Build_OneOf_348(context, out value1294);
                     break;
                 }
             }
-            if (!success1337)
+            if (!success1293)
             {
-                cursor.ResetPosition(start1339);
+                cursor.ResetPosition(start1295);
             }
 
-            value = value1338;
-            return success1337;
+            value = value1294;
+            return success1293;
         }
 
-        private static bool __Parlot_5_Build_Then_1330_342(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value)
+        private static bool __Parlot_5_Build_Then_1286_332(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1331 = false;
-            global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value1332 = default;
-            var start1333 = cursor.Offset;
-            success1331 = false;
-            if (__Parlot_5_Build_Sequence_P1_343(context, out var h1Value))
+            bool success1287 = false;
+            global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value1288 = default;
+            var start1289 = cursor.Offset;
+            success1287 = false;
+            if (__Parlot_5_Build_Sequence_P1_333(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_344(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_334(context, out var h2Value))
                 {
-                    success1331 = true;
-                    value1332 = new global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>(h1Value, h2Value);
+                    success1287 = true;
+                    value1288 = new global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start1333);
+                    cursor.ResetPosition(start1289);
                 }
             }
             else
             {
-                cursor.ResetPosition(start1333);
+                cursor.ResetPosition(start1289);
             }
 
-            value = value1332;
-            return success1331;
+            value = value1288;
+            return success1287;
         }
 
-        private static bool __Parlot_5_Build_ZeroOrOne_Parser_341(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value)
+        private static bool __Parlot_5_Build_ZeroOrOne_Parser_331(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1327 = false;
-            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value1328 = default;
-            if (__Parlot_5_Build_Then_1330_342(context, out var parsed1329Value))
+            bool success1283 = false;
+            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value1284 = default;
+            if (__Parlot_5_Build_Then_1286_332(context, out var parsed1285Value))
             {
-                value1328 = ___Parlot_5_Build_lambda99(parsed1329Value);
-                success1327 = true;
+                value1284 = ___Parlot_5_Build_lambda92(parsed1285Value);
+                success1283 = true;
             }
 
-            value = value1328;
-            return success1327;
+            value = value1284;
+            return success1283;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P2_340(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value)
+        private static bool __Parlot_5_Build_Sequence_P2_330(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1325 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value1326 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>();
-            if (__Parlot_5_Build_ZeroOrOne_Parser_341(context, out var itemValue1420))
+            bool success1281 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value1282 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>();
+            if (__Parlot_5_Build_ZeroOrOne_Parser_331(context, out var itemValue1376))
             {
-                value1326 = new global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix[] { itemValue1420 };
+                value1282 = new global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix[] { itemValue1376 };
             }
 
-            value = value1326;
-            return success1325;
+            value = value1282;
+            return success1281;
         }
 
-        private static bool __Parlot_5_Build_Then_753_195(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>> value)
+        private static bool __Parlot_5_Build_Then_734_192(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success754 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>> value755 = default;
-            var start756 = cursor.Offset;
-            success754 = false;
-            if (__Parlot_5_Build_Sequence_P1_196(context, out var h1Value))
+            bool success735 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>> value736 = default;
+            var start737 = cursor.Offset;
+            success735 = false;
+            if (__Parlot_5_Build_Sequence_P1_193(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_340(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_330(context, out var h2Value))
                 {
-                    success754 = true;
-                    value755 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>>(h1Value, h2Value);
+                    success735 = true;
+                    value736 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start756);
+                    cursor.ResetPosition(start737);
                 }
             }
             else
             {
-                cursor.ResetPosition(start756);
+                cursor.ResetPosition(start737);
             }
 
-            value = value755;
-            return success754;
+            value = value736;
+            return success735;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_194(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf value)
+        private static bool __Parlot_5_Build_Sequence_P1_191(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success750 = false;
-            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf value751 = default;
-            if (__Parlot_5_Build_Then_753_195(context, out var parsed752Value))
+            bool success731 = false;
+            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf value732 = default;
+            if (__Parlot_5_Build_Then_734_192(context, out var parsed733Value))
             {
-                value751 = ___Parlot_5_Build_lambda100(parsed752Value);
-                success750 = true;
+                value732 = ___Parlot_5_Build_lambda93(parsed733Value);
+                success731 = true;
             }
 
-            value = value751;
-            return success750;
+            value = value732;
+            return success731;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P1_376(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.String> value)
+        private static bool __Parlot_5_Build_Sequence_P1_366(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::System.String> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1442 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::System.String> value1443 = global::System.Array.Empty<global::System.String>();
-            if (__Parlot_5_Build_When_287(context, out var itemValue1444))
+            bool success1398 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::System.String> value1399 = global::System.Array.Empty<global::System.String>();
+            if (__Parlot_5_Build_Then_1041_273(context, out var itemValue1400))
             {
-                value1443 = new global::System.String[] { itemValue1444 };
+                value1399 = new global::System.String[] { itemValue1400 };
             }
 
-            value = value1443;
-            return success1442;
+            value = value1399;
+            return success1398;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P2_377(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value)
+        private static bool __Parlot_5_Build_Sequence_P2_367(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1445 = false;
-            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value1446 = default;
-            var start1447 = cursor.Offset;
+            bool success1401 = false;
+            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value1402 = default;
+            var start1403 = cursor.Offset;
             context.SkipWhiteSpace();
-            var current1448 = cursor.Current;
-            switch (current1448)
+            var current1404 = cursor.Current;
+            switch (current1404)
             {
                 case 'I' or 'i':
                 {
-                    success1445 = __Parlot_5_Build_OneOf_355(context, out value1446);
+                    success1401 = __Parlot_5_Build_OneOf_345(context, out value1402);
                     break;
                 }
                 case 'L' or 'l':
                 {
-                    success1445 = __Parlot_5_Build_OneOf_358(context, out value1446);
+                    success1401 = __Parlot_5_Build_OneOf_348(context, out value1402);
                     break;
                 }
             }
-            if (!success1445)
+            if (!success1401)
             {
-                cursor.ResetPosition(start1447);
+                cursor.ResetPosition(start1403);
             }
 
-            value = value1446;
-            return success1445;
+            value = value1402;
+            return success1401;
         }
 
-        private static bool __Parlot_5_Build_Then_1438_375(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value)
+        private static bool __Parlot_5_Build_Then_1394_365(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1439 = false;
-            global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value1440 = default;
-            var start1441 = cursor.Offset;
-            success1439 = false;
-            if (__Parlot_5_Build_Sequence_P1_376(context, out var h1Value))
+            bool success1395 = false;
+            global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value1396 = default;
+            var start1397 = cursor.Offset;
+            success1395 = false;
+            if (__Parlot_5_Build_Sequence_P1_366(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_377(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_367(context, out var h2Value))
                 {
-                    success1439 = true;
-                    value1440 = new global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>(h1Value, h2Value);
+                    success1395 = true;
+                    value1396 = new global::System.ValueTuple<global::System.Collections.Generic.IReadOnlyList<global::System.String>, global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start1441);
+                    cursor.ResetPosition(start1397);
                 }
             }
             else
             {
-                cursor.ResetPosition(start1441);
+                cursor.ResetPosition(start1397);
             }
 
-            value = value1440;
-            return success1439;
+            value = value1396;
+            return success1395;
         }
 
-        private static bool __Parlot_5_Build_ZeroOrOne_Parser_374(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value)
+        private static bool __Parlot_5_Build_ZeroOrOne_Parser_364(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1435 = false;
-            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value1436 = default;
-            if (__Parlot_5_Build_Then_1438_375(context, out var parsed1437Value))
+            bool success1391 = false;
+            global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix value1392 = default;
+            if (__Parlot_5_Build_Then_1394_365(context, out var parsed1393Value))
             {
-                value1436 = ___Parlot_5_Build_lambda101(parsed1437Value);
-                success1435 = true;
+                value1392 = ___Parlot_5_Build_lambda94(parsed1393Value);
+                success1391 = true;
             }
 
-            value = value1436;
-            return success1435;
+            value = value1392;
+            return success1391;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P2_373(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value)
+        private static bool __Parlot_5_Build_Sequence_P2_363(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1433 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value1434 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>();
-            if (__Parlot_5_Build_ZeroOrOne_Parser_374(context, out var itemValue1449))
+            bool success1389 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix> value1390 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>();
+            if (__Parlot_5_Build_ZeroOrOne_Parser_364(context, out var itemValue1405))
             {
-                value1434 = new global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix[] { itemValue1449 };
+                value1390 = new global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix[] { itemValue1405 };
             }
 
-            value = value1434;
-            return success1433;
+            value = value1390;
+            return success1389;
         }
 
-        private static bool __Parlot_5_Build_Then_1429_372(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>> value)
+        private static bool __Parlot_5_Build_Then_1385_362(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1430 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>> value1431 = default;
-            var start1432 = cursor.Offset;
-            success1430 = false;
-            if (__Parlot_5_Build_Sequence_P1_196(context, out var h1Value))
+            bool success1386 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>> value1387 = default;
+            var start1388 = cursor.Offset;
+            success1386 = false;
+            if (__Parlot_5_Build_Sequence_P1_193(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_373(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_363(context, out var h2Value))
                 {
-                    success1430 = true;
-                    value1431 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>>(h1Value, h2Value);
+                    success1386 = true;
+                    value1387 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Suffix>>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start1432);
+                    cursor.ResetPosition(start1388);
                 }
             }
             else
             {
-                cursor.ResetPosition(start1432);
+                cursor.ResetPosition(start1388);
             }
 
-            value = value1431;
-            return success1430;
+            value = value1387;
+            return success1386;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_371(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_361(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1426 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1427 = default;
-            if (__Parlot_5_Build_Then_1429_372(context, out var parsed1428Value))
+            bool success1382 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1383 = default;
+            if (__Parlot_5_Build_Then_1385_362(context, out var parsed1384Value))
             {
-                value1427 = ___Parlot_5_Build_lambda102(parsed1428Value);
-                success1426 = true;
+                value1383 = ___Parlot_5_Build_lambda95(parsed1384Value);
+                success1382 = true;
             }
 
-            value = value1427;
-            return success1426;
+            value = value1383;
+            return success1382;
         }
 
-        private static bool __Parlot_5_Build_ZeroOrMany_Parser_370(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_ZeroOrMany_Parser_360(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1423 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1424 = default;
-            var start1425 = cursor.Offset;
-            success1423 = false;
-            if (__Parlot_5_Build_SequenceAndSkip_P2_352(context, out _))
+            bool success1379 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1380 = default;
+            var start1381 = cursor.Offset;
+            success1379 = false;
+            if (__Parlot_5_Build_SequenceAndSkip_P2_342(context, out _))
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_371(context, out value1424))
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_361(context, out value1380))
                 {
-                    success1423 = true;
+                    success1379 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1425);
+                    cursor.ResetPosition(start1381);
                 }
             }
             else
             {
-                cursor.ResetPosition(start1425);
+                cursor.ResetPosition(start1381);
             }
 
-            value = value1424;
-            return success1423;
+            value = value1380;
+            return success1379;
         }
 
-        private static bool __Parlot_5_Build_Sequence_P2_369(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
+        private static bool __Parlot_5_Build_Sequence_P2_359(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1421 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value1422 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
-            var previousOffset1450 = cursor.Offset;
-            if (__Parlot_5_Build_ZeroOrMany_Parser_370(context, out var first1451) && cursor.Offset != previousOffset1450)
+            bool success1377 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value1378 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
+            var previousOffset1406 = cursor.Offset;
+            if (__Parlot_5_Build_ZeroOrMany_Parser_360(context, out var first1407) && cursor.Offset != previousOffset1406)
             {
-                value1422 = listRest1452(context, first1451);
-                success1421 = true;
+                value1378 = listRest1408(context, first1407);
+                success1377 = true;
             }
-            static global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> listRest1452(global::Parlot.Generated.Fluent.ParseContext context, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression first)
+            static global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> listRest1408(global::Parlot.Generated.Fluent.ParseContext context, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression first)
 {
     var cursor = context.Scanner.Cursor;
     var list = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
@@ -10539,7 +10497,7 @@ break;
         while (true)
         {
             var previousOffset = cursor.Offset;
-            if (!__Parlot_5_Build_ZeroOrMany_Parser_370(context, out var item) || cursor.Offset == previousOffset)
+            if (!__Parlot_5_Build_ZeroOrMany_Parser_360(context, out var item) || cursor.Offset == previousOffset)
             {
                 break;
             }
@@ -10553,42 +10511,42 @@ break;
     }
 }
 
-            value = value1422;
-            return success1421;
+            value = value1378;
+            return success1377;
         }
 
-        private static bool __Parlot_5_Build_Sequence_Parser_193(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
+        private static bool __Parlot_5_Build_Sequence_Parser_190(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success747 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value748 = default;
-            var start749 = cursor.Offset;
-            success747 = false;
-            if (__Parlot_5_Build_Sequence_P1_194(context, out var h1Value))
+            bool success728 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value729 = default;
+            var start730 = cursor.Offset;
+            success728 = false;
+            if (__Parlot_5_Build_Sequence_P1_191(context, out var h1Value))
             {
-                if (__Parlot_5_Build_Sequence_P2_369(context, out var h2Value))
+                if (__Parlot_5_Build_Sequence_P2_359(context, out var h2Value))
                 {
-                    success747 = true;
-                    value748 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
+                    success728 = true;
+                    value729 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(h1Value, h2Value);
                 }
                 else
                 {
-                    cursor.ResetPosition(start749);
+                    cursor.ResetPosition(start730);
                 }
             }
             else
             {
-                cursor.ResetPosition(start749);
+                cursor.ResetPosition(start730);
             }
 
-            value = value748;
-            return success747;
+            value = value729;
+            return success728;
         }
 
-        private static bool __Parlot_5_Build_Keyword_382(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_Keyword_372(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
@@ -10604,180 +10562,194 @@ break;
             return false;
         }
 
-        private static bool __Parlot_5_Build_SkipWS_381(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SkipWS_371(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1460 = false;
-            global::System.String value1461 = default;
-            var start1462 = cursor.Offset;
-            if (__Parlot_5_Build_Keyword_382(context, out _))
+            bool success1416 = false;
+            global::System.String value1417 = default;
+            var start1418 = cursor.Offset;
+            if (__Parlot_5_Build_Keyword_372(context, out _))
             {
-                var boundary1464 = cursor.Eof;
-                if (!boundary1464)
+                var boundary1420 = cursor.Eof;
+                if (!boundary1420)
                 {
-                    var next1465 = cursor.Current;
-                    boundary1464 = next1465 < 128
-                        ? (((next1465 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next1465 & 63)) & 1UL) == 0
+                    var next1421 = cursor.Current;
+                    boundary1420 = next1421 < 128
+                        ? (((next1421 < 64 ? 0x3FF000000000000UL : 0x7FFFFFE87FFFFFEUL) >> (next1421 & 63)) & 1UL) == 0
                         : true;
                 }
-                if (boundary1464)
+                if (boundary1420)
                 {
-                    success1460 = true;
+                    success1416 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1462);
+                    cursor.ResetPosition(start1418);
                 }
             }
 
-            value = value1461;
-            return success1460;
+            value = value1417;
+            return success1416;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_380(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_370(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1458 = false;
-            global::System.String value1459 = default;
-            var shortcut1466 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
-            var contentStart1467 = cursor.Offset;
-            if (!shortcut1466)
+            bool success1414 = false;
+            global::System.String value1415 = default;
+            var shortcut1422 = context.WhiteSpaceParser is null && (!global::Parlot.Generated.Character.IsWhiteSpaceOrNewLine(cursor.Current) || !global::Parlot.Generated.Character.HasMask(cursor.Current, context._skipMask));
+            var contentStart1423 = cursor.Offset;
+            if (!shortcut1422)
             {
                 var start = cursor.Offset;
                 context.SkipWhiteSpace();
-                contentStart1467 = cursor.Offset;
-                success1458 = __Parlot_5_Build_SkipWS_381(context, out _);
-                if (!success1458)
+                contentStart1423 = cursor.Offset;
+                success1414 = __Parlot_5_Build_SkipWS_371(context, out _);
+                if (!success1414)
                 {
                     cursor.ResetPosition(start);
                 }
             }
             else
             {
-                success1458 = __Parlot_5_Build_SkipWS_381(context, out _);
+                success1414 = __Parlot_5_Build_SkipWS_371(context, out _);
             }
 
-            value = value1459;
-            return success1458;
+            value = value1415;
+            return success1414;
         }
 
-        private static bool __Parlot_5_Build_OneOf_385(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        private static bool __Parlot_5_Build_OneOf_375(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1473 = false;
-            global::System.Int32 value1474 = default;
-            success1473 = __Parlot_5_Build_SequenceAndSkip_P2_352(context, out _);
-            if (success1473)
+            bool success1431 = false;
+            global::System.Int32 value1432 = default;
+            success1431 = __Parlot_5_Build_SequenceAndSkip_P2_342(context, out _);
+            if (success1431)
             {
-                value1474 = 0;
+                value1432 = 0;
             }
 
-            value = value1474;
-            return success1473;
+            value = value1432;
+            return success1431;
         }
 
-        private static bool __Parlot_5_Build_LeftAssoc1470_384(global::Parlot.Generated.Fluent.ParseContext context, out int value)
+        private static bool __Parlot_5_Build_LeftAssoc1426_374(global::Parlot.Generated.Fluent.ParseContext context, out int value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1471 = false;
-            global::System.Int32 value1472 = default;
-            success1471 = __Parlot_5_Build_OneOf_385(context, out value1472);
+            bool success1427 = false;
+            global::System.Int32 value1428 = default;
+            var start1429 = cursor.Offset;
+            context.SkipWhiteSpace();
+            var current1430 = cursor.Current;
+            switch (current1430)
+            {
+                case 'A' or 'a':
+                {
+                    success1427 = __Parlot_5_Build_OneOf_375(context, out value1428);
+                    break;
+                }
+            }
+            if (!success1427)
+            {
+                cursor.ResetPosition(start1429);
+            }
 
-            value = value1472;
-            return success1471;
+            value = value1428;
+            return success1427;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_383(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P2_373(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1468 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1469 = default;
-            if (__Parlot_5_Build_SequenceSkipAnd_P2_371(context, out value1469))
+            bool success1424 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1425 = default;
+            if (__Parlot_5_Build_SequenceSkipAnd_P2_361(context, out value1425))
             {
                 while (true)
                 {
-                    var opPos1475 = cursor.Offset;
-                    if (!__Parlot_5_Build_LeftAssoc1470_384(context, out var op1476)) break;
-                    if (!__Parlot_5_Build_SequenceSkipAnd_P2_371(context, out var right1477))
+                    var opPos1433 = cursor.Offset;
+                    if (!__Parlot_5_Build_LeftAssoc1426_374(context, out var op1434)) break;
+                    if (!__Parlot_5_Build_SequenceSkipAnd_P2_361(context, out var right1435))
                     {
-                        cursor.ResetPosition(opPos1475);
+                        cursor.ResetPosition(opPos1433);
                         break;
                     }
-                    if (cursor.Offset == opPos1475) break;
-                    switch (op1476)
+                    if (cursor.Offset == opPos1433) break;
+                    switch (op1434)
                     {
                         case 0:
-                            value1469 = ___Parlot_5_Build_lambda103(value1469, right1477);
+                            value1425 = ___Parlot_5_Build_lambda96(value1425, right1435);
                             break;
                     }
                 }
-                success1468 = true;
+                success1424 = true;
             }
 
-            value = value1469;
-            return success1468;
+            value = value1425;
+            return success1424;
         }
 
-        private static bool __Parlot_5_Build_ZeroOrMany_Parser_379(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_ZeroOrMany_Parser_369(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1455 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1456 = default;
-            var start1457 = cursor.Offset;
-            success1455 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_380(context, out _))
+            bool success1411 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1412 = default;
+            var start1413 = cursor.Offset;
+            success1411 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_370(context, out _))
             {
-                if (__Parlot_5_Build_SequenceSkipAnd_P2_383(context, out value1456))
+                if (__Parlot_5_Build_SequenceSkipAnd_P2_373(context, out value1412))
                 {
-                    success1455 = true;
+                    success1411 = true;
                 }
                 else
                 {
-                    cursor.ResetPosition(start1457);
+                    cursor.ResetPosition(start1413);
                 }
             }
             else
             {
-                cursor.ResetPosition(start1457);
+                cursor.ResetPosition(start1413);
             }
 
-            value = value1456;
-            return success1455;
+            value = value1412;
+            return success1411;
         }
 
-        private static bool __Parlot_5_Build_Sequence_Last_378(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
+        private static bool __Parlot_5_Build_Sequence_Last_368(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1453 = true;
-            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value1454 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
-            var previousOffset1478 = cursor.Offset;
-            if (__Parlot_5_Build_ZeroOrMany_Parser_379(context, out var first1479) && cursor.Offset != previousOffset1478)
+            bool success1409 = true;
+            global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> value1410 = global::System.Array.Empty<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
+            var previousOffset1436 = cursor.Offset;
+            if (__Parlot_5_Build_ZeroOrMany_Parser_369(context, out var first1437) && cursor.Offset != previousOffset1436)
             {
-                value1454 = listRest1480(context, first1479);
-                success1453 = true;
+                value1410 = listRest1438(context, first1437);
+                success1409 = true;
             }
-            static global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> listRest1480(global::Parlot.Generated.Fluent.ParseContext context, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression first)
+            static global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression> listRest1438(global::Parlot.Generated.Fluent.ParseContext context, global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression first)
 {
     var cursor = context.Scanner.Cursor;
     var list = new global::Parlot.Generated.Fluent.ListBuilder<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>();
@@ -10787,7 +10759,7 @@ break;
         while (true)
         {
             var previousOffset = cursor.Offset;
-            if (!__Parlot_5_Build_ZeroOrMany_Parser_379(context, out var item) || cursor.Offset == previousOffset)
+            if (!__Parlot_5_Build_ZeroOrMany_Parser_369(context, out var item) || cursor.Offset == previousOffset)
             {
                 break;
             }
@@ -10801,382 +10773,391 @@ break;
     }
 }
 
-            value = value1454;
-            return success1453;
+            value = value1410;
+            return success1409;
         }
 
-        private static bool __Parlot_5_Build_When_192(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
+        private static bool __Parlot_5_Build_When_189(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success744 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value745 = default;
-            var start746 = cursor.Offset;
-            success744 = false;
-            if (__Parlot_5_Build_Sequence_Parser_193(context, out var hpValue))
+            bool success725 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value726 = default;
+            var start727 = cursor.Offset;
+            success725 = false;
+            if (__Parlot_5_Build_Sequence_Parser_190(context, out var hpValue))
             {
-                if (__Parlot_5_Build_Sequence_Last_378(context, out var hlValue))
+                if (__Parlot_5_Build_Sequence_Last_368(context, out var hlValue))
                 {
-                    success744 = true;
-                    value745 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(hpValue.Item1, hpValue.Item2, hlValue);
+                    success725 = true;
+                    value726 = new global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>>(hpValue.Item1, hpValue.Item2, hlValue);
                 }
                 else
                 {
-                    cursor.ResetPosition(start746);
+                    cursor.ResetPosition(start727);
                 }
             }
             else
             {
-                cursor.ResetPosition(start746);
+                cursor.ResetPosition(start727);
             }
 
-            value = value745;
-            return success744;
+            value = value726;
+            return success725;
         }
 
-        private static bool __Parlot_5_Build_Then_740_191(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
+        private static bool __Parlot_5_Build_Then_721_188(global::Parlot.Generated.Fluent.ParseContext context, out global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success741 = false;
-            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value742 = default;
-            var start743 = cursor.Offset;
-            if (__Parlot_5_Build_When_192(context, out var innerValue1481) && ___Parlot_5_Build_lambda104(context, innerValue1481))
+            bool success722 = false;
+            global::System.ValueTuple<global::Microsoft.Azure.Cosmos.Query.Core.Parser.SqlParlotParser.Leaf, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>, global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression>> value723 = default;
+            var start724 = cursor.Offset;
+            if (__Parlot_5_Build_When_189(context, out var innerValue1439) && ___Parlot_5_Build_lambda97(context, innerValue1439))
             {
-                success741 = true;
-                value742 = innerValue1481;
+                success722 = true;
+                value723 = innerValue1439;
             }
             else
             {
-                cursor.ResetPosition(start743);
-                success741 = false;
+                cursor.ResetPosition(start724);
+                success722 = false;
             }
 
-            value = value742;
-            return success741;
+            value = value723;
+            return success722;
         }
 
-        private static bool __Parlot_5_Build_Associative736_190(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_Operators717_187(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success737 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value738 = default;
-            if (__Parlot_5_Build_Then_740_191(context, out var parsed739Value))
+            bool success718 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value719 = default;
+            if (__Parlot_5_Build_Then_721_188(context, out var parsed720Value))
             {
-                value738 = ___Parlot_5_Build_lambda105(parsed739Value);
-                success737 = true;
+                value719 = ___Parlot_5_Build_lambda98(parsed720Value);
+                success718 = true;
             }
 
-            value = value738;
-            return success737;
+            value = value719;
+            return success718;
         }
 
-        private static bool __Parlot_5_Build_WhenNotFollowedBy_Main_390(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_Operator_378(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1496 = false;
-            global::System.Char value1497 = default;
-            bool moved1500 = false;
-            var span1498 = cursor.Span;
-            var spanStart1498 = cursor.Offset;
-            var pos1498 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos1498 < (uint)span1498.Length && global::Parlot.Generated.Character.HasMask(span1498[pos1498], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1498[pos1498], context._skipMask)))
+            bool success1448 = false;
+            global::System.String value1449 = default;
+            bool moved1452 = false;
+            var span1450 = cursor.Span;
+            var spanStart1450 = cursor.Offset;
+            var pos1450 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos1450 < (uint)span1450.Length && global::Parlot.Generated.Character.HasMask(span1450[pos1450], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1450[pos1450], context._skipMask)))
             {
-                cursor.ResetPosition(spanStart1498 + pos1498);
+                cursor.ResetPosition(spanStart1450 + pos1450);
                 context.SkipWhiteSpace();
-                pos1498 = cursor.Offset - spanStart1498;
-                moved1500 = true;
+                pos1450 = cursor.Offset - spanStart1450;
+                moved1452 = true;
             }
-            if ((uint)pos1498 >= (uint)span1498.Length || span1498[pos1498] != (char)63)
+            if (!global::System.MemoryExtensions.StartsWith(span1450.Slice(pos1450), "??".AsSpan()))
             {
-                if (pos1498 >= span1498.Length) cursor.MarkHitEnd();
-                goto fail1499;
+                if (span1450.Length - pos1450 < 2 && global::System.MemoryExtensions.StartsWith("??".AsSpan(), span1450.Slice(pos1450))) cursor.MarkHitEnd();
+                goto fail1451;
             }
-            pos1498++;
-            if (moved1500) cursor.ResetPosition(spanStart1498 + pos1498); else cursor.AdvanceWithinBuffer(pos1498);
-            success1496 = true;
-            goto done1501;
-            fail1499: if (moved1500) cursor.ResetPosition(spanStart1498);
-            done1501: ;
+            pos1450 += 2;
+            if (moved1452) cursor.ResetPosition(spanStart1450 + pos1450); else cursor.AdvanceWithinBuffer(pos1450);
+            success1448 = true;
+            goto done1453;
+            fail1451: if (moved1452) cursor.ResetPosition(spanStart1450);
+            done1453: ;
 
-            value = value1497;
-            return success1496;
+            value = value1449;
+            return success1448;
         }
 
-        private static bool __Parlot_5_Build_WhenNotFollowedBy_Lookahead_391(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Object value)
+        private static bool __Parlot_5_Build_OneOf_377(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1502 = false;
-            global::System.Object value1503 = default;
-            var span1504 = cursor.Span;
-            var spanStart1504 = cursor.Offset;
-            var pos1504 = 0;
-            if ((uint)pos1504 >= (uint)span1504.Length || span1504[pos1504] != (char)63)
+            bool success1444 = false;
+            global::System.Int32 value1445 = default;
+            success1444 = __Parlot_5_Build_Operator_378(context, out _);
+            if (success1444)
             {
-                if (pos1504 >= span1504.Length) cursor.MarkHitEnd();
-                goto fail1505;
+                value1445 = 0;
             }
-            pos1504++;
-            cursor.AdvanceWithinBuffer(pos1504);
-            success1502 = true;
-            fail1505: ;
 
-            value = value1503;
-            return success1502;
+            value = value1445;
+            return success1444;
         }
 
-        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_389(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        private static bool __Parlot_5_Build_Operators717_376(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1490 = false;
-            global::System.Char value1491 = default;
-            var start1492 = cursor.Offset;
-            if (!__Parlot_5_Build_WhenNotFollowedBy_Main_390(context, out _))
+            bool success1440 = false;
+            global::System.Int32 value1441 = default;
+            var start1442 = cursor.Offset;
+            context.SkipWhiteSpace();
+            var current1443 = cursor.Current;
+            switch (current1443)
             {
-                success1490 = false;
+                case '?':
+                {
+                    success1440 = __Parlot_5_Build_OneOf_377(context, out value1441);
+                    break;
+                }
             }
-            else
+            if (!success1440)
             {
-                var beforeLookahead1493 = cursor.Offset;
-                if (__Parlot_5_Build_WhenNotFollowedBy_Lookahead_391(context, out _))
-                {
-                    cursor.ResetPosition(start1492);
-                    success1490 = false;
-                }
-                else
-                {
-                    cursor.ResetPosition(beforeLookahead1493);
-                    success1490 = true;
-                }
+                cursor.ResetPosition(start1442);
             }
 
-            value = value1491;
-            return success1490;
+            value = value1441;
+            return success1440;
         }
 
-        private static bool __Parlot_5_Build_SequenceAndSkip_P1_388(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_OneOf_380(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1487 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1488 = default;
-            var start1489 = cursor.Offset;
-            success1487 = false;
-            if (__Parlot_5_Build_SequenceSkipAnd_P1_389(context, out _))
-            {
-                if (__Parlot_5_Build_Sequence_P1_41(context, out value1488))
-                {
-                    success1487 = true;
-                }
-                else
-                {
-                    cursor.ResetPosition(start1489);
-                }
-            }
-            else
-            {
-                cursor.ResetPosition(start1489);
-            }
+            bool success1458 = false;
+            global::System.Int32 value1459 = default;
+            success1458 = true;
+            value1459 = -2;
 
-            value = value1488;
-            return success1487;
+            value = value1459;
+            return success1458;
         }
 
-        private static bool __Parlot_5_Build_OneOf_387(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_Operators717_379(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success1484 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1485 = default;
-            var start1486 = cursor.Offset;
-            success1484 = false;
-            if (__Parlot_5_Build_SequenceAndSkip_P1_388(context, out value1485))
+            bool success1454 = false;
+            global::System.Int32 value1455 = default;
+            var start1456 = cursor.Offset;
+            context.SkipWhiteSpace();
+            var current1457 = cursor.Current;
+            switch (current1457)
             {
-                if (__Parlot_5_Build_SequenceAndSkip_P2_255(context, out _))
+                case '?':
                 {
-                    success1484 = true;
-                }
-                else
-                {
-                    cursor.ResetPosition(start1486);
+                    success1454 = __Parlot_5_Build_OneOf_380(context, out value1455)
+                        || __Parlot_5_Build_OneOf_377(context, out value1455);
+                    break;
                 }
             }
-            else
+            if (!success1454)
             {
-                cursor.ResetPosition(start1486);
+                cursor.ResetPosition(start1456);
             }
 
-            value = value1485;
-            return success1484;
+            value = value1455;
+            return success1454;
         }
 
-        private static bool __Parlot_5_Build_Associative736_386(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_Operators717_381(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1460 = false;
+            global::System.Int32 value1461 = default;
+            var start1462 = cursor.Offset;
+            context.SkipWhiteSpace();
+            var current1463 = cursor.Current;
+            switch (current1463)
+            {
+                case '?':
+                {
+                    success1460 = __Parlot_5_Build_OneOf_377(context, out value1461);
+                    break;
+                }
+            }
+            if (!success1460)
+            {
+                cursor.ResetPosition(start1462);
+            }
+
+            value = value1461;
+            return success1460;
+        }
+
+        private static bool __Parlot_5_Build_WhenNotFollowedBy_Main_385(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1476 = false;
+            global::System.Char value1477 = default;
+            bool moved1480 = false;
+            var span1478 = cursor.Span;
+            var spanStart1478 = cursor.Offset;
+            var pos1478 = 0;
+            if (context.WhiteSpaceParser is not null || ((uint)pos1478 < (uint)span1478.Length && global::Parlot.Generated.Character.HasMask(span1478[pos1478], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1478[pos1478], context._skipMask)))
+            {
+                cursor.ResetPosition(spanStart1478 + pos1478);
+                context.SkipWhiteSpace();
+                pos1478 = cursor.Offset - spanStart1478;
+                moved1480 = true;
+            }
+            if ((uint)pos1478 >= (uint)span1478.Length || span1478[pos1478] != (char)63)
+            {
+                if (pos1478 >= span1478.Length) cursor.MarkHitEnd();
+                goto fail1479;
+            }
+            pos1478++;
+            if (moved1480) cursor.ResetPosition(spanStart1478 + pos1478); else cursor.AdvanceWithinBuffer(pos1478);
+            success1476 = true;
+            goto done1481;
+            fail1479: if (moved1480) cursor.ResetPosition(spanStart1478);
+            done1481: ;
+
+            value = value1477;
+            return success1476;
+        }
+
+        private static bool __Parlot_5_Build_WhenNotFollowedBy_Lookahead_386(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Object value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
             bool success1482 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1483 = default;
-            success1482 = __Parlot_5_Build_OneOf_387(context, out value1483);
+            global::System.Object value1483 = default;
+            var span1484 = cursor.Span;
+            var spanStart1484 = cursor.Offset;
+            var pos1484 = 0;
+            if ((uint)pos1484 >= (uint)span1484.Length || span1484[pos1484] != (char)63)
+            {
+                if (pos1484 >= span1484.Length) cursor.MarkHitEnd();
+                goto fail1485;
+            }
+            pos1484++;
+            cursor.AdvanceWithinBuffer(pos1484);
+            success1482 = true;
+            fail1485: ;
 
             value = value1483;
             return success1482;
         }
 
-        private static bool __Parlot_5_Build_LeftAssoc733_189(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        private static bool __Parlot_5_Build_SequenceSkipAnd_P1_384(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Char value)
         {
             context.CheckCancellation();
             var scanner = context.Scanner;
             var cursor = scanner.Cursor;
 
-            bool success734 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value735 = default;
-            if (__Parlot_5_Build_Associative736_190(context, out value735))
+            bool success1470 = false;
+            global::System.Char value1471 = default;
+            var start1472 = cursor.Offset;
+            if (!__Parlot_5_Build_WhenNotFollowedBy_Main_385(context, out _))
             {
-                while (true)
+                success1470 = false;
+            }
+            else
+            {
+                var beforeLookahead1473 = cursor.Offset;
+                if (__Parlot_5_Build_WhenNotFollowedBy_Lookahead_386(context, out _))
                 {
-                    var operatorPosition736 = cursor.Offset;
-                    if (!__Parlot_5_Build_Associative736_386(context, out var operation736)) break;
-                    if (!__Parlot_5_Build_Associative736_190(context, out var right736))
-                    {
-                        cursor.ResetPosition(operatorPosition736);
-                        break;
-                    }
-                    if (cursor.Offset == operatorPosition736) break;
-                    value735 = ___Parlot_5_Build_lambda106(value735, right736, operation736);
+                    cursor.ResetPosition(start1472);
+                    success1470 = false;
                 }
-                success734 = true;
-            }
-
-            value = value735;
-            return success734;
-        }
-
-        private static bool __Parlot_5_Build_Operator_394(global::Parlot.Generated.Fluent.ParseContext context, out global::System.String value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1512 = false;
-            global::System.String value1513 = default;
-            bool moved1516 = false;
-            var span1514 = cursor.Span;
-            var spanStart1514 = cursor.Offset;
-            var pos1514 = 0;
-            if (context.WhiteSpaceParser is not null || ((uint)pos1514 < (uint)span1514.Length && global::Parlot.Generated.Character.HasMask(span1514[pos1514], (byte)global::Parlot.Generated.CharacterMask.WhiteSpaceOrNewLine) && global::Parlot.Generated.Character.HasMask(span1514[pos1514], context._skipMask)))
-            {
-                cursor.ResetPosition(spanStart1514 + pos1514);
-                context.SkipWhiteSpace();
-                pos1514 = cursor.Offset - spanStart1514;
-                moved1516 = true;
-            }
-            if (!global::System.MemoryExtensions.StartsWith(span1514.Slice(pos1514), "??".AsSpan()))
-            {
-                if (span1514.Length - pos1514 < 2 && global::System.MemoryExtensions.StartsWith("??".AsSpan(), span1514.Slice(pos1514))) cursor.MarkHitEnd();
-                goto fail1515;
-            }
-            pos1514 += 2;
-            if (moved1516) cursor.ResetPosition(spanStart1514 + pos1514); else cursor.AdvanceWithinBuffer(pos1514);
-            success1512 = true;
-            goto done1517;
-            fail1515: if (moved1516) cursor.ResetPosition(spanStart1514);
-            done1517: ;
-
-            value = value1513;
-            return success1512;
-        }
-
-        private static bool __Parlot_5_Build_OneOf_393(global::Parlot.Generated.Fluent.ParseContext context, out global::System.Int32 value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1508 = false;
-            global::System.Int32 value1509 = default;
-            success1508 = __Parlot_5_Build_Operator_394(context, out _);
-            if (success1508)
-            {
-                value1509 = 0;
-            }
-
-            value = value1509;
-            return success1508;
-        }
-
-        private static bool __Parlot_5_Build_LeftAssoc733_392(global::Parlot.Generated.Fluent.ParseContext context, out int value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success1506 = false;
-            global::System.Int32 value1507 = default;
-            success1506 = __Parlot_5_Build_OneOf_393(context, out value1507);
-
-            value = value1507;
-            return success1506;
-        }
-
-        private static bool __Parlot_5_Build_If_Then_188(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
-        {
-            context.CheckCancellation();
-            var scanner = context.Scanner;
-            var cursor = scanner.Cursor;
-
-            bool success731 = false;
-            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value732 = default;
-            if (__Parlot_5_Build_LeftAssoc733_189(context, out value732))
-            {
-                while (true)
+                else
                 {
-                    var opPos1518 = cursor.Offset;
-                    if (!__Parlot_5_Build_LeftAssoc733_392(context, out var op1519)) break;
-                    if (!__Parlot_5_Build_LeftAssoc733_189(context, out var right1520))
-                    {
-                        cursor.ResetPosition(opPos1518);
-                        break;
-                    }
-                    if (cursor.Offset == opPos1518) break;
-                    switch (op1519)
-                    {
-                        case 0:
-                            value732 = ___Parlot_5_Build_lambda107(value732, right1520);
-                            break;
-                    }
+                    cursor.ResetPosition(beforeLookahead1473);
+                    success1470 = true;
                 }
-                success731 = true;
             }
 
-            value = value732;
-            return success731;
+            value = value1471;
+            return success1470;
+        }
+
+        private static bool __Parlot_5_Build_SequenceAndSkip_P1_383(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1467 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1468 = default;
+            var start1469 = cursor.Offset;
+            success1467 = false;
+            if (__Parlot_5_Build_SequenceSkipAnd_P1_384(context, out _))
+            {
+                if (__Parlot_5_Build_Sequence_P1_40(context, out value1468))
+                {
+                    success1467 = true;
+                }
+                else
+                {
+                    cursor.ResetPosition(start1469);
+                }
+            }
+            else
+            {
+                cursor.ResetPosition(start1469);
+            }
+
+            value = value1468;
+            return success1467;
+        }
+
+        private static bool __Parlot_5_Build_Operators717_382(global::Parlot.Generated.Fluent.ParseContext context, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value)
+        {
+            context.CheckCancellation();
+            var scanner = context.Scanner;
+            var cursor = scanner.Cursor;
+
+            bool success1464 = false;
+            global::Microsoft.Azure.Cosmos.SqlObjects.SqlScalarExpression value1465 = default;
+            var start1466 = cursor.Offset;
+            success1464 = false;
+            if (__Parlot_5_Build_SequenceAndSkip_P1_383(context, out value1465))
+            {
+                if (__Parlot_5_Build_SequenceAndSkip_P2_250(context, out _))
+                {
+                    success1464 = true;
+                }
+                else
+                {
+                    cursor.ResetPosition(start1466);
+                }
+            }
+            else
+            {
+                cursor.ResetPosition(start1466);
+            }
+
+            value = value1465;
+            return success1464;
         }
 
         }
 
-        private static partial bool TryParseCore(string text, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery sqlQuery)
+        public static partial bool TryParse(string text, out global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery sqlQuery, out (int Offset, int Line, int Column) failure)
         {
             var __Parlot_5_Build_context = new GeneratedParser___Parlot_5_Build(new global::Parlot.Generated.Scanner(text));
             var __Parlot_5_Build_result = new global::Parlot.Generated.ParseResult<global::Microsoft.Azure.Cosmos.SqlObjects.SqlQuery>();
@@ -11185,12 +11166,16 @@ break;
                 if (GeneratedParser___Parlot_5_Build.__Parlot_5_Build_Core(__Parlot_5_Build_context, ref __Parlot_5_Build_result))
                 {
                     sqlQuery = __Parlot_5_Build_result.Value;
+                    failure = default;
                     return true;
                 }
+                var __Parlot_5_Build_furthest = __Parlot_5_Build_context.Scanner.Cursor.GetPosition(__Parlot_5_Build_context.Scanner.Cursor.FurthestOffset);
+                failure = (__Parlot_5_Build_furthest.Offset, __Parlot_5_Build_furthest.Line, __Parlot_5_Build_furthest.Column);
             }
-            catch (global::Parlot.Generated.ParseException)
+            catch (global::Parlot.Generated.ParseException __Parlot_5_Build_exception)
             {
                 sqlQuery = default!;
+                failure = (__Parlot_5_Build_exception.Position.Offset, __Parlot_5_Build_exception.Position.Line, __Parlot_5_Build_exception.Position.Column);
                 return false;
             }
             sqlQuery = default!;
