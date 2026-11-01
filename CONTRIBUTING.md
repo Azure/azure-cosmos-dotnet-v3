@@ -91,10 +91,11 @@ When evaluating adding new tests, please search in the existing test files if th
 
 ### Vector embedding end-to-end tests
 
-`VectorEmbeddingQueryTests` creates a container with Float16, Float32, Int8, and Uint8
-embeddings and checks its metadata and exact vector-query rankings in Direct and
-Gateway connection modes. It intentionally uses brute-force queries without vector
-indexes; it does not test ANN index training or a server-side Compute routing path.
+`OptimisticDirectExecutionQueryTests.TestOrderByQueries` covers Float32, Float16,
+Int8, and Uint8 embedding policies with ranked query assertions in Direct and
+Gateway modes, on single- and multi-partition containers. Float16 uses brute-force
+queries without a vector index; the other types retain flat-index coverage.
+These client modes do not establish server-side Compute embedded-SDK coverage.
 
 Run against a Windows emulator build supporting all four vector types, using the
 startup configuration in `templates/emulator-setup.yml`. CI includes these tests
@@ -104,7 +105,7 @@ can override its endpoint. No new credentials or account capabilities are config
 by the tests. An unavailable or incompatible backend is a test failure, not a pass.
 
 ```powershell
-dotnet test .\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Microsoft.Azure.Cosmos.EmulatorTests.csproj --filter FullyQualifiedName~VectorEmbeddingQueryTests
+dotnet test .\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Microsoft.Azure.Cosmos.EmulatorTests.csproj --filter FullyQualifiedName~OptimisticDirectExecutionQueryTests.TestOrderByQueries
 ```
 
 ## Contribution flow

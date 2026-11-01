@@ -1,7 +1,7 @@
 # File: templates/emulator-setup.yml
-# The Query suite includes VectorEmbeddingQueryTests. EMULATORMSIURL must select
-# a build supporting Float16, Float32, Int8, and Uint8 vector embedding policies
-# and brute-force VectorDistance queries.
+# The Query suite's TestOrderByQueries covers Float32, Float16, Int8, and Uint8.
+# EMULATORMSIURL must select a build supporting these vector embedding policies
+# and VectorDistance queries, including brute-force queries for Float16.
 
 steps:
   - pwsh: |
