@@ -45,8 +45,14 @@ stages:
       - task: UseDotNet@2
         displayName: Use .NET 8.0
         inputs:
-          packageType: 'sdk'
+          packageType: 'runtime'
           version: '8.x'
+
+      - task: UseDotNet@2
+        displayName: Use .NET 10.0 SDK
+        inputs:
+          packageType: 'sdk'
+          version: '10.x'
 
       - task: DotNetCoreCLI@2
         timeoutInMinutes: 120

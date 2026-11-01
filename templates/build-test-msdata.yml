@@ -39,8 +39,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 8.0
     inputs:
-      packageType: 'sdk'
+      packageType: 'runtime'
       version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 10.0 SDK
+    inputs:
+      packageType: 'sdk'
+      version: '10.x'
       
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Tests
@@ -73,8 +79,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 8.0
     inputs:
-      packageType: 'sdk'
+      packageType: 'runtime'
       version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 10.0 SDK
+    inputs:
+      packageType: 'sdk'
+      version: '10.x'
       
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Tests
@@ -108,8 +120,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 8.0
     inputs:
-      packageType: 'sdk'
+      packageType: 'runtime'
       version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 10.0 SDK
+    inputs:
+      packageType: 'sdk'
+      version: '10.x'
       
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Tests
@@ -153,8 +171,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 8.0
     inputs:
-      packageType: 'sdk'
+      packageType: 'runtime'
       version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 10.0 SDK
+    inputs:
+      packageType: 'sdk'
+      version: '10.x'
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.PerformanceTests - Build
@@ -195,8 +219,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 8.0
     inputs:
-      packageType: 'sdk'
+      packageType: 'runtime'
       version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 10.0 SDK
+    inputs:
+      packageType: 'sdk'
+      version: '10.x'
 
   - template:  emulator-setup.yml
 
@@ -235,8 +265,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 8.0
     inputs:
-      packageType: 'sdk'
+      packageType: 'runtime'
       version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 10.0 SDK
+    inputs:
+      packageType: 'sdk'
+      version: '10.x'
 
   - template:  emulator-setup.yml
 
@@ -276,8 +312,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 8.0
     inputs:
-      packageType: 'sdk'
+      packageType: 'runtime'
       version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 10.0 SDK
+    inputs:
+      packageType: 'sdk'
+      version: '10.x'
 
   - template:  emulator-setup.yml
 
@@ -316,8 +358,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 8.0
     inputs:
-      packageType: 'sdk'
+      packageType: 'runtime'
       version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 10.0 SDK
+    inputs:
+      packageType: 'sdk'
+      version: '10.x'
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
@@ -355,8 +403,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 8.0
     inputs:
-      packageType: 'sdk'
+      packageType: 'runtime'
       version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 10.0 SDK
+    inputs:
+      packageType: 'sdk'
+      version: '10.x'
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests

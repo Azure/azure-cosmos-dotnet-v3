@@ -153,40 +153,17 @@
 
   <!--
     SQL query parser. Query/Core/Parser/SqlParlotParser.parlot.cs is a Parlot grammar that the Parlot source generator
-    compiles to C#. The output is checked in under Query/Core/Parser/Generated, so building the SDK needs neither the
-    generator (which requires the .NET 10 SDK) nor any Parlot package, and the SDK has no Parlot dependency.
-    After changing the grammar, regenerate the parser with:
-      dotnet build Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj -p:RegenerateSqlParser=true
+    compiles to C# on every build (it needs the .NET 10 SDK). The generated parser is self-contained: the SDK has no
+    runtime Parlot dependency.
   -->
-  <ItemGroup>
-    <Compile Remove="Query/Core/Parser/*.parlot.cs" />
-    <None Include="Query/Core/Parser/*.parlot.cs" />
-  </ItemGroup>
-
-  <PropertyGroup Condition=" '$(RegenerateSqlParser)' == 'true' ">
-    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)SqlParlotParser</CompilerGeneratedFilesOutputPath>
-    <!-- The same output on every machine. -->
-    <ParlotLineDirectives>none</ParlotLineDirectives>
-    <!-- Parlot preview builds. -->
+  <PropertyGroup>
+    <!-- Parlot preview builds, until a release with the generator features the grammar uses is on nuget.org. -->
     <RestoreAdditionalProjectSources>https://f.feedz.io/sebastienros/parlot/nuget/index.json</RestoreAdditionalProjectSources>
   </PropertyGroup>
 
-  <ItemGroup Condition=" '$(RegenerateSqlParser)' == 'true' ">
-    <PackageReference Include="Parlot.SourceGenerator" Version="[2.0.0-preview-1059]" PrivateAssets="All" />
-    <Compile Remove="Query/Core/Parser/Generated/*.cs" />
+  <ItemGroup>
+    <PackageReference Include="Parlot.SourceGenerator" Version="2.0.0-preview-1059" PrivateAssets="All" />
   </ItemGroup>
-
-  <Target Name="RegenerateSqlParlotParser" AfterTargets="CoreCompile" Condition=" '$(RegenerateSqlParser)' == 'true' ">
-    <ItemGroup>
-      <_SqlParlotParserFile Include="$(CompilerGeneratedFilesOutputPath)/Parlot.SourceGenerator/Parlot.SourceGenerator.ParserSourceGenerator/*.cs" />
-      <_SqlParlotParserPreviousFile Include="$(MSBuildProjectDirectory)/Query/Core/Parser/Generated/*.cs" />
-    </ItemGroup>
-    <Error Condition=" '@(_SqlParlotParserFile)' == '' " Text="The Parlot source generator didn't generate the SQL parser." />
-    <Delete Files="@(_SqlParlotParserPreviousFile)" />
-    <Copy SourceFiles="@(_SqlParlotParserFile)" DestinationFolder="$(MSBuildProjectDirectory)/Query/Core/Parser/Generated" />
-    <Message Importance="high" Text="Regenerated the SQL parser in Query/Core/Parser/Generated, rebuild without RegenerateSqlParser." />
-  </Target>	
 
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
 		<None Include="$(OutputPath)\Cosmos.CRTCompat.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
