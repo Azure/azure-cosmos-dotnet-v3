@@ -179,11 +179,12 @@
     <SystemRuntimeCompilerServicesUnsafeVersion>6.1.2</SystemRuntimeCompilerServicesUnsafeVersion>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)SqlParlotParser</CompilerGeneratedFilesOutputPath>
-    <NoWarn>$(NoWarn);CS1574</NoWarn>
+    <!-- Parlot preview builds, for the Operators() precedence parser. -->
+    <RestoreAdditionalProjectSources>https://f.feedz.io/sebastienros/parlot/nuget/index.json</RestoreAdditionalProjectSources>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(RegenerateSqlParser)' == 'true' ">
-    <PackageReference Include="Parlot.SourceGenerator" Version="2.1.0" PrivateAssets="All" />
+    <PackageReference Include="Parlot.SourceGenerator" Version="[2.0.0-preview-1043]" PrivateAssets="All" />
     <Compile Remove="Query/Core/Parser/Generated/*.cs" />
   </ItemGroup>
 

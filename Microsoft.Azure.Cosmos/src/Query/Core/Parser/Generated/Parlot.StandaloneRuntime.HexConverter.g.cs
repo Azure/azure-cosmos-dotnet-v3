@@ -83,7 +83,6 @@ namespace Parlot.Generated
             return c >= CharToHexLookup.Length ? 0xFF : CharToHexLookup[c];
         }
 
-        /// <summary>Map from an ASCII char to its hex value, e.g. arr['b'] == 11. 0xFF means it's not a hex digit.</summary>
         public static ReadOnlySpan<byte> CharToHexLookup =>
         [
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 15

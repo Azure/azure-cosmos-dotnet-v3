@@ -51,6 +51,8 @@ namespace Parlot.Generated.Fluent;
 /// <remarks>
 /// This type is public to support source-generated parsers in consumer assemblies.
 /// Parser consumers should use <see cref="IReadOnlyList{T}"/> rather than depending on this implementation.
+/// The built-in list parsers no longer return it: they accumulate their items on a scratch stack and return an
+/// array of the exact size.
 /// </remarks>
 /// <typeparam name="T">The element type.</typeparam>
 #nullable enable
@@ -65,10 +67,8 @@ internal sealed class HybridList<T> : IReadOnlyList<T>, ICollection<T>
     private List<T>? _list;
     private int _count;
 
-    /// <summary>Gets the number of items.</summary>
     public int Count => _count;
 
-    /// <summary>Gets the item at the specified index.</summary>
     public T this[int index]
     {
         get
@@ -94,7 +94,6 @@ internal sealed class HybridList<T> : IReadOnlyList<T>, ICollection<T>
         }
     }
 
-    /// <summary>Adds an item while building a parser result.</summary>
     public void Add(T item)
     {
         if (_list is not null)
@@ -147,7 +146,6 @@ internal sealed class HybridList<T> : IReadOnlyList<T>, ICollection<T>
 
     bool ICollection<T>.Remove(T item) => throw new NotSupportedException();
 
-    /// <summary>Determines whether the collection contains an item.</summary>
     public bool Contains(T item)
     {
         if (_list is not null)
@@ -168,7 +166,6 @@ internal sealed class HybridList<T> : IReadOnlyList<T>, ICollection<T>
         return false;
     }
 
-    /// <summary>Copies the items to an array starting at the specified index.</summary>
     public void CopyTo(T[] array, int arrayIndex)
     {
         _ = array ?? throw new ArgumentNullException(nameof(array));
@@ -195,17 +192,8 @@ internal sealed class HybridList<T> : IReadOnlyList<T>, ICollection<T>
         }
     }
 
-    /// <summary>
-    /// Returns the items in the representation that is the most efficient for the consumers.
-    /// </summary>
-    /// <remarks>
-    /// The BCL collections have fast paths for <see cref="List{T}"/>, e.g. <c>new Dictionary&lt;K, V&gt;(items)</c>
-    /// iterates its span instead of allocating an enumerator for it, so the inner list is returned once it has
-    /// been allocated.
-    /// </remarks>
     public IReadOnlyList<T> AsReadOnlyList() => _list ?? (IReadOnlyList<T>)this;
 
-    /// <summary>Returns an enumerator over the items.</summary>
     public IEnumerator<T> GetEnumerator()
     {
         if (_list is not null)

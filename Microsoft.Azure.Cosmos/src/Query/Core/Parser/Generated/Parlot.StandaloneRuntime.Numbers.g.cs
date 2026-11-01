@@ -49,9 +49,6 @@ namespace Parlot.Generated;
 /// </summary>
 internal static partial class Numbers
 {
-    /// <summary>
-    /// Parses digits in the specified radix.
-    /// </summary>
     public static bool TryParseRadix(ReadOnlySpan<char> span, int radix, out int charsRead, out byte value)
     {
         var success = TryParseUnsignedRadix(span, radix, byte.MaxValue, out charsRead, out var parsed);
@@ -59,9 +56,6 @@ internal static partial class Numbers
         return success;
     }
 
-    /// <summary>
-    /// Parses digits in the specified radix.
-    /// </summary>
     public static bool TryParseRadix(ReadOnlySpan<char> span, int radix, out int charsRead, out sbyte value)
     {
         var success = TryParseUnsignedRadix(span, radix, (ulong)sbyte.MaxValue, out charsRead, out var parsed);
@@ -69,9 +63,6 @@ internal static partial class Numbers
         return success;
     }
 
-    /// <summary>
-    /// Parses digits in the specified radix.
-    /// </summary>
     public static bool TryParseRadix(ReadOnlySpan<char> span, int radix, out int charsRead, out short value)
     {
         var success = TryParseUnsignedRadix(span, radix, (ulong)short.MaxValue, out charsRead, out var parsed);
@@ -79,9 +70,6 @@ internal static partial class Numbers
         return success;
     }
 
-    /// <summary>
-    /// Parses digits in the specified radix.
-    /// </summary>
     public static bool TryParseRadix(ReadOnlySpan<char> span, int radix, out int charsRead, out ushort value)
     {
         var success = TryParseUnsignedRadix(span, radix, ushort.MaxValue, out charsRead, out var parsed);
@@ -89,9 +77,6 @@ internal static partial class Numbers
         return success;
     }
 
-    /// <summary>
-    /// Parses digits in the specified radix.
-    /// </summary>
     public static bool TryParseRadix(ReadOnlySpan<char> span, int radix, out int charsRead, out int value)
     {
         var success = TryParseUnsignedRadix(span, radix, int.MaxValue, out charsRead, out var parsed);
@@ -99,9 +84,6 @@ internal static partial class Numbers
         return success;
     }
 
-    /// <summary>
-    /// Parses digits in the specified radix.
-    /// </summary>
     public static bool TryParseRadix(ReadOnlySpan<char> span, int radix, out int charsRead, out uint value)
     {
         var success = TryParseUnsignedRadix(span, radix, uint.MaxValue, out charsRead, out var parsed);
@@ -109,9 +91,6 @@ internal static partial class Numbers
         return success;
     }
 
-    /// <summary>
-    /// Parses digits in the specified radix.
-    /// </summary>
     public static bool TryParseRadix(ReadOnlySpan<char> span, int radix, out int charsRead, out long value)
     {
         var success = TryParseUnsignedRadix(span, radix, long.MaxValue, out charsRead, out var parsed);
@@ -119,17 +98,11 @@ internal static partial class Numbers
         return success;
     }
 
-    /// <summary>
-    /// Parses digits in the specified radix.
-    /// </summary>
     public static bool TryParseRadix(ReadOnlySpan<char> span, int radix, out int charsRead, out ulong value)
     {
         return TryParseUnsignedRadix(span, radix, ulong.MaxValue, out charsRead, out value);
     }
 
-    /// <summary>
-    /// Parses digits in the specified radix.
-    /// </summary>
     public static bool TryParseRadix(ReadOnlySpan<char> span, int radix, out int charsRead, out BigInteger value)
     {
         value = BigInteger.Zero;

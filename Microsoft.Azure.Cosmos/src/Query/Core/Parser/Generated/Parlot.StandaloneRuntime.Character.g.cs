@@ -259,5 +259,5 @@ internal static partial class Character
     private static byte ThrowInvalidWhiteSpaceSet(WhiteSpaceSet set)
         => throw new ArgumentOutOfRangeException(nameof(set), set, "Unknown white space set.");
 
-    public static bool IsNewLine(char ch) => ch is '\n' or '\r' or '\v';
+    public static bool IsNewLine(char ch) => ch is '\n' or '\r' or '\v' or '\u0085' or '\u2028' or '\u2029';
 }

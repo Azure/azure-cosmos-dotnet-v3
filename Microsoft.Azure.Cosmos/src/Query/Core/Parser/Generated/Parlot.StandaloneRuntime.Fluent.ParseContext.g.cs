@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define PARLOT_STRING_ONLY
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -42,55 +43,126 @@ namespace Parlot.Generated.Fluent;
 
 internal class ParseContext
 {
-    /// <summary>
-    /// Whether to disable loop detection for recursive parsers. Default is <c>false</c>.
-    /// </summary>
-    /// <remarks>
-    /// When <c>false</c>, loop detection is enabled and will prevent infinite recursion at the same position.
-    /// When <c>true</c>, loop detection is disabled. This may be needed when the ParseContext itself is mutated
-    /// during loops and can change the end result of parsing at the same location.
-    /// </remarks>
     public bool DisableLoopDetection { get; }
 
-    /// <summary>
-    /// The maximum number of nested recursive parser invocations, or <c>0</c> for no limit.
-    /// </summary>
+#if PARLOT_STANDALONE
+    public int MaxRecursionDepth
+    {
+        get => _coldState?.MaxRecursionDepth ?? 0;
+        private set
+        {
+            if (value != 0)
+            {
+                GetColdState().MaxRecursionDepth = value;
+            }
+        }
+    }
+#else
     public int MaxRecursionDepth { get; }
+#endif
 
-    /// <summary>
-    /// Whether new lines are treated as normal chars or white spaces. Default is <c>false</c>.
-    /// </summary>
-    /// <remarks>
-    /// When <c>false</c>, new lines will be skipped like any other white space.
-    /// Otherwise new lines need to be read explicitly by a rule.
-    /// </remarks>
     public bool UseNewLines { get; }
 
-    /// <summary>
-    /// The scanner used for the parsing session.
-    /// </summary>
     public readonly Scanner Scanner;
 
-    /// <summary>
-    /// Tracks parser-position pairs to detect infinite recursion at the same position.
-    /// </summary>
-    /// <remarks>
-    /// The pairs are pushed and popped in LIFO order since they follow the parsers' call stack, so they are
-    /// kept in a plain stack rather than a hash set. A stack doesn't need to rehash its content while it grows,
-    /// which was allocating several intermediate tables for deeply nested grammars, and a lookup is a vectorized
-    /// scan over the recorded positions since two entries rarely share the same one.
-    /// </remarks>
+    public bool CollectDiagnostics
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => (_flags & CollectDiagnosticsFlag) != 0;
+        set => SetFlag(CollectDiagnosticsFlag, value);
+    }
+
+    public bool TreatWarningsAsErrors
+    {
+        get => _coldState?.TreatWarningsAsErrors == true;
+        set
+        {
+            if (value || _coldState is not null)
+            {
+                GetColdState().TreatWarningsAsErrors = value;
+            }
+        }
+    }
+
+    public IReadOnlyList<ParseDiagnostic> Diagnostics
+        => (IReadOnlyList<ParseDiagnostic>?)_coldState?.Diagnostics ?? Array.Empty<ParseDiagnostic>();
+
+    internal void AddDiagnostic(string message, TextPosition position, ParseDiagnosticSeverity severity)
+    {
+        (GetColdState().Diagnostics ??= new List<ParseDiagnostic>()).Add(new ParseDiagnostic(message, position, severity));
+    }
+
+    internal struct AlternativeDiagnostics
+    {
+        internal int Checkpoint;
+        internal int FarthestOffset;
+        internal ParseDiagnostic[]? Best;
+    }
+
+    internal AlternativeDiagnostics BeginAlternatives() => new()
+    {
+        Checkpoint = _coldState?.Diagnostics?.Count ?? 0,
+        FarthestOffset = -1
+    };
+
+    internal void RejectAlternative(ref AlternativeDiagnostics alternatives)
+    {
+        if (_coldState?.Diagnostics is not { } diagnostics || diagnostics.Count == alternatives.Checkpoint)
+        {
+            return;
+        }
+
+        var farthest = -1;
+        for (var i = alternatives.Checkpoint; i < diagnostics.Count; i++)
+        {
+            if (diagnostics[i].Severity == ParseDiagnosticSeverity.Error)
+            {
+                farthest = Math.Max(farthest, diagnostics[i].Position.Offset);
+            }
+        }
+
+        if (farthest > alternatives.FarthestOffset)
+        {
+            alternatives.FarthestOffset = farthest;
+            var best = new ParseDiagnostic[diagnostics.Count - alternatives.Checkpoint];
+            diagnostics.CopyTo(alternatives.Checkpoint, best, 0, best.Length);
+            alternatives.Best = best;
+        }
+
+        diagnostics.RemoveRange(alternatives.Checkpoint, diagnostics.Count - alternatives.Checkpoint);
+    }
+
+    internal void RestoreAlternatives(in AlternativeDiagnostics alternatives)
+    {
+        if (alternatives.Best is { } best)
+        {
+            (GetColdState().Diagnostics ??= new List<ParseDiagnostic>()).AddRange(best);
+        }
+    }
+
+#if PARLOT_STANDALONE
+    // Generated parsers detect the cycles of their deferred parsers with fields of their own context, and can't limit
+    // their recursion. The state of loop detection and of the recursion limit, kept for the callbacks, is then stored
+    // in ColdState rather than in the context that each generated parse allocates. The algorithms are the same.
+    private int[]? _activePositions { get => _coldState?.ActivePositions; set => GetColdState().ActivePositions = value; }
+    private object[]? _activeParsers { get => _coldState?.ActiveParsers; set => GetColdState().ActiveParsers = value; }
+    private int _activeCount { get => _coldState?.ActiveCount ?? 0; set => GetColdState().ActiveCount = value; }
+#else
     private int[]? _activePositions;
     private object[]? _activeParsers;
     private int _activeCount;
+#endif
 
-    /// <summary>
-    /// The cancellation token used to stop the parsing operation.
-    /// </summary>
     public readonly CancellationToken CancellationToken;
 
-    private int _cancellationCheckCount;
+    // A byte is enough since only its low bits are tested, and it wraps around at a multiple of the check interval
+    private byte _cancellationCheckCount;
+
+#if PARLOT_STANDALONE
+    private int _recursionDepth { get => _coldState?.RecursionDepth ?? 0; set => GetColdState().RecursionDepth = value; }
+#else
     private int _recursionDepth;
+#endif
 
     // TODO: For backward compatibility only, remove in future versions
     public ParseContext(Scanner scanner, bool useNewLines)
@@ -125,11 +197,13 @@ internal class ParseContext
         _flags = cancellationToken.CanBeCanceled ? CancellableFlag : (byte)0;
         DisableLoopDetection = disableLoopDetection;
         MaxRecursionDepth = maxRecursionDepth;
+
+        if (maxRecursionDepth > 0)
+        {
+            _flags |= LimitRecursionFlag;
+        }
     }
 
-    /// <summary>
-    /// Delegate that is executed whenever a parser is invoked.
-    /// </summary>
     public Action<object, ParseContext>? OnEnterParser
     {
         get => _coldState?.OnEnterParser;
@@ -140,9 +214,6 @@ internal class ParseContext
         }
     }
 
-    /// <summary>
-    /// Delegate that is executed whenever a parser is left.
-    /// </summary>
     public Action<object, ParseContext>? OnExitParser
     {
         get => _coldState?.OnExitParser;
@@ -163,12 +234,25 @@ internal class ParseContext
 
         public StreamRefillSource? RefillSource;
 
+        // Recorded when CollectDiagnostics is set, see AddDiagnostic
+        public List<ParseDiagnostic>? Diagnostics;
+        public bool TreatWarningsAsErrors;
+
         // Backtrack points of the active parsers, as absolute offsets. Pushed and popped in LIFO order.
         public int[]? Pins;
         public int PinCount;
 
         // The offset of the last Commit(), no parser can read the text before it again
         public int CommitOffset;
+
+#if PARLOT_STANDALONE
+        // Loop detection and recursion limit, see _activePositions
+        public int[]? ActivePositions;
+        public object[]? ActiveParsers;
+        public int ActiveCount;
+        public int MaxRecursionDepth;
+        public int RecursionDepth;
+#endif
     }
 
     private ColdState GetColdState() => _coldState ??= new ColdState();
@@ -187,14 +271,47 @@ internal class ParseContext
     private const byte InTokenFlag = 16;
     private const byte CompactingMask = CompactingFlag | InTokenFlag;
 
+    // Why a Deferred parser tracks its invocations even when it can't be invoked again at the position where it is active:
+    // the recursion is limited, or the white space parser can invoke a deferred parser.
+    private const byte LimitRecursionFlag = 32;
+    private const byte ReentrantWhiteSpaceFlag = 64;
+    private const byte DeferredTrackingMask = LimitRecursionFlag | ReentrantWhiteSpaceFlag;
+
+    // Errors are recorded rather than thrown, see CollectDiagnostics
+    private const byte CollectDiagnosticsFlag = 128;
+
+    internal bool IsCompactingOrCollectingDiagnostics
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => (_flags & (CompactingFlag | CollectDiagnosticsFlag)) != 0;
+    }
+
+    internal bool TracksDeferredParsers
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => (_flags & DeferredTrackingMask) != 0;
+    }
+
+    internal bool HasReentrantWhiteSpaceParser => (_flags & ReentrantWhiteSpaceFlag) != 0;
+
+    internal void SetWhiteSpaceParser(Parser<TextSpan>? parser, bool reentrant)
+    {
+        if (!ReferenceEquals(_whiteSpaceParser, parser))
+        {
+            _whiteSpaceParser = parser;
+
+            // The white spaces skipped by the previous parser are not the ones this one skips
+            _cacheOffset = -1;
+        }
+
+        SetFlag(ReentrantWhiteSpaceFlag, reentrant);
+    }
+
     private void SetFlag(byte flag, bool value)
     {
         _flags = value ? (byte)(_flags | flag) : (byte)(_flags & ~flag);
     }
 
-    /// <summary>
-    /// The parser that is used to parse whitespaces and comments.
-    /// </summary>
     public Parser<TextSpan>? WhiteSpaceParser
     {
         get => _whiteSpaceParser;
@@ -207,22 +324,16 @@ internal class ParseContext
                 // The white spaces skipped by the previous parser are not the ones this one skips
                 _cacheOffset = -1;
             }
+
+#if !PARLOT_STANDALONE
+            // Generated parsers don't use Deferred
+            SetFlag(ReentrantWhiteSpaceFlag, value is not null && LoopAnalysis.CanReachDeferred(value));
+#endif
         }
     }
 
     private Parser<TextSpan>? _whiteSpaceParser;
 
-    /// <summary>
-    /// The chars that are white space. Default is <see cref="WhiteSpaceSet.Default"/>.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The set applies to <see cref="SkipWhiteSpace"/>, thus to every <c>Terms</c> parser, and to <c>Literals.WhiteSpace</c>
-    /// and <c>NonWhiteSpace</c>, including when they are used in <see cref="WhiteSpaceParser"/>. Skipping white space then reads
-    /// a single table lookup per char, as with the default set, whereas a <see cref="WhiteSpaceParser"/> is a parser invocation.
-    /// </para>
-    /// <para>A grammar can also select it for a parser with <see cref="ParserExtensions.WithWhiteSpaceSet{T}(Parser{T}, WhiteSpaceSet)"/>.</para>
-    /// </remarks>
     public WhiteSpaceSet WhiteSpaceSet
     {
         get => WhiteSpaceMask == (byte)CharacterMask.WhiteSpace ? WhiteSpaceSet.Default : WhiteSpaceSet.Ascii;
@@ -264,8 +375,9 @@ internal class ParseContext
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal bool MaySkipWhiteSpace(char ch) => _whiteSpaceParser is not null || Character.HasMask(ch, _skipMask);
 
+    // The offset white space was last skipped from, and the offset it ended at
     private int _cacheOffset = -1;
-    private TextPosition _cachePosition;
+    private int _cacheEndOffset;
 
     public void SkipWhiteSpace()
     {
@@ -273,7 +385,7 @@ internal class ParseContext
 
         if (offset == _cacheOffset)
         {
-            Scanner.Cursor.ResetPosition(_cachePosition);
+            Scanner.Cursor.ResetPosition(_cacheEndOffset);
             return;
         }
 
@@ -296,7 +408,7 @@ internal class ParseContext
         }
 
         _cacheOffset = offset;
-        _cachePosition = Scanner.Cursor.Position;
+        _cacheEndOffset = Scanner.Cursor.Offset;
     }
 
     // Skips the white space of the set, with the scanner's constant mask loops for the default set
@@ -324,17 +436,6 @@ internal class ParseContext
         }
     }
 
-    /// <summary>
-    /// Whether the input is streamed through a compacting buffer and no token is being read.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// In this mode <see cref="Cursor.Buffer"/> only holds the text that can still be read, and it's replaced when more is needed.
-    /// Parsers that read the cursor directly must then run through <see cref="ParseToken{T}(Parser{T}, ref ParseResult{T})"/>,
-    /// and parsers that move the cursor back to a position to read it again must keep it buffered with <see cref="Pin"/>.
-    /// </para>
-    /// <para>It is <see langword="false"/> while a token is read, and when the input is a <see cref="string"/>.</para>
-    /// </remarks>
     public bool IsCompacting
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -361,10 +462,6 @@ internal class ParseContext
         }
     }
 
-    /// <summary>
-    /// Verifies that a parse in compacting mode only read the end of the buffer through tokens.
-    /// </summary>
-    /// <param name="success">Whether the parse succeeded. A failed parse can leave the cursor at its discarded start.</param>
     internal void CheckCompactingEnd(bool success)
     {
         if ((_flags & CompactingMask) != 0)
@@ -387,21 +484,6 @@ internal class ParseContext
         }
     }
 
-    /// <summary>
-    /// Parses a token, a parser that reads the cursor directly, when the input is streamed through a compacting buffer.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Parsers that read the cursor should start with
-    /// <c>if (context.IsCompacting) return context.ParseToken(this, ref result);</c>.
-    /// The token is then parsed from the current buffer, and parsed again from the same position with more text
-    /// when it read to the end of the buffer (<see cref="Cursor.HitEnd"/>). Its result is thus the same as when parsing a string.
-    /// </para>
-    /// <para>The text of the token is kept in the buffer while it's read, so a token should be small compared to the input.</para>
-    /// </remarks>
-    /// <param name="parser">The parser to invoke.</param>
-    /// <param name="result">The result of the parser.</param>
-    /// <returns>The value returned by <paramref name="parser"/>.</returns>
     public bool ParseToken<T>(Parser<T> parser, ref ParseResult<T> result)
     {
         ThrowHelper.ThrowIfNull(parser, nameof(parser));
@@ -439,7 +521,7 @@ internal class ParseContext
 
     // A token is read between BeginToken and EndToken, and read again from its start while RetryToken returns true.
     // Generated parsers use these directly, see SourceGenerationContext.GenerateToken.
-    internal TextPosition BeginToken()
+    internal int BeginToken()
     {
         var cursor = Scanner.Cursor;
 
@@ -454,11 +536,11 @@ internal class ParseContext
         _flags = (byte)((_flags & ~CompactingFlag) | InTokenFlag);
         cursor.ResetHitEnd();
 
-        return cursor.Position;
+        return cursor.Offset;
     }
 
     // Whether the token read to the end of the buffer, in which case it's moved back to its start with more text
-    internal bool RetryToken(in TextPosition start)
+    internal bool RetryToken(int start)
     {
         var cursor = Scanner.Cursor;
 
@@ -468,7 +550,7 @@ internal class ParseContext
         }
 
         cursor.ResetPosition(start);
-        Refill(start.Offset);
+        Refill(start);
         cursor.ResetHitEnd();
 
         return true;
@@ -511,7 +593,7 @@ internal class ParseContext
         }
 
         _cacheOffset = offset;
-        _cachePosition = cursor.Position;
+        _cacheEndOffset = cursor.Offset;
     }
 
     private void Refill(int floor)
@@ -594,6 +676,30 @@ internal class ParseContext
         }
     }
 
+    // Pins a position the cursor already moved past, which is still buffered since no text was read after it
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal int PinAt(int offset)
+    {
+        if ((_flags & CompactingFlag) == 0)
+        {
+            return -1;
+        }
+
+        var pin = PinNotInlined();
+        _coldState!.Pins![pin] = offset;
+        return pin;
+    }
+
+    // Moves a pin to a position the cursor already moved past, which is still buffered since no text was read after it
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void MovePin(int pin, int offset)
+    {
+        if (pin >= 0)
+        {
+            _coldState!.Pins![pin] = offset;
+        }
+    }
+
     /// <summary>
     /// Releases a pin returned by <see cref="Pin"/>, and the pins created after it.
     /// </summary>
@@ -668,7 +774,8 @@ internal class ParseContext
         // This keeps cancellation responsive while reducing overhead for large inputs.
         const int mask = 0x3F; // check ~every 64 calls
 
-        if ((_cancellationCheckCount++ & mask) == 0)
+        // Unchecked since the byte wraps around, and generated parsers embed this file in assemblies which can check for overflows
+        if ((unchecked(_cancellationCheckCount++) & mask) == 0)
         {
             CancellationToken.ThrowIfCancellationRequested();
         }
@@ -732,9 +839,6 @@ internal class ParseContext
         return IndexOfActiveParser(parser, Scanner.Cursor.Offset) >= 0;
     }
 
-    /// <summary>
-    /// Returns the index of an active parser at the specified position, or <c>-1</c> when it's not active.
-    /// </summary>
     private int IndexOfActiveParser(object parser, int position)
     {
         var count = _activeCount;
@@ -772,11 +876,6 @@ internal class ParseContext
         }
     }
 
-    /// <summary>
-    /// Marks a parser as active at the current position.
-    /// </summary>
-    /// <param name="parser">The parser to mark as active.</param>
-    /// <returns>True if the parser was added (not previously active at this position), false if it was already active at this position.</returns>
     public bool PushParserAtPosition(object parser)
     {
         var position = Scanner.Cursor.Offset;
@@ -876,12 +975,5 @@ internal class ParseContext
 /// </summary>
 internal abstract class StreamRefillSource
 {
-    /// <summary>
-    /// Replaces the buffer of <paramref name="cursor"/> with the text from <paramref name="floor"/> followed by more text,
-    /// or marks it final when the input is exhausted.
-    /// </summary>
-    /// <param name="cursor">The cursor to refill.</param>
-    /// <param name="floor">The absolute offset of the first char to keep.</param>
-    /// <param name="cancellationToken">The token to observe while reading.</param>
     public abstract void Refill(Cursor cursor, int floor, CancellationToken cancellationToken);
 }
