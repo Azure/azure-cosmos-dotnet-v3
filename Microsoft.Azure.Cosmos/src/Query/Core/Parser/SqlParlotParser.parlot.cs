@@ -14,7 +14,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
     internal static partial class SqlParlotParser
     {
-        [GenerateParser(nameof(TryParse))]
+        // The parser reads chains of prefix operators in a loop, but the code that visits the tree recurses once per
+        // level. The limit keeps the tree shallow enough for it on a 1 MB stack: about 300 nested parentheses, 190
+        // subqueries or 1,000 prefix operators.
+        [GenerateParser(nameof(TryParse), MaxRecursionDepth = 1000)]
         private static Parser<SqlQuery> Build()
         {
             // Keywords are matched as whole words, as the ANTLR lexer reads the longest token.

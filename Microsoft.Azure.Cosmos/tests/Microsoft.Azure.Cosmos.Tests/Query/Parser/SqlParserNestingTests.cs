@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
         [DataRow("(", "1", ")")]
         [DataRow("[", "1", "]")]
         [DataRow("-", "a", "")]
+        [DataRow("NOT ", "a", "")]
         [DataRow("(SELECT VALUE ", "1", ")")]
         public void DeepNestingFailsWithoutOverflowingTheStack(string open, string inner, string close)
         {
