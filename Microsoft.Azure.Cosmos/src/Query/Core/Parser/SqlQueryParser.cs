@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
     {
         private const string SyntaxErrorMessage = "The query has a syntax error.";
 
+        private const string NestingErrorMessage = "The query is nested too deeply to be parsed.";
+
         public static class Monadic
         {
             public static TryCatch<SqlQuery> Parse(string text)
@@ -37,6 +39,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                     {
                         return TryCatch<SqlQuery>.FromException(new ParseException(SyntaxErrorMessage));
                     }
+                }
+                catch (InsufficientExecutionStackException ex)
+                {
+                    return TryCatch<SqlQuery>.FromException(new ParseException(NestingErrorMessage, ex));
                 }
                 catch (Exception ex)
                 {

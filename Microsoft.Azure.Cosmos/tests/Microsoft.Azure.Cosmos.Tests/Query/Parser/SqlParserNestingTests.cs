@@ -31,12 +31,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
 
             Assert.IsTrue(result.Failed);
             Exception exception = result.Exception;
-            while (exception.InnerException != null)
+            while (exception is not ParseException && exception.InnerException != null)
             {
                 exception = exception.InnerException;
             }
 
-            Assert.IsInstanceOfType(exception, typeof(InsufficientExecutionStackException));
+            Assert.IsInstanceOfType(exception, typeof(ParseException));
+            Assert.AreEqual("The query is nested too deeply to be parsed.", exception.Message);
+            Assert.IsInstanceOfType(exception.InnerException, typeof(InsufficientExecutionStackException));
         }
 
         [TestMethod]
