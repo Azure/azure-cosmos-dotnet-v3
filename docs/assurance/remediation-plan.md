@@ -2,11 +2,11 @@
 
 [Initial feature/behavior-to-test matrix](feature-behavior-test-matrix.md) |
 [Existing SDK CI guide](../builds-and-pipelines.md) |
-[Current shared design handoff][implementation-policy]
+[Current shared design handoff][current-policy]
 
 | Field | Draft receipt |
 |---|---|
-| Version / recorded | 0.2.2 / 2026-11-01 UTC |
+| Version / recorded | 0.2.3 / 2026-11-01 UTC |
 | Status | Evolving proposed plan with authorized bounded testing increments; not an approved contract catalog, whole-SDK executed assessment or merge recommendation |
 | Scope | All repository SDK source and companion packages; Gateway and Direct; improve established SDK tests and CI |
 | Starting evidence | Completed A-01 reconciliation audit, identified below; no duplicate SDK audit |
@@ -20,11 +20,15 @@ The delivered v0.1.0 documentation-only snapshots remain historical: plan SHA-25
 
 The user's subsequent request to start extensive testing explicitly replaces that stop boundary. Every gap and existing behavior/test assessed in this effort needs a focused unit test (mocking where useful) and meaningful emulator OR explicitly authorized isolated real-service counterpart. Sufficient existing tests count; do not manufacture duplicates, call a mock the service half, or silently waive local/unsupported capability cells. Record proposed treatment for such exceptions before claiming closure. The whole-SDK counterpart backlog remains, not just newly written tests.
 
-D-05's evidence-backed inventory/atomic-contract/independent-oracle **approach** is now approved by user decision and published in [handoff v0.2.5 section 10.5][implementation-d05] at `532e2401be02da06becbbc459dd58b78ae9b35d4`. [Section 11.1][implementation-authorization] records the separate testing authorization; baseline/domain matrix are v0.1.5 at that same commit. Actual .NET/service contracts, source/history/API closure and lifecycle exclusions remain unfinished. D-06 through D-12 remain open.
+D-05's evidence-backed inventory/atomic-contract/independent-oracle **approach** was approved and published in [handoff v0.2.5 section 10.5][implementation-d05] at `532e2401be02da06becbbc459dd58b78ae9b35d4`. [Section 11.1][implementation-authorization] records the separate testing authorization; baseline/domain matrix were v0.1.5 at that receipt. D-06's [v0.2.6 receipt][implementation-d06] at `72e9f57918ed81a38bd750f4a6aca58173877d7b` records the protected/fail-closed future unattended-merge approach DESIGN ONLY.
+
+The current [handoff v0.2.7][current-policy] at `1fef335ecb72e15e75518cffc2d39814c2e6bd13`, with baseline/domain matrix v0.1.7, adds [D-07's two independent Router-led judgments plus a separate test challenger and written personal-Router scope][current-d07]. Its sections 8.1-8.6 retain role/proof requirements and provenance/adaptation limits; written scope is not runtime installation, executed challenge, peer fanout or an actual review. D-01 through D-07 approaches are selected; D-08 through D-12 remain open (five). No auto-merge/Agent merge, credentials/permissions, governance activation, individual Q-oracle approval or paired-service waiver is granted. Actual .NET/service contracts, source/history/API closure and protected runtime/identity/wiring remain unfinished.
+
+The current shared receipt is the open/unmerged source head of [kushagraThapar/SuicideSquad#6][current-policy-pr], not merged shared main. The coordinator's later verified shared main is `01803bacd42f9b66bc20e1af03dcb6bcc2a30dc7`, after [kushagraThapar/SuicideSquad#5](https://github.com/kushagraThapar/SuicideSquad/pull/5) merged. The previous D-06 receipt had that PR open and main `b45999c818c29169fefbe2902155d2fd65fd284f`; earlier source pins and A-01 retain their historical policy boundaries.
 
 The first bounded increment is [I-01: paired Encryption patch protection and unit selection](specs/i-01-encryption-patch-paired-tests.md), a partial G-02/B-034 slice. Its versioned spec precedes test/pipeline implementation. Implementation intake main resolved once at `2026-11-01T18:40:10Z` to A-01's unchanged commit. Layer-specific execution, artifact and remaining-input records belong in the linked matrix/spec; they do not refresh other historical rows.
 
-**I-01 current status:** testing and explicit tracked GA/preview Encryption unit selection are implemented. The final package-backed Encryption unit project passed 58 cases in GA and 58 in preview, including the five exact patch cases; current-core source comparisons passed those five cases in each surface. The public SDK/service counterpart compiled in all four bindings, but native discovery exposes one method rather than eight expanded rows, and no authorized emulator/service execution occurred. The [spec v0.1.3](specs/i-01-encryption-patch-paired-tests.md#actual-local-resultconfiguration-receipt) retains original failures, exact result/assembly/configuration receipts and inputs. This is **not closure** of B-034/G-02 or the whole SDK.
+**I-01 current status:** testing and explicit tracked GA/preview Encryption unit selection are implemented. Local package-backed unit projects passed 58/58 each, including five exact patch cases; current-core source comparisons passed those five cases in each surface. Tested source commit `ee19f83e9e13d4f98790a6fbfe09dd4bd087ad29` was pushed and [SDK PR #6182][sdk-increment-pr] opened. Native build 64324 against merge candidate `0babdeb0748c59bd2c552fd3c1a06bb8b63515ef` supplies GA/preview unit runs 1331299/1331287 (58/58 each, exact five patch leaves) and service runs 1331291/1331290 (all eight exact mode/API/order cells plus the strengthened existing patch witness passed). All four tasks passed on attempt 1. Wider service projects retain one existing ignored change-feed leaf each; no required I-01 cell is skipped. [Spec v0.1.4](specs/i-01-encryption-patch-paired-tests.md#native-prci-receipt) records original TRX, parent/leaf reporting distinctions, commands, host/runtime and remaining identity limits. The overall build was still in progress at that receipt. This is executed protection, **not independent contract, independent review/challenge, all-G-02 or whole-SDK closure**.
 
 The delivered v0.2.1 plan SHA-256 `c838ff1c1f9e392ca39e46850422516f66a83e2d1cb97a2856c3963c9c7c3773` remains historical. Continuing the first increment, an existing origin/SSH dry-run push verified a publishing route despite the current CLI account's read-only upstream permission. No account, permission or remote was changed. The local ARM64 vNext emulator is not a faithful alternative for Direct/CE-key fixture proof; the linked spec records that compatibility boundary. Actual pushed-candidate, PR and native CI/service receipts remain separate from this pre-push record.
 
@@ -34,7 +38,7 @@ The immediate gaps are **trustworthiness and completeness of applicable test evi
 
 Start with evaluated configuration, existing companion-unit selection, artifact identity and attempt-aware cohort receipts. Then strengthen a bounded set of existing assertions, followed by critical cross-feature sequences. Broader semantic/history closure, compatibility and resource comparisons build on that foundation. This order reduces dependencies; it is not a new severity scale, numerical target, deadline or execution budget.
 
-The v0.1.0 assignment created only the plan and matrix, without SDK execution. The newly authorized work proceeds in small spec-first testing/fixture/existing-CI increments, with local targeted validation and honest blocked integration receipts. Package versions, permissions, publishing/release lanes, merge settings and arbitrary production resources remain out of scope. Java remains paused at its accepted checkpoint. The separate Direct-source migration is not advanced or assumed complete.
+The v0.1.0 assignment created only the plan and matrix, without SDK execution. The newly authorized work proceeds in small spec-first testing/fixture/existing-CI increments, with separate local/native executed receipts and honest blocked or unqualified cells. Package versions, permissions, publishing/release lanes, merge settings and arbitrary production resources remain out of scope. Java remains paused at its accepted checkpoint. The separate Direct-source migration is not advanced or assumed complete.
 
 ## 2. Portable A-01 intake and snapshot provenance
 
@@ -53,7 +57,7 @@ This section is a **derived intake**, not a replacement or republished copy of A
 | Later implementation policy receipt | `kushagraThapar/SuicideSquad@532e2401be02da06becbbc459dd58b78ae9b35d4`: [handoff v0.2.5][implementation-policy], sections [10.5][implementation-d05]/[11.1][implementation-authorization]; baseline/domain matrix v0.1.5. Not retroactive A-01 policy |
 | This assessment's main/base | A single upstream `refs/heads/main` read returned A-01's commit. The clean isolated worktree HEAD/base also matched its commit and tree; identity receipt recorded `2026-11-01T17:44:01Z`, after the resolution |
 | Source delta | None between A-01 and this once-resolved main. This is not a new assertion census or refreshed CI execution receipt |
-| Candidate / merge / package | These documentation drafts are not an assessed SDK implementation candidate. Actual merge-candidate and tested package identities are unknown/not produced here |
+| Historical v0.1.0 candidate boundary | The original documentation drafts were not an SDK implementation candidate and produced no tested package/merge receipt. The later I-01 candidate and bounded dependency/execution evidence are recorded separately above/in the spec |
 | Concept reference | `tvaron3/cosmosdb-design-docs@bcfbc786fa5296deebcccd11369efb583e63e48c`, synchronized on main and consulted for the qualified boundaries below |
 
 **Frozen evidence breadth:** A-01 read 12 root Azure Pipelines entries, 19 local templates and two tracked Actions workflows (33 tracked CI YAML files). It reconciled 37 navigation lanes, eight proposed atomic candidates, 21 additional assertion witnesses, 28 critical scenario seeds and 12 database families. These are navigation/inventory inputs, not coverage denominators, executed case counts or approved guarantees. Selected assertion bodies are not a whole-SDK assertion census.
@@ -81,7 +85,7 @@ Timeout/cancellation does not prove non-commit. Pagination does not imply snapsh
 
 At this plan's shared-policy pin, D-01 selects main/all-source/CI-native/Gateway-and-Direct scope. D-02 prioritizes behavioral and cross-feature preservation, requires applicable testing evidence for every PR (sufficient existing tests count), and requires a proportionate design/spec **before** agents implement a feature or bug. D-03 starts with established CI gates/configured limits and strengthens demonstrated gaps, with finite attempts and original failures retained; it does not approve new tolerances. D-04 places SDK-specific records in SDK docs and shared agentic standards/templates/process in SuicideSquad.
 
-This is additional planning authority, not evidence of existing enforcement. The later D-05 approach approval is recorded above, not retroactively inserted into that shared-policy pin or A-01. Its specific contract/oracle decisions and D-06 through D-12 remain open. No oracle owner, quorum, autonomy governance, tool, budget, live capability policy or exception/retirement procedure is chosen here.
+This is additional planning authority, not evidence of existing enforcement. Later D-05/D-06/D-07 approach selections are recorded above, not retroactively inserted into that shared-policy pin or A-01. D-07 selects minimum independent review/challenge roles and written scope, not actual qualifying identities or runtime proof. Specific contracts/oracles and protected-policy/identity/enforcement wiring remain unfinished; D-08 through D-12 remain open. No oracle owner, actuator identity, tool, budget, live capability policy or exception/retirement procedure is selected or implemented here.
 
 ## 4. Prioritized work packages
 
@@ -161,7 +165,7 @@ Acceptance always concerns the named slice and its required neighbors. No sum of
 | Behavior risk | Advisory success, conditional Inconclusive, source-level Ignore, excluded categories or overlapping Flaky lanes can be mistaken for passing required behavior |
 | Existing-suite/CI change | Expose these dispositions and reasons through existing result publishing. Reuse AAD's nonempty/no-skip/all-passed leaf validation where applicable; add expected-cohort reconciliation without silently making governance decisions |
 | Assertion / negative control / neighbors | Deliberately omitted, skipped or inconclusive required leaves must not become pass-shaped evidence. Multi-tag Flaky/Quarantine controls must retain exclusions/disposition and prevent duplicate credit across normal/Flaky jobs. Preserve valid account-free FI cases and honest advisory/live distinctions |
-| Dependencies / candidate proof | G-07 cohort receipts, G-08 capability identity; D-05 applicability, D-06 required-check governance and D-10 live ownership remain open |
+| Dependencies / candidate proof | G-07 cohort receipts, G-08 capability identity; D-05 applicability, actual required-check/governance wiring under the design-only D-06 approach, and D-10 live ownership remain unfinished |
 | Acceptance / blocked inputs | Each expected obligation has an explicit executed or unresolved/parked disposition. Do not remove DTX Ignore, enable live integration, change ThinClient blocking status, or retire excluded obligations under this draft. Live-capability/policy receipts are missing |
 
 ### G-05: bounded assertion and observer improvements
@@ -240,8 +244,8 @@ These are five separate proposed slices, not one "feature covered" claim. Common
 | Behavior risk | A future feature/bug spec or mapping can change obligations without corresponding applicable assertion/result proof, especially under a blanket docs-only filter |
 | Existing-suite/CI change | Use these SDK-docs drafts as initial human-readable mappings. Future changes link pre-implementation specs to affected/preserved behaviors, exact assertions, native job/filter/result receipts and versioned shared rules. Reconcile assurance-spec/mapping path handling in existing PR/CI checks without creating a parallel gate platform |
 | Assertion / negative control / neighbors | An assurance-spec/mapping-only change that alters obligations must not silently get a docs-only bypass. Missing affected behavior, preserved neighbor, authority, exact assertion or applicable execution link must remain incomplete. Preserve ordinary docs workflows without inventing a D-02 testing waiver or selecting a new enforcement owner |
-| Dependencies / candidate proof | G-01/G-03/G-07 evidence, G-06 expansion; D-04 concrete layout/wiring, D-05 oracle/lifecycle, D-06/D-07 governance/review. SDK-specific history and sanitized regression records stay in SDK docs; shared templates/process stay in SuicideSquad |
-| Acceptance / blocked inputs | A bounded future change has the bidirectional chain and honest unresolved cells, with no source/test/CI payload copied into docs. Exact layout/schema/retention/wiring, historical PR/API closure and review protocol are pending; no filters or gates are changed now |
+| Dependencies / candidate proof | G-01/G-03/G-07 evidence, G-06 expansion; D-04 concrete layout/wiring, D-05 oracle/lifecycle, D-06/D-07 protected governance/review integration. SDK-specific history and sanitized regression records stay in SDK docs; shared templates/process stay in SuicideSquad |
+| Acceptance / blocked inputs | A bounded future change has the bidirectional chain and honest unresolved cells, with no source/test/CI payload copied into docs. Exact layout/schema/retention/wiring, historical PR/API closure and protected runtime review protocol remain pending; no filters or gates are changed now |
 
 ### G-11: external/evaluated inputs and registrations
 
@@ -271,18 +275,18 @@ These are five separate proposed slices, not one "feature covered" claim. Common
 
 ## 7. Exact unresolved boundaries
 
-| Decision / input | Remains open; not selected by this plan |
+| Decision / input | Remaining proof/wiring or open decision; no implementation authority inferred |
 |---|---|
 | D-04 concrete follow-through | Final SDK folder/schema/indexing, controlled publication/migration of A-01/bootstrap inputs, shared-rule links and existing-CI docs-path wiring |
 | D-05 | Source/changelog/API/internal-workflow closure, atomic oracle authority, disputed contracts and explicit lifecycle exclusions |
-| D-06 | Org/repository unattended-merge governance and protected-policy owners; existing human approval boundaries remain |
-| D-07 | Reviewer independence, roles/quorum, independent test challenge and final-candidate reconciliation |
+| D-06 implementation follow-through | Protected/fail-closed future approach approved DESIGN ONLY; actual repo/org policy inspection, actuator/owner identities, protected-input wiring and any authorized governance changes remain unfinished. Existing approval/protection boundaries remain binding |
+| D-07 implementation follow-through | Two independent Router-led judgments plus independent test challenger, explicit required-role passes and written personal-Router scope selected DESIGN ONLY; actual qualifying identities, runtime/challenge execution and protected final-candidate integration remain unfinished. No reviewers or peer fanout run here |
 | D-08 | Cross-SDK matrix depth and bounded Router peer fanout; no new peers or Java work launched |
 | D-09 | Mutation/property/concurrency/coverage tooling fit; existing fuzz/performance facilities are prior art, not selected campaigns |
 | D-10 | Evidence retention/access/provenance, costs/concurrency, live ownership/capacity/fault isolation, cleanup and stop/recovery |
 | D-11 | Historical corpus admission, qualification samples/strata/duration/uncertainty and prospective escape criteria |
 | D-12 | Protected intentional contract changes, exceptions, obsolete obligations and historical behavior that is itself incorrect |
-| Access / execution receipts | No evaluated ADO jobs, required-check/governance, protected input or current live-capability receipts. I-01 records local attempt-indexed unit TRX/configuration evidence separately; no inference for other rows or tested built-nupkg consumers |
+| Access / execution receipts | I-01 build 64324 is readable through existing Azure CLI authentication; anonymous 401s retained. All four relevant tasks passed on attempt 1, with exact five unit/eight service leaves each plus existing patch witness; original TRX and effective configuration/host receipts obtained. Whole-build disposition, complete loaded-payload/fixture identity, required-check/protected governance and broader live/consumer/review/challenge proof remain unverified. No inference for other rows |
 | Operational guidance boundary | Coordinator's RCAKit attempt returned MCP OAuth challenge required, HTTP 401; no operational result was obtained. That is not a .NET/service semantic oracle, and this planning work does not depend on rerunning it |
 
 Retain all nine diagnostic dimensions for later comparable assessments: executable lines, branch outcomes, mutation detection, atomic invariants, status decisions, scenarios/interactions, historical regressions, compatibility, and reliability/performance/resources. No weighted score or gains elsewhere compensate for a failed required behavior; no numerical threshold or new budget is introduced.
@@ -305,6 +309,11 @@ The user's new authorization permits [I-01](specs/i-01-encryption-patch-paired-t
 [implementation-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/532e2401be02da06becbbc459dd58b78ae9b35d4/docs/dotnet/design-handoff.md
 [implementation-d05]: https://github.com/kushagraThapar/SuicideSquad/blob/532e2401be02da06becbbc459dd58b78ae9b35d4/docs/dotnet/design-handoff.md#105-user-approved-d-05-approach
 [implementation-authorization]: https://github.com/kushagraThapar/SuicideSquad/blob/532e2401be02da06becbbc459dd58b78ae9b35d4/docs/dotnet/design-handoff.md#111-separate-sdk-testing-authorization-context
+[implementation-d06]: https://github.com/kushagraThapar/SuicideSquad/blob/72e9f57918ed81a38bd750f4a6aca58173877d7b/docs/dotnet/design-handoff.md#106-user-approved-d-06-approach
+[current-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/1fef335ecb72e15e75518cffc2d39814c2e6bd13/docs/dotnet/design-handoff.md
+[current-d07]: https://github.com/kushagraThapar/SuicideSquad/blob/1fef335ecb72e15e75518cffc2d39814c2e6bd13/docs/dotnet/design-handoff.md#107-user-selected-d-07-approach-and-router-scope-addition
+[current-policy-pr]: https://github.com/kushagraThapar/SuicideSquad/pull/6
+[sdk-increment-pr]: https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6182
 [concept-transport]: https://github.com/tvaron3/cosmosdb-design-docs/blob/bcfbc786fa5296deebcccd11369efb583e63e48c/06-transport-layer-rntbd.md#two-connectivity-modes
 [concept-partition]: https://github.com/tvaron3/cosmosdb-design-docs/blob/bcfbc786fa5296deebcccd11369efb583e63e48c/04-partitioning.md#sdk-side-terminology
 [concept-consistency]: https://github.com/tvaron3/cosmosdb-design-docs/blob/bcfbc786fa5296deebcccd11369efb583e63e48c/05-replication-consistency.md#session-consistency-default
