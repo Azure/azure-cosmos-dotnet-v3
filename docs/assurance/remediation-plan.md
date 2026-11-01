@@ -6,7 +6,7 @@
 
 | Field | Draft receipt |
 |---|---|
-| Version / recorded | 0.3.0 / 2026-11-01 UTC |
+| Version / recorded | 0.3.1 / 2026-11-01 UTC |
 | Status | Evolving proposed plan with authorized bounded testing increments; not an approved contract catalog, whole-SDK executed assessment or merge recommendation |
 | Scope | All repository SDK source and companion packages; Gateway and Direct; improve established SDK tests and CI |
 | Starting evidence | Completed A-01 reconciliation audit, identified below; no duplicate SDK audit |
@@ -26,9 +26,18 @@ The historical handoff v0.2.7 at `1fef335ecb72e15e75518cffc2d39814c2e6bd13`, wit
 
 At the received D-07 receipt, [kushagraThapar/SuicideSquad#6](https://github.com/kushagraThapar/SuicideSquad/pull/6) was open/unmerged, and the coordinator-verified main was `01803bacd42f9b66bc20e1af03dcb6bcc2a30dc7`, after [kushagraThapar/SuicideSquad#5](https://github.com/kushagraThapar/SuicideSquad/pull/5) merged. The previous D-06 receipt had that PR open and main `b45999c818c29169fefbe2902155d2fd65fd284f`. These are historical source/main distinctions, not claims about today's shared main.
 
-The current [handoff v0.2.9][current-policy] at `d05b94e439ad9542d322da96b9821927b4cdf999`, sections 6.1-6.2/10.9, with baseline/domain matrix v0.1.9, was published in open [kushagraThapar/SuicideSquad#8][current-policy-pr] at the received receipt; it is not relabeled merged main. [D-08][implementation-d08] at `12c7cc3af87208d46a81b3f066262bcfdd3ceab2` keeps .NET, Java, Python, Go, Rust and JS/TS visible with behavior/risk-dependent depth and complete bounded peer manifests. JS/TS is a new D-08 extension; D-07's historical five-SDK intake is unchanged. D-09 preserves native MSTest/CI and evidence-qualified tools: Stryker.NET/FsCheck/selective Coyote remain unqualified candidates; the existing SharpFuzz path is prior art requiring qualification, not an authorized campaign.
+The [handoff v0.2.9][implementation-d09] at `d05b94e439ad9542d322da96b9821927b4cdf999`, sections 6.1-6.2/10.9, with baseline/domain matrix v0.1.9, was the I-02 implementation policy receipt, published in open [kushagraThapar/SuicideSquad#8][current-policy-pr] at that receipt; it is not relabeled merged main. [D-08][implementation-d08] at `12c7cc3af87208d46a81b3f066262bcfdd3ceab2` keeps .NET, Java, Python, Go, Rust and JS/TS visible with behavior/risk-dependent depth and complete bounded peer manifests. JS/TS is a new D-08 extension; D-07's historical five-SDK intake is unchanged. D-09 preserves native MSTest/CI and evidence-qualified tools: Stryker.NET/FsCheck/selective Coyote remain unqualified candidates; the existing SharpFuzz path is prior art requiring qualification, not an authorized campaign.
 
-D-01 through D-09 approaches are selected; D-10 through D-12 remain open (three). No tool installation/spike/campaign, peer research/execution/review fanout, auto-merge/Agent merge, credentials/permissions, governance activation, individual Q-oracle approval or paired-service waiver follows from those publications. Actual .NET/service contracts, source/history/API closure, qualified comparison/review/challenge and protected runtime/identity/wiring remain unfinished.
+During I-02 native-CI observation, the later [handoff v0.2.10][current-policy]
+at `90368a6ac0fa0434fcf972cd66109ebcf57cda54`, sections 8.8-8.9/10.10,
+baseline/domain matrix v0.1.10, published D-10 in the same open shared PR8.
+Its preauthorized-profile approach covers provenance/retention, trust/access,
+whole-run budgets, fixture admission/isolation, lease-safe cleanup,
+stops/outages and recovery. Concrete numerical profiles/stores/resources/
+identities/permissions/enforcement remain unqualified. This pointer is folded
+into the necessary SDK result update, not an immediate pointer-only commit/CI run.
+
+D-01 through D-10 approaches are selected; D-11 through D-12 remain open (two). No tool installation/spike/campaign, peer research/execution/review fanout, operational/merge activation, credentials/permissions, governance change, individual Q-oracle approval or paired-service waiver follows from those publications. Actual .NET/service contracts, source/history/API closure, qualified comparison/review/challenge and protected runtime/identity/wiring remain unfinished. D-10 neither adds authority nor revokes the separately authorized bounded SDK work.
 
 The first bounded increment is [I-01: paired Encryption patch protection and unit selection](specs/i-01-encryption-patch-paired-tests.md), a partial G-02/B-034 slice. Its versioned spec precedes test/pipeline implementation. Implementation intake main resolved once at `2026-11-01T18:40:10Z` to A-01's unchanged commit. Layer-specific execution, artifact and remaining-input records belong in the linked matrix/spec; they do not refresh other historical rows.
 
@@ -36,9 +45,36 @@ The first bounded increment is [I-01: paired Encryption patch protection and uni
 
 **I-02 current status:** [paired Custom cache/cancellation protection](specs/i-02-custom-cache-paired-tests.md) implements the next bounded G-02/B-035/B-036 slice. Existing timeout/internal-cancellation/pre-cancelled-caller unit seeds are strengthened; six Gateway/Direct typed service leaves are declared using real providers/key/item operations and controlled L2 only. The existing ordinary and Custom preview jobs now explicitly select the Custom unit project, retaining both declared TFMs and configured limits. Ordinary/preview package-backed unit projects each passed 424 net6 and 755 net8 leaves locally; current-core preview comparisons passed 52 focused leaves per TFM. The new service methods compile on both TFMs, and discovery lists two data-driven parents, **not executed six-leaf service proof**. Native evaluated selection and real-service receipts remain pending.
 
+Post-publication inspection found an introduced observer error: MDE stores
+ciphertext at the sensitive property's name, whereas the first service
+candidate incorrectly required that name to disappear. A frozen v0.1.3
+spec amendment precedes the correction. The service observer now requires
+retained, nonempty base64 ciphertext different from plaintext; the existing
+MDE unit helper is strengthened with the same rule and null/decryption
+neighbors preserved. Its current-core preview class passes 8 net6/24 net8
+leaves; the corrected service assemblies compile/list parents. These are
+separate corrective receipts, not an SDK defect or a change to the original
+cache/cancellation expectation. A retained source-to-package `--no-restore`
+build failure was repaired by restoring the evaluated existing reference graph,
+not by changing dependencies. Native execution of the correction is pending.
+
 I-02 intake main was resolved once to A-01's unchanged source; work began clean at I-01's docs head `acaff6b6f90c58ca920980d23f31018475eed1eb`. The pre-implementation v0.1.0 spec SHA-256 `e1335f339ea0f4b45cc7279eb5dc2ccf6a482fccb93f013cf8cb24041c53974e` and baseline-driven v0.1.1 SHA-256 `8e03199976ac6d90bcdcca1f5e4b69cb58c7c81590d872e0c868bca2ddc4acc5` were frozen before test edits. A missing runtime-8 abort and both original full-project failures are retained. The failures exposed a test-only Stopwatch/TimeSpan tick conversion defect; its root cause is corrected without relaxing the original assertion or changing SDK production diagnostics. Proposed local-only treatment is explicit, not a paired-product waiver. Four pre-existing UTA007-undiscoverable legacy methods remain G-07/counterpart backlog, not passed or skipped leaves.
 
 The user explicitly selected publishing I-02 as a separate commit in existing [SDK PR #6182][sdk-increment-pr] and collecting ordinary CI receipts. No new session/branch or explicit CI/nightly/release trigger is needed. I-01's historical tested candidate and native results remain separately pinned; neither those results nor local I-02 compilation qualifies the new service cells.
+
+I-02 was committed and immediately pushed as
+`d5004b187a04adf6a5f87a3197b912b217c8aae2`, tree
+`b1de7ba171479d9bc26f32f5eba1c43df7be3c83`. Ordinary build 64329 automatically
+queued against merge candidate `21b9f761f022f689399c496978693d4625c8cfb7`;
+its two parents are the unchanged A-01 base and I-02 source, with the same
+tree. At `23:27:48Z` this original build remained in progress, ordinary Custom
+units pending, without a returned Custom result run. The read-only observation
+window ended without CI cancellation/rerun. It cannot qualify the corrected
+observer; that needs its own candidate/receipts. Queued/in-progress native
+state is not case execution. The app PR-update
+endpoint's 404 is retained separately from successful use of the already
+user-approved PR-only publisher credential; no global auth/permission/remote
+or merge setting was changed.
 
 The delivered v0.2.1 plan SHA-256 `c838ff1c1f9e392ca39e46850422516f66a83e2d1cb97a2856c3963c9c7c3773` remains historical. Continuing the first increment, an existing origin/SSH dry-run push verified a publishing route despite the current CLI account's read-only upstream permission. No account, permission or remote was changed. The local ARM64 vNext emulator is not a faithful alternative for Direct/CE-key fixture proof; the linked spec records that compatibility boundary. Actual pushed-candidate, PR and native CI/service receipts remain separate from this pre-push record.
 
@@ -95,7 +131,7 @@ Timeout/cancellation does not prove non-commit. Pagination does not imply snapsh
 
 At this plan's shared-policy pin, D-01 selects main/all-source/CI-native/Gateway-and-Direct scope. D-02 prioritizes behavioral and cross-feature preservation, requires applicable testing evidence for every PR (sufficient existing tests count), and requires a proportionate design/spec **before** agents implement a feature or bug. D-03 starts with established CI gates/configured limits and strengthens demonstrated gaps, with finite attempts and original failures retained; it does not approve new tolerances. D-04 places SDK-specific records in SDK docs and shared agentic standards/templates/process in SuicideSquad.
 
-This is additional planning authority, not evidence of existing enforcement. Later D-05 through D-09 approach selections are recorded above, not retroactively inserted into that shared-policy pin or A-01. D-07 selects minimum independent review/challenge roles and written scope, not actual qualifying identities or runtime proof. D-08 adds the visible six-SDK comparison policy; D-09 retains native tools with evidence-qualified admission. Actual oracles, protected enforcement, qualified comparisons and specific candidate tools remain unfinished; D-10 through D-12 remain open. No oracle owner, actuator identity, new tool, budget, live capability policy or exception/retirement procedure is implemented here.
+This is additional planning authority, not evidence of existing enforcement. Later D-05 through D-10 approach selections are recorded above, not retroactively inserted into that shared-policy pin or A-01. D-07 selects minimum independent review/challenge roles and written scope, not actual qualifying identities or runtime proof. D-08 adds the visible six-SDK comparison policy; D-09 retains native tools with evidence-qualified admission; D-10 selects the preauthorized operating-envelope approach, not concrete limits or resource admission. Actual oracles, protected enforcement, qualified comparisons, candidate tools and operating profiles remain unfinished; D-11 through D-12 remain open. No oracle owner, actuator identity, new tool, numeric budget, live resource/permission or exception/retirement procedure is implemented here.
 
 ## 4. Prioritized work packages
 
@@ -293,7 +329,7 @@ These are five separate proposed slices, not one "feature covered" claim. Common
 | D-07 implementation follow-through | Two independent Router-led judgments plus independent test challenger, explicit required-role passes and written personal-Router scope selected DESIGN ONLY; actual qualifying identities, runtime/challenge execution and protected final-candidate integration remain unfinished. No reviewers or peer fanout run here |
 | D-08 implementation follow-through | Six visible SDKs and behavior/risk-dependent depth selected; actual applicability, pinned peers/dispositions and complete bounded manifests remain unqualified. No peer research/fanout or frozen Java work launched here |
 | D-09 implementation follow-through | Native stack retained and evidence-qualified tool admission selected; Stryker.NET/FsCheck/selective Coyote remain candidates and existing SharpFuzz needs qualification. No new dependencies, installations/spikes or campaigns authorized by policy alone |
-| D-10 | Evidence retention/access/provenance, costs/concurrency, live ownership/capacity/fault isolation, cleanup and stop/recovery |
+| D-10 implementation follow-through | Preauthorized-profile envelope selected DESIGN ONLY. Concrete retention/stores, whole-run numeric limits/concurrency/capacity/leases, admitted resources, identities/permissions, stops/recovery and enforcement remain unqualified. Namespace uniqueness or another job does not prove throughput/fault/trust isolation |
 | D-11 | Historical corpus admission, qualification samples/strata/duration/uncertainty and prospective escape criteria |
 | D-12 | Protected intentional contract changes, exceptions, obsolete obligations and historical behavior that is itself incorrect |
 | Access / execution receipts | I-01 build 64324 is readable through existing Azure CLI authentication; anonymous 401s retained. All four relevant tasks passed on attempt 1, with exact five unit/eight service leaves each plus existing patch witness; original TRX and effective configuration/host receipts obtained. Whole-build disposition, complete loaded-payload/fixture identity, required-check/protected governance and broader live/consumer/review/challenge proof remain unverified. No inference for other rows |
@@ -320,9 +356,10 @@ The user's new authorization permits [I-01](specs/i-01-encryption-patch-paired-t
 [implementation-d05]: https://github.com/kushagraThapar/SuicideSquad/blob/532e2401be02da06becbbc459dd58b78ae9b35d4/docs/dotnet/design-handoff.md#105-user-approved-d-05-approach
 [implementation-authorization]: https://github.com/kushagraThapar/SuicideSquad/blob/532e2401be02da06becbbc459dd58b78ae9b35d4/docs/dotnet/design-handoff.md#111-separate-sdk-testing-authorization-context
 [implementation-d06]: https://github.com/kushagraThapar/SuicideSquad/blob/72e9f57918ed81a38bd750f4a6aca58173877d7b/docs/dotnet/design-handoff.md#106-user-approved-d-06-approach
-[current-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/d05b94e439ad9542d322da96b9821927b4cdf999/docs/dotnet/design-handoff.md
+[current-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/90368a6ac0fa0434fcf972cd66109ebcf57cda54/docs/dotnet/design-handoff.md
 [current-d07]: https://github.com/kushagraThapar/SuicideSquad/blob/1fef335ecb72e15e75518cffc2d39814c2e6bd13/docs/dotnet/design-handoff.md#107-user-selected-d-07-approach-and-router-scope-addition
 [implementation-d08]: https://github.com/kushagraThapar/SuicideSquad/blob/12c7cc3af87208d46a81b3f066262bcfdd3ceab2/docs/dotnet/design-handoff.md
+[implementation-d09]: https://github.com/kushagraThapar/SuicideSquad/blob/d05b94e439ad9542d322da96b9821927b4cdf999/docs/dotnet/design-handoff.md
 [current-policy-pr]: https://github.com/kushagraThapar/SuicideSquad/pull/8
 [sdk-increment-pr]: https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6182
 [concept-transport]: https://github.com/tvaron3/cosmosdb-design-docs/blob/bcfbc786fa5296deebcccd11369efb583e63e48c/06-transport-layer-rntbd.md#two-connectivity-modes

@@ -2,8 +2,8 @@
 
 | Field | Receipt |
 |---|---|
-| Version / recorded | 0.1.2 / 2026-11-01 UTC; local implementation/result receipt |
-| Status | Tests and tracked CI selection implemented, local unit protection executed; native service evidence pending. Not independently approved contract, complete G-02 closure or merge qualification |
+| Version / recorded | 0.1.4 / 2026-11-01 UTC; corrected-observer local result/publication receipt |
+| Status | Introduced stored-field observer corrected after frozen amendment; focused MDE units executed and service assemblies rebuilt. Native paired-service evidence pending. Not independently approved contract, complete G-02 closure or merge qualification |
 | Scope | A-01 G-02/G-07; matrix B-035/B-036 and their immediate cache/crypto/cancellation preservation neighbors |
 | Intake | Existing isolated SDK worktree at `acaff6b6f90c58ca920980d23f31018475eed1eb`; clean before I-02. Upstream main resolved once at intake to `52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8`, unchanged from A-01 |
 | Historical evidence | A-01 SHA-256 `63e368bc66f5c876bb853de62116a9d54ce34f9e1066b5f0b89da8df95b4949c`, 98,011 bytes. [I-01](i-01-encryption-patch-paired-tests.md) and its original source/merge-candidate/TRX receipts remain unchanged |
@@ -85,11 +85,55 @@ servers and broader serializer/rotation behavior remain follow-up.
   outcome controls, not universal no-commit claims. Do not equate no logical
   key reads with no account/container/address metadata I/O.
 - Dispose case clients/providers and all stream responses. Existing class
-  cleanup deletes only its unique fixture database. Do not log raw keys,
+  cleanup targets only its unique fixture database but does not assert the
+  `DeleteStreamAsync` response status. A passing test is not independent
+  cleanup-outcome/lease-fencing or capacity/fault/trust-isolation proof;
+  retain that fixture-qualification gap rather than claim D-10 activation.
+  Do not log raw keys,
   ciphertext/cache blobs, credentials or account operational environment dumps.
 - No sleeps, new retry loop, swallowed assertion, new production injection
   hook or expectation changed to make CI green. If a candidate exposes a real
   behavior discrepancy, retain the reproduction and separate fix/oracle question.
+
+### Published stored-field observer correction: specification before edits
+
+Post-publication inspection found an introduced **test-observer defect** in
+`d5004b187a04adf6a5f87a3197b912b217c8aae2`: the new service test requires
+`Sensitive` to be absent in the raw stored item. The intended rule above is
+that the encrypted field is **not plaintext**, not that its name disappears.
+[MDE's current processor][mde-representation] replaces the property value
+with encrypted bytes; it does not use the legacy whole-document removal
+representation. Existing [MDE unit prior art][mde-unit-representation] already
+requires the retained string property to differ from plaintext and checks
+encryption metadata plus full decryption. This is source/assertion evidence,
+not independent approval of a public ciphertext-format or cache contract.
+
+Before any service result can qualify, correct only the observer and strengthen
+the corresponding existing MDE unit helper: the nonnull sensitive property must
+be a JSON string containing nonempty base64 bytes and differ from its original
+plaintext. Missing/empty/plaintext/invalid-base64 values must fail. Preserve
+the null-property unit case, untargeted fields, metadata, exact decrypted
+values, cold-provider/L2/key-read counts, caller-cancellation controls, both
+transports and both TFMs. Reuse
+`ValidateEncryptDecryptDocument_VerifyByNewtonsoft` and its same-helper
+neighbors rather than adding a duplicate format suite or changing production.
+Run the existing MDE unit class on both TFMs and rebuild the service project;
+real service execution remains separate and required.
+
+The v0.1.3 amendment was frozen at `2026-11-01T23:23:00Z`, SHA-256
+`7e5658b0e24f0c5013c006bcfba605509a90f46c4d1dc6fe7823ed95725ff366`,
+before those edits. The corrected helper/class passed 8/8 net6 and 24/24 net8
+leaves against current-core source preview, with zero skipped/inconclusive
+results. The corrected service assemblies compile and list the two parents
+on each TFM; they have not executed locally. This amendment does not
+retroactively repair or qualify the original candidate.
+
+The original source assertion and build 64329 remain attributable to their
+original candidate. A static contradiction is not an executed service failure,
+nor is the original assertion counted passed. No SDK functional defect or
+changed cache/cancellation expectation is inferred. A later real cache/service
+discrepancy still requires preserving its reproduction and separate contract/fix
+disposition, not adjusting expectations for a green result.
 
 ## Native CI, bindings and preservation neighbors
 
@@ -145,6 +189,12 @@ in the **test-only** `TestableCosmosDiagnosticsContext.ScopeRecord.Elapsed`:
 `TestableScope.Dispose` records actual Stopwatch ticks, not TimeSpan ticks.
 No SDK production timing defect is inferred.
 
+The independent framework reference is the official
+[Stopwatch.ElapsedTicks remarks][stopwatch-authority]: timer ticks represent
+`1 / Frequency` seconds and differ from 100-nanosecond time ticks. This
+grounds the test-helper arithmetic repair, not B-035/B-036 product contracts
+or their independent oracle approval.
+
 This discovery is tightly coupled to selecting the existing unit suite.
 Before enabling it, correct the test helper to convert using
 `Stopwatch.Frequency`, preserve the original one-second assertion, and add
@@ -161,13 +211,25 @@ The OpenSpec CLI is absent; attempted status/apply commands returned
 
 ## Shared policy, visible peer scope and non-activation
 
-Current immutable policy is [handoff v0.2.9][current-policy] at
+The I-02 implementation policy was [handoff v0.2.9][implementation-d09] at
 `d05b94e439ad9542d322da96b9821927b4cdf999`, sections 6.1-6.2/10.9,
 with baseline/domain matrix v0.1.9, published in open
 [kushagraThapar/SuicideSquad#8][policy-pr] at the received receipt.
-D-01..D-09 approaches are selected; D-10..D-12 remain open (three).
+At that receipt D-01..D-09 approaches were selected and D-10..D-12 open (three).
 The historical D-05/D-06/D-07 receipts and D-08's
 `12c7cc3af87208d46a81b3f066262bcfdd3ceab2` remain unchanged.
+
+The subsequent current [handoff v0.2.10][current-policy] at
+`90368a6ac0fa0434fcf972cd66109ebcf57cda54`, sections 8.8-8.9/10.10,
+baseline/domain matrix v0.1.10, published D-10 in the continuing open shared
+PR8 while native I-02 CI was being observed. D-01..D-10 approaches are now
+selected; D-11..D-12 remain open (two). The preauthorized-profile envelope
+adds no operating/merge authority: concrete retention/stores, whole-run
+numeric limits, resources/isolation/capacity/leases, identities/permissions,
+cleanup/stop/recovery and enforcement remain unqualified. Unique namespaces
+are not throughput/fault/trust isolation proof. It neither revokes this
+separately authorized SDK increment nor waives its paired-service evidence.
+Earlier policy/source snapshots are not rewritten.
 
 D-08 keeps .NET, Java, Python, Go, Rust and JS/TS visible. For this bounded
 companion/cache behavior, .NET source/assertions are inspected; peer
@@ -186,14 +248,15 @@ production resource or account provisioning is authorized.
 
 ## Acceptance and result ledger
 
-| Surface | Required evidence | At v0.1.2 |
+| Surface | Required evidence | At v0.1.4 |
 |---|---|---|
 | Focused units | All three named strengthened tests plus existing same-class neighbors, exact case outcomes and first-failure preservation for both TFMs | Three seeds strengthened; all 13 cache-class leaves pass in the six local bindings below |
 | Wider Custom unit selection | Evaluated ordinary/preview invocation and eligible executed cases for both TFMs; retain warnings/skipped/inconclusive/failed dispositions | Both tracked tasks added. Full local ordinary/preview: 424/424 net6 and 755/755 net8 each; original failures and UTA007 warnings retained. Native effective selection pending |
 | Local harness conversion | Correct test-only frequency conversion with original one-second assertion preserved and exact zero/one/two-second controls | Test helper repaired; original one-second assertion unchanged; all four witness leaves pass. Meaningful service half inapplicable to test-only arithmetic; proposed treatment surfaced |
-| Gateway/Direct service | All six exact new leaves per applicable TFM, real key reads and meaningful ciphertext/decrypted-value/control outcomes | Implemented and compiled both TFMs; `--list-tests` lists two parents only. Exact six-leaf discovery/execution pending |
+| Gateway/Direct service | All six exact new leaves per applicable TFM, real key reads and meaningful ciphertext/decrypted-value/control outcomes | Incorrect field-absence observer corrected; current assemblies compile/list two parents each. Exact service leaves/native outcomes pending; original source remains historical |
+| MDE observer preservation | Existing nonnull string-encryption unit helper preserves the field, rejects plaintext/empty/invalid-base64 values and retains null/metadata/decryption controls | Strengthened existing helper; current-source preview class passed 8/8 net6 and 24/24 net8 leaves, original full-package receipts remain separately attributable |
 | Current-core comparison | Explicit source/package-symbol binding and focused unit outcomes/compilation; service boundary qualified separately | Current-source preview `3.64.0-preview.0`, both TFMs, 52/52 cache+diagnostics leaves each; not package/service/GA proof |
-| Candidate/configuration/artifact | Native evaluated logs, original TRX/subresults, exact source and actual merge-candidate identity; installed/loaded/fixture gaps explicit | Missing; prior I-01 receipts do not substitute |
+| Candidate/configuration/artifact | Native evaluated logs, original TRX/subresults, exact source and actual merge-candidate identity; installed/loaded/fixture gaps explicit | Source and actual auto-queued merge candidate verified below; case/configuration/artifact receipts pending, prior I-01 does not substitute |
 | Whole-SDK obligations | Preserve all existing matrix inputs and unexpanded backlog, including counterparts and invalid-discovery methods | Remain open; no denominator or qualification claim |
 
 Record each later attempt and version without overwriting original failures,
@@ -234,7 +297,7 @@ cache seeds, original one-second assertion and three new frequency controls.
 The full-project count increases by **three** relative to baseline because
 existing cache tests were strengthened, not duplicated. Net8 already has a
 larger conditional cohort; its extra leaves are not an I-02 coverage gain.
-All candidate local test commands succeeded on their first candidate attempt;
+Those original v0.1.2 local unit-test commands succeeded on their first candidate attempt;
 the original runtime abort and both pre-change assertion failures stay retained.
 The four UTA007 methods are absent from discovery, not "0 skipped" success.
 
@@ -280,6 +343,36 @@ TFMs/dependencies, production source, API contracts and docs-path exclusions
 are unchanged. Native expected/discovered/executed/ignored/failed leaves and
 candidate/configuration/artifact receipts are still required.
 
+### Corrected-observer local receipt
+
+The existing MDE class was selected with
+`FullyQualifiedName~MdeEncryptionProcessorTests`, `SdkProjectRef=true`,
+`IsPreview=true`, the same explicit private hosts and native MSTest tooling.
+Net6 passed 8/8, TRX SHA-256
+`18422e266b379b77e67903986bbefb2108ffa36786e84558a7a735c8d11c8e18`;
+net8 passed 24/24, TRX
+`94ad6f3e4ebe0681980dea8a7ed751620d0e42f689e752634da7281807754461`.
+No new cases, frameworks or dependencies were added. The existing
+`ValidateEncryptDecryptDocument_VerifyByNewtonsoft` and same-helper cases
+exercise the stronger observer; full null and round-trip controls stay intact.
+
+The following service `--no-restore` build initially failed with
+`CS0234`/`CS0246` missing core types after switching from source to package
+references. The retained pre-restore assets identify core
+`3.64.0-preview.0` as a project. Restoring the already-declared
+`SdkProjectRef=false` graph changes that evaluated asset to package
+`3.41.0-preview.0`; the repeated build then succeeds for both TFMs with zero
+warnings/errors. No source, dependency range, runtime or expectation was
+changed to fix this graph mismatch. The original failed log remains separate.
+Both corrected service assemblies list only the two data-driven parents;
+listing does not initialize the fixture or execute the six leaves.
+
+The correction's local structured receipt SHA-256 is
+`419412d0d989c5371ef942b4c74031c05774c234ec28117e52be1b32b5f0fcd0`.
+It retains exact unit results, source-file digests, original/repaired graph
+and build logs. These are resolved/build-output identities, not complete
+loaded/native-artifact attestation or service results.
+
 ## Changed files and publication boundary
 
 | File | Bounded change |
@@ -287,10 +380,11 @@ candidate/configuration/artifact receipts are still required.
 | `Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/DekCacheDistributedCacheContractTests.cs` | Strengthen three existing seeds with source/token/identity/L1/recovery controls and reusable throwing-cache observations |
 | `Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/TestableCosmosDiagnosticsContext.cs` | Correct test-only Stopwatch-frequency conversion |
 | `Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/CosmosDiagnosticsContextTests.cs` | Exact zero/one/two-second controls; original one-second expectation retained |
+| `Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/MdeEncryptionProcessorTests.cs` | Strengthen existing nonnull sensitive-string preservation helper; no new format suite or product change |
 | `Microsoft.Azure.Cosmos.Encryption.Custom/tests/EmulatorTests/MdeCustomEncryptionTests.cs` | Two public-SDK parent methods/six declared Gateway/Direct leaves, controlled optional cache, real key-read/ciphertext/decryption/recovery observers |
 | `templates/build-test.yml`, `templates/build-preview.yml` | One explicit Custom unit task per established job, no new job/retry/framework |
 | `docs/builds-and-pipelines.md` | Accurate Custom TFMs, selection, preview dependency and distinct service/source boundaries |
-| This spec, `../remediation-plan.md`, `../feature-behavior-test-matrix.md` | Versioned authorization, D-09/current backlog, paired cases and separate local/native evidence states |
+| This spec, `../remediation-plan.md`, `../feature-behavior-test-matrix.md` | Versioned authorization, historical D-09/current D-10 backlog, paired cases, observer amendment and separate local/native evidence states |
 
 The user explicitly selected **"Add I-02 as a separate commit to PR #6182 and
 collect its ordinary CI receipts"**. Publish on the existing dedicated
@@ -299,6 +393,31 @@ manual CI trigger, merge or release is requested. Existing I-01 tests/spec
 and its executed source/merge candidate stay historical. This test/CI/docs
 increment changes no shipped source or customer behavior, so the PR's
 no-changelog exception is justified; package/API/version settings stay untouched.
+
+Published source is `d5004b187a04adf6a5f87a3197b912b217c8aae2`,
+tree `b1de7ba171479d9bc26f32f5eba1c43df7be3c83`; commit was immediately
+pushed. Native ordinary PR build [64329][native-build] automatically queued
+at `2026-11-01T23:03:31Z` and started at `23:08:42Z` against
+`21b9f761f022f689399c496978693d4625c8cfb7`. Its parents are exactly A-01
+base `52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8` and I-02 source; its
+tree equals the published tree. No explicit CI/nightly/release trigger
+was issued. Queued/in-progress native state does not establish executed
+unit or service cases.
+
+At `2026-11-01T23:27:48Z`, that original build remained in progress and its
+ordinary Custom-unit task was pending; no Custom unit/service run was yet
+returned. Other projects' three returned test runs are not I-02 case evidence.
+The finite 20-minute read-only observation window ended without cancelling,
+rerunning or diagnosing CI. The corrective test/code and necessary result/D-10
+update require a separate ordinary PR candidate; future native records must
+identify it rather than relabel build 64329 as corrected execution.
+
+The app's PR REST update returned HTTP 404, request id
+`D864:8AE04:9E197D:2063FCD:6AE7C5DC`, retained as a publication/access error,
+not an SDK/test failure or expired-login diagnosis. A fresh OPEN/head/body
+concurrency guard followed by the already user-approved PR-only publisher
+credential succeeded; live title/body were verified. No global authentication,
+remote, permission or auto-merge/Agent-merge setting changed.
 
 Native CI results, real service leaves, independent oracle/review/challenge,
 complete fixture/loaded-artifact identity and broader Custom/source/stream/
@@ -310,5 +429,10 @@ unit label or source build closes them.
 [provider]: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8/Microsoft.Azure.Cosmos.Encryption.Custom/src/CosmosDataEncryptionKeyProvider.cs
 [custom-changelog]: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8/Microsoft.Azure.Cosmos.Encryption.Custom/changelog.md
 [concept-retries]: https://github.com/tvaron3/cosmosdb-design-docs/blob/bcfbc786fa5296deebcccd11369efb583e63e48c/17-status-codes-and-sdk-retries.md#1-overview
-[current-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/d05b94e439ad9542d322da96b9821927b4cdf999/docs/dotnet/design-handoff.md
+[implementation-d09]: https://github.com/kushagraThapar/SuicideSquad/blob/d05b94e439ad9542d322da96b9821927b4cdf999/docs/dotnet/design-handoff.md
+[current-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/90368a6ac0fa0434fcf972cd66109ebcf57cda54/docs/dotnet/design-handoff.md
 [policy-pr]: https://github.com/kushagraThapar/SuicideSquad/pull/8
+[stopwatch-authority]: https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.stopwatch.elapsedticks?view=net-8.0#remarks
+[native-build]: https://cosmos-db-sdk-public.visualstudio.com/4000bd49-81c3-47f2-94d8-d1392b95c228/_build/results?buildId=64329
+[mde-representation]: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8/Microsoft.Azure.Cosmos.Encryption.Custom/src/Transformation/MdeJObjectEncryptionProcessor.cs#L42-L86
+[mde-unit-representation]: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8/Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/MdeEncryptionProcessorTests.cs#L369-L414
