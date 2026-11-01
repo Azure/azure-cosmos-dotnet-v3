@@ -58,42 +58,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         [TestMethod]
         public async Task GetAsync_ThrowsTimeoutException_FallsBackToCosmos()
         {
-            DateTime now = NewClock();
-            ThrowingDistributedCache l2 = new ThrowingDistributedCache(() => new TimeoutException("simulated L2 timeout"));
-            DekCache cache = NewCache(DefaultTtl, l2, () => now);
-
-            int cosmosCalls = 0;
-            DataEncryptionKeyProperties result = await cache.GetOrAddDekPropertiesAsync(
-                DekId,
-                (id, ctx, ct) => { cosmosCalls++; return Task.FromResult(MakeDekProperties(id)); },
-                CosmosDiagnosticsContext.Create(null),
-                CancellationToken.None);
-
-            Assert.AreEqual(DekId, result.Id);
-            Assert.AreEqual(1, cosmosCalls, "A TimeoutException from L2 must be swallowed and the source fetcher invoked.");
+            await AssertCacheFailureFallsBackAsync(() => new TimeoutException("simulated L2 timeout"));
         }
 
         [TestMethod]
         public async Task GetAsync_ThrowsOperationCanceledException_CallerTokenNotCancelled_MustNotFailTheOperation()
         {
-            DateTime now = NewClock();
-            ThrowingDistributedCache l2 = new ThrowingDistributedCache(() => new OperationCanceledException("internal L2 timeout, not caller's CT"));
-            DekCache cache = NewCache(DefaultTtl, l2, () => now);
-
-            int cosmosCalls = 0;
-            CancellationTokenSource callerCts = new CancellationTokenSource(); // NOT cancelled
-
-            DataEncryptionKeyProperties result = await cache.GetOrAddDekPropertiesAsync(
-                DekId,
-                (id, ctx, ct) => { cosmosCalls++; return Task.FromResult(MakeDekProperties(id)); },
-                CosmosDiagnosticsContext.Create(null),
-                callerCts.Token);
-
-            Assert.AreEqual(DekId, result.Id);
-            Assert.AreEqual(
-                1,
-                cosmosCalls,
-                "When the caller's CT is not cancelled, an OperationCanceledException originating inside the L2 implementation must not prevent the operation from completing.");
+            await AssertCacheFailureFallsBackAsync(() => new OperationCanceledException("internal L2 timeout, not caller's CT"));
         }
 
         // ------------------------------------------------------------
@@ -105,21 +76,43 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         {
             DateTime now = NewClock();
             SpyDistributedCache l2 = new SpyDistributedCache(() => now);
-            DekCache cache = NewCache(DefaultTtl, l2, () => now);
+            await using DekCache cache = NewCache(DefaultTtl, l2, () => now);
 
             int cosmosCalls = 0;
+            DataEncryptionKeyProperties expected = MakeDekProperties(DekId);
+            CosmosDiagnosticsContext context = CosmosDiagnosticsContext.Create(null);
+            Task<DataEncryptionKeyProperties> FetchAsync(string id, CosmosDiagnosticsContext ctx, CancellationToken token)
+            {
+                Assert.AreEqual(DekId, id);
+                Assert.AreSame(context, ctx);
+                Assert.AreEqual(CancellationToken.None, token);
+                cosmosCalls++;
+                return Task.FromResult(expected);
+            }
+
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.Cancel();
 
             await Assert.ThrowsExceptionAsync<OperationCanceledException>(
                 () => cache.GetOrAddDekPropertiesAsync(
                     DekId,
-                    (id, ctx, ct) => { cosmosCalls++; return Task.FromResult(MakeDekProperties(id)); },
-                    CosmosDiagnosticsContext.Create(null),
+                    FetchAsync,
+                    context,
                     cts.Token));
 
+            Assert.IsTrue(cts.IsCancellationRequested);
             Assert.AreEqual(0, cosmosCalls, "A pre-cancelled token must prevent the fetcher from running.");
             Assert.AreEqual(0, l2.GetCount, "A pre-cancelled token must prevent the L2 GetAsync from running.");
+
+            DataEncryptionKeyProperties result = await cache.GetOrAddDekPropertiesAsync(
+                DekId,
+                FetchAsync,
+                context,
+                CancellationToken.None);
+
+            Assert.AreSame(expected, result);
+            Assert.AreEqual(1, cosmosCalls, "The same cache must remain usable by an uncancelled caller.");
+            Assert.AreEqual(1, l2.GetCount, "The successful control must reach the cold L2 lookup.");
         }
 
         [TestMethod]
@@ -396,6 +389,48 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         // Helpers
         // ------------------------------------------------------------
 
+        private static async Task AssertCacheFailureFallsBackAsync(Func<Exception> exceptionFactory)
+        {
+            DateTime now = NewClock();
+            ThrowingDistributedCache l2 = new ThrowingDistributedCache(exceptionFactory);
+            await using DekCache cache = NewCache(DefaultTtl, l2, () => now);
+            using CancellationTokenSource callerCts = new CancellationTokenSource();
+            CosmosDiagnosticsContext context = CosmosDiagnosticsContext.Create(null);
+            DataEncryptionKeyProperties expected = MakeDekProperties(DekId);
+            int cosmosCalls = 0;
+
+            Task<DataEncryptionKeyProperties> FetchAsync(string id, CosmosDiagnosticsContext ctx, CancellationToken token)
+            {
+                Assert.AreEqual(DekId, id);
+                Assert.AreSame(context, ctx);
+                Assert.AreEqual(callerCts.Token, token);
+                cosmosCalls++;
+                return Task.FromResult(expected);
+            }
+
+            DataEncryptionKeyProperties result = await cache.GetOrAddDekPropertiesAsync(
+                DekId,
+                FetchAsync,
+                context,
+                callerCts.Token);
+
+            Assert.AreSame(expected, result);
+            Assert.AreEqual(1, l2.GetCount);
+            Assert.AreEqual(callerCts.Token, l2.LastGetToken);
+            Assert.AreEqual(1, cosmosCalls, "The cold lookup must fall back exactly once.");
+            Assert.IsFalse(callerCts.IsCancellationRequested);
+
+            DataEncryptionKeyProperties warmResult = await cache.GetOrAddDekPropertiesAsync(
+                DekId,
+                FetchAsync,
+                context,
+                callerCts.Token);
+
+            Assert.AreSame(expected, warmResult);
+            Assert.AreEqual(1, l2.GetCount, "A warm L1 hit must not repeat the failing L2 lookup.");
+            Assert.AreEqual(1, cosmosCalls, "A warm L1 hit must not repeat the source fetch.");
+        }
+
         private static DateTime NewClock() => new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         private static DekCache NewCache(TimeSpan ttl, IDistributedCache l2, Func<DateTime> utcNow)
@@ -542,16 +577,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
         private sealed class ThrowingDistributedCache : IDistributedCache
         {
             private readonly Func<Exception> exceptionFactory;
+            private int getCount;
 
             public ThrowingDistributedCache(Func<Exception> exceptionFactory)
             {
                 this.exceptionFactory = exceptionFactory;
             }
 
+            public int GetCount => Volatile.Read(ref this.getCount);
+
+            public CancellationToken LastGetToken { get; private set; }
+
             public byte[] Get(string key) => throw this.exceptionFactory();
 
             public Task<byte[]> GetAsync(string key, CancellationToken token = default)
-                => Task.FromException<byte[]>(this.exceptionFactory());
+            {
+                this.LastGetToken = token;
+                Interlocked.Increment(ref this.getCount);
+                return Task.FromException<byte[]>(this.exceptionFactory());
+            }
 
             public void Set(string key, byte[] value, DistributedCacheEntryOptions options) { }
 

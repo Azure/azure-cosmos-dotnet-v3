@@ -233,6 +233,17 @@ jobs:
   # shipped Custom NuGet is always built against a preview SDK surface and
   # has no GA NuGet surface to validate.
 
+  - task: DotNetCoreCLI@2
+    displayName: PREVIEW Microsoft.Azure.Cosmos.Encryption.Custom.Tests
+    condition: succeeded()
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/*.csproj'
+      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:IsPreview=true /p:SdkProjectRef=false /p:OS=${{ parameters.OS }}
+      publishTestResults: true
+      nugetConfigPath: NuGet.config
+      testRunTitle: Microsoft.Azure.Cosmos.Encryption.Custom.Tests
+
 - job:
   displayName: Preview Tests ${{ parameters.BuildConfiguration }}
   pool:
