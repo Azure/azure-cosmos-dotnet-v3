@@ -1,4 +1,4 @@
-// ------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Globalization;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.SqlObjects;
 
@@ -169,6 +170,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         public static int ScanMinus(ReadOnlySpan<char> span) => ScanSign(span, '-');
 
         public static int ScanPlus(ReadOnlySpan<char> span) => ScanSign(span, '+');
+
+        // The parser is recursive: a deeply nested query fails with an InsufficientExecutionStackException
+        // instead of overflowing the stack, which would terminate the process.
+        public static bool EnsureSufficientExecutionStack()
+        {
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+            return true;
+        }
 
         public static SqlNumberLiteral CreateNumberLiteral(ReadOnlySpan<char> text)
         {

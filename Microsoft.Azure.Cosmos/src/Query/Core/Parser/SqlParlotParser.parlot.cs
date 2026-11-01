@@ -140,10 +140,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             // unary_scalar_expression and binary_scalar_expression, from the level that binds the tightest.
             Parser<SqlScalarExpression> binaryExpression = primaryExpression.Operators()
                 .Unary(
-                    (Terms.Scan(ScanMinus, "-".AsSpan()), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Minus, e)),
-                    (Terms.Scan(ScanPlus, "+".AsSpan()), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Plus, e)),
-                    (Terms.Char('~').Then(static _ => default(Parlot.TextSpan)), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.BitwiseNot, e)),
-                    (kNot.Then(static _ => default(Parlot.TextSpan)), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Not, e)))
+                    (Terms.Scan(ScanMinus, "-".AsSpan()).When(static (c, s) => SqlParlotParser.EnsureSufficientExecutionStack()), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Minus, e)),
+                    (Terms.Scan(ScanPlus, "+".AsSpan()).When(static (c, s) => SqlParlotParser.EnsureSufficientExecutionStack()), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Plus, e)),
+                    (Terms.Char('~').When(static (c, s) => SqlParlotParser.EnsureSufficientExecutionStack()).Then(static _ => default(Parlot.TextSpan)), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.BitwiseNot, e)),
+                    (kNot.When(static (c, s) => SqlParlotParser.EnsureSufficientExecutionStack()).Then(static _ => default(Parlot.TextSpan)), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Not, e)))
                 .LeftAssociative(
                     (Terms.Char('*'), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Multiply, a, b)),
                     (Terms.Char('/'), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Divide, a, b)),
@@ -198,8 +198,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 static (condition, alternative, consequent) => SqlConditionalScalarExpression.Create(condition, consequent, alternative));
 
             // scalar_expression '??' scalar_expression, where the right operand can't contain a coalesce expression.
-            scalarExpression.Parser = conditionalExpression.LeftAssociative(
-                (Terms.Text("??"), static (left, right) => SqlCoalesceScalarExpression.Create(left, right)));
+            scalarExpression.Parser = If(
+                static () => SqlParlotParser.EnsureSufficientExecutionStack(),
+                conditionalExpression.LeftAssociative(
+                    (Terms.Text("??"), static (left, right) => SqlCoalesceScalarExpression.Create(left, right))));
 
             // SELECT
             Parser<SqlTopSpec> topSpec = kTop.SkipAnd(OneOf(
@@ -259,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             Parser<SqlOffsetLimitClause> offsetLimitClause = kOffset.SkipAnd(offsetCount).AndSkip(kLimit).And(limitCount)
                 .Then(static t => SqlOffsetLimitClause.Create(t.Item1, t.Item2));
 
-            sqlQuery.Parser = selectClause
+            sqlQuery.Parser = If(static () => SqlParlotParser.EnsureSufficientExecutionStack(), selectClause
                 .And(ZeroOrOne(fromClause))
                 .And(ZeroOrOne(whereClause))
                 .And(ZeroOrOne(groupByClause))
@@ -271,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                     t.Item3.Count == 0 ? null : t.Item3[0],
                     t.Item4.Count == 0 ? null : t.Item4[0],
                     t.Item5.Count == 0 ? null : t.Item5[0],
-                    t.Item6.Count == 0 ? null : t.Item6[0]));
+                    t.Item6.Count == 0 ? null : t.Item6[0])));
 
             Parser<Parlot.TextSpan> whiteSpace = Literals.AnyOf(" \t\r\n");
 
