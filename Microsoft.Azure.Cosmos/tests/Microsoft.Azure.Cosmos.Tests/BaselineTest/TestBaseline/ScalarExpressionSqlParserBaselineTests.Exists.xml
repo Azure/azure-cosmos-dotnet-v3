@@ -23,7 +23,7 @@
       <Query><![CDATA[SELECT VALUE EXISTS(SELECT *]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@
       <Query><![CDATA[SELECT VALUE EXISTS(123)]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
 </Results>

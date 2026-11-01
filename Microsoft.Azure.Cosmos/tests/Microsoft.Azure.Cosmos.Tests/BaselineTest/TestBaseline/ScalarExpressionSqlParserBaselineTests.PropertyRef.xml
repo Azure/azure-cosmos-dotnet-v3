@@ -41,7 +41,7 @@
       <Query><![CDATA[SELECT VALUE c.2]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[can not recover.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
 </Results>

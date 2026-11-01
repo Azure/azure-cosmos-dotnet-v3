@@ -77,7 +77,7 @@
       <Query><![CDATA[SELECT]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -86,7 +86,7 @@
       <Query><![CDATA[Selec *]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[can not recover.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -95,7 +95,7 @@
       <Query><![CDATA[SELECT 1,]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -104,7 +104,7 @@
       <Query><![CDATA[SELECT VALUE 1, 2]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[can not recover.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -113,7 +113,7 @@
       <Query><![CDATA[SELECTVALUE 1]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[can not recover.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -122,7 +122,7 @@
       <Query><![CDATA[SELECT TOP 'asdf' *]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[can not recover.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
 </Results>

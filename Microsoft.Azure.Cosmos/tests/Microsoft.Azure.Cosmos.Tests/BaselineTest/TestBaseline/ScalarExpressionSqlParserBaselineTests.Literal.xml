@@ -95,7 +95,7 @@
       <Query><![CDATA[SELECT VALUE -0.E]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[can not recover.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -104,7 +104,7 @@
       <Query><![CDATA[SELECT VALUE "hello]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[can not recover.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
 </Results>

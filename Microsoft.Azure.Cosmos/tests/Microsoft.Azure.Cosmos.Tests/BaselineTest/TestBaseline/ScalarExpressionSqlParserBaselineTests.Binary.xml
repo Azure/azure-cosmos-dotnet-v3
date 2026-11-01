@@ -383,7 +383,7 @@
       <Query><![CDATA[SELECT VALUE 42 +]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -392,7 +392,7 @@
       <Query><![CDATA[SELECT VALUE AND 1337]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -401,7 +401,7 @@
       <Query><![CDATA[SELECT VALUE 42 # 1337]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[can not recover.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
 </Results>

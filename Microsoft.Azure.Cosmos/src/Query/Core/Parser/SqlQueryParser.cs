@@ -5,9 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 {
     using System;
-    using System.Runtime.ExceptionServices;
-    using Antlr4.Runtime;
-    using Antlr4.Runtime.Misc;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.SqlObjects;
 
@@ -20,6 +17,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 #endif
     static class SqlQueryParser
     {
+        private const string SyntaxErrorMessage = "The query has a syntax error.";
+
         public static class Monadic
         {
             public static TryCatch<SqlQuery> Parse(string text)
@@ -29,28 +28,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                     throw new ArgumentNullException(nameof(text));
                 }
 
-                AntlrInputStream str = new AntlrInputStream(text);
-                sqlLexer lexer = new sqlLexer(str);
-                CommonTokenStream tokens = new CommonTokenStream(lexer);
-                sqlParser parser = new sqlParser(tokens)
-                {
-                    ErrorHandler = ThrowExceptionOnErrors.Singleton,
-                };
-                ErrorListener<IToken> listener = new ErrorListener<IToken>(parser, lexer, tokens);
-                parser.AddErrorListener(listener);
-
                 SqlQuery sqlQuery;
                 try
                 {
-                    sqlParser.ProgramContext programContext = parser.program();
-                    if (listener.parseException != null)
-                    {
-                        return TryCatch<SqlQuery>.FromException(listener.parseException);
-                    }
-
                     // The grammar can accept inputs that are rejected when building the AST
-                    // (e.g. an OFFSET / LIMIT / TOP literal that is not an integer or overflows Int64).
-                    sqlQuery = (SqlQuery)CstToAstVisitor.Singleton.Visit(programContext);
+                    // (e.g. an OFFSET / LIMIT / TOP literal that is not an integer or overflows Int64), these throw.
+                    if (!SqlParlotParser.TryParse(text, out sqlQuery))
+                    {
+                        return TryCatch<SqlQuery>.FromException(new ParseException(SyntaxErrorMessage));
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -58,47 +44,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 }
 
                 return TryCatch<SqlQuery>.FromResult(sqlQuery);
-            }
-
-            private sealed class ThrowExceptionOnErrors : IAntlrErrorStrategy
-            {
-                public static readonly ThrowExceptionOnErrors Singleton = new ThrowExceptionOnErrors();
-
-                public bool InErrorRecoveryMode(Parser recognizer)
-                {
-                    return false;
-                }
-
-                public void Recover(Parser recognizer, RecognitionException e)
-                {
-                    ExceptionDispatchInfo.Capture(e).Throw();
-                }
-
-                [return: NotNull]
-                public IToken RecoverInline(Parser recognizer)
-                {
-                    throw new NotSupportedException("can not recover.");
-                }
-
-                public void ReportError(Parser recognizer, RecognitionException e)
-                {
-                    ExceptionDispatchInfo.Capture(e).Throw();
-                }
-
-                public void ReportMatch(Parser recognizer)
-                {
-                    // Do nothing
-                }
-
-                public void Reset(Parser recognizer)
-                {
-                    // Do nothing
-                }
-
-                public void Sync(Parser recognizer)
-                {
-                    // Do nothing
-                }
             }
         }
 

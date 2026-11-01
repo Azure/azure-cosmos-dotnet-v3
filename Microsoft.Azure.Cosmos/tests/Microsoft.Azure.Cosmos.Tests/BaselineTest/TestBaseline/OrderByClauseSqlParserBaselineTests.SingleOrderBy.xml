@@ -41,7 +41,7 @@
       <Query><![CDATA[SELECT * ORDERBY 1]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[can not recover.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -50,7 +50,7 @@
       <Query><![CDATA[SELECT * ORER BY 1]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[can not recover.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error.]]></Exception>
     </Output>
   </Result>
 </Results>
