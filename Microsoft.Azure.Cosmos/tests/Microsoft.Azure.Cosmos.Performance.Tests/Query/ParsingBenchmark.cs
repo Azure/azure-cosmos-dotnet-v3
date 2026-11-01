@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.InteropServices;
     using System.Text;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -97,7 +98,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
             Action<SqlQuerySpec> parseMethod = parserType switch
             {
-                ParserType.Managed => ParseUsingMangedParser,
+                ParserType.Antlr => ParseUsingAntlrParser,
+                ParserType.Parlot => ParseUsingMangedParser,
                 ParserType.Native => ParseUsingNativeParser,
                 _ => throw new ArgumentOutOfRangeException(nameof(parserType)),
             };
@@ -111,6 +113,14 @@ namespace Microsoft.Azure.Cosmos.Query
         private static void ParseUsingMangedParser(SqlQuerySpec sqlQuerySpec)
         {
             if (!SqlQueryParser.TryParse(sqlQuerySpec.QueryText, out SqlQuery sqlQuery))
+            {
+                throw new InvalidOperationException("FAILED TO PARSE QUERY.");
+            }
+        }
+
+        private static void ParseUsingAntlrParser(SqlQuerySpec sqlQuerySpec)
+        {
+            if (!AntlrSqlQueryParser.Monadic.Parse(sqlQuerySpec.QueryText).Succeeded)
             {
                 throw new InvalidOperationException("FAILED TO PARSE QUERY.");
             }
@@ -140,6 +150,12 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 foreach (ParserType parserType in Enum.GetValues(typeof(ParserType)))
                 {
+                    // The native parser is ServiceInterop, which is only available on Windows x64.
+                    if (parserType == ParserType.Native && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        continue;
+                    }
+
                     yield return new object[] { queryLength, parserType };
                 }
             }
@@ -147,7 +163,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public enum ParserType
         {
-            Managed,
+            Antlr,
+            Parlot,
             Native,
         }
 
