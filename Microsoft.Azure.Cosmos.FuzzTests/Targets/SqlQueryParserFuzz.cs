@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.FuzzTests.Targets
 
     /// <summary>
     /// Fuzz target for <see cref="SqlQueryParser"/>.
-    /// Tests the ANTLR-based SQL query parser with arbitrary input strings.
+    /// Tests the SQL query parser with arbitrary input strings.
     /// </summary>
     /// <remarks>
     /// Scenarios covered:

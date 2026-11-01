@@ -147,7 +147,7 @@ This is what runs in the PR validation pipeline (`azure-pipelines-fuzzing.yml`).
 
 | Target Name | SDK Parser Under Test |
 |---|---|
-| `SqlQueryParserFuzz` | `SqlQueryParser.Monadic.Parse` (ANTLR SQL grammar) |
+| `SqlQueryParserFuzz` | `SqlQueryParser.Monadic.Parse` (Parlot SQL grammar) |
 | `JsonNavigatorFuzz` | `JsonNavigator.Create` (JSON text + binary) |
 | `CosmosElementFuzz` | `CosmosElement.Monadic.CreateFromBuffer` (document DOM) |
 | `FeedResponseFuzz` | Feed response envelope deserialization |

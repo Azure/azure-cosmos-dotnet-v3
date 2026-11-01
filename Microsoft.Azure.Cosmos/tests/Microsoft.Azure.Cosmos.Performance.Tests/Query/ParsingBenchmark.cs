@@ -98,8 +98,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             Action<SqlQuerySpec> parseMethod = parserType switch
             {
-                ParserType.Antlr => ParseUsingAntlrParser,
-                ParserType.Parlot => ParseUsingMangedParser,
+                ParserType.Managed => ParseUsingMangedParser,
                 ParserType.Native => ParseUsingNativeParser,
                 _ => throw new ArgumentOutOfRangeException(nameof(parserType)),
             };
@@ -113,14 +112,6 @@ namespace Microsoft.Azure.Cosmos.Query
         private static void ParseUsingMangedParser(SqlQuerySpec sqlQuerySpec)
         {
             if (!SqlQueryParser.TryParse(sqlQuerySpec.QueryText, out SqlQuery sqlQuery))
-            {
-                throw new InvalidOperationException("FAILED TO PARSE QUERY.");
-            }
-        }
-
-        private static void ParseUsingAntlrParser(SqlQuerySpec sqlQuerySpec)
-        {
-            if (!AntlrSqlQueryParser.Monadic.Parse(sqlQuerySpec.QueryText).Succeeded)
             {
                 throw new InvalidOperationException("FAILED TO PARSE QUERY.");
             }
@@ -163,8 +154,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public enum ParserType
         {
-            Antlr,
-            Parlot,
+            Managed,
             Native,
         }
 
