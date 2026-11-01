@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
-    using Antlr4.Runtime.Sharpen;
     using System.Collections.Generic;
     using OpenTelemetry.Trace;
 
