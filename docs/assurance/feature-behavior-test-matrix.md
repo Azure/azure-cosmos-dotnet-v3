@@ -6,11 +6,11 @@
 
 | Field | Draft receipt |
 |---|---|
-| Version / recorded | 0.2.3 / 2026-11-01 UTC |
+| Version / recorded | 0.3.0 / 2026-11-01 UTC |
 | Status | Evolving proposed matrix with separate local/native testing receipts; no approved complete contract/oracle catalog or whole-SDK assurance |
 | Source | A-01 at `52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8`, tree `2c89abbd9680af78d5072b523df277d8c46b755d`; this assessment's once-resolved main matched |
 | Audit receipt | A-01 SHA-256 `63e368bc66f5c876bb853de62116a9d54ce34f9e1066b5f0b89da8df95b4949c`, 98,011 bytes; original policy provenance preserved in the linked intake |
-| Additional policy | Historical `3b141f8c82a18d660069627c399ccfc9efc837c0`, [D-05/testing `532e2401...`][implementation-policy] and [D-06 `72e9f579...`][implementation-d06] retained; current [handoff v0.2.7][current-policy] at `1fef335ecb72e15e75518cffc2d39814c2e6bd13` (baseline/domain v0.1.7) adds [D-07 independent roles and written personal-Router scope][current-d07]. D-01..D-07 selected, D-08..D-12 open (five); runtime review/challenge, specific oracles and protected identity/wiring unfinished. [kushagraThapar/SuicideSquad#6](https://github.com/kushagraThapar/SuicideSquad/pull/6) source is open/unmerged, not main; last coordinator-verified main `01803bacd42f9b66bc20e1af03dcb6bcc2a30dc7` |
+| Additional policy | Historical `3b141f8c...`, [D-05/testing `532e2401...`][implementation-policy], [D-06 `72e9f579...`][implementation-d06], [D-07 independent roles/written scope][current-d07] and D-08 `12c7cc3a...` retained. Current [handoff v0.2.9][current-policy] at `d05b94e439ad9542d322da96b9821927b4cdf999`, sections 6.1-6.2/10.9, baseline/domain v0.1.9: D-01..D-09 selected, D-10..D-12 open (three). Received source in open [kushagraThapar/SuicideSquad#8](https://github.com/kushagraThapar/SuicideSquad/pull/8), not relabeled merged main. Six-SDK visibility and native/evidence-qualified-tool approaches are not executed comparisons/reviews/challenge, oracle approval or new installation/campaign/merge authority |
 | Layout / IDs | Human-readable provisional `docs/assurance/` draft; B-/DB-IDs are local traceability handles, not a selected global schema |
 
 The delivered v0.1.0 matrix SHA-256 `9649d2f7face0e452ed46eaeac1ec22d7bfb7ff9c5a13cf6446db42d889a2600` remains historical. The new user-directed scope requires both focused unit and meaningful emulator/isolated-service evidence for every behavior/test assessed; existing sufficient witnesses count. [I-01's versioned spec](specs/i-01-encryption-patch-paired-tests.md) precedes implementation. Its new evidence supplements, rather than relabels, A-01.
@@ -54,7 +54,7 @@ These are A-01 configuration aliases, not new jobs or actual-execution receipts.
 | J-B [consumer/benchmark/parity builds][t-preview] | Existing source/package-symbol/override builds, samples/CTL/benchmark/internal compilation | Build-only, not behavioral execution or a measured benchmark |
 | J-PACK [core pack][t-pack] and companion pack templates | Separate core/companion nupkg production | Actual package contents/digests and installed consumer binding U; source tests do not consume a sibling pack job by default |
 
-The existing [Encryption unit project][p-encryption-unit] and [Custom unit project][p-custom-unit] had **no explicit invocation** in A-01's inspected CI. I-01 adds explicit tracked Encryption unit tasks within J-U and the existing preview Encryption job; only actual evaluated/executed receipts can establish effective wiring. Custom selection remains backlog. Fuzz and Custom-performance run selection also remain unresolved/parked prior art, not new campaigns.
+The existing [Encryption unit project][p-encryption-unit] and [Custom unit project][p-custom-unit] had **no explicit invocation** in A-01's inspected CI. I-01 adds executed Encryption unit tasks within J-U and the existing preview Encryption job. I-02 now adds one Custom unit task in J-U and one in the established Custom preview parity job, retaining caller filters/both declared TFMs and default preview core-package binding. Native evaluated/executed I-02 selection remains pending. Fuzz and Custom-performance run selection remain unresolved/parked prior art, not new campaigns.
 
 ### I-01 paired-layer supplement: B-034
 
@@ -88,6 +88,41 @@ The delivered v0.2.1 matrix SHA-256 `3b66e1ce43f62a979ed6e895b12e70ac39caf7b60ab
 | `(false,false,false)` | Direct / typed / encrypted last | Mixed encrypted-last plus accepted-single unit rows | Passed: GA 1331291 + preview 1331290, subresult 8 |
 
 The wider service cohorts retain one existing ignored `EncryptionChangeFeedDecryptionSuccessful` each: GA has 44 passed/one ignored terminal leaf; preview has 47 passed/one ignored. Aggregate API/TRX-parent counters differ and are preserved in the spec, not substituted for leaf counts. No I-01 required leaf was skipped/inconclusive. These project totals do not close every existing behavior's counterpart or the ignored change-feed obligation.
+
+### I-02 paired-layer supplement: B-035/B-036
+
+The [versioned I-02 spec](specs/i-02-custom-cache-paired-tests.md) was frozen
+before test/CI edits, including a baseline-driven harness amendment. These
+are existing Q/oracle-unqualified expectations with additional protection,
+not independent approval of cache/cancellation contracts. Timeout/internal
+cache cancellation with a live caller and caller pre-cancellation are
+different cells; neither proves no commit for arbitrary in-flight cancellation.
+
+| Layer / exact witness | Shared behavior and preservation controls | Variant / established selection | Added versus actual execution |
+|---|---|---|---|
+| Unit B-035: `GetAsync_ThrowsTimeoutException_FallsBackToCosmos`; `GetAsync_ThrowsOperationCanceledException_CallerTokenNotCancelled_MustNotFailTheOperation` | One cold L2 lookup; exact original id/context/token and returned-properties identity at one source fetch; caller stays live; warm read repeats neither L2 nor source | Existing cache contract class, net6/net8; ordinary/preview default core package `3.41.0-preview.0`; distinct current-source preview comparison | Strengthened, not duplicated. Each exact method passed in all six local bindings; full package projects passed 424 net6/755 net8 leaves per ordinary/preview configuration; native selection/results pending |
+| Unit B-036: `GetOrAddDekPropertiesAsync_CallerTokenAlreadyCancelled_ThrowsOperationCanceledExceptionPromptly` | Required cancellation, source/L2 count 0; same-cache uncancelled control reaches each once and returns exact properties | Same; original three seed identities and ten other cache-class leaves preserved | Passed in all six local bindings. Four unrelated UTA007 legacy methods remain undiscoverable backlog, not executed or credited |
+| Service B-035: `EncryptionDistributedCacheReadFailureFallsBack` | Fault optional L2 only; public real provider/encryptor; unique real key and item, successful encrypted Create, independent stored ciphertext/plain-field check, separate cold-provider decrypt/read and exact modeled values; real key-read observer positive at each cold lookup | Gateway/Direct x timeout/internal-OCE, typed APIs, net6/net8; existing ordinary J-CE Custom project, no invented preview-service lane | Four rows declared; both TFM assemblies compile and list the parent. Data-row discovery/execution/native fixture/artifact receipt pending; a listed parent is not four passed leaves |
+| Service B-036: `EncryptionDistributedCacheCallerCancellation` | Pre-cancelled encrypted Create must throw, L2/key reads 0 and independent item read 404; same-instance uncancelled Create/read succeeds with real key-read observer active | Gateway/Direct, typed APIs, net6/net8, same J-CE | Two rows declared; both TFM assemblies compile and list the parent. Actual two-leaf execution pending; item absence is bounded to this pre-dispatch case |
+| Test-only harness: `ScopeRecord_Properties_AreCorrect`; `ScopeRecord_Elapsed_UsesStopwatchFrequency` | Original one-second expectation unchanged; correct Stopwatch-frequency conversion and exact 0/1/2-second controls | Existing diagnostics test helper, not production timing | Both original full baselines failed on macOS ARM64 (100 rather than 1 second); originals retained. Helper repaired and four witness leaves passed in local variants. Proposed local-only treatment surfaced; no meaningless live arithmetic test or product-layer waiver |
+| Selection/configuration | Exactly one new Custom unit task per existing ordinary/preview job, both TFMs, original filters/reference parity/retries retained | Default Custom dependency is preview even in ordinary job; current-source preview is separate | YAML parses and local eligible cohorts pass; native effective task/TFM/candidate/attempt/artifact proof pending |
+
+| Exact service arguments | Transport / fault | Unit counterpart | Actual service state |
+|---|---|---|---|
+| `ReadFailureFallsBack(true,false)` | Gateway / timeout | B-035 timeout seed | Declared; not executed locally |
+| `ReadFailureFallsBack(true,true)` | Gateway / internal cancellation | B-035 internal-OCE seed | Declared; not executed locally |
+| `ReadFailureFallsBack(false,false)` | Direct / timeout | B-035 timeout seed | Declared; not executed locally |
+| `ReadFailureFallsBack(false,true)` | Direct / internal cancellation | B-035 internal-OCE seed | Declared; not executed locally |
+| `CallerCancellation(true)` | Gateway / caller pre-cancelled | B-036 cancellation seed | Declared; not executed locally |
+| `CallerCancellation(false)` | Direct / caller pre-cancelled | B-036 cancellation seed | Declared; not executed locally |
+
+The method prefixes above abbreviate the exact `EncryptionDistributedCache...`
+names in the layer table; each TFM needs its own six-leaf native receipt.
+The six-SDK D-08 manifest remains .NET inspected; Java/Python/Go/Rust/JS/TS
+applicability/oracles are unverified, not equivalent or unsupported. This
+increment dispatches no peer work. D-09 introduces no test dependency or
+campaign here. Stream, in-flight cancellation, expiry/write races, provider
+isolation and every broader Custom obligation retain separate follow-up.
 
 **Counterpart backlog for every other existing B-row and unexpanded lane:** unit and emulator/live counterpart identifiers, exact shared intended rule, preservation neighbors, eligibility/transport/runtime and separate actual artifact/execution receipts are **unreconciled**, not presumed absent or satisfied. Retain G-06.F-/N-, G-06.SC-, database families and G-10 follow-ups below to expand this progressively. A local/compile-time rule or unsupported capability must surface its explicit proposed treatment before closure. The new paired expectation applies to existing tests as well as new ones; four navigation input sets remain distinct.
 
@@ -154,8 +189,8 @@ The wider service cohorts retain one existing ignored `EncryptionChangeFeedDecry
 | B-032; N-06 | Invalid FI NaN/bounds values produce authoritative rejection; Q | Account-free builder validation, core/Direct version coupling; concurrency/hit-limit/fault origin breadth U | [FaultInjectionBuilderValidationTests hard assertions][w-fi-hard]; A: NaN/bounds validation | J-F named PR subset | U; declared core/FI source plus packaged Direct | ORACLE/SEQ; G-04/G-06. Preserve hard cases and coupling; accepted invalid value is control under reviewed validation rules |
 | B-033; N-06 | Required SendDelay/non-delay rejection must be discriminated, not accepted as Inconclusive; Q | Conditional branches in selected FI validation class, not every FI test | [FaultInjectionBuilderValidationTests conditional branches][w-fi-skip]; A: missing expected rejection can yield Inconclusive | J-F | U; declared core/FI source plus packaged Direct | Confirmed OBS/COHORT; G-04/G-07. After rule reconciliation, missing rejection must produce meaningful failure, not pass-shaped evidence; retain valid fault types and original outcomes |
 | B-034; N-04/F-06/F-21 | Encrypted-path Increment rejects with path-specific error; nonencrypted Increment passes same operation through; Q, existing expectation strengthened without independent contract approval | I-01 real SDK/service counterpart; package versus current-source GA/preview distinct | Historical [W-17][w-encryption]; exact current methods/rows/assertions in [I-01](specs/i-01-encryption-patch-paired-tests.md) | Both native unit tasks executed/published; existing J-CE GA/preview service tasks passed on attempt 1 | Historical U retained; local five unit cases passed in four bindings; native units exact 5/5 within 58/58 each; native service exact 8/8 each plus existing patch witness passed | G-02 partial/ART/ORACLE. Protection executed, not independently approved closure; loaded payload/complete fixture, Custom, wider source/counterpart and independent-review/challenge backlog retained |
-| B-035; N-05/F-29 | Internal distributed-cache timeout/cancellation falls back to source without consuming caller cancellation; Q | Controlled cache fixture; Custom net6/net8 variants; provider/cache/TTL/stream/privacy breadth U | [DekCacheDistributedCacheContractTests][w-custom]; A at L57-L122: timeout/internal cancellation source fallback; exact method/data identifiers follow-up | No explicit Custom-unit invocation; J-CE/parity distinct | U; CUSTOM resolved reference/artifact U | Confirmed SEL, ORACLE/SEQ; G-02/G-06. Preserve source fallback versus B-036 caller semantics; wrong cancellation classification is control |
-| B-036; N-05/F-29 | Pre-cancelled caller throws before source or L2 cache I/O; Q | Same controlled cache fixture, not full network/client cancellation proof | [DekCacheDistributedCacheContractTests][w-custom]; A: caller cancellation throws, source calls 0, L2 reads 0 | No explicit Custom-unit invocation | U; CUSTOM resolved reference/artifact U | Confirmed SEL, broader FIX/SEQ; G-02/G-06. Select actual leaves and variants; caller-triggered cache/source read or swallowed cancellation fails; retain internal timeout fallback |
+| B-035; N-05/F-29 | Internal distributed-cache timeout/cancellation falls back to source without consuming caller cancellation; Q remains unqualified | I-02 real-service counterpart added: typed Gateway/Direct, both Custom TFMs; TTL/stream/privacy breadth U | Historical [W-18][w-custom] preserved; exact two strengthened unit seeds and four service rows in [I-02](specs/i-02-custom-cache-paired-tests.md) | Explicit ordinary/preview Custom unit tasks added; native evaluated selection pending; existing J-CE Custom service task | Historical U retained. Exact units passed in six local bindings; service compiled/listed parents, not executed locally. Native artifact/fixture receipts pending | G-02 partial/ORACLE/SEQ. Preserve warm L1 and exact caller/source forwarding versus B-036; require actual service leaves, independent oracle and broader counterpart closure |
+| B-036; N-05/F-29 | Pre-cancelled caller throws before source or L2 cache I/O; Q remains unqualified | Same I-02 fixture, narrowly pre-dispatch, not arbitrary cancellation/no-commit | Historical [W-18][w-custom]; existing unit strengthened with same-cache recovery; two public-SDK service rows with real absent-item and recovery observers in [I-02](specs/i-02-custom-cache-paired-tests.md) | Same new unit tasks and existing J-CE | Exact unit passed in six local bindings; service compiled/listed parents, not executed locally; no native receipt yet | G-02 partial/ORACLE/FIX/SEQ. Caller-triggered cache/source read or swallowed cancellation fails; preserve B-035 internal fault fallback; require both real transport/TFM leaves |
 | B-037; F-13/F-16/F-30 | Applicable native query provider can be created for the actual artifact; Q | Windows native smoke, not ARM/AOT/installed-nupkg runtime matrix | [DirectContractTests native span][w-native]; A: native provider creation | J-U/J-P, Windows | U; declared SC/packaged Direct/native inputs | ART/FIX; G-03. Exact nupkg/loaded native/runtime consumer receipt; wrong/missing native payload is control, no native portability guarantee |
 | B-038; F-13/F-30/N-06 | Direct assembly/dependency/nuspec identities agree with applicable package contract; Q | Packaged Direct and core/FI coupling; staged-source/consumer parity U | [DirectContractTests dependency span][w-dependencies]; A: Direct assembly/no exported public types, dependency-version/nuspec checks | J-U/J-P, Windows; J-F coupling separate | U; declared SC/packaged Direct | ART/EXT/TRACE; G-03/G-11. Reject mismatched resolved/loaded/nuspec identities; preserve FI version gate and companion consumers |
 | B-039; F-05/F-21 | Matching ETag write advances ETag; stale replacement returns 412; Q | AAD/default Direct; concurrent writers/non-idempotent lost response U | [AadItemConditionalOperationsAsync][w-etag]; A: successful matching replacement changes ETag; stale replacement 412 | J-A | U; declared SC/live capability U | SEQ/ORACLE; G-06 SC-16/DB-01. Independent effect/ETag journal; stale write accepted or lost-response duplicate masked as success fails under approved rule |
@@ -296,16 +331,29 @@ All original A-01 G-items retain explicit links; the B-row/seed links never repl
 | [G-11](remediation-plan.md#g-11) | Every evaluated/input/registration cell: parent/feed/task/tool/MSI/agent/required-check identity U until safe authorized receipt |
 | [G-12](remediation-plan.md#g-12) | Build 64312/job `4a79149b-973a-554c-792a-7556fdd68297`: failed preview check, no diagnosed leaf/cause and no B-row attachment without receipts |
 
-The current tool catalog exposes no relevant `ado` build/timeline/TRX reader. A-01's existing-run REST access returned HTTP 401; the coordinator's RCAKit attempt returned OAuth challenge required/HTTP 401 and obtained no operational result. No new fallback/rerun/live operation was performed. Missing access does not stop this planning draft, but blocks execution/diagnosis/consumer/service claims.
+The tool catalog was checked again for I-02: no relevant `ado`
+build/timeline/TRX reader is exposed; unrelated Azure tools or a policy-mutating
+PR watcher do not substitute. A-01's REST 401 and the coordinator's RCAKit
+OAuth-challenge 401 remain historical, not current failures or a semantic
+oracle. I-01 subsequently recovered scoped native read access through existing
+Azure CLI authentication. I-02's own native receipts remain pending and may
+use that read-only route after checking available tooling; no undiagnosed
+nightly rerun is authorized.
 
-Later authorized expansion uses existing suites/pipelines in their normal locations and native CI artifacts with durable SDK-docs result/configuration/reproduction summaries. Exact layout/schema/retention/wiring, independent oracle authority, reviewer quorum, governance, cross-SDK fanout, tooling, budgets/live policy, history admission and contract exceptions remain unresolved decisions. These drafts grant no docs-only testing waiver, implementation, execution, design approval, complete inventory, merge or release eligibility.
+Authorized increments use existing suites/pipelines in their normal locations
+and native CI artifacts with durable SDK-docs result/configuration/reproduction
+summaries. D-01..D-09 approach selections do not complete concrete
+layout/wiring/oracles/role identities/governance/peer manifests/tool
+qualification. D-10..D-12 remain open for retention/live budgets/history and
+contract exceptions. These drafts grant no docs-only testing waiver, complete
+inventory, merge or release eligibility beyond separately recorded user scope.
 
 ## Immutable A-01 witness references
 
 [shared-domains]: https://github.com/kushagraThapar/SuicideSquad/blob/3b141f8c82a18d660069627c399ccfc9efc837c0/docs/dotnet/domain-gap-matrix.md
 [implementation-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/532e2401be02da06becbbc459dd58b78ae9b35d4/docs/dotnet/design-handoff.md
 [implementation-d06]: https://github.com/kushagraThapar/SuicideSquad/blob/72e9f57918ed81a38bd750f4a6aca58173877d7b/docs/dotnet/design-handoff.md#106-user-approved-d-06-approach
-[current-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/1fef335ecb72e15e75518cffc2d39814c2e6bd13/docs/dotnet/design-handoff.md
+[current-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/d05b94e439ad9542d322da96b9821927b4cdf999/docs/dotnet/design-handoff.md
 [current-d07]: https://github.com/kushagraThapar/SuicideSquad/blob/1fef335ecb72e15e75518cffc2d39814c2e6bd13/docs/dotnet/design-handoff.md#107-user-selected-d-07-approach-and-router-scope-addition
 [shared-handoff]: https://github.com/kushagraThapar/SuicideSquad/blob/3b141f8c82a18d660069627c399ccfc9efc837c0/docs/dotnet/design-handoff.md
 [j-unit]: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8/templates/build-test.yml#L23-L55
