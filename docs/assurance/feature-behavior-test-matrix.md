@@ -6,11 +6,11 @@
 
 | Field | Draft receipt |
 |---|---|
-| Version / recorded | 0.3.0 / 2026-11-01 UTC |
+| Version / recorded | 0.3.1 / 2026-11-01 UTC |
 | Status | Evolving proposed matrix with separate local/native testing receipts; no approved complete contract/oracle catalog or whole-SDK assurance |
 | Source | A-01 at `52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8`, tree `2c89abbd9680af78d5072b523df277d8c46b755d`; this assessment's once-resolved main matched |
 | Audit receipt | A-01 SHA-256 `63e368bc66f5c876bb853de62116a9d54ce34f9e1066b5f0b89da8df95b4949c`, 98,011 bytes; original policy provenance preserved in the linked intake |
-| Additional policy | Historical `3b141f8c...`, [D-05/testing `532e2401...`][implementation-policy], [D-06 `72e9f579...`][implementation-d06], [D-07 independent roles/written scope][current-d07] and D-08 `12c7cc3a...` retained. Current [handoff v0.2.9][current-policy] at `d05b94e439ad9542d322da96b9821927b4cdf999`, sections 6.1-6.2/10.9, baseline/domain v0.1.9: D-01..D-09 selected, D-10..D-12 open (three). Received source in open [kushagraThapar/SuicideSquad#8](https://github.com/kushagraThapar/SuicideSquad/pull/8), not relabeled merged main. Six-SDK visibility and native/evidence-qualified-tool approaches are not executed comparisons/reviews/challenge, oracle approval or new installation/campaign/merge authority |
+| Additional policy | Historical `3b141f8c...`, [D-05/testing `532e2401...`][implementation-policy], [D-06 `72e9f579...`][implementation-d06], [D-07 roles/written scope][current-d07], D-08 `12c7cc3a...` and I-02's D-09 `d05b94e4...` retained. Current [handoff v0.2.10][current-policy] at `90368a6ac0fa0434fcf972cd66109ebcf57cda54`, sections 8.8-8.9/10.10, baseline/domain v0.1.10: D-01..D-10 selected, D-11..D-12 open (two). Received source in open [kushagraThapar/SuicideSquad#8](https://github.com/kushagraThapar/SuicideSquad/pull/8), not relabeled merged main. Six-SDK/tool/profile approaches are not executed comparisons/reviews/challenge, oracle approval, concrete operating admission or new operational/merge authority |
 | Layout / IDs | Human-readable provisional `docs/assurance/` draft; B-/DB-IDs are local traceability handles, not a selected global schema |
 
 The delivered v0.1.0 matrix SHA-256 `9649d2f7face0e452ed46eaeac1ec22d7bfb7ff9c5a13cf6446db42d889a2600` remains historical. The new user-directed scope requires both focused unit and meaningful emulator/isolated-service evidence for every behavior/test assessed; existing sufficient witnesses count. [I-01's versioned spec](specs/i-01-encryption-patch-paired-tests.md) precedes implementation. Its new evidence supplements, rather than relabels, A-01.
@@ -105,6 +105,7 @@ different cells; neither proves no commit for arbitrary in-flight cancellation.
 | Service B-035: `EncryptionDistributedCacheReadFailureFallsBack` | Fault optional L2 only; public real provider/encryptor; unique real key and item, successful encrypted Create, independent stored ciphertext/plain-field check, separate cold-provider decrypt/read and exact modeled values; real key-read observer positive at each cold lookup | Gateway/Direct x timeout/internal-OCE, typed APIs, net6/net8; existing ordinary J-CE Custom project, no invented preview-service lane | Four rows declared; both TFM assemblies compile and list the parent. Data-row discovery/execution/native fixture/artifact receipt pending; a listed parent is not four passed leaves |
 | Service B-036: `EncryptionDistributedCacheCallerCancellation` | Pre-cancelled encrypted Create must throw, L2/key reads 0 and independent item read 404; same-instance uncancelled Create/read succeeds with real key-read observer active | Gateway/Direct, typed APIs, net6/net8, same J-CE | Two rows declared; both TFM assemblies compile and list the parent. Actual two-leaf execution pending; item absence is bounded to this pre-dispatch case |
 | Test-only harness: `ScopeRecord_Properties_AreCorrect`; `ScopeRecord_Elapsed_UsesStopwatchFrequency` | Original one-second expectation unchanged; correct Stopwatch-frequency conversion and exact 0/1/2-second controls | Existing diagnostics test helper, not production timing | Both original full baselines failed on macOS ARM64 (100 rather than 1 second); originals retained. Helper repaired and four witness leaves passed in local variants. Proposed local-only treatment surfaced; no meaningless live arithmetic test or product-layer waiver |
+| MDE preservation: `ValidateEncryptDecryptDocument_VerifyByNewtonsoft` and existing same-helper neighbors | Nonnull sensitive property is retained as a string, differs from plaintext and contains nonempty base64 bytes; null/untargeted fields, metadata and exact decrypted-value controls remain | Existing MDE unit class, distinct current-core preview net6/net8; same representation observer in the real service fault cases | First service candidate wrongly required field removal. Frozen v0.1.3 amendment precedes correction; strengthened unit class passed 8 net6/24 net8 leaves, corrected service assemblies compile/list parents. Not an SDK defect, new public format/oracle approval or executed service proof |
 | Selection/configuration | Exactly one new Custom unit task per existing ordinary/preview job, both TFMs, original filters/reference parity/retries retained | Default Custom dependency is preview even in ordinary job; current-source preview is separate | YAML parses and local eligible cohorts pass; native effective task/TFM/candidate/attempt/artifact proof pending |
 
 | Exact service arguments | Transport / fault | Unit counterpart | Actual service state |
@@ -123,6 +124,23 @@ applicability/oracles are unverified, not equivalent or unsupported. This
 increment dispatches no peer work. D-09 introduces no test dependency or
 campaign here. Stream, in-flight cancellation, expiry/write races, provider
 isolation and every broader Custom obligation retain separate follow-up.
+
+Published I-02 source is `d5004b187a04adf6a5f87a3197b912b217c8aae2`,
+tree `b1de7ba171479d9bc26f32f5eba1c43df7be3c83`; automatically queued
+build 64329 uses merge candidate `21b9f761f022f689399c496978693d4625c8cfb7`
+with that same tree and verified A-01/source parents. Native case receipts
+are still pending: at `23:27:48Z`, ordinary Custom units remained pending and no
+Custom result run was returned. Its incorrect raw field-removal assertion is
+retained with that candidate, not marked passed. Corrected service/unit
+observers require their own native candidate. A local no-restore reference-
+graph build failure and successful existing-graph restore/rebuild are separately
+retained in [spec v0.1.4](specs/i-02-custom-cache-paired-tests.md).
+D-10's later profile-envelope publication changes no
+resource/execution authority, and concrete trust/isolation/capacity/cleanup/
+budget/retention inputs remain unqualified; it does not block unrelated
+separately authorized testing or waive its required evidence.
+The existing class cleanup targets its unique fixture but does not assert its
+delete response; test success alone does not qualify cleanup/lease fencing.
 
 **Counterpart backlog for every other existing B-row and unexpanded lane:** unit and emulator/live counterpart identifiers, exact shared intended rule, preservation neighbors, eligibility/transport/runtime and separate actual artifact/execution receipts are **unreconciled**, not presumed absent or satisfied. Retain G-06.F-/N-, G-06.SC-, database families and G-10 follow-ups below to expand this progressively. A local/compile-time rule or unsupported capability must surface its explicit proposed treatment before closure. The new paired expectation applies to existing tests as well as new ones; four navigation input sets remain distinct.
 
@@ -342,10 +360,12 @@ nightly rerun is authorized.
 
 Authorized increments use existing suites/pipelines in their normal locations
 and native CI artifacts with durable SDK-docs result/configuration/reproduction
-summaries. D-01..D-09 approach selections do not complete concrete
+summaries. D-01..D-10 approach selections do not complete concrete
 layout/wiring/oracles/role identities/governance/peer manifests/tool
-qualification. D-10..D-12 remain open for retention/live budgets/history and
-contract exceptions. These drafts grant no docs-only testing waiver, complete
+qualification or operating admission. D-10's concrete numerical profiles,
+stores/resources/permissions/enforcement remain unqualified; D-11..D-12
+remain open for history/graduation and contract exceptions.
+These drafts grant no docs-only testing waiver, complete
 inventory, merge or release eligibility beyond separately recorded user scope.
 
 ## Immutable A-01 witness references
@@ -353,7 +373,7 @@ inventory, merge or release eligibility beyond separately recorded user scope.
 [shared-domains]: https://github.com/kushagraThapar/SuicideSquad/blob/3b141f8c82a18d660069627c399ccfc9efc837c0/docs/dotnet/domain-gap-matrix.md
 [implementation-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/532e2401be02da06becbbc459dd58b78ae9b35d4/docs/dotnet/design-handoff.md
 [implementation-d06]: https://github.com/kushagraThapar/SuicideSquad/blob/72e9f57918ed81a38bd750f4a6aca58173877d7b/docs/dotnet/design-handoff.md#106-user-approved-d-06-approach
-[current-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/d05b94e439ad9542d322da96b9821927b4cdf999/docs/dotnet/design-handoff.md
+[current-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/90368a6ac0fa0434fcf972cd66109ebcf57cda54/docs/dotnet/design-handoff.md
 [current-d07]: https://github.com/kushagraThapar/SuicideSquad/blob/1fef335ecb72e15e75518cffc2d39814c2e6bd13/docs/dotnet/design-handoff.md#107-user-selected-d-07-approach-and-router-scope-addition
 [shared-handoff]: https://github.com/kushagraThapar/SuicideSquad/blob/3b141f8c82a18d660069627c399ccfc9efc837c0/docs/dotnet/design-handoff.md
 [j-unit]: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8/templates/build-test.yml#L23-L55

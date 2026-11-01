@@ -128,7 +128,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             Assert.AreEqual(document.Id, stored.Resource.Value<string>("id"));
             Assert.AreEqual(document.PK, stored.Resource.Value<string>(nameof(document.PK)));
             Assert.AreEqual(document.NonSensitive, stored.Resource.Value<string>(nameof(document.NonSensitive)));
-            Assert.IsNull(stored.Resource[nameof(document.Sensitive)], "The independent stored-item read must not expose the plaintext field.");
+            JToken encryptedSensitive = stored.Resource[nameof(document.Sensitive)];
+            Assert.IsNotNull(encryptedSensitive, "MDE must preserve the encrypted property.");
+            Assert.AreEqual(JTokenType.String, encryptedSensitive.Type);
+            string encryptedValue = encryptedSensitive.Value<string>();
+            Assert.AreNotEqual(document.Sensitive, encryptedValue, "The independent stored-item read must not expose plaintext.");
+            Assert.IsTrue(Convert.FromBase64String(encryptedValue).Length > 0, "The stored property must contain encrypted bytes.");
             Assert.IsNotNull(stored.Resource["_ei"], "The stored item must contain encryption metadata.");
 
             await using (CosmosDataEncryptionKeyProvider provider = CreateCacheTestProvider(testClient, cache.Object, keyId))
