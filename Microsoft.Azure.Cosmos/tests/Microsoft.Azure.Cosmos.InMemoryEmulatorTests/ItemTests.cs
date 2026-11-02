@@ -136,6 +136,7 @@ namespace Microsoft.Azure.Cosmos.InMemoryEmulatorTests
                 Assert.AreEqual(HttpStatusCode.Conflict, conflict.StatusCode);
                 item["value"] = 2;
                 await this.container.ReplaceItemAsync(item, id, key);
+                item["value"] = 3;
                 CosmosException stale = await Assert.ThrowsExceptionAsync<CosmosException>(
                     () => this.container.ReplaceItemAsync(item, id, key, new ItemRequestOptions { IfMatchEtag = created.ETag }));
                 Assert.AreEqual(HttpStatusCode.PreconditionFailed, stale.StatusCode);
