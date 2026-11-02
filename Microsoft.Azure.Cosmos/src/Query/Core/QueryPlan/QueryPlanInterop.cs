@@ -13,14 +13,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
     internal static class QueryPlanInterop
     {
-        internal static readonly Lazy<bool> LinuxLibraryAvailable = new Lazy<bool>(() =>
-        {
-            if (!SupportsLinuxPlanning(OSPlatform.Linux, RuntimeInformation.ProcessArchitecture, enabled: true)
-                || !RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                return false;
-            }
+        private const uint UnsupportedPlatformHResult = 0x80070032;
 
+        private static readonly bool IsLinux = RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+
+        private static readonly bool IsSupportedLinuxProcess = IsLinux
+            && IsSupportedLinuxPlatform(OSPlatform.Linux, RuntimeInformation.ProcessArchitecture);
+
+        private static readonly Lazy<bool> LinuxLibraryAvailable = new Lazy<bool>(() =>
+        {
             TryCatch<IntPtr> result = QueryPartitionProvider.TryCreateServiceProvider("{}");
             if (result.Failed)
             {
@@ -40,54 +41,79 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate uint ReleaseDelegate(IntPtr serviceProvider);
 
-        internal static bool SupportsLinuxPlanning(OSPlatform platform, Architecture architecture, bool enabled)
+        internal static bool SupportsLinuxPlanning()
         {
-            return enabled && platform == OSPlatform.Linux
+            return IsSupportedLinuxProcess && LinuxLibraryAvailable.Value;
+        }
+
+        internal static bool IsSupportedLinuxPlatform(
+            OSPlatform platform,
+            Architecture architecture)
+        {
+            return platform == OSPlatform.Linux
                 && (architecture == Architecture.X64 || architecture == Architecture.Arm64);
         }
 
-        internal static uint CreateServiceProvider(string configuration, out IntPtr serviceProvider)
+        internal static uint CreateServiceProvider(
+            string configuration,
+            out IntPtr serviceProvider)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (IsLinux)
             {
-                return ServiceInteropWrapper.CreateServiceProvider(configuration, out serviceProvider);
+                if (!IsSupportedLinuxProcess)
+                {
+                    serviceProvider = IntPtr.Zero;
+                    return UnsupportedPlatformHResult;
+                }
+
+                byte[] utf8Configuration = Encoding.UTF8.GetBytes(configuration + '\0');
+                return RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+                    ? Arm64.CreateServiceProvider(
+                        utf8Configuration,
+                        out serviceProvider)
+                    : X64.CreateServiceProvider(
+                        utf8Configuration,
+                        out serviceProvider);
             }
 
-            if (!SupportsLinuxPlanning(OSPlatform.Linux, RuntimeInformation.ProcessArchitecture, enabled: true))
-            {
-                throw new PlatformNotSupportedException("Linux QueryPlanInterop requires an x64 or ARM64 process.");
-            }
-
-            byte[] utf8Configuration = Encoding.UTF8.GetBytes(configuration + '\0');
-            return RuntimeInformation.ProcessArchitecture == Architecture.Arm64
-                ? Arm64.CreateServiceProvider(utf8Configuration, out serviceProvider)
-                : X64.CreateServiceProvider(utf8Configuration, out serviceProvider);
+            return ServiceInteropWrapper.CreateServiceProvider(
+                configuration,
+                out serviceProvider);
         }
 
-        internal static uint UpdateServiceProvider(IntPtr serviceProvider, string configuration)
+        internal static uint UpdateServiceProvider(
+            IntPtr serviceProvider,
+            string configuration)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (IsLinux)
             {
-                return ServiceInteropWrapper.UpdateServiceProvider(serviceProvider, configuration);
+                byte[] utf8Configuration = Encoding.UTF8.GetBytes(configuration + '\0');
+                return RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+                    ? Arm64.UpdateServiceProvider(
+                        serviceProvider,
+                        utf8Configuration)
+                    : X64.UpdateServiceProvider(
+                        serviceProvider,
+                        utf8Configuration);
             }
 
-            byte[] utf8Configuration = Encoding.UTF8.GetBytes(configuration + '\0');
-            return RuntimeInformation.ProcessArchitecture == Architecture.Arm64
-                ? Arm64.UpdateServiceProvider(serviceProvider, utf8Configuration)
-                : X64.UpdateServiceProvider(serviceProvider, utf8Configuration);
+            return ServiceInteropWrapper.UpdateServiceProvider(
+                serviceProvider,
+                configuration);
         }
 
         internal static void ReleaseServiceProvider(IntPtr serviceProvider)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (IsLinux)
+            {
+                IntPtr vtable = Marshal.ReadIntPtr(serviceProvider);
+                IntPtr release = Marshal.ReadIntPtr(vtable, 2 * IntPtr.Size);
+                Marshal.GetDelegateForFunctionPointer<ReleaseDelegate>(release)(serviceProvider);
+            }
+            else
             {
                 Marshal.Release(serviceProvider);
-                return;
             }
-
-            IntPtr vtable = Marshal.ReadIntPtr(serviceProvider);
-            IntPtr release = Marshal.ReadIntPtr(vtable, 2 * IntPtr.Size);
-            Marshal.GetDelegateForFunctionPointer<ReleaseDelegate>(release)(serviceProvider);
         }
 
         internal static uint GetPartitionKeyRangesFromQuery4(
@@ -103,13 +129,52 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             uint bufferLength,
             out uint resultLength)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (IsLinux)
             {
-                return ServiceInteropWrapper.GetPartitionKeyRangesFromQuery4(
-                    serviceProvider, query, options, pathTokens, pathTokenLengths, pathCount,
-                    vectorPolicy, vectorPolicyLength, buffer, bufferLength, out resultLength);
+                return GetPartitionKeyRangesFromQueryOnLinux(
+                    serviceProvider,
+                    query,
+                    options,
+                    pathTokens,
+                    pathTokenLengths,
+                    pathCount,
+                    vectorPolicy,
+                    buffer,
+                    bufferLength,
+                    out resultLength);
             }
 
+            return ServiceInteropWrapper.GetPartitionKeyRangesFromQuery4(
+                serviceProvider,
+                query,
+                options,
+                pathTokens,
+                pathTokenLengths,
+                pathCount,
+                vectorPolicy,
+                vectorPolicyLength,
+                buffer,
+                bufferLength,
+                out resultLength);
+        }
+
+        internal static byte[] EncodeWideString(string value)
+        {
+            return value == null ? null : WideStringEncoding.GetBytes(value + '\0');
+        }
+
+        private static uint GetPartitionKeyRangesFromQueryOnLinux(
+            IntPtr serviceProvider,
+            string query,
+            ServiceInteropWrapper.PartitionKeyRangesApiOptions options,
+            string[] pathTokens,
+            uint[] pathTokenLengths,
+            uint pathCount,
+            string vectorPolicy,
+            IntPtr buffer,
+            uint bufferLength,
+            out uint resultLength)
+        {
             // Linux wchar_t is UTF-32, not the UTF-16 used by LPWStr on Windows.
             byte[] wideQuery = EncodeWideString(query);
             byte[] wideVectorPolicy = EncodeWideString(vectorPolicy);
@@ -126,11 +191,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                 return RuntimeInformation.ProcessArchitecture == Architecture.Arm64
                     ? Arm64.GetPartitionKeyRangesFromQuery4(
-                        serviceProvider, wideQuery, options, widePathTokens, pathTokenLengths, pathCount,
-                        wideVectorPolicy, wideVectorPolicyLength, buffer, bufferLength, out resultLength)
+                        serviceProvider,
+                        wideQuery,
+                        options,
+                        widePathTokens,
+                        pathTokenLengths,
+                        pathCount,
+                        wideVectorPolicy,
+                        wideVectorPolicyLength,
+                        buffer,
+                        bufferLength,
+                        out resultLength)
                     : X64.GetPartitionKeyRangesFromQuery4(
-                        serviceProvider, wideQuery, options, widePathTokens, pathTokenLengths, pathCount,
-                        wideVectorPolicy, wideVectorPolicyLength, buffer, bufferLength, out resultLength);
+                        serviceProvider,
+                        wideQuery,
+                        options,
+                        widePathTokens,
+                        pathTokenLengths,
+                        pathCount,
+                        wideVectorPolicy,
+                        wideVectorPolicyLength,
+                        buffer,
+                        bufferLength,
+                        out resultLength);
             }
             finally
             {
@@ -139,11 +222,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     Marshal.FreeHGlobal(token);
                 }
             }
-        }
-
-        internal static byte[] EncodeWideString(string value)
-        {
-            return value == null ? null : WideStringEncoding.GetBytes(value + '\0');
         }
 
         private static class X64

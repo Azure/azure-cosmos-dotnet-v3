@@ -22,12 +22,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     public sealed class HybridSearchQueryTests : QueryTestsBase
     {
         private static readonly string CollectionDataPath = Path.Combine("Documents", "text-3properties-1536dimensions-100documents.json");
-        private const int RrfDocumentCount = 1000;
-        private const int RrfLexicalMatchIndex = 49;
-        private const int CompetitionRrfLexicalMatchRank = 47;
-        private const int OrdinalRrfLexicalMatchRank = 1;
 
-        // Undefined-score sentinel used by component query projections.
         private const double UndefinedComponentScore = 1.79769e+308;
 
         private const string SampleVector = @"[0.02, 0, -0.02, 0, -0.04, -0.01, -0.04, -0.01, 0.06, 0.08, -0.05, -0.04, -0.03, 0.05, -0.03, 0, -0.03, 0, 0.05, 0, 0.03,
@@ -68,19 +63,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 0.05, -0.02, -0.01, -0.01, -0.01, 0.02, 0, -0.01, 0, 0, 0, -0.02, -0.04, 0.01, 0.01, -0.01, 0.01, 0, -0.06, -0.01, -0.04, -0.03, 0.01, 0, -0.01, 0.03, -0.04, -0.01, 0, 0.04, 0.03]";
 
         private static readonly IndexingPolicy CompositeIndexPolicy = CreateIndexingPolicy();
-        private static readonly IndexingPolicy OrdinalRrfIndexingPolicy = CreateOrdinalRrfIndexingPolicy();
-
-        private static readonly VectorEmbeddingPolicy OrdinalRrfEmbeddingPolicy = new VectorEmbeddingPolicy(
-            new Collection<Embedding>
-            {
-                new Embedding
-                {
-                    Path = "/vector",
-                    DataType = VectorDataType.Float32,
-                    DistanceFunction = DistanceFunction.Euclidean,
-                    Dimensions = 2,
-                },
-            });
 
         [TestMethod]
         [TestCategory("LinuxQueryPlanInteropLive")]
@@ -93,78 +75,84 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new int[][] { new[] { 2, 57, 85 }, new[] { 2, 85, 57 } }),
+                    new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (c.index = 2)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<int>{ 2 }),
+                    new List<List<int>>{ new List<int>{ 2 } }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<int>{ 2 },
+                    new List<List<int>>{ new List<int>{ 2 } },
                     partitionKey: new PartitionKey(2)),
                 MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new int[][] { new[] { 2, 57, 85 }, new[] { 2, 85, 57 } }),
+                    new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } }),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')
                     ORDER BY RANK FullTextScore(c.title, 'John')
                     OFFSET 1 LIMIT 5",
-                    new int[][] { new[] { 57, 85 }, new[] { 85, 57 } }),
-                MakeRankFusionTest(@"
+                    new List<List<int>>{ new List<int>{ 57, 85 }, new List<int>{ 85, 57 } }),
+                MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<int>{ 51, 49, 61, 75, 77, 2, 24, 76, 54, 80, 22, 85, 57 }),
-                MakeRankFusionTest(@"
+                    new List<List<int>>{
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 57, 85 },
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 85, 57 },
+                    }),
+                MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<int>{ 51, 49, 61, 75, 77, 2, 24, 76, 54, 80 }),
-                MakeRankFusionTest(@"
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } }),
+                MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))
                     OFFSET 5 LIMIT 10",
-                    new List<int>{ 2, 24, 76, 54, 80, 22, 85, 57 }),
-                MakeRankFusionTest(@"
+                    new List<List<int>>{
+                        new List<int>{ 24, 77, 76, 80, 2, 22, 57, 85 },
+                        new List<int>{ 24, 77, 76, 80, 2, 22, 85, 57 },
+                    }),
+                MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<int>{ 51, 98, 97, 93, 90, 83, 74, 55, 47, 75 }),
-                MakeRankFusionTest(@"
+                    new List<List<int>>{new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } }),
+                MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))
                     OFFSET 0 LIMIT 11",
-                    new List<int>{ 51, 98, 97, 93, 90, 83, 74, 55, 47, 75, 49 }),
-                MakeRankFusionTest($@"
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22 } }),
+                MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), VectorDistance(c.vector, {SampleVector}))",
-                    new List<int>{ 98, 55, 75, 93, 26, 49, 24, 90, 51, 41 }),
-                MakeRankFusionTest($@"
+                    new List<List<int>>{new List<int>{ 21, 37, 75, 26, 35, 24, 87, 55, 49, 9 } }),
+                MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<int>{ 98, 55, 75, 93, 26, 49, 24, 90, 51, 41 }),
-                MakeRankFusionTest($@"
+                    new List<List<int>>{new List<int>{ 21, 37, 75, 26, 35, 24, 87, 55, 49, 9 } }),
+                MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, 'John'), VectorDistance(c.image, {SampleVector}), VectorDistance(c.backup_image, {SampleVector}), FullTextScore(c.text, 'United States'))",
-                    new List<int>{ 98, 93, 55, 90, 97, 51, 74, 26, 41, 83 }),
+                    new List<List<int>>{new List<int>{ 21, 37, 75, 26, 35, 24, 87, 55, 49, 9 } }),
             };
 
             await this.RunTests(testCases);
@@ -181,21 +169,21 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new int[][] { new[] { 2, 57, 85 }, new[] { 2, 85, 57 } },
+                    new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } },
                     ValidationMode.TextOrTitle),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (c.index = 2) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<int>{ 2 },
+                    new List<List<int>>{ new List<int>{ 2 } },
                     ValidationMode.TextOrTitle),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new List<int>{ 2 },
+                    new List<List<int>>{ new List<int>{ 2 } },
                     ValidationMode.TextOrTitle,
                     new PartitionKey(2)),
                 MakeSanityTest(@"
@@ -203,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')",
-                    new int[][] { new[] { 2, 57, 85 }, new[] { 2, 85, 57 } },
+                    new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } },
                     ValidationMode.TextOrTitle),
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore
@@ -211,56 +199,62 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0)
                     ORDER BY RANK FullTextScore(c.title, 'John')
                     OFFSET 1 LIMIT 5",
-                    new int[][] { new[] { 57, 85 }, new[] { 85, 57 } },
+                    new List<List<int>>{ new List<int>{ 57, 85 }, new List<int>{ 85, 57 } },
                     ValidationMode.TextOrTitle),
-                MakeRankFusionTest(@"
+                MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<int>{ 51, 49, 61, 75, 77, 2, 24, 76, 54, 80, 22, 85, 57 },
+                    new List<List<int>>{
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 57, 85 },
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 85, 57 },
+                    },
                     ValidationMode.TextOrTitleOrUnitedStates),
-                MakeRankFusionTest(@"
+                MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<int>{ 51, 49, 61, 75, 77, 2, 24, 76, 54, 80 },
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } },
                     ValidationMode.TextOrTitleOrUnitedStates),
-                MakeRankFusionTest(@"
+                MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))
                     OFFSET 5 LIMIT 10",
-                    new List<int>{ 2, 24, 76, 54, 80, 22, 85, 57 },
+                    new List<List<int>>{
+                        new List<int>{ 24, 77, 76, 80, 2, 22, 57, 85 },
+                        new List<int>{ 24, 77, 76, 80, 2, 22, 85, 57 },
+                    },
                     ValidationMode.TextOrTitleOrUnitedStates),
-                MakeRankFusionTest(@"
+                MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<int>{ 51, 98, 97, 93, 90, 83, 74, 55, 47, 75 }),
-                MakeRankFusionTest(@"
+                    new List<List<int>>{new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } }),
+                MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))
                     OFFSET 0 LIMIT 11",
-                    new List<int>{ 51, 98, 97, 93, 90, 83, 74, 55, 47, 75, 49 }),
-                MakeRankFusionTest($@"
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22 } }),
+                MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), VectorDistance(c.vector, {SampleVector}))",
-                    new List<int>{ 98, 55, 75, 93, 26, 49, 24, 90, 51, 41 }),
-                MakeRankFusionTest($@"
+                    new List<List<int>>{new List<int>{ 21, 37, 75, 26, 35, 24, 87, 55, 49, 9 } }),
+                MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))",
-                    new List<int>{ 98, 55, 75, 93, 26, 49, 24, 90, 51, 41 }),
-                MakeRankFusionTest($@"
+                    new List<List<int>>{new List<int>{ 21, 37, 75, 26, 35, 24, 87, 55, 49, 9 } }),
+                MakeSanityTest($@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, 'John'), VectorDistance(c.image, {SampleVector}), VectorDistance(c.backup_image, {SampleVector}), FullTextScore(c.text, 'United States'))",
-                    new List<int>{ 98, 93, 55, 90, 97, 51, 74, 26, 41, 83 }),
+                    new List<List<int>>{new List<int>{ 21, 37, 75, 26, 35, 24, 87, 55, 49, 9 } }),
             };
 
             await this.RunTests(testCases, enableFullTextPreviewFeatures: true);
@@ -272,33 +266,39 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         {
             List<SanityTestCase> testCases = new List<SanityTestCase>
             {
-                MakeRankFusionTest(@"
+                MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0) 
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [1, 1])",
-                    new List<int>{ 51, 49, 61, 75, 77, 2, 24, 76, 54, 80, 22, 85, 57 },
+                    new List<List<int>>{
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 85, 57 },
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 57, 85 },
+                    },
                     ValidationMode.TextOrTitleOrUnitedStates),
-                MakeRankFusionTest(@"
+                MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [10, 10])",
-                    new List<int>{ 51, 49, 61, 75, 77, 2, 24, 76, 54, 80, 22, 85, 57 },
+                    new List<List<int>>{
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 57, 85 },
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 85, 57 },
+                    },
                     ValidationMode.TextOrTitleOrUnitedStates),
-                MakeRankFusionTest(@"
+                MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [0.1, 0.1])",
-                    new List<int>{ 51, 49, 61, 75, 77, 2, 24, 76, 54, 80 },
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } },
                     ValidationMode.TextOrTitleOrUnitedStates),
-                MakeRankFusionTest(@"
+                MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
                     WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [-1, -1])",
-                    new List<int>{ 77, 85, 75, 76, 51, 22, 2, 24, 80, 57, 49, 61, 54 },
+                    new List<List<int>>{ new List<int>{ 57, 85, 22, 80, 76, 77, 24, 75, 54, 49, 51, 2, 61 } },
                     ValidationMode.TextOrTitleOrUnitedStates),
             };
 
@@ -311,175 +311,39 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         {
             List<SanityTestCase> testCases = new List<SanityTestCase>
             {
-                MakeRankFusionTest(@"
+                MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [1, 1])",
-                    new List<int>{ 51, 49, 61, 75, 77, 2, 24, 76, 54, 80, 22, 85, 57 }),
-                MakeRankFusionTest(@"
+                    new List<List<int>>{
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 85, 57 },
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 57, 85 },
+                    }),
+                MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [10, 10])",
-                    new List<int>{ 51, 49, 61, 75, 77, 2, 24, 76, 54, 80, 22, 85, 57 }),
-                MakeRankFusionTest(@"
+                    new List<List<int>>{
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 57, 85 },
+                        new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2, 22, 85, 57 },
+                    }),
+                MakeSanityTest(@"
                     SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [0.1, 0.1])",
-                    new List<int>{ 51, 49, 61, 75, 77, 2, 24, 76, 54, 80 }),
-                MakeRankFusionTest(@"
+                    new List<List<int>>{ new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 2 } }),
+                MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
                     FROM c
                     WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [-1, -1])",
-                    new List<int>{ 77, 85, 75, 76, 51, 22, 2, 24, 80, 57, 49, 61, 54 }),
+                    new List<List<int>>{ new List<int>{ 57, 85, 22, 80, 76, 77, 24, 75, 54, 49, 51, 2, 61 } }),
             };
 
             await this.RunTests(testCases);
-        }
-
-        [TestMethod]
-        public async Task HybridSearchRrfRankingModesProduceExpectedRanks()
-        {
-            // One document matches the full-text terms while the other 999 receive the same lexical score.
-            // Unique vector distances make changes in the tied documents' ordinal ranks observable.
-            IEnumerable<string> documents = Enumerable.Range(0, RrfDocumentCount)
-                .Select(index => $@"{{
-                    ""id"": ""{index}"",
-                    ""index"": {index},
-                    ""text"": ""{(index == RrfLexicalMatchIndex ? "unique target" : "nonmatch")}"",
-                    ""vector"": [{index}, 0]
-                }}");
-
-            await this.CreateIngestQueryDeleteAsync(
-                connectionModes: ConnectionModes.Direct,
-                collectionTypes: CollectionTypes.MultiPartition,
-                documents: documents,
-                query: ValidateRrfRankingModes,
-                partitionKey: "/index",
-                indexingPolicy: OrdinalRrfIndexingPolicy,
-                vectorEmbeddingPolicy: OrdinalRrfEmbeddingPolicy);
-        }
-
-        [TestMethod]
-        public async Task HybridSearchRrfTiesAreBrokenByRid()
-        {
-            IEnumerable<string> documents = new[]
-            {
-                @"{ ""id"": ""left"", ""index"": 0, ""vector"": [0, 0] }",
-                @"{ ""id"": ""right"", ""index"": 1, ""vector"": [10, 0] }",
-            };
-
-            await this.CreateIngestQueryDeleteAsync(
-                connectionModes: ConnectionModes.Direct,
-                collectionTypes: CollectionTypes.MultiPartition,
-                documents: documents,
-                query: ValidateRrfRidTieBreak,
-                partitionKey: "/index",
-                indexingPolicy: OrdinalRrfIndexingPolicy,
-                vectorEmbeddingPolicy: OrdinalRrfEmbeddingPolicy);
-        }
-
-        private static async Task ValidateRrfRidTieBreak(
-            Container container,
-            IReadOnlyList<CosmosObject> _)
-        {
-            const string ridQuery = "SELECT c._rid AS Rid FROM c";
-            IReadOnlyList<RidDocument> documentsByRid = await QueryWithoutContinuationTokensAsync<RidDocument>(
-                container,
-                ridQuery);
-            Assert.AreEqual(2, documentsByRid.Count);
-            string[] expectedRids = documentsByRid
-                .Select(document => document.Rid)
-                .OrderByDescending(rid => Documents.ResourceId.Parse(rid).Document)
-                .ThenByDescending(rid => rid, StringComparer.Ordinal)
-                .ToArray();
-
-            // The component queries produce inverse ranks, so equal weights give both documents the same RRF score.
-            const string hybridQuery = @"
-                SELECT c._rid AS Rid
-                FROM c
-                ORDER BY RANK RRF(VectorDistance(c.vector, [0, 0]), VectorDistance(c.vector, [10, 0]))";
-            IReadOnlyList<RidDocument> actual = await QueryWithoutContinuationTokensAsync<RidDocument>(
-                container,
-                hybridQuery);
-
-            CollectionAssert.AreEqual(
-                expectedRids,
-                actual.Select(document => document.Rid).ToArray(),
-                "Documents with equal RRF scores were not ordered by decoded document RID descending.");
-
-            // Both documents have identical distances to the midpoint in both components.
-            const string tiedComponentQuery = @"
-                SELECT c._rid AS Rid
-                FROM c
-                ORDER BY RANK RRF(VectorDistance(c.vector, [5, 0]), VectorDistance(c.vector, [5, 0]))";
-            IReadOnlyList<RidDocument> tiedComponentResults = await QueryWithoutContinuationTokensAsync<RidDocument>(
-                container,
-                tiedComponentQuery,
-                new QueryRequestOptions { IsHybridSearchCompetitionRankingEnabled = false });
-
-            CollectionAssert.AreEqual(
-                expectedRids,
-                tiedComponentResults.Select(document => document.Rid).ToArray(),
-                "Documents with tied component scores were not ranked by decoded document RID descending.");
-        }
-
-        private static async Task ValidateRrfRankingModes(
-            Container container,
-            IReadOnlyList<CosmosObject> documents)
-        {
-            const string hybridQuery = @"
-                SELECT TOP 1000 c.index AS Index
-                FROM c
-                ORDER BY RANK RRF(FullTextScore(c.text, 'unique target'), VectorDistance(c.vector, [0, 0]))";
-
-            int[] firstCompetitionOrder = await QueryRrfOrderAsync(
-                container,
-                hybridQuery,
-                useCompetitionRanking: true);
-            int[] secondCompetitionOrder = await QueryRrfOrderAsync(
-                container,
-                hybridQuery,
-                useCompetitionRanking: true);
-            int[] ordinalOrder = await QueryRrfOrderAsync(
-                container,
-                hybridQuery,
-                useCompetitionRanking: false);
-
-            CollectionAssert.AreEqual(
-                firstCompetitionOrder,
-                secondCompetitionOrder,
-                "Repeated competition-ranking queries returned different orders.");
-            Assert.IsFalse(
-                firstCompetitionOrder.SequenceEqual(ordinalOrder),
-                "Competition and ordinal ranking returned the same order.");
-            Assert.AreEqual(
-                CompetitionRrfLexicalMatchRank,
-                Array.IndexOf(firstCompetitionOrder, RrfLexicalMatchIndex) + 1);
-            Assert.AreEqual(
-                OrdinalRrfLexicalMatchRank,
-                Array.IndexOf(ordinalOrder, RrfLexicalMatchIndex) + 1);
-        }
-
-        private static async Task<int[]> QueryRrfOrderAsync(
-            Container container,
-            string query,
-            bool useCompetitionRanking)
-        {
-            QueryRequestOptions requestOptions = new QueryRequestOptions
-            {
-                IsHybridSearchCompetitionRankingEnabled = useCompetitionRanking,
-            };
-
-            return (await QueryWithoutContinuationTokensAsync<OrdinalRrfDocument>(
-                container,
-                query,
-                requestOptions))
-                .Select(document => document.Index)
-                .ToArray();
         }
 
         private async Task RunTests(IEnumerable<SanityTestCase> testCases, bool enableFullTextPreviewFeatures = false)
@@ -504,7 +368,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }
                     else if (!isEmulator && !queryEngineConfiguration.ContainsKey("queryEnableFullTextPreviewFeatures"))
                     {
-                        // Set the preview-feature value to restore after reference queries.
                         queryEngineConfiguration["queryEnableFullTextPreviewFeatures"] = false;
                         provider.Update(queryEngineConfiguration);
                     }
@@ -530,7 +393,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     {
                         FullTextScoreScope = fullTextScoreScope,
                         EnableOptimisticDirectExecution = false,
-                        IsHybridSearchCompetitionRankingEnabled = false,
                     };
 
                     if (testCase.PartitionKey.HasValue)
@@ -538,10 +400,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         testRequestOptions.PartitionKey = testCase.PartitionKey;
                     }
 
-                    IReadOnlyList<IReadOnlyList<int>> expectedOrderings = testCase.ExpectedOrderings;
+                    Dictionary<int, double> expectedScores = null;
                     if (testCase.ComputeExpectedOrderingOnLiveAccount && !isEmulator)
                     {
-                        HybridSearchQueryInfo hybridSearchQueryInfo = await GetHybridSearchQueryInfoAsync(container, provider, testCase.Query, testRequestOptions);
+                        HybridSearchQueryInfo queryInfo = await GetHybridSearchQueryInfoAsync(container, provider, testCase.Query, testRequestOptions);
                         IDictionary<string, object> referenceConfiguration = new Dictionary<string, object>(queryEngineConfiguration)
                         {
                             ["queryEnableFullTextPreviewFeatures"] = true,
@@ -550,10 +412,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         provider.Update(referenceConfiguration);
                         try
                         {
-                            expectedOrderings = new[]
-                            {
-                                await ComputeExpectedRrfOrderAsync(container, hybridSearchQueryInfo, testCase.Query, testRequestOptions),
-                            };
+                            expectedScores = await ComputeExpectedRrfScoresAsync(container, queryInfo, testCase.Query, testRequestOptions);
                         }
                         finally
                         {
@@ -579,14 +438,31 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                     IEnumerable<int> actual = result.Select(document => document.Index);
 
-                    if (!expectedOrderings.Any(expected => expected.SequenceEqual(actual)))
+                    if (expectedScores != null)
+                    {
+                        ValidateRrfOrdering(testCase.Query, expectedScores, actual.ToArray());
+                        continue;
+                    }
+
+                    bool match = false;
+                    foreach (IReadOnlyList<int> expectedIndices in testCase.ExpectedIndices)
+                    {
+                        if (expectedIndices.SequenceEqual(actual))
+                        {
+                            match = true;
+                            break;
+                        }
+                    }
+
+                    if (!match)
                     {
                         Trace.WriteLine($"Query: {testCase.Query}");
-                        Trace.WriteLine($"Expected: {string.Join(", ", expectedOrderings[0])}");
                         Trace.WriteLine($"Actual: {string.Join(", ", actual)}");
 
-                        string errorMessage = @"The query results did not match the expected results." +
-                            "Please set HybridSearchCrossPartitionQueryPipelineStage.HybridSearchDebugTraceHelpers.Enabled = true to debug.";
+                        string errorMessage = @"The query results did not match any of the expected results." +
+                            "Please set HybridSearchCrossPartitionQueryPipelineStage.HybridSearchDebugTraceHelpers.Enabled = true to debug." +
+                            "Usually, the failure may be due to some swaps in the results that have equal scores. You can see this in the debug output." +
+                            "The solution is to add another expected result that matches the actual results (provided the scores are in decresing order).";
                         Assert.Fail(errorMessage);
                     }
                 }
@@ -614,7 +490,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 geospatialType: GeospatialType.Geography).Result.HybridSearchQueryInfo;
         }
 
-        private static async Task<IReadOnlyList<int>> ComputeExpectedRrfOrderAsync(
+        private static async Task<Dictionary<int, double>> ComputeExpectedRrfScoresAsync(
             Container container,
             HybridSearchQueryInfo hybridSearchQueryInfo,
             string queryText,
@@ -622,17 +498,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         {
             SqlQuery query = SqlQueryParser.Parse(queryText);
             SqlFunctionCallScalarExpression rrf = (SqlFunctionCallScalarExpression)query.OrderByClause.OrderByItems.Single().Expression;
-            Assert.AreEqual("RRF", rrf.Name.Value, ignoreCase: true);
-
             SqlArrayCreateScalarExpression weights = rrf.Arguments.Last() as SqlArrayCreateScalarExpression;
             int componentCount = rrf.Arguments.Length - (weights == null ? 0 : 1);
-
-            // Use the component plan's sort order and weights for the reference ranking.
-            Assert.AreEqual(componentCount, hybridSearchQueryInfo.ComponentQueryInfos.Count, "The plan must contain one query per RRF component.");
+            Assert.AreEqual(componentCount, hybridSearchQueryInfo.ComponentQueryInfos.Count);
             bool useDefaultComponentWeight = hybridSearchQueryInfo.ComponentWeights == null || hybridSearchQueryInfo.ComponentWeights.Count == 0;
-            Assert.AreEqual(useDefaultComponentWeight, weights == null, "The plan must carry component weights only when the query specifies them.");
+            Assert.AreEqual(useDefaultComponentWeight, weights == null);
             Dictionary<int, double> scores = new Dictionary<int, double>();
-            Dictionary<int, ulong> rids = new Dictionary<int, ulong>();
             HashSet<int> expectedIndices = null;
             for (int componentIndex = 0; componentIndex < componentCount; componentIndex++)
             {
@@ -643,12 +514,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 if (weights != null)
                 {
                     double queryWeight = ReadNumericLiteral(weights.Items[componentIndex]);
-                    Assert.AreEqual(Math.Abs(queryWeight), hybridSearchQueryInfo.ComponentWeights[componentIndex], "The plan weight must be the absolute query weight.");
+                    Assert.AreEqual(Math.Abs(queryWeight), hybridSearchQueryInfo.ComponentWeights[componentIndex]);
                     if (queryWeight < 0)
                     {
                         if (componentQueryInfo.HasOrderBy)
                         {
-                            Assert.AreEqual(SortOrder.Ascending, sortOrder, "A negative weight must reverse the component ORDER BY to ascending.");
+                            Assert.AreEqual(SortOrder.Ascending, sortOrder);
                         }
                         else
                         {
@@ -657,7 +528,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }
                 }
 
-                string componentQuery = $"SELECT c.index AS Index, c._rid AS Rid, {component} AS Score " +
+                string componentQuery = $"SELECT c.index AS Index, {component} AS Score " +
                     $"{query.FromClause} {query.WhereClause} ORDER BY RANK {component}";
                 List<ComponentScoreDocument> documents = new List<ComponentScoreDocument>();
                 using (FeedIterator<ComponentScoreDocument> iterator = container.GetItemQueryIterator<ComponentScoreDocument>(
@@ -681,40 +552,54 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     CollectionAssert.AreEquivalent(expectedIndices.ToArray(), indices.ToArray(), "Components must rank the same eligible documents.");
                 }
 
-                // Apply the RID tie-breaker in the component's sort direction.
                 double ComponentScore(ComponentScoreDocument document) => scoreSign * (document.Score ?? UndefinedComponentScore);
                 IOrderedEnumerable<ComponentScoreDocument> ordered = sortOrder == SortOrder.Ascending
                     ? documents.OrderBy(ComponentScore)
-                        .ThenBy(document => Documents.ResourceId.Parse(document.Rid).Document)
-                    : documents.OrderByDescending(ComponentScore)
-                        .ThenByDescending(document => Documents.ResourceId.Parse(document.Rid).Document);
+                    : documents.OrderByDescending(ComponentScore);
                 double weight = useDefaultComponentWeight ? 1 : hybridSearchQueryInfo.ComponentWeights[componentIndex];
-                int rank = 0;
-                foreach (ComponentScoreDocument document in ordered)
+                int rank = 1;
+                // Competition ranking shares a rank across ties and skips their occupied positions.
+                foreach (IGrouping<double, ComponentScoreDocument> group in ordered.GroupBy(ComponentScore))
                 {
-                    rank++;
-                    scores.TryGetValue(document.Index, out double score);
-                    scores[document.Index] = score + (weight / (60 + rank));
-                    rids[document.Index] = Documents.ResourceId.Parse(document.Rid).Document;
+                    foreach (ComponentScoreDocument document in group)
+                    {
+                        scores.TryGetValue(document.Index, out double score);
+                        scores[document.Index] = score + (weight / (60 + rank));
+                    }
+
+                    rank += group.Count();
                 }
             }
 
-            IEnumerable<int> result = scores.OrderByDescending(item => item.Value)
-                .ThenByDescending(item => rids[item.Key])
-                .Select(item => item.Key);
+            return scores;
+        }
+
+        private static void ValidateRrfOrdering(
+            string queryText,
+            IReadOnlyDictionary<int, double> scores,
+            IReadOnlyList<int> actual)
+        {
+            Assert.AreEqual(actual.Count, actual.Distinct().Count(), "Hybrid results must not contain duplicate documents.");
+            Assert.IsTrue(actual.All(scores.ContainsKey), "Hybrid results must contain only eligible documents.");
+            SqlQuery query = SqlQueryParser.Parse(queryText);
+            IEnumerable<double> expected = scores.Values.OrderByDescending(score => score);
             if (query.OffsetLimitClause != null)
             {
-                result = result
+                expected = expected
                     .Skip(checked((int)ReadNumericLiteral(query.OffsetLimitClause.OffsetSpec.OffsetExpression)))
                     .Take(checked((int)ReadNumericLiteral(query.OffsetLimitClause.LimitSpec.LimitExpression)));
             }
 
             if (query.SelectClause.TopSpec != null)
             {
-                result = result.Take(checked((int)ReadNumericLiteral(query.SelectClause.TopSpec.TopExpresion)));
+                expected = expected.Take(checked((int)ReadNumericLiteral(query.SelectClause.TopSpec.TopExpresion)));
             }
 
-            return result.ToArray();
+            // Equal fused scores may appear in any order, including at TOP/OFFSET boundaries.
+            CollectionAssert.AreEqual(
+                expected.ToArray(),
+                actual.Select(index => scores[index]).ToArray(),
+                $"Hybrid results must follow the independently computed competition scores. Query: {queryText}");
         }
 
         private static double ReadNumericLiteral(SqlScalarExpression expression)
@@ -752,56 +637,20 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             return policy;
         }
 
-        private static IndexingPolicy CreateOrdinalRrfIndexingPolicy()
-        {
-            IndexingPolicy policy = new IndexingPolicy();
-            policy.IncludedPaths.Add(new IncludedPath { Path = IndexingPolicy.DefaultPath });
-            policy.VectorIndexes.Add(new VectorIndexPath
-            {
-                Path = "/vector",
-                Type = VectorIndexType.Flat,
-            });
-            return policy;
-        }
-
         private static SanityTestCase MakeSanityTest(
             string query,
-            IReadOnlyList<int> expectedIndices,
-            ValidationMode validationMode = ValidationMode.None,
-            PartitionKey? partitionKey = null)
-        {
-            return MakeSanityTest(query, new[] { expectedIndices }, validationMode, partitionKey);
-        }
-
-        private static SanityTestCase MakeSanityTest(
-            string query,
-            IReadOnlyList<IReadOnlyList<int>> expectedOrderings,
+            IReadOnlyList<IReadOnlyList<int>> expectedIndices,
             ValidationMode validationMode = ValidationMode.None,
             PartitionKey? partitionKey = null)
         {
             return new SanityTestCase
             {
                 Query = query,
-                ExpectedOrderings = expectedOrderings,
+                ExpectedIndices = expectedIndices,
                 ValidationMode = validationMode,
                 PartitionKey = partitionKey,
-            };
-        }
-
-        /// <summary>
-        /// Derives live-account expectations from component queries to preserve RID tie-breaking.
-        /// </summary>
-        private static SanityTestCase MakeRankFusionTest(
-            string query,
-            IReadOnlyList<int> expectedEmulatorIndices,
-            ValidationMode validationMode = ValidationMode.None)
-        {
-            return new SanityTestCase
-            {
-                Query = query,
-                ExpectedOrderings = new[] { expectedEmulatorIndices },
-                ValidationMode = validationMode,
-                ComputeExpectedOrderingOnLiveAccount = true,
+                ComputeExpectedOrderingOnLiveAccount = SqlQueryParser.Parse(query).OrderByClause.OrderByItems.Single().Expression
+                    is SqlFunctionCallScalarExpression function && function.Name.Value == "RRF",
             };
         }
 
@@ -809,7 +658,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         {
             public string Query { get; init; }
 
-            public IReadOnlyList<IReadOnlyList<int>> ExpectedOrderings { get; init; }
+            public IReadOnlyList<IReadOnlyList<int>> ExpectedIndices { get; init; }
 
             public bool ComputeExpectedOrderingOnLiveAccount { get; init; }
 
@@ -844,23 +693,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             public double UnitedStatesScore { get; set; }
         }
 
-        private sealed class OrdinalRrfDocument
-        {
-            public int Index { get; set; }
-        }
-
         private sealed class ComponentScoreDocument
         {
             public int Index { get; set; }
 
-            public string Rid { get; set; }
-
             public double? Score { get; set; }
-        }
-
-        private sealed class RidDocument
-        {
-            public string Rid { get; set; }
         }
 
         private static class FieldNames

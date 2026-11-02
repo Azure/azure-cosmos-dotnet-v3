@@ -52,22 +52,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         public static bool BypassQueryParsing()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                return ConfigurationManager.ForceBypassQueryParsing()
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                ? ConfigurationManager.ForceBypassQueryParsing()
                     || BypassQueryParsingOnLinux(
                         ConfigurationManager.GetEnvironmentVariable(ConfigurationManager.UseQueryInterop, defaultValue: false),
-                        RuntimeInformation.ProcessArchitecture,
-                        QueryPlanInterop.LinuxLibraryAvailable);
-            }
-
-            return Documents.CustomTypeExtensions.ByPassQueryParsing() || ConfigurationManager.ForceBypassQueryParsing();
+                        QueryPlanInterop.SupportsLinuxPlanning)
+                : Documents.CustomTypeExtensions.ByPassQueryParsing() || ConfigurationManager.ForceBypassQueryParsing();
         }
 
-        internal static bool BypassQueryParsingOnLinux(bool enabled, Architecture architecture, Lazy<bool> libraryAvailable)
+        internal static bool BypassQueryParsingOnLinux(
+            bool enabled,
+            Func<bool> supportsLinuxPlanning)
         {
-            return !QueryPlanInterop.SupportsLinuxPlanning(OSPlatform.Linux, architecture, enabled)
-                || !libraryAvailable.Value;
+            return !enabled || !supportsLinuxPlanning();
         }
 
         public static async Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(
@@ -162,10 +159,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             {
                 if ((RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                             && Documents.ServiceInteropWrapper.Is64BitProcess)
-                    || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && QueryPlanInterop.SupportsLinuxPlanning(
-                        OSPlatform.Linux,
-                        RuntimeInformation.ProcessArchitecture,
-                        ConfigurationManager.GetEnvironmentVariable(ConfigurationManager.UseQueryInterop, defaultValue: false))))
+                    || (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                        && ConfigurationManager.GetEnvironmentVariable(ConfigurationManager.UseQueryInterop, defaultValue: false)
+                        && QueryPlanInterop.IsSupportedLinuxPlatform(
+                            OSPlatform.Linux,
+                            RuntimeInformation.ProcessArchitecture)))
                 {
                     // Native planning is supported or opted into, but the gateway path was selected.
                     gatewayQueryPlanTrace.AddDatum("ServiceInterop unavailable", true);

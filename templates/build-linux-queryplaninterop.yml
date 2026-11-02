@@ -208,12 +208,12 @@ jobs:
 
         Type interop = typeof(Microsoft.Azure.Cosmos.CosmosClient).Assembly
             .GetType("Microsoft.Azure.Cosmos.Query.Core.QueryPlan.QueryPlanInterop", throwOnError: true)!;
-        Lazy<bool> available = (Lazy<bool>)interop
-            .GetField("LinuxLibraryAvailable", BindingFlags.Static | BindingFlags.NonPublic)!
-            .GetValue(null)!;
+        bool available = (bool)interop
+            .GetMethod("SupportsLinuxPlanning", BindingFlags.Static | BindingFlags.NonPublic)!
+            .Invoke(null, null)!;
         Console.WriteLine($"{RuntimeInformation.OSDescription} | {RuntimeInformation.ProcessArchitecture} | {RuntimeInformation.FrameworkDescription}");
-        Console.WriteLine($"QueryPlanInterop.LinuxLibraryAvailable={available.Value}");
-        if (available.Value)
+        Console.WriteLine($"QueryPlanInterop.SupportsLinuxPlanning={available}");
+        if (available)
         {
             return 0;
         }

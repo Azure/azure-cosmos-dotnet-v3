@@ -36,30 +36,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         // Routing: local library versus gateway
 
         [DataTestMethod]
-        [DataRow("LINUX", Architecture.X64, true, true)]
-        [DataRow("LINUX", Architecture.Arm64, true, true)]
-        [DataRow("LINUX", Architecture.X64, false, false)]
-        [DataRow("LINUX", Architecture.Arm64, false, false)]
-        [DataRow("LINUX", Architecture.X86, true, false)]
-        [DataRow("LINUX", Architecture.Arm, true, false)]
-        [DataRow("WINDOWS", Architecture.X64, true, false)]
-        [DataRow("OSX", Architecture.Arm64, true, false)]
-        public void LinuxPlanningRequiresSupportedPlatformAndOptIn(
-            string platform, Architecture architecture, bool enabled, bool expected)
+        [DataRow("LINUX", Architecture.X64, true)]
+        [DataRow("LINUX", Architecture.Arm64, true)]
+        [DataRow("LINUX", Architecture.X86, false)]
+        [DataRow("LINUX", Architecture.Arm, false)]
+        [DataRow("WINDOWS", Architecture.X64, false)]
+        [DataRow("OSX", Architecture.Arm64, false)]
+        public void LinuxPlanningRequiresSupportedPlatform(
+            string platform,
+            Architecture architecture,
+            bool expected)
         {
-            Assert.AreEqual(expected, QueryPlanInterop.SupportsLinuxPlanning(OSPlatform.Create(platform), architecture, enabled));
+            Assert.AreEqual(expected, QueryPlanInterop.IsSupportedLinuxPlatform(OSPlatform.Create(platform), architecture));
         }
 
         [TestMethod]
-        public void LinuxRoutingFallsBackWithoutLoadingWhenDisabledOrUnsupported()
+        public void LinuxRoutingDoesNotProbeWhenDisabledAndFallsBackWhenUnavailable()
         {
-            Lazy<bool> mustNotLoad = new Lazy<bool>(() => throw new AssertFailedException("Native library must not be loaded."));
-            Assert.IsTrue(QueryPlanRetriever.BypassQueryParsingOnLinux(false, Architecture.X64, mustNotLoad));
-            Assert.IsTrue(QueryPlanRetriever.BypassQueryParsingOnLinux(true, Architecture.X86, mustNotLoad));
-            Assert.IsTrue(QueryPlanRetriever.BypassQueryParsingOnLinux(true, Architecture.Arm, mustNotLoad));
-            Assert.IsTrue(QueryPlanRetriever.BypassQueryParsingOnLinux(true, Architecture.X64, new Lazy<bool>(() => false)));
-            Assert.IsFalse(QueryPlanRetriever.BypassQueryParsingOnLinux(true, Architecture.X64, new Lazy<bool>(() => true)));
-            Assert.IsFalse(QueryPlanRetriever.BypassQueryParsingOnLinux(true, Architecture.Arm64, new Lazy<bool>(() => true)));
+            Assert.IsTrue(QueryPlanRetriever.BypassQueryParsingOnLinux(
+                false,
+                () => throw new AssertFailedException("Native library must not be probed.")));
+            Assert.IsTrue(QueryPlanRetriever.BypassQueryParsingOnLinux(true, () => false));
+            Assert.IsFalse(QueryPlanRetriever.BypassQueryParsingOnLinux(true, () => true));
         }
 
         [TestMethod]
@@ -84,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, null);
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
+                    Assert.IsFalse(QueryPlanInterop.SupportsLinuxPlanning(), "Linux library availability must not be probed on other platforms.");
                     Assert.AreEqual(defaultBypass, QueryPlanRetriever.BypassQueryParsing(), "Linux opt-in must not change other platforms.");
                 }
             }
@@ -105,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             }
 
             Assert.IsFalse(ConfigurationManager.ForceBypassQueryParsing(), $"{ConfigurationManager.BypassQueryParsing} must not force the gateway.");
-            Assert.IsTrue(QueryPlanInterop.LinuxLibraryAvailable.Value, "The packaged QueryPlanInterop library must load.");
+            Assert.IsTrue(QueryPlanInterop.SupportsLinuxPlanning(), "The packaged QueryPlanInterop library must load.");
             Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing(), "An opted-in Linux process must use QueryPlanInterop instead of the gateway.");
         }
 
@@ -726,7 +725,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                Assert.IsTrue(QueryPlanInterop.LinuxLibraryAvailable.Value, "The packaged Linux library and its dependencies must load.");
+                Assert.IsTrue(QueryPlanInterop.SupportsLinuxPlanning(), "The packaged Linux library and its dependencies must load.");
             }
             else if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
