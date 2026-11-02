@@ -192,7 +192,8 @@ function Get-AssuranceValueDigest {
 }
 
 function Get-AssuranceCohortDigest {
-    param([array] $Cases)
+    param($Cases)
+    Assert-AssuranceList $Cases 'cases'
     $byId = [System.Collections.Generic.Dictionary[string, object]]::new([StringComparer]::Ordinal)
     foreach ($case in $Cases) { $byId.Add($case.id, $case) }
     [string[]] $ids = @($byId.Keys)
@@ -218,7 +219,7 @@ function Assert-AssuranceReference {
         } else { Assert-AssuranceHash $Value.revision "$At.revision" 40 }
         $path = Get-AssurancePath $Root $Value.path
         if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $Value.sha256) {
-            Stop-AssuranceValidation 'stale-reference' $At
+            Stop-AssuranceValidation 'stale-reference' "$At ($($Value.path))"
         }
     } else {
         if ($Value.repository -cnotmatch '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$') {
@@ -230,7 +231,7 @@ function Assert-AssuranceReference {
 }
 
 function Get-AssuranceIndex {
-    param([array] $Items, [string] $At)
+    param($Items, [string] $At)
     Assert-AssuranceList $Items $At
     $index = [System.Collections.Generic.Dictionary[string, object]]::new([StringComparer]::Ordinal)
     foreach ($item in $Items) {
@@ -252,7 +253,7 @@ function Assert-AssuranceLinks {
 }
 
 function Assert-AssuranceCases {
-    param([array] $Cases, [string] $At, [int] $UnknownCount)
+    param($Cases, [string] $At, [int] $UnknownCount)
     $index = Get-AssuranceIndex $Cases $At
     $tuples = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     $names = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
@@ -332,8 +333,9 @@ function Assert-AssuranceRecord {
             Stop-AssuranceValidation 'duplicate-reference' 'provenance.references'
         }
     }
-    foreach ($reference in @($Record.specRef) + $Record.provenance.references) {
-        Assert-AssuranceReference $reference $Root 'sourceRef' $Record.unknowns.Count
+    Assert-AssuranceReference $Record.specRef $Root 'specRef' $Record.unknowns.Count
+    for ($index = 0; $index -lt $Record.provenance.references.Count; $index++) {
+        Assert-AssuranceReference $Record.provenance.references[$index] $Root "provenance.references[$index]" $Record.unknowns.Count
     }
     if ('supersedes' -cin $Record.Keys) {
         Assert-AssuranceShape $Record.supersedes @('id', 'sha256', 'reason') -At 'supersedes'
@@ -388,22 +390,23 @@ function Assert-AssuranceRecord {
     Assert-AssuranceLinks $Record.impact.obligationIds $obligations 'impact.obligationIds'
     $assertions = Get-AssuranceIndex $Record.assertions 'assertions'
     foreach ($assertion in $Record.assertions) {
-        Assert-AssuranceShape $assertion @('id', 'obligationIds', 'scenarioIds', 'project', 'sourceRef', 'symbol', 'observes', 'limits') -At 'assertions'
-        Assert-AssuranceLinks $assertion.obligationIds $obligations 'assertions.obligationIds'
-        Assert-AssuranceLinks $assertion.scenarioIds $scenarios 'assertions.scenarioIds'
+        $at = "assertions[$($assertion.id)]"
+        Assert-AssuranceShape $assertion @('id', 'obligationIds', 'scenarioIds', 'project', 'sourceRef', 'symbol', 'observes', 'limits') -At $at
+        Assert-AssuranceLinks $assertion.obligationIds $obligations "$at.obligationIds"
+        Assert-AssuranceLinks $assertion.scenarioIds $scenarios "$at.scenarioIds"
         foreach ($scenarioId in $assertion.scenarioIds) {
-            if ($scenarios[$scenarioId] -cnotin $assertion.obligationIds) { Stop-AssuranceValidation 'scenario-obligation-mismatch' 'assertions' }
+            if ($scenarios[$scenarioId] -cnotin $assertion.obligationIds) { Stop-AssuranceValidation 'scenario-obligation-mismatch' $at }
         }
-        foreach ($field in @('project', 'symbol', 'observes')) { Assert-AssuranceText $assertion[$field] "assertions.$field" }
-        Assert-AssuranceTextList $assertion.limits 'assertions.limits'
-        Assert-AssuranceReference $assertion.sourceRef $Root 'assertions.sourceRef' $Record.unknowns.Count
+        foreach ($field in @('project', 'symbol', 'observes')) { Assert-AssuranceText $assertion[$field] "$at.$field" }
+        Assert-AssuranceTextList $assertion.limits "$at.limits"
+        Assert-AssuranceReference $assertion.sourceRef $Root "$at.sourceRef" $Record.unknowns.Count
         if ($assertion.sourceRef.repository -ceq 'self') {
             $null = Get-AssurancePath $Root $assertion.project
             if ($assertion.sourceRef.path.EndsWith('.ps1', [StringComparison]::OrdinalIgnoreCase)) {
                 $tokens = $null
                 $parseErrors = $null
                 $ast = [Management.Automation.Language.Parser]::ParseFile((Get-AssurancePath $Root $assertion.sourceRef.path), [ref] $tokens, [ref] $parseErrors)
-                if ($parseErrors.Count -gt 0) { Stop-AssuranceValidation 'invalid-assertion-source' 'PowerShell parse errors.' }
+                if ($parseErrors.Count -gt 0) { Stop-AssuranceValidation 'invalid-assertion-source' $at }
                 $matches = @($ast.FindAll({
                     param($node)
                     $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -ceq $assertion.symbol
@@ -572,6 +575,22 @@ function Read-AssuranceTrx {
             Stop-AssuranceValidation 'unsupported-trx-shape' 'Critical native sections must be unique and present.'
         }
     }
+    $resultRoot = $xml.SelectSingleNode('/t:TestRun/t:Results', $manager)
+    foreach ($container in $resultRoot.SelectNodes('. | .//*[local-name()="InnerResults"]')) {
+        if ($container.NamespaceURI -cne $namespace -or
+            (![object]::ReferenceEquals($container, $resultRoot) -and
+                ($container.ParentNode.LocalName -cne 'UnitTestResult' -or $container.ParentNode.NamespaceURI -cne $namespace))) {
+            Stop-AssuranceValidation 'unsupported-trx-shape' 'Unexpected InnerResults placement or namespace.'
+        }
+        if ($container.SelectNodes('text()[normalize-space(.) != ""]').Count -gt 0) {
+            Stop-AssuranceValidation 'unsupported-trx-shape' 'Result containers cannot contain text.'
+        }
+        foreach ($child in $container.SelectNodes('*')) {
+            if ($child.LocalName -cne 'UnitTestResult' -or $child.NamespaceURI -cne $namespace) {
+                Stop-AssuranceValidation 'unsupported-trx-shape' 'Only VSTest 2010 UnitTestResult elements are supported in result containers.'
+            }
+        }
+    }
     $definitions = @{}
     foreach ($definition in $xml.SelectNodes('/t:TestRun/t:TestDefinitions/t:UnitTest', $manager)) {
         $id = $definition.GetAttribute('id')
@@ -590,8 +609,13 @@ function Read-AssuranceTrx {
     $executionIds = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
     $results = @(
         foreach ($node in $nodes) {
-            if ($node.ParentNode.LocalName -cnotin @('Results', 'InnerResults')) {
+            if ($node.ParentNode.NamespaceURI -cne $namespace -or
+                ($node.ParentNode.LocalName -ceq 'Results' -and ![object]::ReferenceEquals($node.ParentNode, $resultRoot)) -or
+                $node.ParentNode.LocalName -cnotin @('Results', 'InnerResults')) {
                 Stop-AssuranceValidation 'unsupported-trx-shape' 'Unexpected result placement.'
+            }
+            if ($node.SelectNodes('t:InnerResults', $manager).Count -gt 1) {
+                Stop-AssuranceValidation 'unsupported-trx-shape' 'InnerResults must be unique within a unit result.'
             }
             $id = $node.GetAttribute('executionId')
             $parsed = [Guid]::Empty
@@ -752,6 +776,7 @@ function Invoke-AssuranceValidation {
         runtime = [ordered]@{ powershell = $PSVersionTable.PSVersion.ToString(); dotnet = [Environment]::Version.ToString(); os = [Runtime.InteropServices.RuntimeInformation]::OSDescription }
     }
     $exitCode = 1
+    $recordContext = $null
     try {
         if (![string]::IsNullOrEmpty($SummaryPath)) {
             $output = [IO.Path]::GetFullPath($SummaryPath)
@@ -769,6 +794,8 @@ function Invoke-AssuranceValidation {
         if ($files.Count -eq 0) { Stop-AssuranceValidation 'missing-records' 'An empty directory is not validated evidence.' }
         $ids = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
         foreach ($file in $files) {
+            $relativePath = [IO.Path]::GetRelativePath([IO.Path]::GetFullPath($Root), $file.FullName).Replace([IO.Path]::DirectorySeparatorChar, [char] '/')
+            $recordContext = 'record=' + (ConvertTo-Json -InputObject $relativePath -Compress)
             $record = ConvertFrom-AssuranceJson ([IO.File]::ReadAllText($file.FullName, [Text.UTF8Encoding]::new($false, $true)))
             Assert-AssuranceRecord $record $Root
             if (!$ids.Add($record.id)) { Stop-AssuranceValidation 'duplicate-id' 'Record IDs must be unique across the directory.' }
@@ -778,6 +805,7 @@ function Invoke-AssuranceValidation {
                 unknowns = $record.unknowns
             }
         }
+        $recordContext = $null
         $summary.metadata = 'valid'
         if ($RequestedMode -ceq 'RequiredProof') {
             $summary.requiredProof = 'blocked'
@@ -785,7 +813,9 @@ function Invoke-AssuranceValidation {
         }
         $exitCode = 0
     } catch {
-        $summary.errors += $_.Exception.Message
+        $message = $_.Exception.Message
+        if ($null -ne $recordContext) { $message += " [$recordContext]" }
+        $summary.errors += $message
         if ($RequestedMode -ceq 'RequiredProof') { $summary.requiredProof = 'blocked' }
     }
     $json = ConvertTo-Json -InputObject $summary -Depth 100

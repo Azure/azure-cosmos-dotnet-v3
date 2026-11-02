@@ -164,6 +164,74 @@ try {
         Assert-Equal $date.arguments.Count 3
         Assert-Equal $date.arguments[2].Count 1
     }
+    Invoke-Control 'index-singleton-array' {
+        $shape = ConvertFrom-AssuranceJson '{"items":[{"id":"singleton"}]}'
+        $index = Get-AssuranceIndex $shape.items 'items'
+        Assert-Equal $index.Count 1
+        Assert-Equal $index['singleton'].id 'singleton'
+        Assert-Rejected { Get-AssuranceIndex @($null) 'items' } 'missing-field'
+    }
+    Invoke-Control 'index-non-array' {
+        foreach ($json in @('{"id":"singleton"}', '"singleton"', '1', 'true', 'null', '[]')) {
+            $shape = ConvertFrom-AssuranceJson ('{"items":' + $json + '}')
+            Assert-Rejected { Get-AssuranceIndex $shape.items 'items' } 'invalid-list'
+        }
+    }
+    Invoke-Control 'case-singleton-array' {
+        $shape = ConvertFrom-AssuranceJson '{"cases":[{"id":"singleton","arguments":[null],"nativeName":"Synthetic.Single(null)"}]}'
+        $index = Assert-AssuranceCases $shape.cases 'cases' 0
+        Assert-Equal $index.Count 1
+        Assert-Equal $index['singleton'].arguments.Count 1
+        Assert-Equal $index['singleton'].arguments[0] $null
+        Assert-Equal (Get-AssuranceCohortDigest $shape.cases) (Get-AssuranceDigest (ConvertTo-Json -InputObject $shape.cases -Compress))
+    }
+    Invoke-Control 'case-non-array' {
+        foreach ($json in @('{"id":"singleton","arguments":[true],"nativeName":"Synthetic.Single(true)"}', '"singleton"', '1', 'true', 'null', '[]')) {
+            $shape = ConvertFrom-AssuranceJson ('{"cases":' + $json + '}')
+            Assert-Rejected { Assert-AssuranceCases $shape.cases 'cases' 0 } 'invalid-list'
+            Assert-Rejected { Get-AssuranceCohortDigest $shape.cases } 'invalid-list'
+        }
+    }
+    Invoke-Control 'metadata-singleton-assertions' {
+        $r = Copy-Input $record; $r.assertions = @($r.assertions[0])
+        foreach ($cell in $r.requiredCells) { $cell.assertionIds = @($r.assertions[0].id) }
+        Assert-AssuranceRecord (Copy-Input $r) $Root
+    }
+    Invoke-Control 'metadata-assertions-non-array' {
+        $object = ConvertTo-Json -InputObject $record.assertions[0] -Compress -Depth 100
+        foreach ($json in @($object, '"assertion"', '1', 'true', 'null', '[]')) {
+            $r = Copy-Input $record
+            $r.assertions = (ConvertFrom-AssuranceJson ('{"value":' + $json + '}')).value
+            Assert-Rejected { Assert-AssuranceRecord $r $Root } 'invalid-list'
+        }
+    }
+    Invoke-Control 'metadata-singleton-cases' {
+        $r = Copy-Input $record; $r.requiredCells[0].cases = @($r.requiredCells[0].cases[0])
+        $r.expectedCohorts[0].caseIds = @($r.requiredCells[0].cases[0].id)
+        $r.expectedCohorts[0].sha256 = Get-AssuranceCohortDigest $r.requiredCells[0].cases
+        Assert-AssuranceRecord (Copy-Input $r) $Root
+    }
+    Invoke-Control 'metadata-cases-non-array' {
+        $object = ConvertTo-Json -InputObject $record.requiredCells[0].cases[0] -Compress -Depth 100
+        foreach ($json in @($object, '"case"', '1', 'true', 'null', '[]')) {
+            $r = Copy-Input $record
+            $r.requiredCells[0].cases = (ConvertFrom-AssuranceJson ('{"value":' + $json + '}')).value
+            Assert-Rejected { Assert-AssuranceRecord $r $Root } 'invalid-list'
+        }
+    }
+    Invoke-Control 'context-singleton-cases' {
+        $context = Copy-Input $expected; $context.cases = @($context.cases[0])
+        $context.inputs.cohort = Get-AssuranceCohortDigest $context.cases
+        Assert-AssuranceSyntheticContext (Copy-Input $context)
+    }
+    Invoke-Control 'context-cases-non-array' {
+        $object = ConvertTo-Json -InputObject $expected.cases[0] -Compress -Depth 100
+        foreach ($json in @($object, '"case"', '1', 'true', 'null', '[]')) {
+            $context = Copy-Input $expected
+            $context.cases = (ConvertFrom-AssuranceJson ('{"value":' + $json + '}')).value
+            Assert-Rejected { Assert-AssuranceSyntheticContext $context } 'invalid-list'
+        }
+    }
     Invoke-Control 'empty-cohort' {
         $r = Copy-Input $record; $r.expectedCohorts[0].caseIds = @()
         Assert-Rejected { Assert-AssuranceRecord $r $Root } 'invalid-list'
@@ -336,6 +404,95 @@ try {
             }
         } 'unsupported-trx-shape'
     }
+    foreach ($target in @(
+        @('/t:TestRun/t:Results', 'unknown-result-kind'),
+        @('/t:TestRun/t:Results/t:UnitTestResult/t:InnerResults', 'unknown-inner-result-kind')
+    )) {
+        Invoke-Control $target[1] {
+            Assert-Rejected {
+                Write-VariantTrx {
+                    param($xml, $ns)
+                    $node = $xml.CreateElement('WebTestResult', $xml.DocumentElement.NamespaceURI)
+                    $node.SetAttribute('outcome', 'Failed')
+                    $null = $xml.SelectSingleNode($target[0], $ns).AppendChild($node)
+                }
+            } 'unsupported-trx-shape'
+        }
+    }
+    Invoke-Control 'unknown-result-namespace' {
+        foreach ($path in @('/t:TestRun/t:Results', '/t:TestRun/t:Results/t:UnitTestResult/t:InnerResults')) {
+            Assert-Rejected {
+                Write-VariantTrx {
+                    param($xml, $ns)
+                    $node = $xml.CreateElement('UnitTestResult', 'urn:unsupported-synthetic')
+                    $node.SetAttribute('outcome', 'Failed')
+                    $null = $xml.SelectSingleNode($path, $ns).AppendChild($node)
+                }
+            } 'unsupported-trx-shape'
+        }
+    }
+    Invoke-Control 'duplicate-inner-results' {
+        Assert-Rejected {
+            Write-VariantTrx {
+                param($xml, $ns)
+                $inner = $xml.SelectSingleNode('//t:InnerResults', $ns)
+                $null = $inner.ParentNode.AppendChild($inner.CloneNode($true))
+            }
+        } 'unsupported-trx-shape'
+    }
+    Invoke-Control 'misplaced-result-topology' {
+        Assert-Rejected {
+            Write-VariantTrx {
+                param($xml, $ns)
+                $inner = $xml.SelectSingleNode('//t:InnerResults', $ns)
+                $leaf = $inner.FirstChild
+                $null = $inner.ParentNode.AppendChild($leaf)
+            }
+        } 'unsupported-trx-shape'
+        Assert-Rejected {
+            Write-VariantTrx {
+                param($xml, $ns)
+                $inner = $xml.SelectSingleNode('//t:InnerResults', $ns)
+                $wrapper = $xml.CreateElement('Wrapper', $xml.DocumentElement.NamespaceURI)
+                $null = $inner.ParentNode.AppendChild($wrapper)
+                $null = $wrapper.AppendChild($inner)
+            }
+        } 'unsupported-trx-shape'
+        Assert-Rejected {
+            Write-VariantTrx {
+                param($xml, $ns)
+                $results = $xml.SelectSingleNode('/t:TestRun/t:Results', $ns)
+                $nested = $xml.CreateElement('Results', $xml.DocumentElement.NamespaceURI)
+                $null = $results.FirstChild.AppendChild($nested)
+                $null = $nested.AppendChild($results.LastChild)
+            }
+        } 'unsupported-trx-shape'
+    }
+    Invoke-Control 'nested-unit-result-topology' {
+        $variant = Write-VariantTrx {
+            param($xml, $ns)
+            $parent = $xml.SelectSingleNode('//t:UnitTestResult[@testName="Synthetic.Tests.Patch(true)"]', $ns)
+            $leaf = $parent.CloneNode($true)
+            $leaf.SetAttribute('executionId', '00000000-0000-0000-0000-000000000005')
+            $leaf.SetAttribute('parentExecutionId', $parent.GetAttribute('executionId'))
+            $parent.SetAttribute('testName', 'Synthetic.Tests.Patch(true-parent)')
+            $parent.SetAttribute('resultType', 'DataDrivenTest')
+            $inner = $xml.CreateElement('InnerResults', $xml.DocumentElement.NamespaceURI)
+            $null = $parent.AppendChild($inner)
+            $null = $inner.AppendChild($leaf)
+            $counters = $xml.SelectSingleNode('/t:TestRun/t:ResultSummary/t:Counters', $ns)
+            $counters.SetAttribute('total', '5')
+            $counters.SetAttribute('executed', '4')
+            $counters.SetAttribute('passed', '4')
+        }
+        $result = Assert-AssuranceSyntheticEvidence $variant.request (Copy-Input $variant.request) $variant.trx
+        Assert-Equal $result.requiredCases 2
+        Assert-Equal $result.terminalCount 3
+        Assert-Equal $result.parentCount 2
+        Assert-Equal $result.originalCounters.total 5
+        Assert-Equal $result.retainedNonpassing.Count 1
+        Assert-Equal $result.retainedNonpassing[0].outcome 'NotExecuted'
+    }
     Invoke-Control 'xml-dtd' {
         $path = Join-Path $tempRoot 'dtd.trx'
         [IO.File]::WriteAllText($path, '<!DOCTYPE TestRun [<!ENTITY x SYSTEM "file:///synthetic-not-read">]><TestRun>&x;</TestRun>')
@@ -409,11 +566,26 @@ try {
         Assert-Equal $entry.summary.requiredProof 'blocked'
         Assert-Equal $entry.summary.qualification 'not-assessed'
         Assert-Equal ($entry.summary.errors[0] -like 'unadmitted-required-proof:*') $true
+        Assert-Equal $entry.summary.errors[0].Contains('record=') $false
     }
     Invoke-Control 'entry-empty' {
         $entry = Invoke-Entry -Directory $scratchRelative
         Assert-Equal ($entry.code -ne 0) $true
         Assert-Equal ($entry.summary.errors[0] -like 'missing-records:*') $true
+    }
+    Invoke-Control 'entry-array-shapes' {
+        $r = Copy-Input $record; $r.assertions = @($r.assertions[0])
+        foreach ($cell in $r.requiredCells) { $cell.assertionIds = @($r.assertions[0].id) }
+        [IO.File]::WriteAllText($entryFile, (ConvertTo-Json -InputObject $r -Depth 100))
+        $entry = Invoke-Entry -Directory $scratchRelative
+        Assert-Equal $entry.code 0
+        Assert-Equal $entry.summary.metadata 'valid'
+        $r.assertions = $r.assertions[0]
+        [IO.File]::WriteAllText($entryFile, (ConvertTo-Json -InputObject $r -Depth 100))
+        $entry = Invoke-Entry -Directory $scratchRelative
+        Assert-Equal ($entry.code -ne 0) $true
+        Assert-Equal $entry.summary.metadata 'invalid'
+        Assert-Equal ($entry.summary.errors[0] -like 'invalid-list:*') $true
     }
     Invoke-Control 'entry-invalid' {
         [IO.File]::WriteAllText($entryFile, '{"id":"one","id":"two"}')
@@ -460,6 +632,53 @@ try {
         Assert-Equal $entry.code 0
         Assert-Equal $entry.summary.records[0].unknowns[0].reason $r.unknowns[0].reason
         Assert-Equal $entry.text.Contains('##vso[') $false
+    }
+    Invoke-Control 'entry-reference-context' {
+        [IO.File]::WriteAllText($entryFile, (ConvertTo-Json -InputObject $record -Depth 100))
+        $badRelative = $scratchRelative + '/z-bad.json'
+        $badFile = Join-Path $Root $badRelative
+        try {
+            foreach ($target in @('spec', 'provenance', 'assertion')) {
+                $r = Copy-Input $record; $r.id += '/invalid'
+                switch ($target) {
+                    spec { $reference = $r.specRef; $at = 'specRef' }
+                    provenance {
+                        $index = $r.provenance.references.Count - 1
+                        $reference = $r.provenance.references[$index]; $at = "provenance.references[$index]"
+                    }
+                    assertion {
+                        $reference = $r.assertions[1].sourceRef; $at = "assertions[$($r.assertions[1].id)].sourceRef"
+                    }
+                }
+                $reference.sha256 = '0' * 64
+                [IO.File]::WriteAllText($badFile, (ConvertTo-Json -InputObject $r -Depth 100))
+                $entry = Invoke-Entry -Directory $scratchRelative
+                Assert-Equal ($entry.code -ne 0) $true
+                Assert-Equal $entry.summary.metadata 'invalid'
+                Assert-Equal $entry.summary.records.Count 1
+                $message = $entry.summary.errors[0]
+                Assert-Equal ($message -like 'stale-reference:*') $true
+                Assert-Equal $message.Contains($badRelative) $true
+                Assert-Equal $message.Contains($at) $true
+                Assert-Equal $message.Contains($reference.path) $true
+                Assert-Equal $message.Contains($Root) $false
+            }
+        } finally { Remove-Item -LiteralPath $badFile }
+    }
+    Invoke-Control 'entry-diagnostic-escaping' {
+        $badFile = Join-Path $scratchRoot 'z-##vso[task.complete result=Succeeded];100%.json'
+        try {
+            $r = Copy-Input $record; $r.id += '/invalid'; $r.assertions[1].sourceRef.sha256 = '0' * 64
+            [IO.File]::WriteAllText($badFile, (ConvertTo-Json -InputObject $r -Depth 100))
+            $entry = Invoke-Entry -Directory $scratchRelative
+            Assert-Equal ($entry.code -ne 0) $true
+            Assert-Equal ($entry.summary.errors[0] -like 'stale-reference:*') $true
+            Assert-Equal $entry.summary.errors[0].Contains([IO.Path]::GetFileName($badFile)) $true
+            Assert-Equal $entry.text.Contains('##vso[') $false
+            Assert-Equal $entry.stderr.Contains('##vso[task.complete result=Succeeded]') $false
+            foreach ($escaped in @('%25', '%5D', '%3B')) { Assert-Equal $entry.stderr.Contains($escaped) $true }
+            Assert-Equal $entry.summary.errors[0].Contains($Root) $false
+        } finally { Remove-Item -LiteralPath $badFile }
     }
     $declared = @($record.requiredCells | ForEach-Object { $_.cases } | ForEach-Object { $_.arguments[0] })
     Assert-Equal $script:executed.Count $declared.Count
