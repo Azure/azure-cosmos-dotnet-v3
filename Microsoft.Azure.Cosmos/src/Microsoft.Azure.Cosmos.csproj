@@ -157,7 +157,7 @@
     runtime Parlot dependency.
   -->
   <ItemGroup>
-    <PackageReference Include="Parlot.SourceGenerator" Version="2.2.0" PrivateAssets="All" />
+    <PackageReference Include="Parlot.SourceGenerator" Version="2.2.1" PrivateAssets="All" />
   </ItemGroup>
 
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
