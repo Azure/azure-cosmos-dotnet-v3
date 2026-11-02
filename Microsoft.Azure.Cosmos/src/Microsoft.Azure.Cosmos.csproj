@@ -162,7 +162,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Parlot.SourceGenerator" Version="2.0.0-preview.1077" PrivateAssets="All" />
+    <PackageReference Include="Parlot.SourceGenerator" Version="2.0.0-preview.1083" PrivateAssets="All" />
   </ItemGroup>
 
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
