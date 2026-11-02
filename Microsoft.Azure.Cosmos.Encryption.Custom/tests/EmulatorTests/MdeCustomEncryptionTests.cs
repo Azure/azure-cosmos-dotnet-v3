@@ -108,14 +108,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             using CosmosClient testClient = CreateCacheTestClient(useGateway, observer);
             Container plainContainer = testClient.GetContainer(database.Id, itemContainer.Id);
             LegacyEncryptionTests.TestDoc document = LegacyEncryptionTests.TestDoc.Create();
-            PartitionKey partitionKey = new PartitionKey(document.PK);
 
             await using (CosmosDataEncryptionKeyProvider provider = CreateCacheTestProvider(testClient, cache.Object, keyId))
             {
                 Container encryptedContainer = plainContainer.WithEncryptor(new CosmosEncryptor(provider));
                 ItemResponse<LegacyEncryptionTests.TestDoc> created = await encryptedContainer.CreateItemAsync(
                     document,
-                    partitionKey,
+                    new PartitionKey(document.PK),
                     GetRequestOptions(keyId, LegacyEncryptionTests.TestDoc.PathsToEncrypt));
 
                 Assert.AreEqual(HttpStatusCode.Created, created.StatusCode);
@@ -123,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 Assert.AreEqual(1, observer.KeyReadCount, "The cold provider must read the real key item.");
             }
 
-            ItemResponse<JObject> stored = await plainContainer.ReadItemAsync<JObject>(document.Id, partitionKey);
+            ItemResponse<JObject> stored = await plainContainer.ReadItemAsync<JObject>(document.Id, new PartitionKey(document.PK));
             Assert.AreEqual(HttpStatusCode.OK, stored.StatusCode);
             Assert.AreEqual(document.Id, stored.Resource.Value<string>("id"));
             Assert.AreEqual(document.PK, stored.Resource.Value<string>(nameof(document.PK)));
@@ -141,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 Container encryptedContainer = plainContainer.WithEncryptor(new CosmosEncryptor(provider));
                 ItemResponse<LegacyEncryptionTests.TestDoc> read = await encryptedContainer.ReadItemAsync<LegacyEncryptionTests.TestDoc>(
                     document.Id,
-                    partitionKey);
+                    new PartitionKey(document.PK));
 
                 Assert.AreEqual(HttpStatusCode.OK, read.StatusCode);
                 Assert.AreEqual(document, read.Resource);
@@ -166,14 +165,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             await using CosmosDataEncryptionKeyProvider provider = CreateCacheTestProvider(testClient, cache.Object, keyId);
             Container encryptedContainer = plainContainer.WithEncryptor(new CosmosEncryptor(provider));
             LegacyEncryptionTests.TestDoc document = LegacyEncryptionTests.TestDoc.Create();
-            PartitionKey partitionKey = new PartitionKey(document.PK);
             EncryptionItemRequestOptions options = GetRequestOptions(keyId, LegacyEncryptionTests.TestDoc.PathsToEncrypt);
             using CancellationTokenSource caller = new CancellationTokenSource();
             caller.Cancel();
 
             try
             {
-                await encryptedContainer.CreateItemAsync(document, partitionKey, options, caller.Token);
+                await encryptedContainer.CreateItemAsync(document, new PartitionKey(document.PK), options, caller.Token);
                 Assert.Fail("A pre-cancelled caller must not create the encrypted item.");
             }
             catch (OperationCanceledException)
@@ -183,15 +181,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             cache.Verify(value => value.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
             Assert.AreEqual(0, observer.KeyReadCount);
-            using (ResponseMessage absent = await plainContainer.ReadItemStreamAsync(document.Id, partitionKey))
+            using (ResponseMessage absent = await plainContainer.ReadItemStreamAsync(document.Id, new PartitionKey(document.PK)))
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, absent.StatusCode);
             }
 
-            ItemResponse<LegacyEncryptionTests.TestDoc> created = await encryptedContainer.CreateItemAsync(document, partitionKey, options);
+            ItemResponse<LegacyEncryptionTests.TestDoc> created = await encryptedContainer.CreateItemAsync(document, new PartitionKey(document.PK), options);
             Assert.AreEqual(HttpStatusCode.Created, created.StatusCode);
             Assert.AreEqual(document, created.Resource);
-            ItemResponse<LegacyEncryptionTests.TestDoc> read = await encryptedContainer.ReadItemAsync<LegacyEncryptionTests.TestDoc>(document.Id, partitionKey);
+            ItemResponse<LegacyEncryptionTests.TestDoc> read = await encryptedContainer.ReadItemAsync<LegacyEncryptionTests.TestDoc>(document.Id, new PartitionKey(document.PK));
             Assert.AreEqual(HttpStatusCode.OK, read.StatusCode);
             Assert.AreEqual(document, read.Resource);
             cache.Verify(value => value.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
