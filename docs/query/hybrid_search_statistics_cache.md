@@ -188,10 +188,19 @@ queries add nothing. No paths, terms, keys, or counts are logged.
   `QueryPartitionProviderTests` covers deserialization and malformed metadata.
 - `ClientContextCoreTests`, `FactoryTests`, and `CosmosClientOptionsUnitTests`
   cover ownership, wiring, ETag propagation, and option validation.
-- `NonStreamingOrderByQueryTests` verifies that a warm Global cache issues no
-  statistics requests, returns identical results, and omits the statistics
-  RU, while Local queries after a Global warm-up still collect statistics.
-- Remaining: broader pipeline regression coverage and emulator tests.
+- `NonStreamingOrderByQueryTests` runs each pipeline scenario cached and
+  uncached with identical inputs, comparing documents, request charge,
+  statistics request counts, and the trace datum. Scenarios cover hits with
+  RRF, weighted RRF, skip/take, small pages, both rewrite modes, a single
+  component, and narrower Global target ranges; and misses or bypasses for
+  Local (including after a Global warm-up), a disabled cache, missing
+  metadata, expiry, and a different container revision. Separate tests show
+  failed or cancelled collections are not cached, component failures on a hit
+  propagate without affecting the cache, and concurrent cold misses each run
+  their own statistics query.
+- Consistency levels and session tokens are not inputs to the cache or the
+  stage, so they need no separate pipeline coverage.
+- Remaining: emulator tests.
 
 Feature tests use lightweight case types and explicit loops, not
 `DataTestMethod`/`DataRow`. Tests read private state through reflection rather
