@@ -2,8 +2,8 @@
 
 | Field | Receipt |
 |---|---|
-| Version / recorded | 0.1.0 / 2026-11-02 UTC; specification before test edits |
-| Status | Baseline discovery defect reproduced; implementation and paired execution pending. Not independent oracle approval, retirement, whole-G-07 closure or merge qualification |
+| Version / recorded | 0.1.1 / 2026-11-02 UTC; local execution and compilation receipts |
+| Status | Four methods repaired with all original processor rows; local units pass and paired service rows compile/list. Service/native execution and publication remain pending. Not independent oracle approval, retirement, whole-G-07 closure or merge qualification |
 | Bounded scope | Repair four existing `LegacyEncryptionProcessorTests` methods; preserve their meaningful assertions and controls; pair the underlying legacy behavior using existing real-emulator infrastructure |
 | Isolated intake | Parent head `7330088136240c8586ed5eea63f2a4f9a0c366e5`, tree `ec1584846a7b553195840a174b07bb551ebde57d`; clean child checkout. Child branch `kuthapar-microsoft-i-03-legacy-protection` targets `kuthapar-microsoft-net-assurance-gap-plan` in a separate stacked PR |
 | Frozen upstream / history | Parent resolved upstream main once at I-03 intake to A-01's unchanged `52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8`. No duplicate audit or new moving-main assessment. A-01 SHA-256 `63e368bc66f5c876bb853de62116a9d54ce34f9e1066b5f0b89da8df95b4949c`, 98,011 bytes; all earlier I-01/I-02 identities remain historical |
@@ -64,10 +64,12 @@ v0.1.12. All D-01..D-12 approaches are selected, zero unselected approaches,
 not factual/oracle/tooling/operational/qualification closure. D-12 distinguishes
 a wrong-test correction from product contract change and requires retained
 history, replacement paired protection and no candidate self-waiver.
-PR10's original OPEN publication and later observed merge at
+[kushagraThapar/SuicideSquad#10](https://github.com/kushagraThapar/SuicideSquad/pull/10)'s
+original OPEN publication and later observed merge at
 `2026-11-02T01:12:37Z` to main
 `79fe48b9cb00896e1bb04095ae2fde684b480914` remain separate. D-11 source
-`725724e4cb6f24c75191cb9c192a48b596366eec`, PR9's original publication and
+`725724e4cb6f24c75191cb9c192a48b596366eec`,
+[kushagraThapar/SuicideSquad#9](https://github.com/kushagraThapar/SuicideSquad/pull/9)'s original publication and
 later integration `2e7d97f46ce2ee28cd1a6a707a596a6e33ab167e` likewise remain
 separate. Earlier D-10-frozen receipts are not rewritten.
 
@@ -217,14 +219,100 @@ Written/compiled/discovered/queued is not executed. No denominator reduction,
 original-failure overwrite, whole-build-clean or paired closure claim follows
 from an unavailable fixture, publication failure or empty native cohort.
 
-- [ ] Freeze the pre-edit specification identity.
-- [ ] Capture signature-only discovery/execution and original Stream failures.
-- [ ] Implement all four discoverable, meaningfully asserted legacy cases and controls.
-- [ ] Add only the genuinely missing real-provider/emulator observer cells.
-- [ ] Record local actual execution and compilation/parity results.
+### Actual local receipt
+
+The v0.1.0 specification was frozen **before any test-source edit** at
+`2026-11-02T01:43:09Z`, SHA-256
+`fc42ebd194dae1603c98d433aeda49f46c1e34e7b3f7f9486c4c436d2688a8b4`,
+Git blob `fbdae65da9b20b5559d8ee72608b8e38f790e6d8`.
+It was subsequently persisted verbatim and immediately pushed in spec-only
+commit `721e7b2f51239895bb99cafa0eb91ae6afd5d082`, tree
+`2dc09c62a9c3e0255e24905cb9f6f19962bde575`; that publication time is not
+misrepresented as the earlier freeze time.
+
+The signature-only intermediate source file has SHA-256
+`5c3776d6a3ef851b5f66d27dcf02ebb6ca77f99733f1817e646297e54fc29182`;
+its retained patch has SHA-256
+`6209139a20cc30c8a605b6e5b2b7be1d2d1029a5c732c90486e818aa843a5b96`.
+Actual net6 outcome: 5 passed, TRX
+`ce1ca06810de8ec7be9c14ca5ca197bb0dbfcaa0033f5c881ad3873168ee59dd`.
+Actual net8: 5 passed / 4 failed, TRX
+`89218c93d265d036f1d11d025c5288a4a5320ecccdd27f0ab5b0188f5cfa65ff`.
+The four `(1)` rows fail with the existing
+`NotSupportedException: JsonProcessor.Stream is not supported for AE AES encryption algorithm.`
+Their names, inputs and original failures remain; the final rows now require
+that explicit rejection, no encryptor calls and unchanged readable input.
+No product behavior or row eligibility was changed.
+
+Final focused package-backed class runs pass 5/5 net6 and 9/9 net8:
+TRX SHA-256 respectively
+`33eb7b59b807b1e2a74b295b7e685041d93413bf6887b96c0d3f950419a909e4`
+and `dc0e2248512080b24338dec7fde7798d077c17e3f24b9c8db0115e88ed21718d`.
+Listing separately discovers four data-driven parents plus the plaintext
+control on each TFM. Execution expands them to four/eight parameter rows
+plus that control, with no UTA007. No passing four-row Stream encryption
+claim is made.
+
+| Actual run / reference mode | TFM | Executed / passed terminal leaves | Original TRX SHA-256 |
+|---|---|---|---|
+| Ordinary full Custom units; package | net6 | 428 / 428 | `5440c1ba3b273ce5ffd232bfbf24383af08bfdccf5b1726228f3ed7b8592ddf6` |
+| Ordinary full Custom units; package | net8 | 763 / 763 | `225603e1e4e3daf8a5c8a88215644d62708d009843a132acba227dd13b9dbce2` |
+| Preview full Custom units; package | net6 | 428 / 428 | `e0a368aa405d0307bb1d8e978a2d81855aa254b5e7bdd3e769fcb6067d175558` |
+| Preview full Custom units; package | net8 | 763 / 763 | `55a0b26d3d28d1e9b22104a431a97333d7af62cfa639f9c0cf3439ec3c20f173` |
+| Focused source preview; current core | net6 | 14 / 14 | `d51ecc42c2c1fd1272105732f1130e2310c21892f519039f56932921059a7d96` |
+| Focused source preview; current core | net8 | 41 / 41 | `f481ad0379490cd68a7dac9ec1aa6db20c17da079b9736972ed7a82af5a451ce` |
+
+These are actual Release/macOS ARM64 executions using the explicit private
+hosts above, first final-candidate attempts, zero failed/skipped/inconclusive
+leaves. Raw result and terminal counts agree for these unit TRX files.
+Each full package variant contains the exact five/nine Legacy leaves,
+13 cache, 39 diagnostics and 8/24 MDE leaves, all passed. Source focus is
+`FullyQualifiedName~EncryptionProcessorTests|FullyQualifiedName~EncryptionOptionsExtensionsTests`:
+Legacy 5/9, MDE 8/24, validation 1/1 and seven net8 dispatcher neighbors,
+including the original rejection, fallback and provided-output boundary.
+Full-project growth from I-02's historical 424/755 is exactly the four/eight
+newly executable rows, not new SDK behavior coverage or a denominator claim.
+
+An introduced service-test compiler error is retained, not hidden:
+the first net8 package build reports two `CS0200` errors because
+`RequestOptions.Properties` exposes a read-only dictionary indexer.
+Original log SHA-256
+`d62df3fee5481b1a99517adf18c6478a41e90f661bc58adb717dfe536d58cbbf`.
+The test now retains its strongly typed `Dictionary<string, object>` local
+and mutates that local while preserving the original option reference.
+No cast, API, dependency, assertion, processor row or build gate changed.
+The repaired package Release build succeeds for both emulator TFMs with zero
+warnings/errors, log SHA-256
+`d1de2822a18db7c8a128d142e4771ea184aa387a5c2651c267b4ffc0520c0de5`.
+Both source-preview Debug/Optimize emulator builds also succeed on both TFMs
+with `DefineSdkProjectRefSymbol=true` and `false`, zero warnings/errors.
+These are bounded local compilation comparisons, not execution of either
+native solution/parity task.
+
+The two source files at these local receipts have Git blob identities:
+unit `2b779aacf9fc6fda2f90b26a3ffcd938bb94693a`;
+emulator `3d0a17d8cf43338f3a8f1d2d9a0d305b40462ba9`.
+Package dependency outputs identify core `3.41.0-preview.0`;
+source outputs identify core `3.64.0-preview.0` as a project. Both identify
+Custom `1.1.0-preview01` and cryptography `2.0.0-pre024`; no dependency range
+was changed. Output hashes/dependency manifests are retained separately,
+not asserted to be full loaded/native/installed-consumer attestation.
+
+Each package emulator assembly lists the **one** new data-driven parent.
+The six declared data rows per TFM have **not executed locally**; neither
+listing nor compilation initializes a service fixture or supplies twelve
+passed cells. Native build/run/attempt/TRX and actual native merge-candidate
+identities are currently unavailable; the stacked target-filter and standard
+publication route still need their separate disposition.
+
+- [x] Freeze the pre-edit specification identity.
+- [x] Capture signature-only discovery/execution and original Stream failures.
+- [x] Implement all four discoverable, meaningfully asserted legacy cases and controls.
+- [x] Add only the genuinely missing real-provider/emulator observer cells.
+- [x] Record local actual execution and compilation/parity results.
 - [ ] Publish a separate stacked PR through the standard linked account.
 - [ ] Observe applicable automatic native evidence or record its exact blocker.
-- [ ] Update plan/matrix without relabeling earlier results or closing other gaps.
+- [x] Update plan/matrix without relabeling earlier results or closing other gaps.
 
 The standard linked-account publication route is required. Existing SSH
 dry-run push succeeded; the current CLI account `kuthapar_microsoft` reports
