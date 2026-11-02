@@ -156,13 +156,8 @@
     compiles to C# on every build (it needs the .NET 10 SDK). The generated parser is self-contained: the SDK has no
     runtime Parlot dependency.
   -->
-  <PropertyGroup>
-    <!-- Parlot preview builds, until a release with the generator features the grammar uses is on nuget.org. -->
-    <RestoreAdditionalProjectSources>https://f.feedz.io/sebastienros/parlot/nuget/index.json</RestoreAdditionalProjectSources>
-  </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="Parlot.SourceGenerator" Version="2.0.0-preview.1083" PrivateAssets="All" />
+    <PackageReference Include="Parlot.SourceGenerator" Version="2.2.0" PrivateAssets="All" />
   </ItemGroup>
 
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
