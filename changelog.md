@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
-- Query: Fixes hybrid search reciprocal rank fusion (RRF) results being ranked incorrectly when component scores are tied. Each result now receives a unique ordinal rank, with deterministic tie-breaking based on the decoded document ID portion of `_rid`.
+- [6188](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6188) Query: Fixes hybrid search reciprocal rank fusion (RRF) results being ranked incorrectly when component scores are tied. Each result now receives a unique ordinal rank, with deterministic tie-breaking based on the decoded document ID portion of `_rid`.
 - [6141](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6141) Distributed Transactions (preview): Fixes operation results synthesized from bodyless or unusable responses reporting index `0` for every operation instead of the corresponding zero-based request index.
 - [6119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6119) Distributed Transactions (preview): Isolates submitted operations from later additions to a read or write transaction, avoiding incorrect failures when interpreting a successful response. Each transaction instance still supports only one nonempty execution attempt.
 - [6119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6119) Distributed Transactions (preview): Captures ETags, session tokens, and typed-patch conditions consistently when constructing the request, preventing changes to caller options during payload preparation from producing inconsistent option values.
