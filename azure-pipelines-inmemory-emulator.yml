@@ -4,5 +4,3 @@ pr: none
 
 jobs:
 - template: templates/build-inmemory-emulator.yml
-  parameters:
-    BuildConfiguration: Release
