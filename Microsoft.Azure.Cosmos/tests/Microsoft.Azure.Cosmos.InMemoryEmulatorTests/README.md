@@ -97,26 +97,124 @@ claims. In particular, Go documents emulator/live differences for conditional
 batch reads and content-response suppression.
 
 Continue using `Microsoft.Azure.Cosmos.EmulatorTests` and live-account suites for
-those features and service-parity validation. Their configuration, fixtures, and
-test selection are unchanged. This separation follows the canonical
+those features and service-parity validation. Their default backend and existing
+test selections are unchanged. This separation follows the canonical
 [high-level architecture's Gateway/Direct distinction](https://github.com/tvaron3/cosmosdb-design-docs/blob/main/01-high-level-architecture.md#1-high-level-architecture).
+
+## Reusing existing emulator scenarios
+
+The shared CI template also runs **42 existing, unchanged test methods** from
+`CosmosItemTests`, `CosmosDatabaseTests`, and `CosmosContainerTests` in
+`Microsoft.Azure.Cosmos.EmulatorTests`. Assertions are not copied into another
+suite or relaxed for this backend. `ci-scenarios.json` is the explicit,
+runtime-validated allowlist, not the broader source inventory.
+
+| CI job | Existing shared methods / cases | Host-contract methods / cases | Total cases |
+|---|---:|---:|---:|
+| Items | 35 / 35 | 11 / 14 | 49 |
+| Reads | 7 / 7 | 0 / 0 | 7 |
+
+Items covers item patch/serialization, missing-item delete/patch errors, IDs,
+multiple Gateway clients and container recreation, database/container CRUD,
+metadata contracts, and create-if-not-exists races. Reads covers missing-item
+reads, database read/feed/query, and container stream queries. The original 14
+host-contract cases, including partition-scoped item read feed and lifecycle and
+startup failures, run exactly once in Items. These groups are compatibility
+boundaries, not a claim of balanced test time or increased hosted-agent capacity.
+
+`COSMOS_EMULATOR_BACKEND=InMemory` explicitly selects the shared backend.
+`EmulatorTestEnvironment` starts a fresh owned host before test fixtures
+create any default clients. The common client factories route setup, teardown,
+the static default client, option/builder overloads, and extra Gateway clients to
+that endpoint with a dummy key. Explicit Direct, AAD, multi-region, resource-token,
+and endpoint-override requests are rejected rather than sent to a different
+service. The backend disables the process's default HTTP proxy and restores it
+after disposing tracked clients and the host; metadata-validation handlers also
+disable proxy use.
+
+Each job has its own process and volatile state on dynamically assigned loopback
+ports. The existing delete-all-databases fixtures therefore cannot affect another
+job. Run these fixtures serially within a job; do not enable assembly/class
+parallelism while they perform destructive setup. Leaving the backend variable
+unset (or setting it to `Emulator`) preserves the ordinary full-emulator setup.
+Setting only the executable variable does not switch existing emulator tests.
+Unknown backends and missing/invalid executables fail closed.
+
+Use the same gated runner locally on Linux or macOS:
+
+```sh
+export COSMOS_IN_MEMORY_EMULATOR_PATH=/absolute/path/emulator-target/release/azure_data_cosmos_emulator
+python3 -B Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.InMemoryEmulatorTests/run_ci.py \
+  --group Items --results-directory /tmp/cosmos-inmemory-items
+python3 -B Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.InMemoryEmulatorTests/run_ci.py \
+  --group Reads --results-directory /tmp/cosmos-inmemory-reads
+```
+
+The runner sets the shared backend only for its child processes. Each job discovers
+the entire approved shared-method set through VSTest before executing its assigned
+subset. The host job discovers and runs its whole project without a filter.
+Gates require the manifest groups to be nonempty and disjoint, exact discovery
+membership, exact executed-case counts/identities, successful run completion, and
+zero skips or failures. VSTest's fully qualified discovery enumerates methods;
+the checked-in counts and leaf TRX results additionally account for the four
+endpoint-validation data rows. All 42 shared methods currently have one case.
+Discovery, assignments, leaf results, host executable hash/source pin, and timing
+evidence are published with each job's diagnostics.
+
+The runner owns a separate POSIX process group for each command and terminates
+remaining children on exit, failure, or cancellation. This also cleans up hosts
+when a crashing testhost cannot execute assembly cleanup. Directly invoking
+`dotnet test` does not provide that outer crash-cleanup boundary.
+
+### Candidates not enabled
+
+These are observed incompatibilities with the pinned host, not ignored tests in
+the approved jobs. All remain covered by their existing full-emulator selections.
+
+| Candidate | Observed boundary |
+|---|---|
+| `ItemSinglePartitionQueryGateway` | The host's account response supplies `queryEngineConfiguration` as `"{}"`. The .NET item-query pipeline rejects the empty configuration before executing SQL; its partially initialized provider's finalizer also crashes the testhost. Other item-SQL/ORDER BY/query-metrics inventory candidates are not certified by the aborted broad trial. |
+| `ItemIterator`, `PerfItemIterator`, both `ItemStreamIterator` rows | Unscoped item read-feed trials fail with stale RID/range-cache errors or a missing response stream. This does not invalidate the passing, explicitly partition-scoped host-contract feed case. |
+| `PatchConditionTest`, `BatchPatchConditionTest` | Conditional patch returns 200 instead of 412; conditional batch patch returns 400 instead of 412. |
+| `ItemPatchFailureTest` | The exact existing patch error-message assertion fails. |
+| Both `GivenReplaceItem*WhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync` methods | Existing 404 assertions receive 400 for these replacement payloads. |
+| `CosmosContainerTests.IteratorTest` | Its exact SQL-filtered metadata query returns zero results instead of one; the separate database and container stream-query methods in Reads pass unchanged. |
+| `NegativePartitionedCreateDelete` | The host accepts a partition-key definition the existing test expects to reject with 400. |
+
+Binary response variants, quota/exact metrics, broader SQL/LINQ, HPK/range
+semantics, encryption fixtures, change-feed history/processors, auth/TLS/Direct,
+and live multi-region scenarios remain unverified or full-emulator/live-only.
+Advertising a host operation or Gateway V1 does not certify these assertions.
+In particular, preserve the canonical
+[partition-key/EPK/range distinction](https://github.com/tvaron3/cosmosdb-design-docs/blob/main/04-partitioning.md#sdk-side-terminology)
+when investigating the unscoped-feed failures. Fix host semantics and rerun the
+exact existing scenario before adding it to the manifest; do not add skips,
+response rewriting, or weaker assertions to make a candidate green.
 
 ## Azure Pipelines
 
-`templates/build-inmemory-emulator.yml` is the shared Linux job used by
+`templates/build-inmemory-emulator.yml` supplies the two Linux matrix jobs used by
 `azure-pipelines.yml` (PR CI), an independent stage in `azure-pipelines-nightly.yml`,
-and the focused `azure-pipelines-inmemory-emulator.yml` entry point. The job uses
+and the focused `azure-pipelines-inmemory-emulator.yml` entry point. Each job uses
 the project's available Microsoft-hosted Linux queue (`ubuntu-24.04`), not the
-Windows OneES agents used by the existing emulator jobs. Existing emulator and
-live-account fixtures and their test selection are unchanged.
+Windows OneES agents used by the existing emulator jobs. Existing full-emulator
+and live-account selections continue to use their unchanged default backend.
 
-The job builds the pinned host with locked dependencies, authenticates to the same
+Each job builds the pinned host with locked dependencies, authenticates to the same
 Azure SDK Rust Cargo feed used by Go v2, installs the .NET 8 SDK and .NET 6 runtime,
-and sets the executable variable before running this project. It checks that the
-executable exists, requires process-backed `ItemTests` to execute, and fails for
-missing results, failures, or skipped tests. TRX and Rust build diagnostics are
-published. The job does not relax network isolation or fall back to crates.io when
-feed authentication fails.
+and runs its gated manifest group. Rust compilation dominated the initial CI
+baseline (273 seconds versus roughly 4.5 seconds of host-contract test execution).
+For this first small cohort, independent builds preserve independent job execution
+and avoid adding an artifact-producer dependency/queue boundary. They cost an
+additional Rust build; no speedup or available parallel slots are assumed.
+Build-once fan-out needs a separate measured comparison before adding that
+complexity.
+
+Each job publishes uniquely named test runs and `inmemory-emulator-Items-results`
+or `inmemory-emulator-Reads-results` artifacts. Diagnostics use the existing
+`PublishBuildArtifacts@1` / `Container` backend, not Pipeline Artifacts. Jobs do not
+relax network isolation, retry away failures, or fall back to crates.io when feed
+authentication fails.
 
 The focused pipeline is registered as **dotnet-v3-inmemory-emulator** (definition
 87) in **cosmos-db-sdk-public/cosmos-db-sdk-public**, alongside `dotnet-v3-ci` and
@@ -155,6 +253,10 @@ definition 63 already consumes `azure-pipelines.yml`. The integration must be
 present in the PR validation YAML and merged for ongoing coverage of the target
 branch. A successful manually queued definition-87 run validates the shared job,
 but is not by itself evidence that a PR event has triggered definition 63.
+An upper stacked PR targeting its lower feature branch does not match these normal
+PR branch filters. Validate its exact revision manually and observe any native
+stack final-base CI separately; do not broaden the trigger to make a feature
+branch eligible.
 
 ## References inspected
 

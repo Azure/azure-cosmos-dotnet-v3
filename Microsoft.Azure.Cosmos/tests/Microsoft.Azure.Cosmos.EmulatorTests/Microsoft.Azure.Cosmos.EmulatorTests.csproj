@@ -16,6 +16,8 @@
 
   <ItemGroup>
     <Compile Remove="GlobalDatabaseAccountTests.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.InMemoryEmulatorTests\InMemoryEmulator.cs" Link="Utils\InMemoryEmulator.cs" />
+    <None Include="..\Microsoft.Azure.Cosmos.InMemoryEmulatorTests\emulator-config.json" Link="inmemory-emulator-config.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
