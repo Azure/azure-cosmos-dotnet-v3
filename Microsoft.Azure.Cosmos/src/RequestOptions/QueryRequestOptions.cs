@@ -239,6 +239,7 @@ namespace Microsoft.Azure.Cosmos
         /// <para>
         /// When set to <see cref="FullTextScoreScope.Global"/>, BM25 statistics (term frequency, inverse document frequency,
         /// and document length) are computed across all documents in the container, including all physical and logical partitions.
+        /// These statistics can be reused across queries by setting <see cref="CosmosClientOptions.FullTextStatisticsCacheMaxAge"/>.
         /// </para>
         /// <para>
         /// When set to <see cref="FullTextScoreScope.Local"/>, statistics are computed only over the subset of documents

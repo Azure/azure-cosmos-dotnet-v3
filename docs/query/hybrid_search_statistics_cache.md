@@ -200,7 +200,14 @@ queries add nothing. No paths, terms, keys, or counts are logged.
   their own statistics query.
 - Consistency levels and session tokens are not inputs to the cache or the
   stage, so they need no separate pipeline coverage.
-- Remaining: emulator tests.
+- `HybridSearchQueryTests.StatisticsCacheSkipsStatisticsRequestsTests` runs
+  against a multi-partition emulator container. A request handler counts
+  statistics requests and their charge. After a Global warm-up, repeated,
+  regrouped, and subset queries issue no statistics requests and cost exactly
+  the statistics charge less than an uncached client, with identical results,
+  across new container handles. Local queries, a separate client, and a
+  one-tick age still collect statistics. A write within the age is served
+  from the cache, which is the accepted staleness.
 
 Feature tests use lightweight case types and explicit loops, not
 `DataTestMethod`/`DataRow`. Tests read private state through reflection rather
