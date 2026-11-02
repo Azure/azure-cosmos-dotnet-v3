@@ -135,6 +135,27 @@ Registration alone does not establish a successful run; inspect the run's build,
 test, and published result steps when enabling this on another build identity.
 PR/nightly wiring becomes active when the change is merged into the target branch.
 
+### Automatic PR coverage
+
+The emulator job runs inside the existing **dotnet-v3-ci** pipeline (definition
+63). Definition 87 deliberately keeps `pr: none`: enabling a second PR trigger
+there would execute the same tests twice. The nightly pipeline also reuses the
+shared job.
+
+Coverage follows the existing SDK PR trigger: target branches `main` and
+`releases/*`, with path exclusions `*.md`, `docs/**/*`, and
+`Microsoft.Azure.Cosmos/contracts/**/*`. Thus it covers PRs selected by ordinary
+SDK CI, not literally every PR: excluded-path-only changes and PRs targeting other
+branches do not trigger this pipeline. A mixed code/documentation PR still runs.
+The existing contributor-comment and fork-PR authorization protections remain in
+effect; this change does not bypass approval gates or grant fork builds secrets.
+
+No separate definition registration is required for automatic coverage because
+definition 63 already consumes `azure-pipelines.yml`. The integration must be
+present in the PR validation YAML and merged for ongoing coverage of the target
+branch. A successful manually queued definition-87 run validates the shared job,
+but is not by itself evidence that a PR event has triggered definition 63.
+
 ## References inspected
 
 - [Go feature/azcosmos/v2](https://github.com/Azure/azure-sdk-for-go/tree/1812c74daac993850521063937b764c621a0a52a/sdk/data/azcosmos):
