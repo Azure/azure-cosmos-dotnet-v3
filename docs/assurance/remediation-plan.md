@@ -6,7 +6,7 @@
 
 | Field | Draft receipt |
 |---|---|
-| Version / recorded | 0.3.2 / 2026-11-02 UTC |
+| Version / recorded | 0.3.3 / 2026-11-02 UTC |
 | Status | Evolving proposed plan with authorized bounded testing increments; not an approved contract catalog, whole-SDK executed assessment or merge recommendation |
 | Scope | All repository SDK source and companion packages; Gateway and Direct; improve established SDK tests and CI |
 | Starting evidence | Completed A-01 reconciliation audit, identified below; no duplicate SDK audit |
@@ -43,7 +43,7 @@ The first bounded increment is [I-01: paired Encryption patch protection and uni
 
 **I-01 current status:** testing and explicit tracked GA/preview Encryption unit selection are implemented. Local package-backed unit projects passed 58/58 each, including five exact patch cases; current-core source comparisons passed those five cases in each surface. Tested source commit `ee19f83e9e13d4f98790a6fbfe09dd4bd087ad29` was pushed and [SDK PR #6182][sdk-increment-pr] opened. Native build 64324 against merge candidate `0babdeb0748c59bd2c552fd3c1a06bb8b63515ef` supplies GA/preview unit runs 1331299/1331287 (58/58 each, exact five patch leaves) and service runs 1331291/1331290 (all eight exact mode/API/order cells plus the strengthened existing patch witness passed). All four tasks passed on attempt 1. Wider service projects retain one existing ignored change-feed leaf each; no required I-01 cell is skipped. [Spec v0.1.4](specs/i-01-encryption-patch-paired-tests.md#native-prci-receipt) records original TRX, parent/leaf reporting distinctions, commands, host/runtime and remaining identity limits. The overall build was still in progress at that receipt. This is executed protection, **not independent contract, independent review/challenge, all-G-02 or whole-SDK closure**.
 
-**I-02 current status:** [paired Custom cache/cancellation protection](specs/i-02-custom-cache-paired-tests.md) implements the next bounded G-02/B-035/B-036 slice. Existing timeout/internal-cancellation/pre-cancelled-caller unit seeds are strengthened; six Gateway/Direct typed service leaves use real providers/key/item operations and controlled L2 only. The existing ordinary and Custom preview jobs explicitly select the Custom unit project, retaining both TFMs and configured limits. Corrected source `c9ed2e4aa7d1c191c2eab0e10e12a6dd00d3194c`, merge `24003b84da5c926c87a81c2c951296790843e4af`, build 64330 supplies ordinary unit runs 1331395/1331396 (424/424 net6, 755/755 net8) and all six exact service leaves in each TFM, runs 1331387/1331388. All required leaves passed. Preview units were skipped after an introduced source-reference compilation failure; a spec-first test-only repair now compiles locally in both parity modes and awaits its own native candidate. This is not complete G-02 or whole-SDK closure.
+**I-02 current status:** [paired Custom cache/cancellation protection](specs/i-02-custom-cache-paired-tests.md#native-pr-ci-receipt-repaired-candidate) is implemented and natively executed for this bounded G-02/B-035/B-036 slice. Repaired source `c9e11829da397192338459b9d8c58edbe5d7860d`, tree `1f2e6156bd1cb0c5e428f8ec48eac00875e746f0`, actual merge `de046306064296ee62a92fb8dfc9639616fe470c`, automatically selected build 64334. Ordinary unit runs 1331452/net6 and 1331451/net8 passed 424/424 and 755/755; preview runs 1331443/net6 and 1331444/net8 passed the same cohorts. All three strengthened seeds and their 13-cache/39-diagnostics/8-or-24-MDE preservation cohorts passed. Both service runs 1331436/net6 and 1331437/net8 passed all six exact Gateway/Direct fault/pre-cancellation leaves with real providers/key/item operations and controlled L2 only. Both existing source-reference/parity builds also passed; all five required tasks are attempt 1. Original c9ed paired passes/compiler failure and original canceled 64329 remain separate. This is bounded executed protection, not complete G-02, independent oracle approval or whole-SDK/merge qualification.
 
 Post-publication inspection found an introduced observer error: MDE stores
 ciphertext at the sensitive property's name, whereas the first service
@@ -65,8 +65,11 @@ Optimize/source-preview compilation reproduces both TFM errors. Frozen spec
 v0.1.5 precedes removing only two cross-await `PartitionKey` locals in favor of
 the neighboring inline public-constructor pattern; both source Debug parity
 modes, source Release and package Release then compile. No assertions,
-references, gates or Direct-migration wiring changed. Source builds retain
-two Core SourceLink warnings; native repair/preview execution is still required.
+references, gates or Direct-migration wiring changed. Local source builds
+retain two Core SourceLink warnings. Subsequent build 64334 passes both
+unchanged native parity gates and the paired tests on repaired c9e118;
+the native solution build retains 16 warnings/zero errors, not a warning-free
+or complete loaded-artifact claim. Original failures are not overwritten.
 
 I-02 intake main was resolved once to A-01's unchanged source; work began clean at I-01's docs head `acaff6b6f90c58ca920980d23f31018475eed1eb`. The pre-implementation v0.1.0 spec SHA-256 `e1335f339ea0f4b45cc7279eb5dc2ccf6a482fccb93f013cf8cb24041c53974e` and baseline-driven v0.1.1 SHA-256 `8e03199976ac6d90bcdcca1f5e4b69cb58c7c81590d872e0c868bca2ddc4acc5` were frozen before test edits. A missing runtime-8 abort and both original full-project failures are retained. The failures exposed a test-only Stopwatch/TimeSpan tick conversion defect; its root cause is corrected without relaxing the original assertion or changing SDK production diagnostics. Proposed local-only treatment is explicit, not a paired-product waiver. Four pre-existing UTA007-undiscoverable legacy methods remain G-07/counterpart backlog, not passed or skipped leaves.
 
@@ -93,6 +96,14 @@ native receipts are separately pinned in spec v0.1.6, including raw/API versus
 terminal cohort counts, TRX digests, actual Release unit/service commands,
 SDK/runtime installation and the distinct default-Debug preview compilation
 failure. The local parity repair is not relabeled as executed c9ed source.
+Spec v0.1.7 separately records repaired c9e118/de046/build 64334, all six
+original TRX digests and five first-attempt task receipts. At its bounded
+`01:11:20Z` observation, those tasks had succeeded while the overall build
+remained in progress. A later result-only documentation head is not the
+executed source, and no all-checks-clean or merge recommendation is implied.
+The four UTA007 legacy methods, current-source service/installed consumers,
+broader paired counterparts and independent oracle/review/fixture/cleanup
+qualification remain backlog.
 
 The delivered v0.2.1 plan SHA-256 `c838ff1c1f9e392ca39e46850422516f66a83e2d1cb97a2856c3963c9c7c3773` remains historical. Continuing the first increment, an existing origin/SSH dry-run push verified a publishing route despite the current CLI account's read-only upstream permission. No account, permission or remote was changed. The local ARM64 vNext emulator is not a faithful alternative for Direct/CE-key fixture proof; the linked spec records that compatibility boundary. Actual pushed-candidate, PR and native CI/service receipts remain separate from this pre-push record.
 
@@ -201,10 +212,10 @@ Acceptance always concerns the named slice and its required neighbors. No sum of
 |---|---|
 | Evidence / class | A-01 sections 4.2, 7.1 and G-02; confirmed explicit selection gap in the 33 inspected YAML files. Existing [Encryption][p-encryption-unit]/[Custom][p-custom-unit] unit targets contain [W-17 encrypted/nonencrypted Increment][w-encryption] and [W-18 cache/cancellation][w-custom] assertions |
 | Behavior risk | Core, serializer, patch, cancellation or dependency changes can evade these existing companion observers. Solution/parity builds and companion emulator invocation do not execute companion units |
-| Existing-suite/CI change | I-01 supplies executed Encryption selection; I-02 adds explicit Custom-unit tasks in the existing ordinary and Custom preview jobs. c9ed ordinary units and paired service cells passed natively on both TFMs; preview was skipped after an introduced compiler failure, repaired locally but still awaiting native proof. Preserve both Custom TFMs and default `3.41.0-preview.0` core dependency even in the ordinary job. Keep current-core source-reference proof separate; preserve both parity builds |
+| Existing-suite/CI change | I-01 supplies executed Encryption selection; I-02 supplies executed Custom-unit tasks in the existing ordinary and Custom preview jobs. Repaired c9e118/build 64334 passed both native unit TFMs/variants, all twelve new service cells and both unchanged parity builds. Earlier failed/skipped candidates remain separate. Preserve both Custom TFMs and default `3.41.0-preview.0` core dependency even in the ordinary job; do not relabel these as current-core service or installed-package proof |
 | Assertion / negative control / neighbors | Preserve encrypted-path Increment rejection/message and nonencrypted pass-through; internal cache timeout fallback versus pre-cancelled caller throwing with zero source/L2 reads. A selection receipt omitting either expected project/TFM/eligible leaf must expose missing proof. Preserve ordinary core/nonencrypted behavior, GA/preview symbol surfaces, and Custom `net6.0`/`net8.0` distinctions |
 | Dependencies / candidate proof | G-01 evaluated variants, G-03 reference/artifact identity slice, G-07 eligible/discovered/executed leaf mapping; exact method names/data rows must be reconciled where A-01 retained only assertion spans |
-| Acceptance / blocked inputs | Named applicable companion leaves have candidate-bound invocation/result receipts; published-SDK runs are not mislabeled current-core runs. Missing evaluated reference resolution, runtime-8 availability and case receipts block closure, not the draft |
+| Acceptance / blocked inputs | I-01/I-02 named applicable leaves now have bounded candidate/TFM/invocation/result receipts; published-SDK runs are not mislabeled current-core runs. Remaining full companion counterpart mapping, four UTA007 methods, loaded-artifact/installed-consumer/current-core-service and independent fixture/oracle proof block broader closure, not the executed slice |
 
 ### G-03: source, package, companion and Direct identity
 
