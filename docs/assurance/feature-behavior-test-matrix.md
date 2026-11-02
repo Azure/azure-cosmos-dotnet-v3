@@ -6,7 +6,7 @@
 
 | Field | Draft receipt |
 |---|---|
-| Version / recorded | 0.3.1 / 2026-11-01 UTC |
+| Version / recorded | 0.3.2 / 2026-11-02 UTC |
 | Status | Evolving proposed matrix with separate local/native testing receipts; no approved complete contract/oracle catalog or whole-SDK assurance |
 | Source | A-01 at `52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8`, tree `2c89abbd9680af78d5072b523df277d8c46b755d`; this assessment's once-resolved main matched |
 | Audit receipt | A-01 SHA-256 `63e368bc66f5c876bb853de62116a9d54ce34f9e1066b5f0b89da8df95b4949c`, 98,011 bytes; original policy provenance preserved in the linked intake |
@@ -54,7 +54,7 @@ These are A-01 configuration aliases, not new jobs or actual-execution receipts.
 | J-B [consumer/benchmark/parity builds][t-preview] | Existing source/package-symbol/override builds, samples/CTL/benchmark/internal compilation | Build-only, not behavioral execution or a measured benchmark |
 | J-PACK [core pack][t-pack] and companion pack templates | Separate core/companion nupkg production | Actual package contents/digests and installed consumer binding U; source tests do not consume a sibling pack job by default |
 
-The existing [Encryption unit project][p-encryption-unit] and [Custom unit project][p-custom-unit] had **no explicit invocation** in A-01's inspected CI. I-01 adds executed Encryption unit tasks within J-U and the existing preview Encryption job. I-02 now adds one Custom unit task in J-U and one in the established Custom preview parity job, retaining caller filters/both declared TFMs and default preview core-package binding. Native evaluated/executed I-02 selection remains pending. Fuzz and Custom-performance run selection remain unresolved/parked prior art, not new campaigns.
+The existing [Encryption unit project][p-encryption-unit] and [Custom unit project][p-custom-unit] had **no explicit invocation** in A-01's inspected CI. I-01 adds executed Encryption unit tasks within J-U and the existing preview Encryption job. I-02 adds one Custom unit task in J-U and one in the established Custom preview parity job, retaining caller filters/both TFMs and default preview core-package binding. c9ed ordinary units and paired service cells passed natively; preview units were skipped after a source-reference compiler failure. Its test-only repair is locally compiled, not yet native-qualified. Fuzz and Custom-performance selection remain unresolved/parked prior art, not new campaigns.
 
 ### I-01 paired-layer supplement: B-034
 
@@ -100,22 +100,22 @@ different cells; neither proves no commit for arbitrary in-flight cancellation.
 
 | Layer / exact witness | Shared behavior and preservation controls | Variant / established selection | Added versus actual execution |
 |---|---|---|---|
-| Unit B-035: `GetAsync_ThrowsTimeoutException_FallsBackToCosmos`; `GetAsync_ThrowsOperationCanceledException_CallerTokenNotCancelled_MustNotFailTheOperation` | One cold L2 lookup; exact original id/context/token and returned-properties identity at one source fetch; caller stays live; warm read repeats neither L2 nor source | Existing cache contract class, net6/net8; ordinary/preview default core package `3.41.0-preview.0`; distinct current-source preview comparison | Strengthened, not duplicated. Each exact method passed in all six local bindings; full package projects passed 424 net6/755 net8 leaves per ordinary/preview configuration; native selection/results pending |
-| Unit B-036: `GetOrAddDekPropertiesAsync_CallerTokenAlreadyCancelled_ThrowsOperationCanceledExceptionPromptly` | Required cancellation, source/L2 count 0; same-cache uncancelled control reaches each once and returns exact properties | Same; original three seed identities and ten other cache-class leaves preserved | Passed in all six local bindings. Four unrelated UTA007 legacy methods remain undiscoverable backlog, not executed or credited |
-| Service B-035: `EncryptionDistributedCacheReadFailureFallsBack` | Fault optional L2 only; public real provider/encryptor; unique real key and item, successful encrypted Create, independent stored ciphertext/plain-field check, separate cold-provider decrypt/read and exact modeled values; real key-read observer positive at each cold lookup | Gateway/Direct x timeout/internal-OCE, typed APIs, net6/net8; existing ordinary J-CE Custom project, no invented preview-service lane | Four rows declared; both TFM assemblies compile and list the parent. Data-row discovery/execution/native fixture/artifact receipt pending; a listed parent is not four passed leaves |
-| Service B-036: `EncryptionDistributedCacheCallerCancellation` | Pre-cancelled encrypted Create must throw, L2/key reads 0 and independent item read 404; same-instance uncancelled Create/read succeeds with real key-read observer active | Gateway/Direct, typed APIs, net6/net8, same J-CE | Two rows declared; both TFM assemblies compile and list the parent. Actual two-leaf execution pending; item absence is bounded to this pre-dispatch case |
-| Test-only harness: `ScopeRecord_Properties_AreCorrect`; `ScopeRecord_Elapsed_UsesStopwatchFrequency` | Original one-second expectation unchanged; correct Stopwatch-frequency conversion and exact 0/1/2-second controls | Existing diagnostics test helper, not production timing | Both original full baselines failed on macOS ARM64 (100 rather than 1 second); originals retained. Helper repaired and four witness leaves passed in local variants. Proposed local-only treatment surfaced; no meaningless live arithmetic test or product-layer waiver |
-| MDE preservation: `ValidateEncryptDecryptDocument_VerifyByNewtonsoft` and existing same-helper neighbors | Nonnull sensitive property is retained as a string, differs from plaintext and contains nonempty base64 bytes; null/untargeted fields, metadata and exact decrypted-value controls remain | Existing MDE unit class, distinct current-core preview net6/net8; same representation observer in the real service fault cases | First service candidate wrongly required field removal. Frozen v0.1.3 amendment precedes correction; strengthened unit class passed 8 net6/24 net8 leaves, corrected service assemblies compile/list parents. Not an SDK defect, new public format/oracle approval or executed service proof |
-| Selection/configuration | Exactly one new Custom unit task per existing ordinary/preview job, both TFMs, original filters/reference parity/retries retained | Default Custom dependency is preview even in ordinary job; current-source preview is separate | YAML parses and local eligible cohorts pass; native effective task/TFM/candidate/attempt/artifact proof pending |
+| Unit B-035: `GetAsync_ThrowsTimeoutException_FallsBackToCosmos`; `GetAsync_ThrowsOperationCanceledException_CallerTokenNotCancelled_MustNotFailTheOperation` | One cold L2 lookup; exact original id/context/token and returned-properties identity at one source fetch; caller stays live; warm read repeats neither L2 nor source | Existing cache contract class, net6/net8; ordinary/preview default core package `3.41.0-preview.0`; distinct current-source preview comparison | Strengthened, not duplicated. Exact methods passed locally and in native c9ed ordinary runs 1331395/net6 and 1331396/net8; full native cohorts 424/424 and 755/755. Preview units skipped after predecessor compilation failure; repair needs native proof |
+| Unit B-036: `GetOrAddDekPropertiesAsync_CallerTokenAlreadyCancelled_ThrowsOperationCanceledExceptionPromptly` | Required cancellation, source/L2 count 0; same-cache uncancelled control reaches each once and returns exact properties | Same; original three seed identities and ten other cache-class leaves preserved | Passed locally and in both c9ed native ordinary runs above. Four unrelated UTA007 legacy methods remain undiscoverable backlog, not executed or credited |
+| Service B-035: `EncryptionDistributedCacheReadFailureFallsBack` | Fault optional L2 only; public real provider/encryptor; unique real key and item, successful encrypted Create, independent stored ciphertext/plain-field check, separate cold-provider decrypt/read and exact modeled values; real key-read observer positive at each cold lookup | Gateway/Direct x timeout/internal-OCE, typed APIs, net6/net8; existing ordinary J-CE Custom project, no invented preview-service lane | All four exact rows passed in native c9ed runs 1331387/net6 and 1331388/net8, original TRX retained. Later inline-key compile repair preserves observers but requires its own candidate receipt; complete fixture/loaded-artifact identity remains unqualified |
+| Service B-036: `EncryptionDistributedCacheCallerCancellation` | Pre-cancelled encrypted Create must throw, L2/key reads 0 and independent item read 404; same-instance uncancelled Create/read succeeds with real key-read observer active | Gateway/Direct, typed APIs, net6/net8, same J-CE | Both exact rows passed in each c9ed native service run above. Repaired-source receipt remains separate; item absence is bounded to this pre-dispatch case |
+| Test-only harness: `ScopeRecord_Properties_AreCorrect`; `ScopeRecord_Elapsed_UsesStopwatchFrequency` | Original one-second expectation unchanged; correct Stopwatch-frequency conversion and exact 0/1/2-second controls | Existing diagnostics test helper, not production timing | Both original baselines failed on macOS ARM64; originals retained. All four witness leaves passed locally and in both native c9ed ordinary runs. Proposed local-only treatment surfaced; no meaningless live arithmetic test or product-layer waiver |
+| MDE preservation: `ValidateEncryptDecryptDocument_VerifyByNewtonsoft` and existing same-helper neighbors | Nonnull sensitive property is retained as a string, differs from plaintext and contains nonempty base64 bytes; null/untargeted fields, metadata and exact decrypted-value controls remain | Existing MDE unit class, distinct current-core preview net6/net8; same representation observer in the real service fault cases | Frozen v0.1.3 correction passed focused source units (8 net6/24 net8); updated helper and real-service observer subsequently passed both full c9ed ordinary unit/service cohorts. Original wrong observer never executed; no new public format/oracle approval |
+| Selection/configuration | Exactly one new Custom unit task per existing ordinary/preview job, both TFMs, original filters/reference parity/retries retained | Default Custom dependency is preview even in ordinary job; current-source preview is separate | Ordinary native invocation/TFMs/leaves proven; preview units skipped after introduced source-reference compiler failure. Spec v0.1.5 precedes inline-key repair; source Debug parity modes, source Release and package Release compile locally. Original gates unchanged; native repair pending |
 
 | Exact service arguments | Transport / fault | Unit counterpart | Actual service state |
 |---|---|---|---|
-| `ReadFailureFallsBack(true,false)` | Gateway / timeout | B-035 timeout seed | Declared; not executed locally |
-| `ReadFailureFallsBack(true,true)` | Gateway / internal cancellation | B-035 internal-OCE seed | Declared; not executed locally |
-| `ReadFailureFallsBack(false,false)` | Direct / timeout | B-035 timeout seed | Declared; not executed locally |
-| `ReadFailureFallsBack(false,true)` | Direct / internal cancellation | B-035 internal-OCE seed | Declared; not executed locally |
-| `CallerCancellation(true)` | Gateway / caller pre-cancelled | B-036 cancellation seed | Declared; not executed locally |
-| `CallerCancellation(false)` | Direct / caller pre-cancelled | B-036 cancellation seed | Declared; not executed locally |
+| `ReadFailureFallsBack(true,false)` | Gateway / timeout | B-035 timeout seed | Passed: c9ed net6 run 1331387 + net8 run 1331388; not executed locally |
+| `ReadFailureFallsBack(true,true)` | Gateway / internal cancellation | B-035 internal-OCE seed | Passed: same two native runs; not executed locally |
+| `ReadFailureFallsBack(false,false)` | Direct / timeout | B-035 timeout seed | Passed: same two native runs; not executed locally |
+| `ReadFailureFallsBack(false,true)` | Direct / internal cancellation | B-035 internal-OCE seed | Passed: same two native runs; not executed locally |
+| `CallerCancellation(true)` | Gateway / caller pre-cancelled | B-036 cancellation seed | Passed: same two native runs; not executed locally |
+| `CallerCancellation(false)` | Direct / caller pre-cancelled | B-036 cancellation seed | Passed: same two native runs; not executed locally |
 
 The method prefixes above abbreviate the exact `EncryptionDistributedCache...`
 names in the layer table; each TFM needs its own six-leaf native receipt.
@@ -129,12 +129,19 @@ Published I-02 source is `d5004b187a04adf6a5f87a3197b912b217c8aae2`,
 tree `b1de7ba171479d9bc26f32f5eba1c43df7be3c83`; automatically queued
 build 64329 uses merge candidate `21b9f761f022f689399c496978693d4625c8cfb7`
 with that same tree and verified A-01/source parents. Native case receipts
-are still pending: at `23:27:48Z`, ordinary Custom units remained pending and no
-Custom result run was returned. Its incorrect raw field-removal assertion is
-retained with that candidate, not marked passed. Corrected service/unit
-observers require their own native candidate. A local no-restore reference-
+at `23:27:48Z` were still pending. The later observation records all three
+Custom tasks skipped under canceled parent jobs, with no Custom result run;
+actor/reason is not established. Its incorrect raw field-removal assertion
+never executed and earns no passed credit. Corrected source c9ed and actual
+merge 24003/build 64330 provide the separate native unit/service results above.
+All required leaves passed, task attempt 1; full service terminal cohorts are
+79/net6 and 85/net8, not API parent counts 75/81 or raw TRX 81/87.
+Original digests/commands and the separate failed preview predecessor are in
+[spec v0.1.6](specs/i-02-custom-cache-paired-tests.md#native-pr-ci-receipt-corrected-observer-before-source-parity-repair).
+The locally repaired source-reference test representation requires a new
+native candidate; c9ed execution is not relabeled. A local no-restore reference-
 graph build failure and successful existing-graph restore/rebuild are separately
-retained in [spec v0.1.4](specs/i-02-custom-cache-paired-tests.md).
+retained in the same versioned spec.
 D-10's later profile-envelope publication changes no
 resource/execution authority, and concrete trust/isolation/capacity/cleanup/
 budget/retention inputs remain unqualified; it does not block unrelated
