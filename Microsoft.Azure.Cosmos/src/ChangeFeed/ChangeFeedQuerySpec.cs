@@ -34,11 +34,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         }
 
         /// <summary>
-        /// Gets or sets the text of the Azure Cosmos DB database query.
+        /// Gets the text of the Azure Cosmos DB database query.
         /// </summary>
         /// <value>The text of the database query.</value>
         [DataMember(Name = "query")]
-        private string QueryText { get; set; }
+        internal string QueryText { get; private set; }
 
         /// <summary>
         /// Gets or sets if database query should be run on previous image if present.

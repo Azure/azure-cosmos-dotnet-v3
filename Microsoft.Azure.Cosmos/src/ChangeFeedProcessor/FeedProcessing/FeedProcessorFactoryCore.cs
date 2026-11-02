@@ -52,7 +52,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 maxItemCount: options.MaxItemCount,
                 container: this.container,
                 startTime: options.StartTime,
-                startFromBeginning: options.StartFromBeginning);
+                startFromBeginning: options.StartFromBeginning,
+                querySpec: this.changeFeedProcessorOptions.QuerySpec);
 
             return new FeedProcessorCore(observer, iterator, options, checkpointer);
         }

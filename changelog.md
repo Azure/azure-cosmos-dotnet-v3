@@ -19,12 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- Adds preview SQL predicate filtering for typed and stream change feed iterators, preserving existing continuation and partition filtering behavior.
+- Adds preview `WithQuery(string)` configuration for change feed processors, with exact-query lease compatibility checks and immutable query configuration after build.
+
 #### Breaking Changes
 
 - [6130](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6130) Hybrid search RRF now assigns a unique ordinal rank to every component result, including tied scores. Component score ties are broken by the decoded document ID portion of `_rid` in the component's sort direction, rather than by the encoded string. Final RRF score ties use decoded document IDs descending. Set `AZURE_COSMOS_HYBRID_SEARCH_USE_COMPETITION_RANKING=true` to restore the previous competition-ranking behavior.
 
 #### Bugs Fixed
 
+- Change Feed: Stops a partition worker and reports an error when lease renewal detects an incompatible query filter, instead of continuing with stale lease state.
+- Change Feed: Preserves all-versions-and-deletes processor startup and restart with in-memory leases while validating query compatibility.
+- Change Feed: Retains the last processor read position after a failed request so subsequent reads do not resume from an error response's ETag.
 - [6151](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6151) Query: Updates query-plan deserialization to preserve vector embedding policy paths alongside embedding text and recognize optional hybrid-search score combination metadata. This schema update does not enable `GenerateEmbeddings` or `CombinedScore` execution.
 - [6139](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6139) Query: Fixes an issue where a query whose `OFFSET`, `LIMIT`, or `TOP` value was fractional or too large for a 64-bit integer threw an unexpected `ArgumentOutOfRangeException` during client-side query parsing. These queries are now treated as parse failures.
 - [6138](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6138) CosmosElements: Fixes an issue where parsing an empty, whitespace-only, or malformed JSON payload threw an unexpected `InvalidOperationException`, `ArgumentException`, or `IndexOutOfRangeException`. These payloads are now reported as JSON parse failures.
@@ -33,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- Change Feed: Preserves optional query fingerprints when reading and writing processor lease documents; existing leases without fingerprints remain compatible.
+- Change Feed: Rejects incompatible query identities during lease creation and ownership updates, preserving the existing owner's lease when acquisition is rejected.
+- Change Feed: Checks every existing lease for query compatibility before processor startup and rechecks leases during initialization, rejecting mixed or incompatible query filters before processing begins.
 - [6154](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6154) Direct: Expands the available managed source with resource models, serialization, partition-key routing, session tokens, and their supporting types and unit tests. The SDK still uses the existing Direct package and native query-planning library; runtime behavior and public APIs are unchanged.
 - [6137](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6137) Direct: Begins making the managed Direct implementation available as source in this repository with a buildable foundation of 53 unchanged source files. The SDK continues to use the existing Direct package; runtime behavior and public APIs are unchanged.
 
