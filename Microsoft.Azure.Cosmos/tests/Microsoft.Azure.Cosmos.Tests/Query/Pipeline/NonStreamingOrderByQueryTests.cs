@@ -272,112 +272,423 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
-        public async Task HybridSearchStatisticsCacheSkipsStatisticsRequestsOnlyForGlobalHits()
+        public async Task HybridSearchStatisticsCacheScenarios()
         {
-            List<StatisticsCacheTestCase> testCases = new List<StatisticsCacheTestCase>
+            List<StatisticsCacheScenario> scenarios = new List<StatisticsCacheScenario>
             {
-                new StatisticsCacheTestCase(FullTextScoreScope.Global, expectHit: true),
-                new StatisticsCacheTestCase(FullTextScoreScope.Local, expectHit: false),
+                new StatisticsCacheScenario { Name = "Global hit", ExpectedTraceDatum = "Hit" },
+                new StatisticsCacheScenario { Name = "Global hit with weighted RRF", Weights = new[] { 1.0, 2.0 }, ExpectedTraceDatum = "Hit" },
+                new StatisticsCacheScenario { Name = "Global hit with skip and take", Skip = 5, Take = 20, ExpectedTraceDatum = "Hit" },
+                new StatisticsCacheScenario { Name = "Global hit across small pages", PageSize = 7, ExpectedTraceDatum = "Hit" },
+                new StatisticsCacheScenario { Name = "Global hit without order-by rewrite", SkipOrderByRewrite = true, ExpectedTraceDatum = "Hit" },
+                new StatisticsCacheScenario { Name = "Global hit with a single component", SingleComponent = true, ExpectedTraceDatum = "Hit" },
+                new StatisticsCacheScenario { Name = "Global hit with narrower target ranges", MeasuredTargetRangeCount = 1, ExpectedTraceDatum = "Hit" },
+                new StatisticsCacheScenario { Name = "Local after Global warm-up", MeasuredScope = FullTextScoreScope.Local },
+                new StatisticsCacheScenario { Name = "Local with narrower target ranges", MeasuredScope = FullTextScoreScope.Local, MeasuredTargetRangeCount = 1 },
+                new StatisticsCacheScenario { Name = "Cache disabled", CacheEnabled = false },
+                new StatisticsCacheScenario { Name = "Missing metadata", MetadataPresent = false },
+                new StatisticsCacheScenario { Name = "Expired counts", AdvanceToExpiry = true, ExpectedTraceDatum = "Miss" },
+                new StatisticsCacheScenario { Name = "Different container revision", MeasuredETag = "other-etag", ExpectedTraceDatum = "Miss" },
             };
-            
-            for (int index = 0; index < testCases.Count; index++)
+            for (int index = 0; index < scenarios.Count; index++)
             {
-                StatisticsCacheTestCase testCase = testCases[index];
-                this.TestContext.WriteLine($"Case {index}: {testCase}");
-                await VerifyStatisticsCacheAsync(testCase);
+                StatisticsCacheScenario scenario = scenarios[index];
+                this.TestContext.WriteLine($"Case {index}: {scenario}");
+                await VerifyStatisticsCacheScenarioAsync(scenario);
             }
         }
 
-        private static async Task VerifyStatisticsCacheAsync(StatisticsCacheTestCase testCase)
+        [TestMethod]
+        public async Task HybridSearchStatisticsCacheFailuresAreNotCachedOrRecovered()
         {
-            IReadOnlyList<FeedRangeEpk> ranges = new List<FeedRangeEpk>
-            {
-                new FeedRangeEpk(new Documents.Routing.Range<string>(string.Empty, "AA", true, false)),
-                new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false)),
-                new FeedRangeEpk(new Documents.Routing.Range<string>("BB", "FF", true, false)),
-            };
-            HybridSearchStatisticsCache cache = new HybridSearchStatisticsCache(TimeSpan.FromMinutes(1), 256);
+            TimeSpan maxAge = TimeSpan.FromMinutes(1);
+            HybridSearchStatisticsCache cache = new HybridSearchStatisticsCache(maxAge, 256);
+            StatisticsCacheScenario scenario = new StatisticsCacheScenario { Name = "Failures" };
 
-            // A Global query warms the cache; the second query uses the case's scope.
-            (IReadOnlyList<CosmosElement> coldResults, double coldCharge, MockDocumentContainer coldContainer) =
-                await RunCachedHybridSearchAsync(ranges, cache, FullTextScoreScope.Global);
-            Assert.AreEqual(ranges.Count, coldContainer.StatisticsQueryRanges.Count, testCase.ToString());
+            // A failed statistics collection fails the query and caches nothing.
+            CachedHybridSearchRun failedStatistics = await RunCachedHybridSearchAsync(
+                scenario, CreateInterceptingContainer(scenario, spec => Task.FromResult(IsGlobalStatisticsQuery(spec))), cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag", CancellationToken.None);
+            Assert.IsNotNull(failedStatistics.Failure, "A statistics failure must fail the query.");
+            Assert.AreEqual("Miss", failedStatistics.TraceDatum);
 
-            (IReadOnlyList<CosmosElement> results, double charge, MockDocumentContainer container) =
-                await RunCachedHybridSearchAsync(ranges, cache, testCase.Scope);
-            Assert.AreEqual(testCase.ExpectHit ? 0 : ranges.Count, container.StatisticsQueryRanges.Count, testCase.ToString());
-            CollectionAssert.AreEqual(coldResults.ToList(), results.ToList(), testCase.ToString());
-            Assert.AreEqual(container.TotalRequestCharge, charge, testCase.ToString());
-            Assert.AreEqual(
-                testCase.ExpectHit ? coldCharge - (ranges.Count * GlobalStatisticsQueryCharge) : coldCharge,
-                charge,
-                testCase.ToString());
+            CachedHybridSearchRun cold = await RunCachedHybridSearchAsync(scenario, cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
+            Assert.AreEqual(StatisticsCacheRanges.Count, cold.StatisticsRequestCount, "A failed collection must not populate the cache.");
+
+            // A component failure after a hit propagates and does not evict or bypass the cached statistics.
+            CachedHybridSearchRun failedComponents = await RunCachedHybridSearchAsync(
+                scenario, CreateInterceptingContainer(scenario, spec => Task.FromResult(!IsGlobalStatisticsQuery(spec))), cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag", CancellationToken.None);
+            Assert.IsNotNull(failedComponents.Failure, "A component failure must propagate on a hit.");
+            Assert.AreEqual("Hit", failedComponents.TraceDatum);
+
+            CachedHybridSearchRun warm = await RunCachedHybridSearchAsync(scenario, cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
+            Assert.AreEqual(0, warm.StatisticsRequestCount);
+            CollectionAssert.AreEqual(cold.Documents.ToList(), warm.Documents.ToList());
         }
 
-        private static async Task<(IReadOnlyList<CosmosElement>, double, MockDocumentContainer)> RunCachedHybridSearchAsync(
-            IReadOnlyList<FeedRangeEpk> ranges,
-            HybridSearchStatisticsCache cache,
-            FullTextScoreScope fullTextScoreScope)
+        [TestMethod]
+        public async Task HybridSearchStatisticsCacheCancelledCollectionIsNotCached()
         {
-            MockDocumentContainer container = MockDocumentContainer.CreateHybridSearchContainer(
-                ranges,
-                new[] { PartitionedFeedMode.NonStreamingReversed, PartitionedFeedMode.NonStreamingReversed },
-                leafPageCount: 2,
-                backendPageSize: 10,
-                returnEmptyGlobalStatistics: false,
-                skipOrderByRewrite: false,
-                calculateScores: CalculateDefaultScores);
+            HybridSearchStatisticsCache cache = new HybridSearchStatisticsCache(TimeSpan.FromMinutes(1), 256);
+            StatisticsCacheScenario scenario = new StatisticsCacheScenario { Name = "Cancellation" };
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
 
-            // The metadata matches the mock statistics: two terms on the first path and one on the second.
-            HybridSearchQueryInfo hybridSearchQueryInfo = Create2ItemHybridSearchQueryInfo(requiresGlobalStatistics: true, skip: null, take: 100, weights: null);
-            hybridSearchQueryInfo.FullTextSearchTerms = new List<FullTextSearchTerms>
+            CachedHybridSearchRun cancelled = await RunCachedHybridSearchAsync(
+                scenario, CreateStatisticsCacheContainer(scenario), cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag", cancellationTokenSource.Token);
+            Assert.IsInstanceOfType(cancelled.Failure, typeof(OperationCanceledException), "A cancelled query must not complete.");
+            CachedHybridSearchRun next = await RunCachedHybridSearchAsync(scenario, cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
+            Assert.AreEqual(StatisticsCacheRanges.Count, next.StatisticsRequestCount, "A cancelled collection must not populate the cache.");
+        }
+
+        [TestMethod]
+        public async Task HybridSearchStatisticsCacheConcurrentColdMissesRunIndependently()
+        {
+            HybridSearchStatisticsCache cache = new HybridSearchStatisticsCache(TimeSpan.FromMinutes(1), 256);
+            StatisticsCacheScenario scenario = new StatisticsCacheScenario { Name = "Concurrent misses" };
+            TaskCompletionSource<bool> release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> firstArrived = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> secondArrived = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            // Hold each query's statistics requests until both queries have missed the cache.
+            static Func<SqlQuerySpec, Task<bool>> HoldStatistics(TaskCompletionSource<bool> arrived, Task released)
             {
-                new FullTextSearchTerms
+                return async spec =>
                 {
-                    Path = new List<string> { "text" },
-                    Terms = new List<FullTextSearchTerm> { new FullTextSearchTerm { Term = "swim" }, new FullTextSearchTerm { Term = "run" } },
-                },
-                new FullTextSearchTerms
-                {
-                    Path = new List<string> { "title" },
-                    Terms = new List<FullTextSearchTerm> { new FullTextSearchTerm { Term = "energy" } },
-                },
-            };
+                    if (IsGlobalStatisticsQuery(spec))
+                    {
+                        arrived.TrySetResult(true);
+                        await released;
+                    }
 
+                    return false;
+                };
+            }
+
+            StatisticsCacheTestContainer firstContainer = CreateInterceptingContainer(scenario, HoldStatistics(firstArrived, release.Task));
+            StatisticsCacheTestContainer secondContainer = CreateInterceptingContainer(scenario, HoldStatistics(secondArrived, release.Task));
+            Task<CachedHybridSearchRun> first = RunCachedHybridSearchAsync(scenario, firstContainer, cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag", CancellationToken.None);
+            Task<CachedHybridSearchRun> second = RunCachedHybridSearchAsync(scenario, secondContainer, cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag", CancellationToken.None);
+            await Task.WhenAll(firstArrived.Task, secondArrived.Task).WaitAsync(TimeSpan.FromSeconds(30));
+            release.SetResult(true);
+            CachedHybridSearchRun[] runs = await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(30));
+
+            for (int index = 0; index < runs.Length; index++)
+            {
+                Assert.IsNull(runs[index].Failure, $"Run {index}");
+                Assert.AreEqual("Miss", runs[index].TraceDatum, $"Run {index}");
+            }
+
+            CollectionAssert.AreEqual(runs[0].Documents.ToList(), runs[1].Documents.ToList());
+            CachedHybridSearchRun warm = await RunCachedHybridSearchAsync(scenario, cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
+            Assert.AreEqual(0, warm.StatisticsRequestCount);
+        }
+
+        private static readonly IReadOnlyList<FeedRangeEpk> StatisticsCacheRanges = new List<FeedRangeEpk>
+        {
+            new FeedRangeEpk(new Documents.Routing.Range<string>(string.Empty, "AA", true, false)),
+            new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false)),
+            new FeedRangeEpk(new Documents.Routing.Range<string>("BB", "FF", true, false)),
+        };
+
+        private static async Task VerifyStatisticsCacheScenarioAsync(StatisticsCacheScenario scenario)
+        {
+            TimeSpan maxAge = TimeSpan.FromMinutes(1);
+            TimeSpan now = TimeSpan.Zero;
+            HybridSearchStatisticsCache cache = scenario.CacheEnabled ? new HybridSearchStatisticsCache(maxAge, 256, () => now) : null;
+
+            // Every scenario first runs a Global query over all ranges to warm the cache.
+            CachedHybridSearchRun warmUp = await RunCachedHybridSearchAsync(scenario, cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
+            Assert.AreEqual(StatisticsCacheRanges.Count, warmUp.StatisticsRequestCount, scenario.ToString());
+
+            if (scenario.AdvanceToExpiry)
+            {
+                now = maxAge;
+            }
+
+            IReadOnlyList<FeedRangeEpk> targetRanges = StatisticsCacheRanges.Take(scenario.MeasuredTargetRangeCount ?? StatisticsCacheRanges.Count).ToList();
+            CachedHybridSearchRun uncached = await RunCachedHybridSearchAsync(scenario, null, targetRanges, scenario.MeasuredScope, scenario.MeasuredETag);
+            CachedHybridSearchRun measured = await RunCachedHybridSearchAsync(scenario, cache, targetRanges, scenario.MeasuredScope, scenario.MeasuredETag);
+
+            bool expectHit = scenario.ExpectedTraceDatum == "Hit";
+            int statisticsRangeCount = scenario.MeasuredScope == FullTextScoreScope.Global ? StatisticsCacheRanges.Count : targetRanges.Count;
+            Assert.AreEqual(expectHit ? 0 : statisticsRangeCount, measured.StatisticsRequestCount, scenario.ToString());
+            Assert.AreEqual(statisticsRangeCount, uncached.StatisticsRequestCount, scenario.ToString());
+            CollectionAssert.AreEqual(uncached.Documents.ToList(), measured.Documents.ToList(), scenario.ToString());
+            Assert.AreEqual(
+                expectHit ? uncached.RequestCharge - (statisticsRangeCount * GlobalStatisticsQueryCharge) : uncached.RequestCharge,
+                measured.RequestCharge,
+                scenario.ToString());
+            Assert.AreEqual(scenario.ExpectedTraceDatum, measured.TraceDatum, scenario.ToString());
+        }
+
+        private static Task<CachedHybridSearchRun> RunCachedHybridSearchAsync(
+            StatisticsCacheScenario scenario,
+            HybridSearchStatisticsCache cache,
+            IReadOnlyList<FeedRangeEpk> targetRanges,
+            FullTextScoreScope fullTextScoreScope,
+            string etag)
+        {
+            return RunCachedHybridSearchAsync(
+                scenario,
+                CreateStatisticsCacheContainer(scenario),
+                cache,
+                targetRanges,
+                fullTextScoreScope,
+                etag,
+                CancellationToken.None);
+        }
+
+        private static async Task<CachedHybridSearchRun> RunCachedHybridSearchAsync(
+            StatisticsCacheScenario scenario,
+            StatisticsCacheTestContainer container,
+            HybridSearchStatisticsCache cache,
+            IReadOnlyList<FeedRangeEpk> targetRanges,
+            FullTextScoreScope fullTextScoreScope,
+            string etag,
+            CancellationToken cancellationToken)
+        {
             TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
-                container,
+                new DocumentContainer(container),
                 Create2ItemSqlQuerySpec(),
-                ranges,
+                targetRanges,
                 partitionKey: null,
                 queryInfo: null,
-                hybridSearchQueryInfo: hybridSearchQueryInfo,
-                maxItemCount: 1000,
-                new ContainerQueryProperties("rid", "etag", null, null, null, Cosmos.GeospatialType.Geography, false),
-                ranges,
+                hybridSearchQueryInfo: CreateStatisticsCacheQueryInfo(scenario),
+                maxItemCount: scenario.PageSize,
+                new ContainerQueryProperties("rid", etag, null, null, null, Cosmos.GeospatialType.Geography, false),
+                StatisticsCacheRanges,
                 isContinuationExpected: true,
                 maxConcurrency: MaxConcurrency,
                 fullTextScoreScope: fullTextScoreScope,
                 requestContinuationToken: null,
                 statisticsCache: cache);
-            Assert.IsTrue(tryCreatePipeline.Succeeded);
+            Assert.IsTrue(tryCreatePipeline.Succeeded, scenario.ToString());
 
-            (IReadOnlyList<CosmosElement> results, double charge) = await RunPipelineStage(tryCreatePipeline.Result, 1000);
-            return (results, charge, container);
-        }
-
-        private readonly struct StatisticsCacheTestCase
-        {
-            public StatisticsCacheTestCase(FullTextScoreScope scope, bool expectHit)
+            List<CosmosElement> documents = new List<CosmosElement>();
+            double requestCharge = 0;
+            Exception failure = null;
+            using Cosmos.Tracing.Trace trace = Cosmos.Tracing.Trace.GetRootTrace("Hybrid search statistics cache test");
+            await using (IQueryPipelineStage stage = tryCreatePipeline.Result)
             {
-                this.Scope = scope;
-                this.ExpectHit = expectHit;
+                // Failures surface either as a failed page or, for some component pipelines and cancellation, as an exception.
+                try
+                {
+                    while (await stage.MoveNextAsync(trace, cancellationToken))
+                    {
+                        if (stage.Current.Failed)
+                        {
+                            failure = stage.Current.Exception;
+                            break;
+                        }
+
+                        Assert.IsTrue(stage.Current.Result.Documents.Count <= scenario.PageSize, scenario.ToString());
+                        documents.AddRange(stage.Current.Result.Documents);
+                        requestCharge += stage.Current.Result.RequestCharge;
+                    }
+                }
+                catch (Exception exception) when (!(exception is AssertFailedException))
+                {
+                    failure = exception;
+                }
             }
 
-            public FullTextScoreScope Scope { get; }
+            trace.Data.TryGetValue("Hybrid Search Statistics Cache", out object traceDatum);
+            return new CachedHybridSearchRun(documents, requestCharge, container.StatisticsRequestCount, (string)traceDatum, failure);
+        }
 
-            public bool ExpectHit { get; }
+        private static StatisticsCacheTestContainer CreateStatisticsCacheContainer(StatisticsCacheScenario scenario)
+        {
+            return CreateInterceptingContainer(scenario, _ => Task.FromResult(false));
+        }
 
-            public override string ToString() => $"Scope={this.Scope}, ExpectHit={this.ExpectHit}";
+        private static StatisticsCacheTestContainer CreateInterceptingContainer(StatisticsCacheScenario scenario, Func<SqlQuerySpec, Task<bool>> shouldFail)
+        {
+            MockDocumentContainer inner = MockDocumentContainer.CreateHybridSearchContainer(
+                StatisticsCacheRanges,
+                new[] { PartitionedFeedMode.NonStreamingReversed, PartitionedFeedMode.NonStreamingReversed },
+                leafPageCount: 2,
+                backendPageSize: 10,
+                returnEmptyGlobalStatistics: false,
+                skipOrderByRewrite: scenario.SkipOrderByRewrite,
+                calculateScores: CalculateDefaultScores);
+            return new StatisticsCacheTestContainer(inner, shouldFail);
+        }
+
+        private static HybridSearchQueryInfo CreateStatisticsCacheQueryInfo(StatisticsCacheScenario scenario)
+        {
+            double[] weights = scenario.Weights?.ToArray();
+            HybridSearchQueryInfo hybridSearchQueryInfo = scenario.SkipOrderByRewrite
+                ? Create2ItemHybridSearchSkipOrderByRewriteQueryInfo(true, scenario.Skip, scenario.Take, weights)
+                : Create2ItemHybridSearchQueryInfo(true, scenario.Skip, scenario.Take, weights);
+
+            if (scenario.SingleComponent)
+            {
+                hybridSearchQueryInfo.ComponentQueryInfos = new List<QueryInfo> { hybridSearchQueryInfo.ComponentQueryInfos[0] };
+                hybridSearchQueryInfo.ComponentWeights = null;
+            }
+
+            // The metadata matches the mock statistics: two terms on the first path and one on the second.
+            if (scenario.MetadataPresent)
+            {
+                hybridSearchQueryInfo.FullTextSearchTerms = new List<FullTextSearchTerms>
+                {
+                    new FullTextSearchTerms
+                    {
+                        Path = new List<string> { "text" },
+                        Terms = new List<FullTextSearchTerm> { new FullTextSearchTerm { Term = "swim" }, new FullTextSearchTerm { Term = "run" } },
+                    },
+                    new FullTextSearchTerms
+                    {
+                        Path = new List<string> { "abstract" },
+                        Terms = new List<FullTextSearchTerm> { new FullTextSearchTerm { Term = "energy" } },
+                    },
+                };
+            }
+
+            return hybridSearchQueryInfo;
+        }
+
+        private sealed class StatisticsCacheScenario
+        {
+            public string Name { get; set; }
+
+            public bool CacheEnabled { get; set; } = true;
+
+            public bool MetadataPresent { get; set; } = true;
+
+            public bool SkipOrderByRewrite { get; set; }
+
+            public bool SingleComponent { get; set; }
+
+            public double[] Weights { get; set; }
+
+            public uint? Skip { get; set; }
+
+            public uint? Take { get; set; }
+
+            public int PageSize { get; set; } = 1000;
+
+            public FullTextScoreScope MeasuredScope { get; set; } = FullTextScoreScope.Global;
+
+            public int? MeasuredTargetRangeCount { get; set; }
+
+            public string MeasuredETag { get; set; } = "etag";
+
+            public bool AdvanceToExpiry { get; set; }
+
+            public string ExpectedTraceDatum { get; set; }
+
+            public override string ToString() =>
+                $"{this.Name}: Enabled={this.CacheEnabled}, Metadata={this.MetadataPresent}, SkipOrderByRewrite={this.SkipOrderByRewrite}, " +
+                $"SingleComponent={this.SingleComponent}, Weights={(this.Weights == null ? "<null>" : string.Join(",", this.Weights))}, " +
+                $"Skip={this.Skip?.ToString() ?? "<null>"}, Take={this.Take?.ToString() ?? "<null>"}, PageSize={this.PageSize}, " +
+                $"Scope={this.MeasuredScope}, TargetRanges={this.MeasuredTargetRangeCount?.ToString() ?? "all"}, ETag={this.MeasuredETag}, " +
+                $"Expired={this.AdvanceToExpiry}, ExpectedTraceDatum={this.ExpectedTraceDatum ?? "<none>"}";
+        }
+
+        private sealed class CachedHybridSearchRun
+        {
+            public CachedHybridSearchRun(IReadOnlyList<CosmosElement> documents, double requestCharge, int statisticsRequestCount, string traceDatum, Exception failure)
+            {
+                this.Documents = documents;
+                this.RequestCharge = requestCharge;
+                this.StatisticsRequestCount = statisticsRequestCount;
+                this.TraceDatum = traceDatum;
+                this.Failure = failure;
+            }
+
+            public IReadOnlyList<CosmosElement> Documents { get; }
+
+            public double RequestCharge { get; }
+
+            public int StatisticsRequestCount { get; }
+
+            public string TraceDatum { get; }
+
+            public Exception Failure { get; }
+        }
+
+        // Counts statistics requests and can fail or delay queries before delegating to the mock container.
+        private sealed class StatisticsCacheTestContainer : IMonadicDocumentContainer
+        {
+            private readonly IMonadicDocumentContainer inner;
+            private readonly Func<SqlQuerySpec, Task<bool>> shouldFail;
+            private int statisticsRequestCount;
+
+            public StatisticsCacheTestContainer(IMonadicDocumentContainer inner, Func<SqlQuerySpec, Task<bool>> shouldFail)
+            {
+                this.inner = inner;
+                this.shouldFail = shouldFail;
+            }
+
+            public int StatisticsRequestCount => Volatile.Read(ref this.statisticsRequestCount);
+
+            public async Task<TryCatch<QueryPage>> MonadicQueryAsync(
+                SqlQuerySpec sqlQuerySpec,
+                FeedRangeState<QueryState> feedRangeState,
+                QueryExecutionOptions queryPaginationOptions,
+                ITrace trace,
+                CancellationToken cancellationToken)
+            {
+                if (IsGlobalStatisticsQuery(sqlQuerySpec))
+                {
+                    Interlocked.Increment(ref this.statisticsRequestCount);
+                }
+
+                if (await this.shouldFail(sqlQuerySpec))
+                {
+                    return TryCatch<QueryPage>.FromException(new InvalidOperationException("Injected query failure."));
+                }
+
+                return await this.inner.MonadicQueryAsync(sqlQuerySpec, feedRangeState, queryPaginationOptions, trace, cancellationToken);
+            }
+
+            public Task<TryCatch<Record>> MonadicCreateItemAsync(
+                CosmosObject payload,
+                CancellationToken cancellationToken) => this.inner.MonadicCreateItemAsync(payload, cancellationToken);
+
+            public Task<TryCatch<Record>> MonadicReadItemAsync(
+                CosmosElement partitionKey,
+                string identifer,
+                CancellationToken cancellationToken) => this.inner.MonadicReadItemAsync(partitionKey, identifer, cancellationToken);
+
+            public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
+                FeedRangeState<ReadFeedState> feedRangeState,
+                ReadFeedExecutionOptions readFeedPaginationOptions,
+                ITrace trace,
+                CancellationToken cancellationToken) => this.inner.MonadicReadFeedAsync(feedRangeState, readFeedPaginationOptions, trace, cancellationToken);
+
+            public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
+                FeedRangeState<ChangeFeedState> feedRangeState,
+                ChangeFeedExecutionOptions changeFeedPaginationOptions,
+                ITrace trace,
+                CancellationToken cancellationToken) => this.inner.MonadicChangeFeedAsync(feedRangeState, changeFeedPaginationOptions, trace, cancellationToken);
+
+            public Task<TryCatch> MonadicSplitAsync(
+                FeedRangeInternal feedRange,
+                CancellationToken cancellationToken) => this.inner.MonadicSplitAsync(feedRange, cancellationToken);
+
+            public Task<TryCatch> MonadicMergeAsync(
+                FeedRangeInternal feedRange1,
+                FeedRangeInternal feedRange2,
+                CancellationToken cancellationToken) => this.inner.MonadicMergeAsync(feedRange1, feedRange2, cancellationToken);
+
+            public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
+                FeedRangeInternal feedRange,
+                ITrace trace,
+                CancellationToken cancellationToken) => this.inner.MonadicGetChildRangeAsync(feedRange, trace, cancellationToken);
+
+            public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
+                ITrace trace,
+                CancellationToken cancellationToken) => this.inner.MonadicGetFeedRangesAsync(trace, cancellationToken);
+
+            public Task<TryCatch> MonadicRefreshProviderAsync(
+                ITrace trace,
+                CancellationToken cancellationToken) => this.inner.MonadicRefreshProviderAsync(trace, cancellationToken);
+
+            public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(
+                ITrace trace,
+                CancellationToken cancellationToken) => this.inner.MonadicGetResourceIdentifierAsync(trace, cancellationToken);
         }
 
         [TestMethod]
