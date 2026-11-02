@@ -5,7 +5,7 @@ parameters:
 
 jobs:
 - job: InMemoryEmulatorTests
-  displayName: SDK in-memory emulator $(ScenarioGroup) ${{ parameters.BuildConfiguration }}
+  displayName: SDK in-memory emulator tests ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 30
   strategy:
     matrix:
