@@ -2,8 +2,8 @@
 
 | Field | Receipt |
 |---|---|
-| Version / recorded | 0.1.6 / 2026-11-02 UTC; native corrected-observer receipt and local source-reference repair |
-| Status | Corrected candidate passed ordinary units and all twelve new emulator cells. Introduced preview compilation regression reproduced and repaired locally; repaired candidate still requires native parity/preview-unit/service receipts. Not independently approved contract, complete G-02 closure or merge qualification |
+| Version / recorded | 0.1.7 / 2026-11-02 UTC; repaired-candidate native paired and source-parity receipts |
+| Status | Repaired source c9e118 passed both existing native parity builds, ordinary/preview units on both TFMs and all twelve new emulator cells. Original failures and earlier candidate receipts retained. Not independently approved contract, complete G-02 closure or merge qualification |
 | Scope | A-01 G-02/G-07; matrix B-035/B-036 and their immediate cache/crypto/cancellation preservation neighbors |
 | Intake | Existing isolated SDK worktree at `acaff6b6f90c58ca920980d23f31018475eed1eb`; clean before I-02. Upstream main resolved once at intake to `52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8`, unchanged from A-01 |
 | Historical evidence | A-01 SHA-256 `63e368bc66f5c876bb853de62116a9d54ce34f9e1066b5f0b89da8df95b4949c`, 98,011 bytes. [I-01](i-01-encryption-patch-paired-tests.md) and its original source/merge-candidate/TRX receipts remain unchanged |
@@ -315,15 +315,15 @@ production resource or account provisioning is authorized.
 
 ## Acceptance and result ledger
 
-| Surface | Required evidence | At v0.1.6 |
+| Surface | Required evidence | At v0.1.7 |
 |---|---|---|
-| Focused units | All three named strengthened tests plus existing same-class neighbors, exact case outcomes and first-failure preservation for both TFMs | Three seeds strengthened; all 13 cache-class leaves pass in the six local bindings below |
-| Wider Custom unit selection | Evaluated ordinary/preview invocation and eligible executed cases for both TFMs; retain warnings/skipped/inconclusive/failed dispositions | Ordinary native c9ed units passed 424/424 net6 and 755/755 net8; preview invocation skipped after compiler failure. Local repair passes both parity modes; new native candidate required. Original failures and UTA007 warnings retained |
-| Local harness conversion | Correct test-only frequency conversion with original one-second assertion preserved and exact zero/one/two-second controls | Test helper repaired; original one-second assertion unchanged; all four witness leaves pass. Meaningful service half inapplicable to test-only arithmetic; proposed treatment surfaced |
-| Gateway/Direct service | All six exact new leaves per applicable TFM, real key reads and meaningful ciphertext/decrypted-value/control outcomes | Corrected c9ed candidate passed all six exact leaves in each native TFM, runs 1331387/1331388. Repaired source-reference representation is separate and awaits its own native service receipt |
-| MDE observer preservation | Existing nonnull string-encryption unit helper preserves the field, rejects plaintext/empty/invalid-base64 values and retains null/metadata/decryption controls | Strengthened existing helper; current-source preview class passed 8/8 net6 and 24/24 net8 leaves, original full-package receipts remain separately attributable |
+| Focused units | All three named strengthened tests plus existing same-class neighbors, exact case outcomes and first-failure preservation for both TFMs | All three seeds and all 13 cache-class leaves passed in each repaired-candidate native ordinary/preview TFM, separately from the six local bindings |
+| Wider Custom unit selection | Evaluated ordinary/preview invocation and eligible executed cases for both TFMs; retain warnings/skipped/inconclusive/failed dispositions | Repaired c9e118/build 64334 ordinary and preview each passed 424/424 net6 and 755/755 net8. Both original parity tasks passed without bypass. Earlier failures/skips and four UTA007-undiscoverable methods retained |
+| Local harness conversion | Correct test-only frequency conversion with original one-second assertion preserved and exact zero/one/two-second controls | Original one-second witness and exact 0/1/2-second controls passed in all four native unit runs. Meaningful service half inapplicable to test-only arithmetic; proposed treatment surfaced, not silently waived |
+| Gateway/Direct service | All six exact new leaves per applicable TFM, real key reads and meaningful ciphertext/decrypted-value/control outcomes | All six exact leaves passed on repaired c9e118 in runs 1331436/net6 and 1331437/net8. Earlier c9ed runs 1331387/1331388 remain separate |
+| MDE observer preservation | Existing nonnull string-encryption unit helper preserves the field, rejects plaintext/empty/invalid-base64 values and retains null/metadata/decryption controls | Existing MDE class passed 8 net6/24 net8 leaves in each repaired native unit variant; all twelve new native service cells passed. Distinct local current-source preview outcomes remain separately attributable |
 | Current-core comparison | Explicit source/package-symbol binding and focused unit outcomes/compilation; service boundary qualified separately | Current-source preview `3.64.0-preview.0`, both TFMs, 52/52 cache+diagnostics leaves each; not package/service/GA proof |
-| Candidate/configuration/artifact | Native evaluated logs, original TRX/subresults, exact source and actual merge-candidate identity; installed/loaded/fixture gaps explicit | c9ed/24003/build 64330 ordinary-unit/service commands, original TRX, terminal leaves and setup obtained below. Native repair/preview, complete loaded payload and fixture qualification remain separate |
+| Candidate/configuration/artifact | Native evaluated logs, original TRX/subresults, exact source and actual merge-candidate identity; installed/loaded/fixture gaps explicit | c9e118/de046/build 64334 has six original TRX receipts, exact required leaves and five task-attempt receipts below. Complete loaded payload, installed consumers, independent fixture/cleanup qualification and current-source service remain unqualified |
 | Whole-SDK obligations | Preserve all existing matrix inputs and unexpanded backlog, including counterparts and invalid-discovery methods | Remain open; no denominator or qualification claim |
 
 Record each later attempt and version without overwriting original failures,
@@ -407,8 +407,8 @@ Both YAML files parse, and a bounded comparison finds exactly one new Custom
 unit invocation in each intended existing job. This is tracked selection,
 not native evaluation. Existing filters/retries, I-01 test bodies,
 TFMs/dependencies, production source, API contracts and docs-path exclusions
-are unchanged. The c9ed native receipts below supplement these local records;
-the repaired candidate requires separate native outcomes and identity.
+are unchanged. The historical c9ed and subsequent repaired-candidate native
+receipts below supplement these local records without relabeling their sources.
 
 ### Corrected-observer local receipt
 
@@ -487,9 +487,10 @@ installed nupkg, fixture capability, cleanup response or lease-fencing outcome.
 The preview source-reference predecessor fails on both TFMs, as specified
 above; subsequent NuGet-surface parity and Custom preview units are skipped,
 not zero applicable cases. Its nominal Release job name does not override
-the actual default-Debug/Optimize build command. The source-parity repair is
-locally compiled only and needs a fresh automatically selected candidate.
-Native task success elsewhere cannot conceal this introduced failure.
+the actual default-Debug/Optimize build command. At that receipt the
+source-parity repair was locally compiled only; its subsequent native evidence
+is recorded separately below. Native task success elsewhere does not conceal
+the original introduced failure.
 
 Original build 64329 remains separate: at the retained `23:46:17Z` observation,
 all three Custom tasks were skipped under canceled parent jobs, with no Custom
@@ -497,6 +498,78 @@ result run. No cancellation actor/reason is established and none was requested
 here. Its original incorrect observer did not execute and earns no passed
 service credit. Neither a cancellation nor this compile failure is diagnosed
 as an SDK functional defect.
+
+## Native PR-CI receipt: repaired candidate
+
+Repaired test source `c9e11829da397192338459b9d8c58edbe5d7860d`, tree
+`1f2e6156bd1cb0c5e428f8ec48eac00875e746f0`, was committed and immediately
+pushed. Automatically queued [build 64334][repaired-native-build] uses actual
+merge `de046306064296ee62a92fb8dfc9639616fe470c`, with exactly A-01 base
+`52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8` and repaired source as parents
+and the same tree. No manual trigger, rerun or cancellation was issued.
+This result-only revision does not relabel a later documentation head as the
+executed source.
+
+| Existing task / original run | Target | API results / raw TRX / terminal leaves | Original TRX SHA-256 |
+|---|---|---|---|
+| Ordinary Custom units / 1331452 | net6 | 424 / 424 / 424, all passed | `62aa4a1bd715aa2d7e39938b4daa9b7b62d63bd9f6a2522817e59a150bcc91e8` |
+| Ordinary Custom units / 1331451 | net8 | 755 / 755 / 755, all passed | `92b2665e2507323232b38bf15127ef0ceae748014af4c773e786d7a18325bf41` |
+| Preview Custom units / 1331443 | net6 | 424 / 424 / 424, all passed | `d266e3d82af9b62620298979a7b808e8dfcf47b864958f7f4420338d57952dbd` |
+| Preview Custom units / 1331444 | net8 | 755 / 755 / 755, all passed | `46e4265e64437cd93d099245a58be6e55611478431248ce4ca81e967f2e315b8` |
+| Custom emulator / 1331436 | net6 | 75 / 81 / 79, all terminal leaves passed | `6b892b926515dfde61430305e7e9e35955e4b079af83f2abc47e87db38036034` |
+| Custom emulator / 1331437 | net8 | 81 / 87 / 85, all terminal leaves passed | `be5ff3b1c38cb73006d957112c73bd6d465d6683490fedcf73df6794dddf9d7e` |
+
+Original TRX and test-definition reconciliation establishes all three exact
+cache seeds, all 13 cache-class leaves, all 39 diagnostics leaves and all
+8/net6 or 24/net8 MDE-class leaves in each native unit variant. The original
+one-second assertion and the unique 0/1/2-second controls all pass. Each
+service TFM contains exactly one passed result for every one of the six
+Gateway/Direct fault/pre-cancellation argument leaves above. The stronger
+ciphertext, cold-provider/key-read, absent-item and recovery observers remain
+unchanged. No required leaf is failed, skipped or inconclusive. The four
+legacy UTA007 methods are still undiscoverable in both native unit variants,
+not passed or skipped. Service parent/raw/terminal distinctions remain
+`75/81/79` and `81/87/85`, not an invented cohort increase.
+
+| Required existing task | Original log | UTC interval on 2026-11-02 | Actual result |
+|---|---|---|---|
+| `Build Microsoft.Azure.Cosmos.Encryption.Custom Project Ref` | 237 | 00:58:02..01:01:48 | Succeeded; 16 warnings, zero errors |
+| `Build Microsoft.Azure.Cosmos.Encryption.Custom (NuGet-surface parity vs main SDK source)` | 239 | 01:01:48..01:01:55 | Succeeded; zero warnings/errors |
+| `PREVIEW Microsoft.Azure.Cosmos.Encryption.Custom.Tests` | 247 | 01:01:55..01:02:30 | Succeeded; runs 1331443/1331444 |
+| `Microsoft.Azure.Cosmos.Encryption.Custom.Tests` | 297 | 01:10:40..01:11:12 | Succeeded; runs 1331452/1331451 |
+| `Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests` | 199 | 00:54:36..00:58:10 | Succeeded; runs 1331436/1331437 |
+
+All five tasks have attempt 1 and empty previous-attempt records. Each full
+test-task log contains one test command and both TFM invocations. The two
+source-preview build commands retain default Debug plus `Optimize=true` and
+`IsPreview=true;SdkProjectRef=true`; the second additionally sets
+`DefineSdkProjectRefSymbol=false`. Neither parity gate was removed or
+changed. Original build-log SHA-256 values are
+`d1e461c2c3cbe24bbfbebb3b5573a62492111e9cfa682cdd0f3aba3074d7897a`
+and `f847ac1d6351d5328e7d86cfefb9d42a30e7e39ba91904025ce4e2d1be1fb39e`.
+The solution build's warnings remain in its original log; success is not a
+warning-free or complete SourceLink/artifact attestation.
+
+Actual unit commands are Release, `SdkProjectRef=false`, `/p:OS=Windows`,
+and `TestCategory!=Quarantine & TestCategory!=Ignore`; only the preview
+unit invocation adds `IsPreview=true`. The existing service command retains
+Release and that same filter/OS without a new preview-service flag.
+The default core package is `3.41.0-preview.0` in all three test tasks,
+not GA-core or current-core service proof. VSTest is 17.11.1 x64. Separate
+setup receipts in all three jobs install runtime 6.0.36 and SDK 8.0.427;
+the emulator readiness log reports Running before service invocation.
+Installed versions/TFM paths do not identify every loaded runtime/native
+payload, produced/installed nupkg or fixture capability.
+
+The bounded observation at `2026-11-02T01:11:20.944668Z` records all five
+required tasks succeeded while the overall build remained in progress.
+No all-checks-clean or merge recommendation follows. The structured exact-case
+and task reconciliation SHA-256 is
+`7be7ef6a5a7deaf9532ce1f86b072895a19462f40d8d6ef190d1de01016bc3bf`.
+Native original TRX/logs remain the primary execution evidence; this durable
+summary is not a new verification platform or global retention decision.
+Historical 64329 cancellation/skips, 64330 compiler failure and passed
+cohorts, frozen amendments and local failed/repaired attempts remain distinct.
 
 ## Changed files and publication boundary
 
@@ -544,12 +617,15 @@ concurrency guard followed by the already user-approved PR-only publisher
 credential succeeded; live title/body were verified. No global authentication,
 remote, permission or auto-merge/Agent-merge setting changed.
 
-Ordinary c9ed units and all twelve service cells now have native case receipts;
-preview execution and native verification of the local source-parity repair
-remain pending. Independent oracle/review/challenge, complete fixture/loaded-
-artifact identity and broader Custom/source/stream/in-flight/peer obligations
-remain unqualified. No green label, passing local compile or earlier candidate
-closes those separate obligations.
+Repaired c9e118 now has native ordinary/preview unit receipts on both TFMs,
+all twelve new service cells and both existing source-preview parity gates
+passed. This closes the bounded implementation/receipt increment, not G-02
+or a product contract. Independent oracle/review/challenge, complete fixture/
+loaded-artifact/cleanup identity, current-source service/installed consumers,
+the four undiscoverable legacy methods and broader Custom/stream/in-flight/
+peer obligations remain unqualified. No green label or earlier candidate
+closes those separate obligations. Later documentation-only revisions are
+not substituted for the tested source.
 
 [cache-witness]: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8/Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/DekCacheDistributedCacheContractTests.cs#L57-L122
 [cache-options]: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8/Microsoft.Azure.Cosmos.Encryption.Custom/src/DistributedCacheOptions.cs
@@ -562,5 +638,6 @@ closes those separate obligations.
 [stopwatch-authority]: https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.stopwatch.elapsedticks?view=net-8.0#remarks
 [native-build]: https://cosmos-db-sdk-public.visualstudio.com/4000bd49-81c3-47f2-94d8-d1392b95c228/_build/results?buildId=64329
 [corrected-native-build]: https://cosmos-db-sdk-public.visualstudio.com/4000bd49-81c3-47f2-94d8-d1392b95c228/_build/results?buildId=64330
+[repaired-native-build]: https://cosmos-db-sdk-public.visualstudio.com/4000bd49-81c3-47f2-94d8-d1392b95c228/_build/results?buildId=64334
 [mde-representation]: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8/Microsoft.Azure.Cosmos.Encryption.Custom/src/Transformation/MdeJObjectEncryptionProcessor.cs#L42-L86
 [mde-unit-representation]: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8/Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/MdeEncryptionProcessorTests.cs#L369-L414
