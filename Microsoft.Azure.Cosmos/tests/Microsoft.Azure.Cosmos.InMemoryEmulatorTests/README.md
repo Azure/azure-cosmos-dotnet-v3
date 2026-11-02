@@ -103,17 +103,37 @@ test selection are unchanged. This separation follows the canonical
 
 ## Azure Pipelines
 
-`azure-pipelines-inmemory-emulator.yml` is a standalone, manually queued Linux job.
-It builds the pinned host with locked dependencies, authenticates to the same
-Azure SDK Rust Cargo feed used by Go v2, installs the .NET toolchain/runtime, and
-sets the executable variable before running this project. The job publishes TRX
-results and treats a skipped process test as failure. It does not change the
-existing Windows-emulator or live-account pipelines.
+`templates/build-inmemory-emulator.yml` is the shared Linux job used by
+`azure-pipelines.yml` (PR CI), an independent stage in `azure-pipelines-nightly.yml`,
+and the focused `azure-pipelines-inmemory-emulator.yml` entry point. The job uses
+the project's available Microsoft-hosted Linux queue (`ubuntu-24.04`), not the
+Windows OneES agents used by the existing emulator jobs. Existing emulator and
+live-account fixtures and their test selection are unchanged.
 
-Register/queue this YAML in Azure DevOps to enable the job; the build identity needs
-read/upstream access to the Azure SDK Rust feed. A local build uses the developer's
-Cargo registry configuration. The job does not relax network isolation or bypass
-feed authentication on failure.
+The job builds the pinned host with locked dependencies, authenticates to the same
+Azure SDK Rust Cargo feed used by Go v2, installs the .NET 8 SDK and .NET 6 runtime,
+and sets the executable variable before running this project. It checks that the
+executable exists, requires process-backed `ItemTests` to execute, and fails for
+missing results, failures, or skipped tests. TRX and Rust build diagnostics are
+published. The job does not relax network isolation or fall back to crates.io when
+feed authentication fails.
+
+The focused pipeline is registered as **dotnet-v3-inmemory-emulator** (definition
+87) in **cosmos-db-sdk-public/cosmos-db-sdk-public**, alongside `dotnet-v3-ci` and
+`dotnet-v3-nightly`. Queue a branch that contains this integration with:
+
+```sh
+az pipelines run --id 87 --branch <feature-branch> \
+  --organization https://dev.azure.com/cosmos-db-sdk-public \
+  --project cosmos-db-sdk-public
+```
+
+The existing GitHub service connection is reused; no additional account credential
+is needed by the tests. The build identity needs read/upstream access to the Azure
+SDK Rust feed. A local build uses the developer's Cargo registry configuration.
+Registration alone does not establish a successful run; inspect the run's build,
+test, and published result steps when enabling this on another build identity.
+PR/nightly wiring becomes active when the change is merged into the target branch.
 
 ## References inspected
 
