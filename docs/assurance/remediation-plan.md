@@ -6,7 +6,7 @@
 
 | Field | Draft receipt |
 |---|---|
-| Version / recorded | 0.3.4 / 2026-11-02 UTC |
+| Version / recorded | 0.3.5 / 2026-11-02 UTC |
 | Status | Evolving proposed plan with authorized bounded testing increments; not an approved contract catalog, whole-SDK executed assessment or merge recommendation |
 | Scope | All repository SDK source and companion packages; Gateway and Direct; improve established SDK tests and CI |
 | Starting evidence | Completed A-01 reconciliation audit, identified below; no duplicate SDK audit |
@@ -161,16 +161,27 @@ compile/list but **have not executed**. The first CS0200 test compile failure
 and its typed-dictionary repair are retained; both repaired package TFMs and
 both source-preview Debug/Optimize symbol surfaces compile.
 
-No CI YAML changes are needed: I-02's existing unit tasks and source/parity
-gates remain intact. However, root `azure-pipelines.yml` automatically selects
+No unit/service-task YAML change is needed for class selection: I-02's
+existing tasks and source/parity gates remain intact. However, root
+`azure-pipelines.yml` automatically selects
 PR targets main/releases/*, not the requested stacked feature target, and has
 `trigger: none`. Observe actual registration/publication; do not trigger CI,
 change filters, retarget the parent or borrow build 64334. Native service/
 merge/build/attempt/TRX proof remains blocked unless an existing automatic
 registration supplies it. No local Windows fixture or arbitrary account is
-substituted. Standard linked-account PR publication is separately pending;
-PR6182's personal publisher exception is not inherited. M-01 foundation
-plan/spec work and its evaluator/CI implementation pause remain separate.
+substituted. Source `3748a6a873f08cb9a5bfb71fb2d1ab581faa6d77`, tree
+`8f2e7bc9903cd8a471e755232a55cf7c6904a29a`, is pushed with the exact
+validated test-file blobs. Standard linked-account PR creation was rejected
+by GitHub **403: Enterprise Managed User cannot access this content**.
+Read-only verification at `2026-11-02T01:55:05Z` found no matching PR,
+zero head check runs and zero commit statuses; aggregate `pending` with no
+statuses is not a queued build. No PR URL, actual PR/native merge/build/
+attempt/service/TRX identity exists for I-03. No alternate publisher, login
+or permission change was attempted; PR6182's personal publisher exception
+is not inherited. [Spec v0.1.2](specs/i-03-custom-legacy-paired-tests.md#publication--native-disposition)
+records the exact failure and remaining publisher/native-selection inputs.
+M-01 foundation plan/spec work and its evaluator/CI implementation pause
+remain separate; all other gaps and qualification obligations stay open.
 
 ## 1. What needs fixing
 

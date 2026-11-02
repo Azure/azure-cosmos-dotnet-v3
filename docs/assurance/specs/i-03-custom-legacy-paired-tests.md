@@ -2,8 +2,8 @@
 
 | Field | Receipt |
 |---|---|
-| Version / recorded | 0.1.1 / 2026-11-02 UTC; local execution and compilation receipts |
-| Status | Four methods repaired with all original processor rows; local units pass and paired service rows compile/list. Service/native execution and publication remain pending. Not independent oracle approval, retirement, whole-G-07 closure or merge qualification |
+| Version / recorded | 0.1.2 / 2026-11-02 UTC; local receipts and blocked publication/native disposition |
+| Status | Four methods repaired with all original processor rows; local units pass and paired service rows compile/list. Standard PR publication blocked by GitHub 403/Enterprise Managed User restriction; service/native execution unobtained. Not independent oracle approval, retirement, whole-G-07 closure or merge qualification |
 | Bounded scope | Repair four existing `LegacyEncryptionProcessorTests` methods; preserve their meaningful assertions and controls; pair the underlying legacy behavior using existing real-emulator infrastructure |
 | Isolated intake | Parent head `7330088136240c8586ed5eea63f2a4f9a0c366e5`, tree `ec1584846a7b553195840a174b07bb551ebde57d`; clean child checkout. Child branch `kuthapar-microsoft-i-03-legacy-protection` targets `kuthapar-microsoft-net-assurance-gap-plan` in a separate stacked PR |
 | Frozen upstream / history | Parent resolved upstream main once at I-03 intake to A-01's unchanged `52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8`. No duplicate audit or new moving-main assessment. A-01 SHA-256 `63e368bc66f5c876bb853de62116a9d54ce34f9e1066b5f0b89da8df95b4949c`, 98,011 bytes; all earlier I-01/I-02 identities remain historical |
@@ -301,17 +301,48 @@ not asserted to be full loaded/native/installed-consumer attestation.
 Each package emulator assembly lists the **one** new data-driven parent.
 The six declared data rows per TFM have **not executed locally**; neither
 listing nor compilation initializes a service fixture or supplies twelve
-passed cells. Native build/run/attempt/TRX and actual native merge-candidate
-identities are currently unavailable; the stacked target-filter and standard
-publication route still need their separate disposition.
+passed cells. These local runs supply no native build/run/attempt/TRX or
+actual native merge-candidate identity; the separate publication and target
+selection disposition follows below.
+
+### Publication / native disposition
+
+The implementation and local result update were committed and immediately
+pushed as `3748a6a873f08cb9a5bfb71fb2d1ab581faa6d77`, tree
+`8f2e7bc9903cd8a471e755232a55cf7c6904a29a`; both test-file blobs match
+the actual local executions/compilations above. Those executions occurred
+before the commit; documentation publication is not a new test execution.
+Origin's parent branch still resolves to the original
+`7330088136240c8586ed5eea63f2a4f9a0c366e5`.
+
+The standard linked-account `create_pull_request` attempt for that head and
+explicit base `kuthapar-microsoft-net-assurance-gap-plan` was rejected:
+**403 Forbidden: "Unauthorized: As an Enterprise Managed User, you cannot
+access this content"**, request ID `215C:173B74:15F9:25A2:6AE7ED51`.
+Read-only verification at `2026-11-02T01:55:05Z` found **no matching PR**,
+zero head check runs and zero commit status entries. The API's aggregate
+`pending` state with zero entries is not a queued CI run. No retry, global
+login/account/permission change, alternate publisher credential, or PR6182
+personal-publisher exception was used.
+
+There is **no new PR URL**, actual PR/native merge candidate, native build,
+task attempt, service run or TRX identity to report. Standard publication
+requires an allowed linked publisher or separately explicit publisher-route
+authorization; any native path still needs an applicable existing automatic
+registration/selection and capable admitted fixture. The root target filter
+above independently excludes the requested feature target. Neither boundary
+is waived by compilation, local units, a successful SSH push, an empty
+status response or I-02's build 64334. All twelve declared service cells
+remain unexecuted, not MSTest-skipped/passed cells. Stop here: no I-04,
+M-01 evaluator/CI implementation, review/fanout or new operational action.
 
 - [x] Freeze the pre-edit specification identity.
 - [x] Capture signature-only discovery/execution and original Stream failures.
 - [x] Implement all four discoverable, meaningfully asserted legacy cases and controls.
 - [x] Add only the genuinely missing real-provider/emulator observer cells.
 - [x] Record local actual execution and compilation/parity results.
-- [ ] Publish a separate stacked PR through the standard linked account.
-- [ ] Observe applicable automatic native evidence or record its exact blocker.
+- [ ] Publish a separate stacked PR through the standard linked account: blocked by the recorded 403/Enterprise Managed User restriction.
+- [x] Observe applicable automatic native evidence or record its exact blocker: no PR/check registration, and tracked target selection excludes this stack; no execution credit.
 - [x] Update plan/matrix without relabeling earlier results or closing other gaps.
 
 The standard linked-account publication route is required. Existing SSH

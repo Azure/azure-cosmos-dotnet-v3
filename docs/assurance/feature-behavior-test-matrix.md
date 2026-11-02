@@ -6,7 +6,7 @@
 
 | Field | Draft receipt |
 |---|---|
-| Version / recorded | 0.3.4 / 2026-11-02 UTC |
+| Version / recorded | 0.3.5 / 2026-11-02 UTC |
 | Status | Evolving proposed matrix with separate local/native testing receipts; no approved complete contract/oracle catalog or whole-SDK assurance |
 | Source | A-01 at `52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8`, tree `2c89abbd9680af78d5072b523df277d8c46b755d`; this assessment's once-resolved main matched |
 | Audit receipt | A-01 SHA-256 `63e368bc66f5c876bb853de62116a9d54ce34f9e1066b5f0b89da8df95b4949c`, 98,011 bytes; original policy provenance preserved in the linked intake |
@@ -190,7 +190,7 @@ all four failures the explicit unsupported Stream-encryption error. Final
 ordinary/preview full Custom units each pass 428/428 net6 and 763/763 net8,
 with zero failed/skipped/inconclusive results, exact five/nine Legacy leaves,
 13 cache, 39 diagnostics and 8/24 MDE neighbors. Focused source preview passes
-14/14 and 41/41. [Spec v0.1.1](specs/i-03-custom-legacy-paired-tests.md#actual-local-receipt)
+14/14 and 41/41. [Spec v0.1.2](specs/i-03-custom-legacy-paired-tests.md#actual-local-receipt)
 retains original/final TRX digests, source-file blobs, commands and the
 introduced CS0200 compile failure followed by its typed-dictionary repair.
 
@@ -204,7 +204,14 @@ stacked feature target is not automatically selected by that YAML.
 Native service/build/attempt/TRX proof remains blocked absent another existing
 automatic registration. No new filter/job/evaluator, explicit trigger,
 retarget, local Gateway-only substitute or borrowed I-02 execution is allowed.
-Publication through the standard linked account remains separately pending.
+Source `3748a6a873f08cb9a5bfb71fb2d1ab581faa6d77`, tree
+`8f2e7bc9903cd8a471e755232a55cf7c6904a29a`, is pushed with the validated
+test-file blobs. Standard linked-account publication failed **403:
+Enterprise Managed User cannot access this content**. Read-only observation
+at `2026-11-02T01:55:05Z` found no matching PR, zero head checks/statuses;
+aggregate `pending` with zero entries is not queued execution. No new PR URL
+or actual PR/native merge/build/attempt/service/TRX identity is available.
+No alternate personal publisher or login/permission change was used.
 
 For this substantive update, shared source
 `447c660872ceaced30a5b5c60abec3bc5c54eb7b` is distinct from original
