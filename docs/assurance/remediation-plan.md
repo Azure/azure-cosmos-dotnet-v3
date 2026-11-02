@@ -6,7 +6,7 @@
 
 | Field | Draft receipt |
 |---|---|
-| Version / recorded | 0.3.5 / 2026-11-02 UTC |
+| Version / recorded | 0.3.6 / 2026-11-02 UTC |
 | Status | Evolving proposed plan with authorized bounded testing increments; not an approved contract catalog, whole-SDK executed assessment or merge recommendation |
 | Scope | All repository SDK source and companion packages; Gateway and Direct; improve established SDK tests and CI |
 | Starting evidence | Completed A-01 reconciliation audit, identified below; no duplicate SDK audit |
@@ -165,10 +165,15 @@ No unit/service-task YAML change is needed for class selection: I-02's
 existing tasks and source/parity gates remain intact. However, root
 `azure-pipelines.yml` automatically selects
 PR targets main/releases/*, not the requested stacked feature target, and has
-`trigger: none`. Observe actual registration/publication; do not trigger CI,
-change filters, retarget the parent or borrow build 64334. Native service/
-merge/build/attempt/TRX proof remains blocked unless an existing automatic
-registration supplies it. No local Windows fixture or arbitrary account is
+`trigger: none`. After publication, observe actual automatic selection.
+The later user choice permits exactly one validation build in the existing
+Windows/emulator PR pipeline if automatic selection is absent, using current
+limits/fixtures and only after checking definition/source/branch/reason
+conditions for release/publishing safety. That allowance is unconsumed;
+no second queue/rerun/cancellation or filter/resource/permission/release/
+merge change is authorized. Do not retarget the parent or borrow build
+64334. Native service/merge/build/attempt/TRX proof remains unobtained.
+No local Windows fixture or arbitrary account is
 substituted. Source `3748a6a873f08cb9a5bfb71fb2d1ab581faa6d77`, tree
 `8f2e7bc9903cd8a471e755232a55cf7c6904a29a`, is pushed with the exact
 validated test-file blobs. Standard linked-account PR creation was rejected
@@ -178,8 +183,17 @@ zero head check runs and zero commit statuses; aggregate `pending` with no
 statuses is not a queued build. No PR URL, actual PR/native merge/build/
 attempt/service/TRX identity exists for I-03. No alternate publisher, login
 or permission change was attempted; PR6182's personal publisher exception
-is not inherited. [Spec v0.1.2](specs/i-03-custom-legacy-paired-tests.md#publication--native-disposition)
-records the exact failure and remaining publisher/native-selection inputs.
+is not inherited. After the user's reported repository-personal-account
+correction, the standard tool retry at receipt head
+`9697fa53f1602f04a93f26f48bfd9e33bee5a457` still returned the same EMU
+403, request `CDF6:3B1635:81A46:BB23F:6AE7F087`. A duplicate check at
+`2026-11-02T02:08:21Z` found no matching PR. Available metadata exposes
+neither the selected account nor the cause of the mismatch; direct app
+inspection is blocked by its built-in safety policy, not bypassed.
+[Spec v0.1.3](specs/i-03-custom-legacy-paired-tests.md#publication--native-disposition)
+preserves both publication failures, the unconsumed conditional one-run
+allowance and remaining personal-link/native-selection inputs. No build was
+queued without publication and no alternate publisher credential was used.
 M-01 foundation plan/spec work and its evaluator/CI implementation pause
 remain separate; all other gaps and qualification obligations stay open.
 
@@ -446,7 +460,7 @@ Retain all nine diagnostic dimensions for later comparable assessments: executab
 
 This draft is complete as a planning intake when every A-01 G-01 through G-12 has a stable link, risk, existing-suite proposal, observer/control, preservation neighbors, dependencies and closure/blocked-input criteria; the matrix retains all four navigation inputs and marks unexpanded cells unverified. That document acceptance is **not** SDK assurance, design approval, implementation authorization, applicable test execution evidence or merge eligibility.
 
-The user's authorization permits [I-01](specs/i-01-encryption-patch-paired-tests.md), [I-02](specs/i-02-custom-cache-paired-tests.md) and the separate stacked [I-03](specs/i-03-custom-legacy-paired-tests.md) increment. Stop after the bounded I-03 discovery/paired-protection and honest publication/execution receipt; do not start I-04, a new audit, evaluators or review/peer fanout. Separate M-01 plan/spec work and its implementation pause remain binding. G-12 receipt access is independent. Missing emulator/account/ADO inputs remain explicit and do not authorize arbitrary resources, changed target filters or explicit CI/nightly reruns. This is not whole-SDK closure or autonomous eligibility; disputed contracts and policy decisions still require their separate decisions.
+The user's authorization permits [I-01](specs/i-01-encryption-patch-paired-tests.md), [I-02](specs/i-02-custom-cache-paired-tests.md) and the separate stacked [I-03](specs/i-03-custom-legacy-paired-tests.md) increment. Stop after the bounded I-03 discovery/paired-protection and honest publication/execution receipt; do not start I-04, a new audit, evaluators or review/peer fanout. Separate M-01 plan/spec work and its implementation pause remain binding. G-12 receipt access is independent. The later one-build I-03 authorization is limited to the published candidate, absent automatic selection, the existing Windows/emulator PR pipeline and current limits/fixtures; it is not a second-run/nightly/release or filter/resource/permission/merge-change allowance. Missing emulator/account/ADO inputs remain explicit. This is not whole-SDK closure or autonomous eligibility; disputed contracts and policy decisions still require their separate decisions.
 
 ## Immutable references
 

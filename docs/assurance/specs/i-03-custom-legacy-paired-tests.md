@@ -2,12 +2,12 @@
 
 | Field | Receipt |
 |---|---|
-| Version / recorded | 0.1.2 / 2026-11-02 UTC; local receipts and blocked publication/native disposition |
+| Version / recorded | 0.1.3 / 2026-11-02 UTC; corrected-account retry and conditional one-build authorization |
 | Status | Four methods repaired with all original processor rows; local units pass and paired service rows compile/list. Standard PR publication blocked by GitHub 403/Enterprise Managed User restriction; service/native execution unobtained. Not independent oracle approval, retirement, whole-G-07 closure or merge qualification |
 | Bounded scope | Repair four existing `LegacyEncryptionProcessorTests` methods; preserve their meaningful assertions and controls; pair the underlying legacy behavior using existing real-emulator infrastructure |
 | Isolated intake | Parent head `7330088136240c8586ed5eea63f2a4f9a0c366e5`, tree `ec1584846a7b553195840a174b07bb551ebde57d`; clean child checkout. Child branch `kuthapar-microsoft-i-03-legacy-protection` targets `kuthapar-microsoft-net-assurance-gap-plan` in a separate stacked PR |
 | Frozen upstream / history | Parent resolved upstream main once at I-03 intake to A-01's unchanged `52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8`. No duplicate audit or new moving-main assessment. A-01 SHA-256 `63e368bc66f5c876bb853de62116a9d54ce34f9e1066b5f0b89da8df95b4949c`, 98,011 bytes; all earlier I-01/I-02 identities remain historical |
-| Authorization / stop | User selected a separate I-03 worktree and stacked PR and requires focused unit plus emulator/authorized-isolated-live protection. Stop after this increment; no I-04, evaluator/platform, new technique, review/fanout, permission/resource change, explicit CI trigger/rerun/cancellation, merge or release |
+| Authorization / stop | User selected a separate I-03 worktree and stacked PR and requires focused unit plus emulator/authorized-isolated-live protection. Later authorization permits exactly one existing Windows/emulator PR-validation build after publication if automatic selection is absent, with current limits/fixtures. No other CI trigger/rerun/cancellation, I-04, evaluator/platform, new technique, review/fanout, permission/resource change, merge or release |
 
 ## Authority, lifecycle and the actual gap
 
@@ -169,10 +169,16 @@ installed consumers.
 The tracked root `azure-pipelines.yml` has `trigger: none` and PR target
 filters **main / releases/**, not this stacked feature-branch target.
 Therefore an ordinary automatic native run is not promised for the stacked
-PR. Observe its actual checks/build registration without triggering, rerunning
-or changing selection. If none selects it, service execution and native
-qualification remain blocked by the target filter; do not borrow I-02's
-build 64334 results or retarget/modify the parent to manufacture evidence.
+PR. The initial automatic-only scope is retained in v0.1.0-v0.1.2.
+The later user decision authorizes exactly one validation build in the existing
+SDK Windows/emulator PR pipeline **after actual publication**, only if
+automatic selection is absent, using its current limits and fixtures.
+Inspect definition/source/branch/reason conditions before queueing so this
+does not activate release/publishing. No second queue, rerun, cancellation,
+selection/filter/resource/permission/release/merge change is authorized.
+The one-run allowance is currently **unconsumed** because publication has
+not succeeded. Do not borrow I-02's build 64334 results or retarget/modify
+the parent to manufacture evidence.
 Existing Custom emulator job limit is 60 minutes and task retry limit is 2;
 the unit tasks declare no task retry. Preserve actual attempt histories and
 finite inherited limits; do not introduce a new budget.
@@ -321,18 +327,50 @@ explicit base `kuthapar-microsoft-net-assurance-gap-plan` was rejected:
 access this content"**, request ID `215C:173B74:15F9:25A2:6AE7ED51`.
 Read-only verification at `2026-11-02T01:55:05Z` found **no matching PR**,
 zero head check runs and zero commit status entries. The API's aggregate
-`pending` state with zero entries is not a queued CI run. No retry, global
+`pending` state with zero entries is not a queued CI run. At that initial
+receipt, no retry, global
 login/account/permission change, alternate publisher credential, or PR6182
 personal-publisher exception was used.
 
+On resumption, the user reported: "I fixed the account to be personal account
+on dotnet repository." The standard app publication route was retried for
+receipt head `9697fa53f1602f04a93f26f48bfd9e33bee5a457`, tree
+`0e35833e8852bbd70e2f46369f3622c337dea216`, with the same explicit stacked
+base and unchanged validated test blobs. It again returned **403 Forbidden:
+"Unauthorized: As an Enterprise Managed User, you cannot access this
+content"**, new request ID `CDF6:3B1635:81A46:BB23F:6AE7F087`.
+A duplicate check at `2026-11-02T02:08:21Z` found no matching PR.
+This proves the retry's failure, not which repository/session account
+selection the app currently stores or why the corrected link was not used.
+Supported repository/session metadata does not expose that selection.
+Direct app inspection was rejected by the computer-use server's built-in
+safety policy; no internal-file/credential or shell-UI workaround was used.
+
+The separately relayed user choice was:
+"Authorize one I-03 validation build if automatic CI does not select it
+(Recommended)". Its question explicitly conditions that one existing
+Windows/emulator pipeline run on a **published** candidate and preserves
+current limits/fixtures, filters, resources, permissions, releases and merge
+settings. No run was queued before publication, and no allowance has been
+consumed. A read-only native definition check identifies existing
+`dotnet-v3-ci`, definition 63 revision 104, YAML `azure-pipelines.yml`,
+GitHub repository `Azure/azure-cosmos-dotnet-v3`, enabled existing hosted
+queue. Its stored default/trigger branch metadata still names master;
+that metadata is not evidence that the requested stack is selected or that
+a manual run would have an appropriate reason/merge identity. No release
+definition, source/configuration override or queue request was submitted.
+
 There is **no new PR URL**, actual PR/native merge candidate, native build,
 task attempt, service run or TRX identity to report. Standard publication
-requires an allowed linked publisher or separately explicit publisher-route
-authorization; any native path still needs an applicable existing automatic
-registration/selection and capable admitted fixture. The root target filter
-above independently excludes the requested feature target. Neither boundary
-is waived by compilation, local units, a successful SSH push, an empty
-status response or I-02's build 64334. All twelve declared service cells
+requires the corrected personal-account binding to reach the standard
+publication tool, or separately explicit publisher-route authorization.
+The exact cause/account binding is not exposed by the available tools;
+the failed retry is not bypassed with PR6182's personal credential exception.
+After actual publication, observe automatic selection and only then, if
+absent, use the unconsumed one-build allowance subject to the safety checks
+above. Publication/fixture boundaries are not waived by compilation, local
+units, a successful SSH push, an empty status response or I-02's build
+64334. All twelve declared service cells
 remain unexecuted, not MSTest-skipped/passed cells. Stop here: no I-04,
 M-01 evaluator/CI implementation, review/fanout or new operational action.
 
@@ -341,8 +379,8 @@ M-01 evaluator/CI implementation, review/fanout or new operational action.
 - [x] Implement all four discoverable, meaningfully asserted legacy cases and controls.
 - [x] Add only the genuinely missing real-provider/emulator observer cells.
 - [x] Record local actual execution and compilation/parity results.
-- [ ] Publish a separate stacked PR through the standard linked account: blocked by the recorded 403/Enterprise Managed User restriction.
-- [x] Observe applicable automatic native evidence or record its exact blocker: no PR/check registration, and tracked target selection excludes this stack; no execution credit.
+- [ ] Publish a separate stacked PR through the standard linked account: the corrected-account retry still receives the recorded 403/Enterprise Managed User restriction.
+- [x] Observe applicable automatic native evidence or record its exact blocker: publication is still blocked; the conditional single-build allowance remains unconsumed and no execution is credited.
 - [x] Update plan/matrix without relabeling earlier results or closing other gaps.
 
 The standard linked-account publication route is required. Existing SSH
