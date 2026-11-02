@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.IO;
     using System.Linq;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -458,6 +459,87 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 .ToArray();
         }
 
+        [TestMethod]
+        public async Task StatisticsCacheSkipsStatisticsRequestsTests()
+        {
+            CosmosArray documentsArray = await LoadDocuments();
+            await this.CreateIngestQueryDeleteAsync(
+                connectionModes: ConnectionModes.Direct,
+                collectionTypes: CollectionTypes.MultiPartition,
+                documents: documentsArray.Select(document => document.ToString()),
+                query: (container, _) => RunStatisticsCacheTestsAsync(container),
+                partitionKey: "/index",
+                indexingPolicy: CompositeIndexPolicy);
+        }
+
+        private static async Task RunStatisticsCacheTestsAsync(Container container)
+        {
+            const string rankQuery = @"
+                SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
+                FROM c
+                ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'))";
+            const string regroupedQuery = @"
+                SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
+                FROM c
+                ORDER BY RANK RRF(FullTextScore(c.text, 'United States'), FullTextScore(c.title, 'John'))";
+            const string subsetQuery = @"
+                SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
+                FROM c
+                ORDER BY RANK FullTextScore(c.text, 'United States')";
+
+            Assert.IsTrue((await container.GetFeedRangesAsync()).Count > 1, "The container must have multiple partitions.");
+
+            using StatisticsCacheClient uncached = new StatisticsCacheClient(null);
+            using StatisticsCacheClient cached = new StatisticsCacheClient(TimeSpan.FromMinutes(10));
+            using StatisticsCacheClient otherCached = new StatisticsCacheClient(TimeSpan.FromMinutes(10));
+            using StatisticsCacheClient alwaysExpired = new StatisticsCacheClient(TimeSpan.FromTicks(1));
+
+            // Warm up: a cold cache collects statistics like an uncached client.
+            StatisticsCacheRun warmUpExpected = await uncached.RunAsync(container, rankQuery, FullTextScoreScope.Global);
+            Assert.IsTrue(warmUpExpected.StatisticsRequestCount > 0, "An uncached Global query must collect statistics.");
+            foreach (StatisticsCacheClient client in new[] { cached, alwaysExpired })
+            {
+                StatisticsCacheRun warmUp = await client.RunAsync(container, rankQuery, FullTextScoreScope.Global);
+                Assert.AreEqual(warmUpExpected.StatisticsRequestCount, warmUp.StatisticsRequestCount, "Warm-up");
+                CollectionAssert.AreEqual(warmUpExpected.Indices, warmUp.Indices, "Warm-up");
+            }
+
+            // Every run uses a new container handle, so hits also show that handles of one client share its cache.
+            List<StatisticsCacheCase> cases = new List<StatisticsCacheCase>
+            {
+                new StatisticsCacheCase("Repeated query", cached, rankQuery, FullTextScoreScope.Global, expectHit: true),
+                new StatisticsCacheCase("Regrouped components", cached, regroupedQuery, FullTextScoreScope.Global, expectHit: true),
+                new StatisticsCacheCase("Subset of paths and terms", cached, subsetQuery, FullTextScoreScope.Global, expectHit: true),
+                new StatisticsCacheCase("Local after Global warm-up", cached, rankQuery, FullTextScoreScope.Local, expectHit: false),
+                new StatisticsCacheCase("Separate client", otherCached, rankQuery, FullTextScoreScope.Global, expectHit: false),
+                new StatisticsCacheCase("Expired before admission", alwaysExpired, rankQuery, FullTextScoreScope.Global, expectHit: false),
+            };
+
+            for (int index = 0; index < cases.Count; index++)
+            {
+                StatisticsCacheCase testCase = cases[index];
+                Trace.WriteLine($"Case: {testCase.Name}");
+
+                StatisticsCacheRun expected = await uncached.RunAsync(container, testCase.Query, testCase.Scope);
+                StatisticsCacheRun actual = await testCase.Client.RunAsync(container, testCase.Query, testCase.Scope);
+
+                Assert.IsTrue(expected.StatisticsRequestCount > 0, testCase.Name);
+                Assert.AreEqual(testCase.ExpectHit ? 0 : expected.StatisticsRequestCount, actual.StatisticsRequestCount, testCase.Name);
+                CollectionAssert.AreEqual(expected.Indices, actual.Indices, testCase.Name);
+                Assert.AreEqual(
+                    testCase.ExpectHit ? expected.RequestCharge - expected.StatisticsRequestCharge : expected.RequestCharge,
+                    actual.RequestCharge,
+                    0.01,
+                    testCase.Name);
+            }
+
+            // Writes do not invalidate cached counts; reusing them within the configured age is accepted staleness.
+            await container.CreateItemAsync(
+                new { id = Guid.NewGuid().ToString(), index = 1000, title = "John", text = "John lived in the United States." },
+                new PartitionKey(1000));
+            StatisticsCacheRun afterWrite = await cached.RunAsync(container, rankQuery, FullTextScoreScope.Global);
+            Assert.AreEqual(0, afterWrite.StatisticsRequestCount, "After write");
+        }
         private async Task RunTests(IEnumerable<SanityTestCase> testCases, bool enableFullTextPreviewFeatures = false)
         {
             CosmosArray documentsArray = await LoadDocuments();
@@ -830,6 +912,134 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             public string Rid { get; set; }
         }
 
+        private sealed class StatisticsCacheCase
+        {
+            public StatisticsCacheCase(string name, StatisticsCacheClient client, string query, FullTextScoreScope scope, bool expectHit)
+            {
+                this.Name = name;
+                this.Client = client;
+                this.Query = query;
+                this.Scope = scope;
+                this.ExpectHit = expectHit;
+            }
+
+            public string Name { get; }
+
+            public StatisticsCacheClient Client { get; }
+
+            public string Query { get; }
+
+            public FullTextScoreScope Scope { get; }
+
+            public bool ExpectHit { get; }
+        }
+
+        private sealed class StatisticsCacheRun
+        {
+            public StatisticsCacheRun(List<int> indices, double requestCharge, int statisticsRequestCount, double statisticsRequestCharge)
+            {
+                this.Indices = indices;
+                this.RequestCharge = requestCharge;
+                this.StatisticsRequestCount = statisticsRequestCount;
+                this.StatisticsRequestCharge = statisticsRequestCharge;
+            }
+
+            public List<int> Indices { get; }
+
+            public double RequestCharge { get; }
+
+            public int StatisticsRequestCount { get; }
+
+            public double StatisticsRequestCharge { get; }
+        }
+
+        private sealed class StatisticsCacheClient : IDisposable
+        {
+            private readonly StatisticsRequestCounter counter = new StatisticsRequestCounter();
+            private readonly CosmosClient client;
+
+            public StatisticsCacheClient(TimeSpan? fullTextStatisticsCacheMaxAge)
+            {
+                CosmosClientOptions options = new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Direct,
+                    FullTextStatisticsCacheMaxAge = fullTextStatisticsCacheMaxAge,
+                };
+                options.CustomHandlers.Add(this.counter);
+                this.client = SDK.EmulatorTests.TestCommon.CreateCosmosClient(options);
+            }
+
+            public async Task<StatisticsCacheRun> RunAsync(Container container, string query, FullTextScoreScope scope)
+            {
+                this.counter.Reset();
+                Container handle = this.client.GetContainer(container.Database.Id, container.Id);
+                QueryRequestOptions requestOptions = new QueryRequestOptions { FullTextScoreScope = scope };
+
+                List<int> indices = new List<int>();
+                double requestCharge = 0;
+                using FeedIterator<TextDocument> iterator = handle.GetItemQueryIterator<TextDocument>(query, requestOptions: requestOptions);
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<TextDocument> page = await iterator.ReadNextAsync();
+                    requestCharge += page.RequestCharge;
+                    indices.AddRange(page.Select(document => document.Index));
+                }
+
+                return new StatisticsCacheRun(indices, requestCharge, this.counter.Count, this.counter.RequestCharge);
+            }
+
+            public void Dispose()
+            {
+                this.client.Dispose();
+            }
+        }
+
+        private sealed class StatisticsRequestCounter : RequestHandler
+        {
+            private readonly object gate = new object();
+
+            public int Count { get; private set; }
+
+            public double RequestCharge { get; private set; }
+
+            public void Reset()
+            {
+                lock (this.gate)
+                {
+                    this.Count = 0;
+                    this.RequestCharge = 0;
+                }
+            }
+
+            public override async Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+            {
+                bool isStatisticsRequest = await IsStatisticsRequestAsync(request);
+                ResponseMessage response = await base.SendAsync(request, cancellationToken);
+                if (isStatisticsRequest)
+                {
+                    lock (this.gate)
+                    {
+                        this.Count++;
+                        this.RequestCharge += response.Headers.RequestCharge;
+                    }
+                }
+
+                return response;
+            }
+
+            private static async Task<bool> IsStatisticsRequestAsync(RequestMessage request)
+            {
+                if (request.Content == null)
+                {
+                    return false;
+                }
+
+                using MemoryStream body = new MemoryStream();
+                await request.Content.CopyToAsync(body);
+                request.Content.Position = 0;
+                return Encoding.UTF8.GetString(body.ToArray()).Contains("_FullTextWordCount");
+            }
+        }
         private static class FieldNames
         {
             public const string Items = "items";
