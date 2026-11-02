@@ -35,14 +35,16 @@ namespace Microsoft.Azure.Cosmos
 
         public Documents.Routing.Range<string> Range { get; }
 
-        internal static FeedRangeEpk TryCreateFromPartialPartitionKey(
+        internal static bool TryCreateFromPartialPartitionKey(
             FeedRangePartitionKey feedRangePartitionKey,
-            Documents.PartitionKeyDefinition partitionKeyDefinition)
+            Documents.PartitionKeyDefinition partitionKeyDefinition,
+            out FeedRangeEpk feedRangeEpk)
         {
+            feedRangeEpk = null;
             if (feedRangePartitionKey == null ||
                 partitionKeyDefinition?.Kind != Documents.PartitionKind.MultiHash)
             {
-                return null;
+                return false;
             }
 
             int? componentCount =
@@ -52,12 +54,13 @@ namespace Microsoft.Azure.Cosmos
                 !pathCount.HasValue ||
                 componentCount.Value >= pathCount.Value)
             {
-                return null;
+                return false;
             }
 
-            return new FeedRangeEpk(
+            feedRangeEpk = new FeedRangeEpk(
                 feedRangePartitionKey.PartitionKey.InternalKey
                     .GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
+            return true;
         }
 
         internal FeedRangeEpk GetClippedRange(

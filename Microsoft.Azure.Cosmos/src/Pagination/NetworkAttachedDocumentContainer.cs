@@ -151,11 +151,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     trace);
                 FeedRangeEpk parentFeedRangeEpk = feedRange as FeedRangeEpk;
                 if (parentFeedRangeEpk == null &&
-                    feedRange is FeedRangePartitionKey feedRangePartitionKey)
-                {
-                    parentFeedRangeEpk = FeedRangeEpk.TryCreateFromPartialPartitionKey(
+                    feedRange is FeedRangePartitionKey feedRangePartitionKey &&
+                    FeedRangeEpk.TryCreateFromPartialPartitionKey(
                         feedRangePartitionKey,
-                        containerProperties.PartitionKey);
+                        containerProperties.PartitionKey,
+                        out FeedRangeEpk prefixFeedRangeEpk))
+                {
+                    parentFeedRangeEpk = prefixFeedRangeEpk;
                 }
 
                 bool useLengthAwareRangeComparer =

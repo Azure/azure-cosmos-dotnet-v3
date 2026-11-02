@@ -45,10 +45,12 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Add("tenant-a")
                 .Build();
 
-            FeedRangeEpk feedRangeEpk = FeedRangeEpk.TryCreateFromPartialPartitionKey(
+            bool created = FeedRangeEpk.TryCreateFromPartialPartitionKey(
                 new FeedRangePartitionKey(partialPartitionKey),
-                partitionKeyDefinition);
+                partitionKeyDefinition,
+                out FeedRangeEpk feedRangeEpk);
 
+            Assert.IsTrue(created);
             Assert.IsNotNull(feedRangeEpk);
             Assert.AreEqual(
                 partialPartitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(
@@ -71,10 +73,12 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Add("user-a")
                 .Build();
 
-            FeedRangeEpk feedRangeEpk = FeedRangeEpk.TryCreateFromPartialPartitionKey(
+            bool created = FeedRangeEpk.TryCreateFromPartialPartitionKey(
                 new FeedRangePartitionKey(partitionKey),
-                partitionKeyDefinition);
+                partitionKeyDefinition,
+                out FeedRangeEpk feedRangeEpk);
 
+            Assert.IsFalse(created);
             Assert.IsNull(feedRangeEpk);
         }
 
