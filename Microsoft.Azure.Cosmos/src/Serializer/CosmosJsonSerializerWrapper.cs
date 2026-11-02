@@ -9,11 +9,14 @@ namespace Microsoft.Azure.Cosmos
 
     internal class CosmosJsonSerializerWrapper : CosmosSerializer
     {
+        private readonly bool serializeAsText;
+
         internal CosmosSerializer InternalJsonSerializer { get; }
 
-        public CosmosJsonSerializerWrapper(CosmosSerializer cosmosJsonSerializer)
+        public CosmosJsonSerializerWrapper(CosmosSerializer cosmosJsonSerializer, bool serializeAsText = false)
         {
             this.InternalJsonSerializer = cosmosJsonSerializer ?? throw new ArgumentNullException(nameof(cosmosJsonSerializer));
+            this.serializeAsText = serializeAsText;
         }
 
         public override T FromStream<T>(Stream stream)
@@ -29,7 +32,9 @@ namespace Microsoft.Azure.Cosmos
 
         public override Stream ToStream<T>(T input)
         {
-            Stream stream = this.InternalJsonSerializer.ToStream<T>(input);
+            Stream stream = this.serializeAsText
+                ? CosmosSerializationUtil.ToStreamForTextJson(this.InternalJsonSerializer, input)
+                : this.InternalJsonSerializer.ToStream<T>(input);
             if (stream == null)
             {
                 throw new InvalidOperationException("Json Serializer returned a null stream.");

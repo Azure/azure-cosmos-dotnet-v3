@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
+    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Serializer;
@@ -72,6 +73,97 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return inputStream;
+        }
+
+        /// <summary>
+        /// Prefers text for SDK-owned serializers without changing their settings.
+        /// Custom serializers still control their output format, which the embedding boundary must normalize.
+        /// </summary>
+        internal static Stream ToStreamForTextJson<T>(CosmosSerializer serializer, T input)
+        {
+            if (serializer == null)
+            {
+                throw new ArgumentNullException(nameof(serializer));
+            }
+
+            CosmosSerializer unwrapped = serializer;
+            while (unwrapped is CosmosJsonSerializerWrapper wrapper)
+            {
+                unwrapped = wrapper.InternalJsonSerializer;
+            }
+
+            return unwrapped is CosmosJsonDotNetSerializer jsonSerializer
+                ? jsonSerializer.ToStream(input, binaryEncodingEnabled: false)
+                : serializer.ToStream(input);
+        }
+
+        /// <summary>
+        /// Converts binary encoded JSON content to text JSON, for payloads that are embedded in a text JSON envelope.
+        /// The input memory is never modified or disposed.
+        /// </summary>
+        /// <param name="content">The serialized JSON content, in text or binary format.</param>
+        /// <param name="textContent">The text JSON bytes when a conversion was needed; otherwise null.</param>
+        /// <returns>True if <paramref name="content"/> was converted; false if it was already in a format that needs no conversion.</returns>
+        internal static bool TryConvertBinaryToText(
+            ReadOnlyMemory<byte> content,
+            out byte[] textContent)
+        {
+            textContent = null;
+            if (content.IsEmpty || content.Span[0] != (byte)JsonSerializationFormat.Binary)
+            {
+                return false;
+            }
+
+            using (Stream converted = CosmosSerializationUtil.ConvertToStreamUsingJsonSerializationFormat(
+                content,
+                JsonSerializationFormat.Text))
+            {
+                textContent = ((MemoryStream)converted).ToArray();
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Reads from the current position without disposing the caller-owned stream.
+        /// Binary payloads are converted before embedding in a text JSON envelope.
+        /// </summary>
+        internal static string ReadStreamAsTextJson(Stream stream)
+        {
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
+            if (stream.CanSeek)
+            {
+                long position = stream.Position;
+                int firstByte = stream.ReadByte();
+                stream.Position = position;
+                if (firstByte != (byte)JsonSerializationFormat.Binary)
+                {
+                    using (StreamReader reader = new StreamReader(stream, Encoding.UTF8, true, 1024, leaveOpen: true))
+                    {
+                        return reader.ReadToEnd();
+                    }
+                }
+            }
+
+            using (MemoryStream buffer = new MemoryStream())
+            {
+                stream.CopyTo(buffer);
+                if (CosmosSerializationUtil.TryConvertBinaryToText(
+                    new ReadOnlyMemory<byte>(buffer.GetBuffer(), 0, (int)buffer.Length),
+                    out byte[] textContent))
+                {
+                    return Encoding.UTF8.GetString(textContent);
+                }
+
+                buffer.Position = 0;
+                using (StreamReader reader = new StreamReader(buffer))
+                {
+                    return reader.ReadToEnd();
+                }
+            }
         }
 
         /// <summary>
