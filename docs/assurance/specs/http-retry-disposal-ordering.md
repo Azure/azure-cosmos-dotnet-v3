@@ -162,7 +162,32 @@ it has no PATH-visible .NET 6 runtime. This is not the native Windows/.NET 6 cel
 Do not relabel a newer-runtime roll-forward or a compiled net6.0 target as that
 cell's execution. Use an existing supported runner if available; otherwise
 retain the concrete runner failure and unexecuted variants in the implementation
-receipt. No new tool/runtime/dependency installation is authorized.
+receipt.
+
+After both actual testhost aborts established the missing dependency, the
+coordinator authorized only a matching official .NET 6 runtime inside this
+session's own directory, using supported command-scoped testhost selection.
+Inspect and pin the official distribution/version/architecture and verify its
+hash before use. Preserve the initial failures and every correction outcome.
+No global installation, symlink/profile/SDK modification, TFM retargeting,
+roll-forward-to-9 substitution, ASP.NET dependency or HTTP/2 fixture is authorized.
+Execution on the actual macOS/arm64 host, if possible without unsupported hacks,
+is still distinct from native Windows qualification.
+
+On 2026-11-02, the official osx-arm64 .NET 6.0.36 runtime executed the cohort
+through VSTest's command-scoped `RunConfiguration.DotNetHostPath`. The host
+diagnostic records the session-private 6.0.36 runtime location. All 19 expected
+leaves passed in GA Debug and preview Release, with no skipped/inconclusive
+results. The original missing-assets failure, existing-manifest restore and
+missing-runtime aborts remain recorded rather than replaced by the passes.
+This required legacy runtime is end-of-support; using it for the scoped tests
+is not a production-runtime recommendation or broader platform-support claim.
+
+A temporary cleanup-at-loop-return negative control failed both U-01 rows at
+the new next-dispatch disposal assertion. The production file was then restored
+byte-for-byte, and all 19 leaves passed again in each variant. No negative-control
+product change is committed. These are local unit results on macOS/arm64, not
+native Windows/CI execution, protected admission or real HTTP/2/service proof.
 
 A minimal targeted negative control may defer dropped-response disposal until
 loop completion in an isolated temporary check. The new next-send assertion
