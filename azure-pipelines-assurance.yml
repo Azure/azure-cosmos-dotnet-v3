@@ -1,0 +1,11 @@
+# Candidate-local record validation source; not a registered or required definition.
+trigger: none
+
+pr:
+  branches:
+    include:
+    - main
+    - releases/*
+
+jobs:
+- template: templates/assurance-validation.yml

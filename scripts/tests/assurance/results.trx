@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Entirely synthetic. Counters intentionally include a parent and conceal an ignored leaf. -->
+<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Results>
+    <UnitTestResult executionId="00000000-0000-0000-0000-000000000001" testId="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" testName="Synthetic.Tests.Patch" outcome="Passed">
+      <InnerResults>
+        <UnitTestResult executionId="00000000-0000-0000-0000-000000000002" testId="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" testName="Synthetic.Tests.Patch(true)" outcome="Passed" parentExecutionId="00000000-0000-0000-0000-000000000001" />
+        <UnitTestResult executionId="00000000-0000-0000-0000-000000000003" testId="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" testName="Synthetic.Tests.Patch(false)" outcome="Passed" parentExecutionId="00000000-0000-0000-0000-000000000001" />
+      </InnerResults>
+    </UnitTestResult>
+    <UnitTestResult executionId="00000000-0000-0000-0000-000000000004" testId="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" testName="Synthetic.Tests.Ignored" outcome="NotExecuted" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa">
+      <TestMethod className="Synthetic.Tests" name="Patch" />
+    </UnitTest>
+    <UnitTest id="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb">
+      <TestMethod className="Synthetic.Tests" name="Ignored" />
+    </UnitTest>
+  </TestDefinitions>
+  <ResultSummary outcome="Completed">
+    <Counters total="4" executed="3" passed="3" failed="0" notExecuted="0" />
+  </ResultSummary>
+</TestRun>
