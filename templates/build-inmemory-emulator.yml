@@ -108,9 +108,10 @@ jobs:
       failTaskOnFailedTests: true
       failTaskOnMissingResultsFile: true
 
-  - task: PublishPipelineArtifact@1
+  - task: PublishBuildArtifacts@1
     displayName: Publish emulator build and test diagnostics
     condition: and(succeededOrFailed(), ne(variables['Agent.JobStatus'], 'Canceled'))
     inputs:
-      targetPath: '$(EmulatorResults)'
-      artifact: 'inmemory-emulator-results'
+      PathtoPublish: '$(EmulatorResults)'
+      ArtifactName: 'inmemory-emulator-results'
+      publishLocation: Container
