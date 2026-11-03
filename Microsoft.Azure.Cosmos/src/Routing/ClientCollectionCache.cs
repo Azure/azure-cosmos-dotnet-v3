@@ -131,6 +131,53 @@ namespace Microsoft.Azure.Cosmos.Routing
                 cancellationToken);
         }
 
+        /// <summary>
+        /// Refreshes metadata if the cache still references the previously resolved container,
+        /// clearing only that container's session tokens when the RID changes.
+        /// </summary>
+        internal virtual Task<ContainerProperties> RefreshCollectionAsync(
+            string apiVersion,
+            string resourceAddress,
+            string previouslyResolvedCollectionRid,
+            ITrace trace,
+            IClientSideRequestStatistics clientSideRequestStatistics,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(resourceAddress))
+            {
+                throw new ArgumentNullException(nameof(resourceAddress));
+            }
+
+            if (string.IsNullOrEmpty(previouslyResolvedCollectionRid))
+            {
+                throw new ArgumentNullException(nameof(previouslyResolvedCollectionRid));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            return TaskHelper.InlineIfPossible(
+                async () =>
+                {
+                    await base.RefreshAsync(
+                        apiVersion,
+                        resourceAddress,
+                        previouslyResolvedCollectionRid,
+                        trace,
+                        clientSideRequestStatistics,
+                        cancellationToken);
+                    ContainerProperties properties = await this.ResolveByNameAsync(
+                        apiVersion,
+                        resourceAddress,
+                        forceRefesh: false,
+                        trace,
+                        clientSideRequestStatistics,
+                        cancellationToken);
+                    this.ClearSessionTokenIfCollectionChanged(previouslyResolvedCollectionRid, properties);
+                    return properties;
+                },
+                retryPolicy: null,
+                cancellationToken);
+        }
+
         public override Task<ContainerProperties> ResolveCollectionAsync(
             DocumentServiceRequest request, CancellationToken cancellationToken, ITrace trace)
         {
@@ -162,14 +209,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             try
             {
                 ContainerProperties properties = await resolveContainerProvider();
-
-                if (this.sessionContainer != null &&
-                    previouslyResolvedCollectionRid != null &&
-                    previouslyResolvedCollectionRid != properties.ResourceId)
-                {
-                    this.sessionContainer.ClearTokenByResourceId(previouslyResolvedCollectionRid);
-                }
-
+                this.ClearSessionTokenIfCollectionChanged(previouslyResolvedCollectionRid, properties);
                 return properties;
             }
             catch (DocumentClientException ex)
@@ -187,6 +227,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 throw;
+            }
+        }
+
+        private void ClearSessionTokenIfCollectionChanged(
+            string previouslyResolvedCollectionRid,
+            ContainerProperties properties)
+        {
+            if (this.sessionContainer != null &&
+                previouslyResolvedCollectionRid != null &&
+                previouslyResolvedCollectionRid != properties.ResourceId)
+            {
+                this.sessionContainer.ClearTokenByResourceId(previouslyResolvedCollectionRid);
             }
         }
 

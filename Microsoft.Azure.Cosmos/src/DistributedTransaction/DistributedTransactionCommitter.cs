@@ -131,11 +131,56 @@ namespace Microsoft.Azure.Cosmos
             // First attempt dispatches under a freshly rotated token; after a retriable response the
             // next attempt's token strategy is decided below.
             bool rotateIdempotencyToken = true;
+            bool metadataRefreshed = false;
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 DistributedTransactionResponse response = await this.ExecuteCommitAsync(serverRequest, rotateIdempotencyToken, parentTrace, cancellationToken);
+
+                // An unchanged RID after a forced refresh means the cache is already fresh, so refreshing again is wasted load.
+                if (!metadataRefreshed && DistributedTransactionCommitter.IsNameCacheStale(response))
+                {
+                    metadataRefreshed = true;
+                    bool retainResponse = false;
+                    bool ridsChanged;
+                    try
+                    {
+                        try
+                        {
+                            ridsChanged = await DistributedTransactionCommitterUtils.RefreshCollectionRidsAsync(
+                                this.operations,
+                                this.clientContext,
+                                cancellationToken);
+                        }
+                        catch (CosmosException exception)
+                        {
+                            DefaultTrace.TraceWarning(
+                                "Distributed transaction metadata refresh failed after a stale-cache response " +
+                                "(StatusCode={0}, SubStatusCode={1}). Returning the original transaction failure.",
+                                exception.StatusCode,
+                                exception.SubStatusCode);
+                            // Return the original failure; non-Cosmos exceptions intentionally propagate.
+                            ridsChanged = true;
+                        }
+
+                        cancellationToken.ThrowIfCancellationRequested();
+                        retainResponse = true;
+                    }
+                    finally
+                    {
+                        if (!retainResponse)
+                        {
+                            response.Dispose();
+                        }
+                    }
+
+                    if (ridsChanged)
+                    {
+                        response.Diagnostics = diagnostics;
+                        return response;
+                    }
+                }
 
                 if (response.IsSuccessStatusCode || !response.IsRetriable)
                 {
@@ -198,6 +243,26 @@ namespace Microsoft.Azure.Cosmos
                 attempt++;
                 await this.delayProvider(delay, cancellationToken);
             }
+        }
+
+        private static bool IsNameCacheStale(DistributedTransactionResponse response)
+        {
+            if (response.StatusCode == HttpStatusCode.Gone &&
+                response.SubStatusCode == SubStatusCodes.NameCacheIsStale)
+            {
+                return true;
+            }
+
+            foreach (DistributedTransactionOperationResult result in response)
+            {
+                if (result.StatusCode == HttpStatusCode.Gone &&
+                    result.SubStatusCode == SubStatusCodes.NameCacheIsStale)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         // Caps server-controlled diagnostic strings before they enter SDK trace logs to prevent
