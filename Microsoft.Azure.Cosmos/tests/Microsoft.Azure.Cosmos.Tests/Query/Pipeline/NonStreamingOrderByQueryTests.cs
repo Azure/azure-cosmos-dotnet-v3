@@ -652,7 +652,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 firstComponentScores: new[] { 10.0, 10.0, 8.0, 7.0, 6.0 },
                 expected: new[] { 1, 0, 2, 3, 4 });
 
-            // Tied scores must receive consecutive ranks rather than sharing a competition rank.
+            // Tied scores must receive consecutive ranks.
             await AssertOrdinalRankScenarioAsync(
                 firstComponentScores: new[] { 10.0, 9.0, 9.0, 9.0, 4.0 },
                 expected: new[] { 3, 0, 2, 4, 1 });
