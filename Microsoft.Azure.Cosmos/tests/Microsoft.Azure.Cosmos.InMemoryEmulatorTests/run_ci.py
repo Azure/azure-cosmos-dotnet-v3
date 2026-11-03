@@ -19,6 +19,19 @@ PROJECTS = {
     "shared": HERE.parent / "Microsoft.Azure.Cosmos.EmulatorTests",
 }
 NS = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
+HOST_CONTRACT = Counter({
+    "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.EmulatorLifecycleTests.ReadsDynamicallyAssignedEndpoints": 1,
+    "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.EmulatorLifecycleTests.RejectsUnexpectedEndpoints": 4,
+    "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.EmulatorLifecycleTests.ReportsExitBeforeReadiness": 1,
+    "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.EmulatorLifecycleTests.MissingExecutableIsAnError": 1,
+    "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.ItemTests.ItemCrudRoundTripsThroughGateway": 1,
+    "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.ItemTests.PartitionKeysIsolateIdenticalIds": 1,
+    "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.ItemTests.DuplicateAndStaleEtagReturnServiceErrors": 1,
+    "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.ItemTests.PartitionScopedReadFeedPaginates": 1,
+    "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.ItemTests.PatchPersistsUpdatedValue": 1,
+    "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.ItemTests.InvalidConfigurationReportsStartupFailure": 1,
+    "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.ItemTests.HostsHaveIsolatedStateAndStopOnDisposal": 1,
+})
 
 
 def unique_object(pairs):
@@ -54,8 +67,10 @@ def load_scenarios(path):
             if not expected:
                 raise ValueError(f"Empty CI suite: {group}/{suite}")
             groups[group][suite] = expected
-    if "host" not in groups["Items"] or "host" in groups["Reads"]:
-        raise ValueError("Run the complete host contract exactly once, in Items")
+    items_contract = Counter({name: count for name, count in groups["Items"].get("host", {}).items()
+                              if name in HOST_CONTRACT})
+    if items_contract != HOST_CONTRACT or set(groups["Reads"].get("host", {})) & HOST_CONTRACT.keys():
+        raise ValueError("Run the original complete host contract exactly once, in Items")
     return groups
 
 
@@ -86,11 +101,13 @@ def verify_results(path, expected):
             raise ValueError(f"Duplicate executed case: {identity}")
         identities.add(identity)
         actual[name] += 1
+        output = result.find("t:Output/t:StdOut", NS)
         observed.append({
             "method": name,
             "case": result.attrib["testName"],
             "duration": result.attrib["duration"],
             "outcome": result.attrib["outcome"],
+            "evidence": output.text if output is not None else None,
         })
     if actual != expected:
         raise ValueError(f"Execution mismatch: missing={expected - actual}, extra={actual - expected}")
@@ -170,7 +187,7 @@ def main():
             "--logger", "console;verbosity=normal", "--logger", f"trx;LogFileName={suite}.trx",
             "--results-directory", str(args.results_directory),
         ]
-        if suite == "shared":
+        if suite == "shared" or set(expected) != approved:
             test_command += ["--filter", "|".join(f"FullyQualifiedName={name}" for name in expected)]
         started = time.monotonic()
         run_command(test_command, environment)

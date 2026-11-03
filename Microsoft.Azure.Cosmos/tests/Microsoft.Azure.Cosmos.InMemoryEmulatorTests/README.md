@@ -91,7 +91,9 @@ production compatibility, durability, security, or performance.
 This initial .NET suite exercises **Gateway V1 only**. It does not cover Direct
 RNTBD/TCP, Gateway V2, TLS, authentication/RBAC, LINQ or SQL query-plan acquisition,
 transactional-batch service parity, bulk, encryption, change-feed processors,
-regional failover, or server-side scripting. The Rust host advertises more
+regional outages/write-region failover, or server-side scripting. The additional
+controlled scenarios below verify narrowly scoped split/merge and replica-lag
+behavior, not those broader features. The Rust host advertises more
 operations than this suite verifies; those capabilities are not .NET compatibility
 claims. In particular, Go documents emulator/live differences for conditional
 batch reads and content-response suppression.
@@ -109,10 +111,10 @@ The shared CI template also runs **42 existing, unchanged test methods** from
 suite or relaxed for this backend. `ci-scenarios.json` is the explicit,
 runtime-validated allowlist, not the broader source inventory.
 
-| CI job | Existing shared methods / cases | Host-contract methods / cases | Total cases |
-|---|---:|---:|---:|
-| Items | 35 / 35 | 11 / 14 | 49 |
-| Reads | 7 / 7 | 0 / 0 | 7 |
+| CI job | Existing shared methods / cases | Original host-contract methods / cases | Controlled methods / cases | Total cases |
+|---|---:|---:|---:|---:|
+| Items | 35 / 35 | 11 / 14 | 1 / 3 | 52 |
+| Reads | 7 / 7 | 0 / 0 | 2 / 4 | 11 |
 
 Items covers item patch/serialization, missing-item delete/patch errors, IDs,
 multiple Gateway clients and container recreation, database/container CRUD,
@@ -121,6 +123,54 @@ reads, database read/feed/query, and container stream queries. The original 14
 host-contract cases, including partition-scoped item read feed and lifecycle and
 startup failures, run exactly once in Items. These groups are compatibility
 boundaries, not a claim of balanced test time or increased hosted-agent capacity.
+
+## Deterministic topology and replica controls
+
+These are **three new test methods / seven leaf cases**, not seven distinct service
+capabilities. The existing 42 shared methods and original 14 host-contract cases
+are retained.
+
+| New method | Variants | Meaningful assertions |
+|---|---|---|
+| `PartitionTopologyTests.ManualSplitMergePreservesPartitionScopedContinuation` | Midpoint, explicit EPK, storage split | Real manual Preparing/Swapping/Succeeded transitions; topology 1 -> 2 -> 1; parent/children retirement; exact, duplicate-free logical-PK feed continuations on original/fresh clients across split/merge; all 38 item values/ETags preserved and active child/merged ranges represented in response session tokens. |
+| `ReplicationRoutingTests.PausedReplicaHonorsEventualReadRouting` | Preferred East, preferred West, application region West | Pause actual West replication, write in East, observe actual SDK item endpoints: East reads the item, stale West returns 404 under Eventual reads. |
+| `ReplicationRoutingTests.ExplicitSessionTokenRecoversFromReplicaLagAndResume` | One supplied-token workflow | West rejects the write token with 404/1002; the SDK retries West -> East and reads the correct value; resume drains the backlog; subsequent session reads succeed in West without another regional fallback. |
+
+Every case starts a fresh owned host using `emulator-complex-config.json`: two
+virtual regions, one initial Hash V2 partition, Session consistency, no throttling,
+and zero configured replication delay. Management split/merge phase advancement
+and replication pause/resume create deterministic state, not synthetic HTTP
+errors. Observing handlers forward requests and responses unchanged. Only
+condition-based bounded polling waits for operation completion or replica catch-up;
+no fixed sleep is used to guess that a fault happened.
+
+The topology observation uses the host's supported name-addressed partition-range
+feed. **It is not `.NET GetFeedRangesAsync` or proof of SDK physical-range cache
+recovery.** The latter currently fails because the SDK sends RID-addressed
+`/dbs/<RID>/colls/<RID>/pkranges` requests and this host resolves only names.
+Logical-PK operations can still succeed while those metadata requests fail.
+Automatic session-cache recovery without a supplied token and managed item SQL
+are also blocked; no request/response rewrite, fake topology, weaker assertion, or
+skip is used to certify them.
+
+The reference is the freshly inspected **current**
+[Go v2 branch at 1812c74](https://github.com/Azure/azure-sdk-for-go/tree/1812c74daac993850521063937b764c621a0a52a/sdk/data/azcosmos).
+Its split/merge/manual-phase specifications are **catalog-only**, not executable
+Go tests. Its real
+[read-routing test](https://github.com/Azure/azure-sdk-for-go/blob/1812c74daac993850521063937b764c621a0a52a/sdk/data/azcosmos/emulator_test.go#L1005-L1050)
+uses replication pause but only resumes in cleanup; its
+[session-retry test](https://github.com/Azure/azure-sdk-for-go/blob/1812c74daac993850521063937b764c621a0a52a/sdk/data/azcosmos/retry_native_test.go#L118-L140)
+uses native injected faults. The new .NET cases use real controlled replica lag
+and assert post-resume convergence, while deliberately leaving full range/query
+topology parity unclaimed.
+
+The full source-level Go/.NET mapping separates existing .NET coverage, new
+controlled coverage, Go/FFI-specific cases, and blocked contracts. The Go source
+inventory's 393 test declarations, 755 table-input occurrences, and 530 source
+labels are non-additive and are not runtime pass counts. These seven cases alone
+do **not** establish complete Go v2 parity.
+
+## Shared fixture selection and CI gates
 
 `COSMOS_EMULATOR_BACKEND=InMemory` explicitly selects the shared backend.
 `EmulatorTestEnvironment` starts a fresh owned host before test fixtures
@@ -151,13 +201,14 @@ python3 -B Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.InMemoryEmulatorT
 ```
 
 The runner sets the shared backend only for its child processes. Each job discovers
-the entire approved shared-method set through VSTest before executing its assigned
-subset. The host job discovers and runs its whole project without a filter.
+the entire approved shared-method set and the complete in-memory project through
+VSTest before executing its disjoint assigned subsets. The original 14-case host
+contract is separately pinned and cannot be removed or moved out of Items.
 Gates require the manifest groups to be nonempty and disjoint, exact discovery
 membership, exact executed-case counts/identities, successful run completion, and
 zero skips or failures. VSTest's fully qualified discovery enumerates methods;
-the checked-in counts and leaf TRX results additionally account for the four
-endpoint-validation data rows. All 42 shared methods currently have one case.
+the checked-in counts and leaf TRX results additionally account for the endpoint,
+split-mode, and regional-routing data rows. All 42 shared methods currently have one case.
 Discovery, assignments, leaf results, host executable hash/source pin, and timing
 evidence are published with each job's diagnostics.
 
@@ -180,6 +231,7 @@ the approved jobs. All remain covered by their existing full-emulator selections
 | Both `GivenReplaceItem*WhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync` methods | Existing 404 assertions receive 400 for these replacement payloads. |
 | `CosmosContainerTests.IteratorTest` | Its exact SQL-filtered metadata query returns zero results instead of one; the separate database and container stream-query methods in Reads pass unchanged. |
 | `NegativePartitionedCreateDelete` | The host accepts a partition-key definition the existing test expects to reject with 400. |
+| Full FeedRange/split-routing recovery and automatic session capture | RID-addressed partition metadata is not resolved by this host. `GetFeedRangesAsync` fails before splitting; a no-explicit-token replica-lag probe sends no usable cached session token and returns 404/0 rather than recovering. |
 
 Binary response variants, quota/exact metrics, broader SQL/LINQ, HPK/range
 semantics, encryption fixtures, change-feed history/processors, auth/TLS/Direct,

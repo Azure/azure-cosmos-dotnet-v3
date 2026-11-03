@@ -21,7 +21,10 @@ class CoverageGateTests(unittest.TestCase):
         groups = run_ci.load_scenarios(run_ci.HERE / "ci-scenarios.json")
         self.assertEqual(35, sum(groups["Items"]["shared"].values()))
         self.assertEqual(7, sum(groups["Reads"]["shared"].values()))
-        self.assertEqual(14, sum(groups["Items"]["host"].values()))
+        self.assertEqual(17, sum(groups["Items"]["host"].values()))
+        self.assertEqual(4, sum(groups["Reads"]["host"].values()))
+        contract = {name: count for name, count in groups["Items"]["host"].items() if name in run_ci.HOST_CONTRACT}
+        self.assertEqual(run_ci.HOST_CONTRACT, contract)
 
     def test_rejects_duplicate_manifest_keys(self):
         with self.assertRaisesRegex(ValueError, "Duplicate"):
@@ -46,6 +49,21 @@ class CoverageGateTests(unittest.TestCase):
         for discovered in (["A"], ["A", "B", "C"], ["A", "A", "B"]):
             with self.subTest(discovered=discovered), self.assertRaisesRegex(ValueError, "Discovery mismatch"):
                 run_ci.verify_discovery(discovered, {"A", "B"})
+
+    def test_original_host_contract_cannot_be_removed_or_moved(self):
+        manifest = json.loads((run_ci.HERE / "ci-scenarios.json").read_text())
+        class_name = "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.ItemTests"
+        method = "PatchPersistsUpdatedValue"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "manifest.json"
+            for move in (False, True):
+                changed = copy.deepcopy(manifest)
+                count = changed["Items"]["host"][class_name].pop(method)
+                if move:
+                    changed["Reads"]["host"][class_name] = {method: count}
+                path.write_text(json.dumps(changed))
+                with self.subTest(move=move), self.assertRaisesRegex(ValueError, "original complete host contract"):
+                    run_ci.load_scenarios(path)
 
     def test_results_require_exact_passing_leaf_cases(self):
         namespace = run_ci.NS["t"]

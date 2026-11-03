@@ -15,6 +15,9 @@
         "PatchPersistsUpdatedValue": 1,
         "InvalidConfigurationReportsStartupFailure": 1,
         "HostsHaveIsolatedStateAndStopOnDisposal": 1
+      },
+      "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.PartitionTopologyTests": {
+        "ManualSplitMergePreservesPartitionScopedContinuation": 3
       }
     },
     "shared": {
@@ -62,6 +65,12 @@
     }
   },
   "Reads": {
+    "host": {
+      "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.ReplicationRoutingTests": {
+        "PausedReplicaHonorsEventualReadRouting": 3,
+        "ExplicitSessionTokenRecoversFromReplicaLagAndResume": 1
+      }
+    },
     "shared": {
       "Microsoft.Azure.Cosmos.SDK.EmulatorTests.CosmosItemTests": {
         "ReadCollectionNotExists": 1,
