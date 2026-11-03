@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -40,9 +41,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 options.FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(1);
                 client.ClientOptions.FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(2);
 
-                Assert.IsNull(context.HybridSearchStatisticsCache);
-                Assert.IsNull(queryClient.HybridSearchStatisticsCache);
-                Assert.IsNull(GetInjectedCache(context));
+                Assert.AreSame(HybridSearchStatisticsCache.GetNoOpImpl(), context.HybridSearchStatisticsCache);
+                Assert.AreSame(HybridSearchStatisticsCache.GetNoOpImpl(), queryClient.HybridSearchStatisticsCache);
+                Assert.AreSame(HybridSearchStatisticsCache.GetNoOpImpl(), GetInjectedCache(context));
             }
         }
 
@@ -58,14 +59,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosQueryClient otherQueryClient = new CosmosQueryClientCore(other.ClientContext, other);
             Assert.AreNotSame(first, second);
             HybridSearchStatisticsCache cache = firstQueryClient.HybridSearchStatisticsCache;
-            Assert.IsNotNull(cache);
+            Assert.AreNotSame(HybridSearchStatisticsCache.GetNoOpImpl(), cache);
             Assert.AreSame(cache, GetInjectedCache(client.ClientContext));
             Assert.AreSame(cache, secondQueryClient.HybridSearchStatisticsCache);
             Assert.AreSame(cache, otherQueryClient.HybridSearchStatisticsCache);
             Assert.AreSame(cache, client.ClientContext.HybridSearchStatisticsCache);
             cache.Add("rid", "etag", CreatePlan("run"), CreateStatistics(10), cache.GetElapsedTime());
             Assert.IsTrue(secondQueryClient.HybridSearchStatisticsCache.TryGet(
-                "rid", "etag", CreatePlan("run"), out GlobalFullTextSearchStatistics result));
+                "rid", "etag", CreatePlan("run"), NoOpTrace.Singleton, out GlobalFullTextSearchStatistics result));
             Assert.AreEqual(10L, result.DocumentCount);
         }
 
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
             using CosmosClient client = CreateClient(options);
             HybridSearchStatisticsCache originalCache = GetInjectedCache(client.ClientContext);
-            Assert.IsNotNull(originalCache);
+            Assert.AreNotSame(HybridSearchStatisticsCache.GetNoOpImpl(), originalCache);
 
             options.FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(3);
             options.FullTextStatisticsCacheMaxEntries = 8;
@@ -117,12 +118,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(TimeSpan.FromMinutes(1), GetPrivateField<TimeSpan>(firstCache, "maxAge"));
             Assert.AreEqual(TimeSpan.FromMinutes(2), GetPrivateField<TimeSpan>(secondCache, "maxAge"));
             firstCache.Add("rid", "etag", CreatePlan("run"), CreateStatistics(10), firstCache.GetElapsedTime());
-            Assert.IsFalse(secondCache.TryGet("rid", "etag", CreatePlan("run"), out _));
+            Assert.IsFalse(secondCache.TryGet("rid", "etag", CreatePlan("run"), NoOpTrace.Singleton, out _));
             secondCache.Add("rid", "etag", CreatePlan("run"), CreateStatistics(20), secondCache.GetElapsedTime());
             secondCache.Add("rid", "etag", CreatePlan("swim"), CreateStatistics(20), secondCache.GetElapsedTime());
             Assert.AreEqual(3, StoredCount(firstCache));
             Assert.AreEqual(4, StoredCount(secondCache));
-            Assert.IsTrue(secondCache.TryGet("rid", "etag", CreatePlan("run"), out GlobalFullTextSearchStatistics result));
+            Assert.IsTrue(secondCache.TryGet("rid", "etag", CreatePlan("run"), NoOpTrace.Singleton, out GlobalFullTextSearchStatistics result));
             Assert.AreEqual(20L, result.DocumentCount);
         }
 

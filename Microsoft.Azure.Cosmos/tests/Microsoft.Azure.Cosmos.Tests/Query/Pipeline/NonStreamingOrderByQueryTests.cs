@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public async Task HybridSearchStatisticsCacheFailuresAreNotCachedOrRecovered()
         {
             TimeSpan maxAge = TimeSpan.FromMinutes(1);
-            HybridSearchStatisticsCache cache = new HybridSearchStatisticsCache(maxAge, 256);
+            HybridSearchStatisticsCache cache = HybridSearchStatisticsCache.Create(maxAge, 256);
             StatisticsCacheScenario scenario = new StatisticsCacheScenario { Name = "Failures" };
 
             // A failed statistics collection fails the query and caches nothing.
@@ -328,7 +328,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public async Task HybridSearchStatisticsCacheCancelledCollectionIsNotCached()
         {
-            HybridSearchStatisticsCache cache = new HybridSearchStatisticsCache(TimeSpan.FromMinutes(1), 256);
+            HybridSearchStatisticsCache cache = HybridSearchStatisticsCache.Create(TimeSpan.FromMinutes(1), 256);
             StatisticsCacheScenario scenario = new StatisticsCacheScenario { Name = "Cancellation" };
             using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.Cancel();
@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public async Task HybridSearchStatisticsCacheConcurrentColdMissesRunIndependently()
         {
-            HybridSearchStatisticsCache cache = new HybridSearchStatisticsCache(TimeSpan.FromMinutes(1), 256);
+            HybridSearchStatisticsCache cache = HybridSearchStatisticsCache.Create(TimeSpan.FromMinutes(1), 256);
             StatisticsCacheScenario scenario = new StatisticsCacheScenario { Name = "Concurrent misses" };
             TaskCompletionSource<bool> release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource<bool> firstArrived = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -394,7 +394,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         {
             TimeSpan maxAge = TimeSpan.FromMinutes(1);
             TimeSpan now = TimeSpan.Zero;
-            HybridSearchStatisticsCache cache = scenario.CacheEnabled ? new HybridSearchStatisticsCache(maxAge, 256, () => now) : null;
+            HybridSearchStatisticsCache cache = scenario.CacheEnabled ? HybridSearchStatisticsCache.Create(maxAge, 256, () => now) : HybridSearchStatisticsCache.GetNoOpImpl();
 
             // Every scenario first runs a Global query over all ranges to warm the cache.
             CachedHybridSearchRun warmUp = await RunCachedHybridSearchAsync(scenario, cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
@@ -406,7 +406,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
 
             IReadOnlyList<FeedRangeEpk> targetRanges = StatisticsCacheRanges.Take(scenario.MeasuredTargetRangeCount ?? StatisticsCacheRanges.Count).ToList();
-            CachedHybridSearchRun uncached = await RunCachedHybridSearchAsync(scenario, null, targetRanges, scenario.MeasuredScope, scenario.MeasuredETag);
+            CachedHybridSearchRun uncached = await RunCachedHybridSearchAsync(scenario, HybridSearchStatisticsCache.GetNoOpImpl(), targetRanges, scenario.MeasuredScope, scenario.MeasuredETag);
             CachedHybridSearchRun measured = await RunCachedHybridSearchAsync(scenario, cache, targetRanges, scenario.MeasuredScope, scenario.MeasuredETag);
 
             bool expectHit = scenario.ExpectedTraceDatum == "Hit";
@@ -1432,7 +1432,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 maxConcurrency: MaxConcurrency,
                 fullTextScoreScope: fullTextScoreScope,
                 requestContinuationToken: null,
-                statisticsCache: null);
+                statisticsCache: HybridSearchStatisticsCache.GetNoOpImpl());
 
             Assert.IsTrue(tryCreatePipeline.Succeeded);
             return RunPipelineStage(tryCreatePipeline.Result, pageSize);

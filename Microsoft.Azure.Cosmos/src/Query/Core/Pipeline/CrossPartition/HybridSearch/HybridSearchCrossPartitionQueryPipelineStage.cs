@@ -30,8 +30,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private const int MaximumPageSize = 2048;
 
-        private const string StatisticsCacheTraceDatumKey = "Hybrid Search Statistics Cache";
-
         private readonly static IReadOnlyList<CosmosElement> EmptyPage = new List<CosmosElement>();
 
         private readonly static QueryState Continuation = new QueryState(CosmosString.Create("HybridSearchInProgress"));
@@ -93,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             this.queryPipelineStages = queryPipelineStages;
             this.containerResourceId = containerResourceId;
             this.containerETag = containerETag;
-            this.statisticsCache = statisticsCache;
+            this.statisticsCache = statisticsCache ?? throw new ArgumentNullException(nameof(statisticsCache));
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
@@ -186,7 +184,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     Math.Min(MaximumPageSize, maxItemCount) :
                     MaximumPageSize;
 
-            statisticsCache = fullTextScoreScope == Cosmos.FullTextScoreScope.Global && HybridSearchStatisticsCache.IsQuerySupported(queryInfo) ? statisticsCache : null;
+            statisticsCache = fullTextScoreScope == Cosmos.FullTextScoreScope.Global && HybridSearchStatisticsCache.IsQuerySupported(queryInfo)
+                ? statisticsCache
+                : HybridSearchStatisticsCache.GetNoOpImpl();
 
             return TryCatch<IQueryPipelineStage>.FromResult(
                 new HybridSearchCrossPartitionQueryPipelineStage(
@@ -236,11 +236,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private async ValueTask<bool> MoveNextAsync_GatherGlobalStatisticsAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            if (this.statisticsCache != null &&
-                this.statisticsCache.TryGet(this.containerResourceId, this.containerETag, this.hybridSearchQueryInfo, out GlobalFullTextSearchStatistics cachedStatistics))
+            if (this.statisticsCache.TryGet(this.containerResourceId, this.containerETag, this.hybridSearchQueryInfo, trace, out GlobalFullTextSearchStatistics cachedStatistics))
             {
                 // The statistics pipeline is never moved on a hit, so no statistics request is issued.
-                trace.AddOrUpdateDatum(StatisticsCacheTraceDatumKey, "Hit");
                 if (!this.TryCreateComponentPipelines(cachedStatistics))
                 {
                     return true;
@@ -250,12 +248,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             }
 
             // Capture the start before any statistics request so a slow fan-out does not appear fresher than it is.
-            TimeSpan collectionStartedAt = default;
-            if (this.statisticsCache != null)
-            {
-                trace.AddOrUpdateDatum(StatisticsCacheTraceDatumKey, "Miss");
-                collectionStartedAt = this.statisticsCache.GetElapsedTime();
-            }
+            TimeSpan collectionStartedAt = this.statisticsCache.GetElapsedTime();
 
             TryCatch<(GlobalFullTextSearchStatistics, QueryPage)> tryGatherStatistics = await GatherStatisticsAsync(
                 this.globalStatisticsPipeline,
@@ -269,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             }
 
             (GlobalFullTextSearchStatistics statistics, QueryPage queryPage) = tryGatherStatistics.Result;
-            this.statisticsCache?.Add(this.containerResourceId, this.containerETag, this.hybridSearchQueryInfo, statistics, collectionStartedAt);
+            this.statisticsCache.Add(this.containerResourceId, this.containerETag, this.hybridSearchQueryInfo, statistics, collectionStartedAt);
 
             if (!this.TryCreateComponentPipelines(statistics))
             {
