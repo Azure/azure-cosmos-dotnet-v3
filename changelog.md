@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- Query: Fixes failures when hybrid-search query planning expands internal TOP or LIMIT counts beyond the signed 32-bit range, including queries using LINQ `Skip`.
+
 - [6141](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6141) Distributed Transactions (preview): Fixes operation results synthesized from bodyless or unusable responses reporting index `0` for every operation instead of the corresponding zero-based request index.
 - [6119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6119) Distributed Transactions (preview): Isolates submitted operations from later additions to a read or write transaction, avoiding incorrect failures when interpreting a successful response. Each transaction instance still supports only one nonempty execution attempt.
 - [6119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6119) Distributed Transactions (preview): Captures ETags, session tokens, and typed-patch conditions consistently when constructing the request, preventing changes to caller options during payload preparation from producing inconsistent option values.
@@ -32,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- Query: Updates the bundled Windows native query planning library and its runtime dependencies to Microsoft.Azure.Cosmos.ServiceInterop 1.0.5.
+- Direct: Updates the bundled transport implementation to include upstream thread-safe request-statistics collection.
+- [6159](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6159) Direct: Completes the managed source import with transport, store, retry, addressing, and diagnostics implementations and their unit tests. The SDK continues to use the existing Direct package and native query-planning library; runtime behavior and public APIs are unchanged.
 - [6154](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6154) Direct: Expands the available managed source with resource models, serialization, partition-key routing, session tokens, and their supporting types and unit tests. The SDK still uses the existing Direct package and native query-planning library; runtime behavior and public APIs are unchanged.
 - [6137](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6137) Direct: Begins making the managed Direct implementation available as source in this repository with a buildable foundation of 53 unchanged source files. The SDK continues to use the existing Direct package; runtime behavior and public APIs are unchanged.
 

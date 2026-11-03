@@ -39,8 +39,14 @@
     <None Remove="Telemetry\ClientTelemetryPayloadWithoutMetrics.json" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(ProjectRef)' != 'True'">
+    <ProjectReference Include="..\..\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" PrivateAssets="All" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(ProjectRef)' != 'True'">
+    <IsRidAgnostic>false</IsRidAgnostic>
+  </PropertyGroup>
+
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
     <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
   </ItemGroup>
 
@@ -53,7 +59,7 @@
   <ItemGroup>
     <PackageReference Include="Azure.Core" Version="1.44.1" />
     <PackageReference Include="FluentAssertions" Version="5.10.3" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.7.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.49" PrivateAssets="All" />
@@ -61,6 +67,8 @@
     <PackageReference Include="MSTest.TestAdapter" Version="3.7.3" />
     <PackageReference Include="MSTest.TestFramework" Version="3.7.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="OpenTelemetry" Version="1.9.0" PrivateAssets="All" />
+    <PackageReference Include="System.IO.Pipelines" Version="8.0.0" PrivateAssets="All" />
     <PackageReference Include="coverlet.msbuild" Version="2.8.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
@@ -75,7 +83,10 @@
     <None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\microsoft.hybridrow.nuspec">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\Microsoft.Azure.Cosmos.Direct.nuspec">
+    <None Include="..\..\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\Direct\ServiceInterop.props">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\..\src\Microsoft.Azure.Cosmos.csproj">

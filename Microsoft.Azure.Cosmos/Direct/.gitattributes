@@ -1,0 +1,4 @@
+src/** -text
+src/*.csproj text
+License.txt -text
+ThirdPartyNotice.txt -text

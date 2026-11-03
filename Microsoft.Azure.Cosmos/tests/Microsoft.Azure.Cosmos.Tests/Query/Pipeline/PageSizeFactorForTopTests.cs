@@ -253,6 +253,31 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     pageSizeFactorForTop: DefaultFactor));
         }
 
+        [DataTestMethod]
+        [DataRow(true, 2147483648L)]
+        [DataRow(true, 4294967295L)]
+        [DataRow(false, 2147483648L)]
+        [DataRow(false, 4294967295L)]
+        public void LargeInternalCountsKeepPageSizesBounded(bool isTop, long count)
+        {
+            QueryInfo queryInfo = new QueryInfo()
+            {
+                OrderBy = new List<SortOrder>() { SortOrder.Ascending },
+                Top = isTop ? (uint?)count : null,
+                Offset = isTop ? null : (uint?)1,
+                Limit = isTop ? null : (uint?)count,
+            };
+
+            Assert.AreEqual(
+                1000L,
+                PipelineFactory.ComputeOptimalPageSize(
+                    queryInfo,
+                    targetRangeCount: TargetRangeCount,
+                    maxItemCount: 1000,
+                    isContinuationExpected: true,
+                    pageSizeFactorForTop: DefaultFactor));
+        }
+
         private static QueryInfo CreateOrderByQueryInfo(uint? top)
         {
             return new QueryInfo()
