@@ -111,10 +111,10 @@ The shared CI template also runs **42 existing, unchanged test methods** from
 suite or relaxed for this backend. `ci-scenarios.json` is the explicit,
 runtime-validated allowlist, not the broader source inventory.
 
-| CI job | Existing shared methods / cases | Original host-contract methods / cases | Controlled methods / cases | New numeric-wire methods / cases | Total cases |
-|---|---:|---:|---:|---:|---:|
-| Items | 35 / 35 | 11 / 14 | 1 / 3 | 2 / 15 | 67 |
-| Reads | 7 / 7 | 0 / 0 | 2 / 4 | 0 / 0 | 11 |
+| CI job | Existing shared methods / cases | Original host-contract methods / cases | Controlled methods / cases | New numeric-wire methods / cases | New resource-input methods / cases | Total cases |
+|---|---:|---:|---:|---:|---:|---:|
+| Items | 35 / 35 | 11 / 14 | 1 / 3 | 2 / 15 | 2 / 2 | 69 |
+| Reads | 7 / 7 | 0 / 0 | 2 / 4 | 0 / 0 | 0 / 0 | 11 |
 
 Items covers item patch/serialization, missing-item delete/patch errors, IDs,
 multiple Gateway clients and container recreation, database/container CRUD,
@@ -186,8 +186,12 @@ This fills the exact Go point-wire numeric matrix rather than relying on existin
 codec unit tests or ordinary binary CRUD. The original 42 shared assertions remain
 unchanged. A separate server-patch case verifies the exact persisted fractional
 increment `1.5 -> 2.5`, without copying Go's client-side increment strategies.
-CI now executes **78 cases** in two disjoint jobs: original 14, reused
-42, controlled 7, numeric-wire 14, and fractional increment 1. This point-item binary support does not
+Two further shared methods assert the existing empty-ID database/container
+creation validation, including the managed `ArgumentNullException` parameter name.
+These close portable Go input-validation scenarios with regression tests rather
+than treating ad hoc API probes as coverage.
+CI now executes **80 cases** in two disjoint jobs: original 14, reused
+42, controlled 7, numeric-wire 14, fractional increment 1, and resource-input 2. This point-item binary support does not
 imply .NET's separate binary transactional-batch framing is supported.
 
 ## Shared fixture selection and CI gates

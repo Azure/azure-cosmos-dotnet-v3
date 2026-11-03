@@ -21,6 +21,10 @@
       }
     },
     "shared": {
+      "Microsoft.Azure.Cosmos.SDK.EmulatorTests.ResourceValidationTests": {
+        "CreateDatabaseRejectsEmptyId": 1,
+        "CreateContainerRejectsEmptyId": 1
+      },
       "Microsoft.Azure.Cosmos.SDK.EmulatorTests.BinaryNumericWireTests": {
         "PointRoundTripPreservesNumberAndRequestedWireFormat": 14,
         "FractionalServerIncrementPersistsExactValue": 1
