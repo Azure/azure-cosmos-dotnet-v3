@@ -38,7 +38,7 @@ CosmosClientOptions options = new CosmosClientOptions
 
 | Value | Behavior |
 |---|---|
-| `null` (default) or zero | Disabled. No cache is allocated. |
+| `null` (default) or zero | Disabled. The client uses the shared no-op cache. |
 | Positive | Counts may be reused while younger than this age. |
 | Negative | The setter throws `ArgumentOutOfRangeException`. |
 
@@ -104,6 +104,20 @@ are created. Factories throw
 `ArgumentNullException` for a null RID, ETag, path, or term; distance is
 optional. The cache checks identity and metadata first, so it never passes null.
 
+### Implementations
+
+`HybridSearchStatisticsCache` is an abstract class with two private nested
+implementations, so callers never check for null:
+
+- `Impl` stores counts as described below.
+- `NoOpImpl` is a singleton that never stores anything, always misses, and
+  records no trace datum.
+
+`HybridSearchStatisticsCache.Create(maxAge, maxEntries)` returns `Impl` for a
+positive age and the no-op singleton otherwise. An overload also takes the
+elapsed-time clock, which tests inject. `GetNoOpImpl()` returns the no-op
+singleton for callers that need it directly.
+
 ### Storage and operations
 
 One `ConcurrentDictionary<HybridSearchStatisticsCacheKey, CachedCount>` holds
@@ -113,7 +127,7 @@ atomic. That is acceptable because counts are already independent.
 
 ```text
 GetElapsedTime() -> TimeSpan
-TryGet(rid, etag, hybridSearchQueryInfo, out GlobalFullTextSearchStatistics) -> bool
+TryGet(rid, etag, hybridSearchQueryInfo, trace, out GlobalFullTextSearchStatistics) -> bool
 Add(rid, etag, hybridSearchQueryInfo, statistics, collectionStartedAt)
 IsQuerySupported(hybridSearchQueryInfo) -> bool   (internal static)
 ```
@@ -147,11 +161,11 @@ query finishes.
 
 | Component | Role |
 |---|---|
-| `ClientContextCore.Create` | Creates the cache when the age is positive; otherwise passes null. The context stores only the readonly reference. |
-| `CosmosClientContext`, `CosmosQueryClient` | Expose the nullable cache. |
+| `ClientContextCore.Create` | Calls `HybridSearchStatisticsCache.Create` with the client options. The context stores only the readonly reference. |
+| `CosmosClientContext`, `CosmosQueryClient` | Expose the cache. |
 | `CosmosQueryClientCore` | Adds the container ETag to `ContainerQueryProperties` from the same cached container read as the RID. |
 | `CosmosQueryExecutionContextFactory`, `PipelineFactory` | Forward the cache without any hybrid-specific decisions. |
-| `HybridSearchCrossPartitionQueryPipelineStage` | Keeps the cache only for Global scope and supported metadata. Stores the cache, RID, and ETag in private readonly fields. |
+| `HybridSearchCrossPartitionQueryPipelineStage` | Keeps the cache only for Global scope and supported metadata, and uses `NoOpImpl` otherwise. Stores the cache, RID, and ETag in private readonly fields. |
 
 Name-cache-stale retries rebuild the stage with refreshed RID and ETag, so a
 retried query never uses the previous container's counts.
@@ -174,10 +188,9 @@ sharing. Failures and cancellation follow the existing `TryCatch` behavior, and
 nothing is cached from a failed or cancelled collection. Selected statistics
 are pinned for the iterator.
 
-When the cache is enabled for the query, the stage records a
-`Hybrid Search Statistics Cache` trace datum of `Hit` or `Miss` with
-`AddOrUpdateDatum`, which tolerates retries reusing a trace. Disabled and Local
-queries add nothing. No paths, terms, keys, or counts are logged.
+`Impl.TryGet` records a `Hybrid Search Statistics Cache` trace datum of `Hit`
+or `Miss` with `AddOrUpdateDatum`, which tolerates retries reusing a trace.
+`NoOpImpl` records nothing, so disabled and Local queries add nothing. No paths, terms, keys, or counts are logged.
 
 ## 7. Testing
 

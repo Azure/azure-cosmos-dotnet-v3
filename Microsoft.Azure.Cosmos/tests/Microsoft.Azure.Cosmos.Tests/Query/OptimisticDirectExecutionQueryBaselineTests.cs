@@ -1288,7 +1288,7 @@
 
         public override Action<IQueryable> OnExecuteScalarQueryCallback => throw new NotImplementedException();
 
-        public override HybridSearchStatisticsCache HybridSearchStatisticsCache => null;
+        public override HybridSearchStatisticsCache HybridSearchStatisticsCache => HybridSearchStatisticsCache.GetNoOpImpl();
 
         public override bool BypassQueryParsing()
         {

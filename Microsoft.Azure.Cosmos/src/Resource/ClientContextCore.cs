@@ -153,10 +153,9 @@ namespace Microsoft.Azure.Cosmos
             clientOptions.SetSerializerIfNotConfigured(serializerCore.GetCustomOrDefaultSerializer());
 
             CosmosResponseFactoryInternal responseFactory = new CosmosResponseFactoryCore(serializerCore);
-            HybridSearchStatisticsCache hybridSearchStatisticsCache =
-                clientOptions.FullTextStatisticsCacheMaxAge is TimeSpan maxAge && maxAge > TimeSpan.Zero
-                    ? new HybridSearchStatisticsCache(maxAge, clientOptions.FullTextStatisticsCacheMaxEntries)
-                    : null;
+            HybridSearchStatisticsCache hybridSearchStatisticsCache = HybridSearchStatisticsCache.Create(
+                clientOptions.FullTextStatisticsCacheMaxAge,
+                clientOptions.FullTextStatisticsCacheMaxEntries);
 
             return new ClientContextCore(
                 client: cosmosClient,

@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 maxConcurrency: 10,
                 fullTextScoreScope: FullTextScoreScope.Global,
                 requestContinuationToken: default,
-                statisticsCache: null); ;
+                statisticsCache: HybridSearchStatisticsCache.GetNoOpImpl());
             Assert.IsTrue(monadicCreatePipeline.Succeeded);
         }
 
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
             };
             Mock<CosmosQueryClient> queryClient = new Mock<CosmosQueryClient>(MockBehavior.Strict);
-            queryClient.SetupGet(client => client.HybridSearchStatisticsCache).Returns((HybridSearchStatisticsCache)null);
+            queryClient.SetupGet(client => client.HybridSearchStatisticsCache).Returns(HybridSearchStatisticsCache.GetNoOpImpl());
             queryClient.Setup(client => client.GetClientDisableOptimisticDirectExecutionAsync()).ReturnsAsync(false);
             queryClient.Setup(client => client.GetCachedContainerQueryPropertiesAsync(
                 It.IsAny<string>(), It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static async Task VerifyCacheBindingAsync(CacheBindingTestCase testCase)
         {
-            HybridSearchStatisticsCache cache = new HybridSearchStatisticsCache(TimeSpan.FromMinutes(1), 4);
+            HybridSearchStatisticsCache cache = HybridSearchStatisticsCache.Create(TimeSpan.FromMinutes(1), 4);
             HybridSearchQueryInfo plan = CreateHybridPlan();
             plan.RequiresGlobalStatistics = testCase.RequiresStatistics;
             if (!testCase.MetadataPresent)
@@ -276,11 +276,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 maxConcurrency: 1,
                 fullTextScoreScope: testCase.Scope,
                 requestContinuationToken: null,
-                statisticsCache: testCase.CacheEnabled ? cache : null);
+                statisticsCache: testCase.CacheEnabled ? cache : HybridSearchStatisticsCache.GetNoOpImpl());
             created.ThrowIfFailed();
             await using IQueryPipelineStage pipeline = created.Result;
             HybridSearchCrossPartitionQueryPipelineStage stage = (HybridSearchCrossPartitionQueryPipelineStage)pipeline;
-            Assert.AreSame(testCase.ExpectedCache ? cache : null, GetPrivateField<HybridSearchStatisticsCache>(stage, "statisticsCache"));
+            Assert.AreSame(testCase.ExpectedCache ? cache : HybridSearchStatisticsCache.GetNoOpImpl(), GetPrivateField<HybridSearchStatisticsCache>(stage, "statisticsCache"));
             Assert.AreEqual(properties.ResourceId, GetPrivateField<string>(stage, "containerResourceId"));
             Assert.AreEqual(properties.ETag, GetPrivateField<string>(stage, "containerETag"));
             Assert.AreSame(plan, GetPrivateField<HybridSearchQueryInfo>(stage, "hybridSearchQueryInfo"));
