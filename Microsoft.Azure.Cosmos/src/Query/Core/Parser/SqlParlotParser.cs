@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
     /// the methods below are the tokens and AST helpers the generated parser calls.
     /// </summary>
     /// <remarks>
-    /// The scanners reproduce the tokens of the former ANTLR lexer (sql.g4): keywords are case insensitive except
+    /// The tokens are those of the former ANTLR lexer (sql.g4): keywords are case insensitive except
     /// true, false, null, undefined and udf; a sign directly followed by a digit is part of a numeric literal; the only
     /// white space is space, tab, carriage return and line feed.
     /// </remarks>
@@ -26,75 +26,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
         public const string IdentifierPartChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789";
 
-        public const string NumberStartChars = "+-.0123456789";
-
         // On failure, returns where the parse went wrong: the furthest position the parser reached.
         public static partial bool TryParse(string text, out SqlQuery sqlQuery, out (int Offset, int Line, int Column) failure);
 
         // LEX_IDENTIFIER that is not a reserved keyword (ALL, FIRST and LAST are keywords that remain identifiers).
         public static int ScanIdentifier(ReadOnlySpan<char> span)
         {
-            int length = ScanWord(span);
-            if (length == 0 || IsReserved(span.Slice(0, length)))
+            if (span.IsEmpty || !IsIdentifierStart(span[0]))
             {
                 return 0;
             }
 
-            return length;
-        }
-
-        // PARAMETER : '@' LEX_IDENTIFIER, where LEX_IDENTIFIER can be empty.
-        public static int ScanParameter(ReadOnlySpan<char> span)
-        {
-            if (span.IsEmpty || span[0] != '@')
+            int length = 1;
+            while (length < span.Length && (IsIdentifierStart(span[length]) || IsDigit(span[length])))
             {
-                return 0;
+                length++;
             }
 
-            return 1 + ScanWord(span.Slice(1));
-        }
-
-        // NUMERIC_LITERAL : ('+' | '-')? DIGIT+ ('.' DIGIT*)? (E [-+]? DIGIT+)? | ('+' | '-')? '.' DIGIT+ (E [-+]? DIGIT+)?
-        public static int ScanNumber(ReadOnlySpan<char> span)
-        {
-            int index = 0;
-            if (index < span.Length && (span[index] == '+' || span[index] == '-'))
-            {
-                index++;
-            }
-
-            if (index < span.Length && IsDigit(span[index]))
-            {
-                index = SkipDigits(span, index);
-                if (index < span.Length && span[index] == '.')
-                {
-                    index = SkipDigits(span, index + 1);
-                }
-            }
-            else if (index + 1 < span.Length && span[index] == '.' && IsDigit(span[index + 1]))
-            {
-                index = SkipDigits(span, index + 1);
-            }
-            else
-            {
-                return 0;
-            }
-
-            if (index < span.Length && (span[index] == 'e' || span[index] == 'E'))
-            {
-                int exponent = index + 1;
-                if (exponent < span.Length && (span[exponent] == '+' || span[exponent] == '-'))
-                {
-                    exponent++;
-                }
-
-                if (exponent < span.Length && IsDigit(span[exponent]))
-                {
-                    index = SkipDigits(span, exponent);
-                }
-            }
-
-            return index;
+            return IsReserved(span.Slice(0, length)) ? 0 : length;
         }
 
         // STRING_LITERAL : '"' (ESC | ~["\\\u0000-\u001F])* '"' | '\'' (ESC | ~['\\\u0000-\u001F])* '\''
@@ -163,11 +112,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
             return 0;
         }
-
-        // '-' and '+' operators: the lexer reads a sign followed by a digit, or by '.' and a digit, as a numeric literal.
-        public static int ScanMinus(ReadOnlySpan<char> span) => ScanSign(span, '-');
-
-        public static int ScanPlus(ReadOnlySpan<char> span) => ScanSign(span, '+');
 
         public static SqlNumberLiteral CreateNumberLiteral(ReadOnlySpan<char> text)
         {
@@ -267,22 +211,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return path;
         }
 
-        public static Leaf CreateLeaf(SqlScalarExpression expression, IReadOnlyList<Suffix> suffix)
+        public static Leaf CreateLeaf(SqlScalarExpression expression, Suffix suffix)
         {
-            if (suffix.Count == 0)
-            {
-                return new Leaf(expression, isBetween: false);
-            }
-
-            Suffix s = suffix[0];
-            switch (s.Kind)
+            switch (suffix.Kind)
             {
                 case SuffixKind.In:
-                    return new Leaf(SqlInScalarExpression.Create(expression, s.Not, s.List), isBetween: false);
+                    return new Leaf(SqlInScalarExpression.Create(expression, suffix.Not, suffix.List), isBetween: false);
                 case SuffixKind.Like:
-                    return new Leaf(SqlLikeScalarExpression.Create(expression, s.First, s.Not, s.Escape), isBetween: false);
+                    return new Leaf(SqlLikeScalarExpression.Create(expression, suffix.First, suffix.Not, suffix.Escape), isBetween: false);
                 default:
-                    return new Leaf(SqlBetweenScalarExpression.Create(expression, s.First, s.Second, s.Not), isBetween: true);
+                    return new Leaf(SqlBetweenScalarExpression.Create(expression, suffix.First, suffix.Second, suffix.Not), isBetween: true);
             }
         }
 
@@ -307,37 +245,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             }
 
             return expression;
-        }
-
-        private static int ScanSign(ReadOnlySpan<char> span, char sign)
-        {
-            if (span.IsEmpty || span[0] != sign)
-            {
-                return 0;
-            }
-
-            if (span.Length > 1 && (IsDigit(span[1]) || (span[1] == '.' && span.Length > 2 && IsDigit(span[2]))))
-            {
-                return 0;
-            }
-
-            return 1;
-        }
-
-        private static int ScanWord(ReadOnlySpan<char> span)
-        {
-            if (span.IsEmpty || !IsIdentifierStart(span[0]))
-            {
-                return 0;
-            }
-
-            int index = 1;
-            while (index < span.Length && (IsIdentifierStart(span[index]) || IsDigit(span[index])))
-            {
-                index++;
-            }
-
-            return index;
         }
 
         private static bool IsReserved(ReadOnlySpan<char> word)
@@ -382,16 +289,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             }
 
             return true;
-        }
-
-        private static int SkipDigits(ReadOnlySpan<char> span, int index)
-        {
-            while (index < span.Length && IsDigit(span[index]))
-            {
-                index++;
-            }
-
-            return index;
         }
 
         private static bool IsDigit(char c) => (uint)(c - '0') <= 9;

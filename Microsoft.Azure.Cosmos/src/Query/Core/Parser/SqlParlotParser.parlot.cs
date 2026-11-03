@@ -14,9 +14,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
     internal static partial class SqlParlotParser
     {
-        // The parser reads chains of prefix operators in a loop, but the code that visits the tree recurses once per
-        // level. The limit keeps the tree shallow enough for it on a 1 MB stack: about 300 nested parentheses, 190
-        // subqueries or 1,000 prefix operators.
+        // The limit bounds what the parser recurses on and the prefix operators, which it reads in a loop, to about 300
+        // nested parentheses, 190 subqueries or 1,000 prefix operators. The binary operators and member accesses of a
+        // chain aren't counted: a tree can be deeper than this, and the code that visits one has to check the stack.
         [GenerateParser(nameof(TryParse), MaxRecursionDepth = 1000)]
         private static Parser<SqlQuery> Build()
         {
@@ -70,12 +70,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             Parser<char> dot = Terms.Char('.');
             Parser<char> colon = Terms.Char(':');
 
+            // LEX_IDENTIFIER, and PARAMETER : '@' LEX_IDENTIFIER, where LEX_IDENTIFIER can be empty.
+            Parser<Parlot.TextSpan> word = Capture(Literals.AnyOf(IdentifierStartChars, minSize: 1, maxSize: 1).And(Literals.AnyOf(IdentifierPartChars).Optional()));
+            // Not a word followed by a check, which would report a misplaced keyword at its end rather than at its start.
             Parser<SqlIdentifier> identifier = Terms.Scan(ScanIdentifier, IdentifierStartChars.AsSpan())
                 .Then(static span => SqlIdentifier.Create(span.ToString()));
-            Parser<SqlParameter> parameter = Terms.Scan(ScanParameter, "@".AsSpan())
+            Parser<SqlParameter> parameter = SkipWhiteSpace(Capture(Literals.Char('@').And(word.Optional())))
                 .Then(static span => SqlParameter.Create(span.ToString()));
-            Parser<SqlNumberLiteral> number = Terms.Scan(ScanNumber, NumberStartChars.AsSpan())
+
+            // NUMERIC_LITERAL : ('+' | '-')? DIGIT+ ('.' DIGIT*)? (E [-+]? DIGIT+)? | ('+' | '-')? '.' DIGIT+ (E [-+]? DIGIT+)?
+            Parser<Parlot.TextSpan> digits = Literals.AnyOf("0123456789");
+            Parser<Parlot.TextSpan> sign = Literals.AnyOf("+-", minSize: 1, maxSize: 1);
+            Parser<Parlot.TextSpan> unsignedNumber = Capture(
+                OneOf(
+                    Capture(digits.And(Literals.Char('.').And(digits.Optional()).Optional())),
+                    Capture(Literals.Char('.').And(digits)))
+                .And(Literals.AnyOf("eE", minSize: 1, maxSize: 1).And(sign.Optional()).And(digits).Optional()));
+            Parser<SqlNumberLiteral> number = SkipWhiteSpace(OneOf(Capture(sign.And(unsignedNumber)), unsignedNumber))
                 .Then(static span => SqlParlotParser.CreateNumberLiteral(span.Span));
+
+            // The '-' and '+' operators: the lexer reads a sign followed by a number as a numeric literal.
+            Parser<char> minus = Terms.Char('-').WhenNotFollowedBy(unsignedNumber);
+            Parser<char> plus = Terms.Char('+').WhenNotFollowedBy(unsignedNumber);
+
             Parser<SqlStringLiteral> stringLiteral = Terms.Scan(ScanString, "\"'".AsSpan())
                 .Then(static span => SqlStringLiteral.Create(SqlParlotParser.GetStringValue(span.Span)));
 
@@ -87,13 +104,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             Parser<System.Collections.Generic.IReadOnlyList<SqlScalarExpression>> arguments = Between(lParen, Separated(comma, scalarExpression, min: 0), rParen);
 
             // function_call_scalar_expression
-            Parser<SqlFunctionCallScalarExpression> functionCall = OneOf(
+            Parser<SqlFunctionCallScalarExpression> keywordCall = OneOf(
                 kUdf.SkipAnd(dot).SkipAnd(identifier).And(arguments)
                     .Then(static t => SqlFunctionCallScalarExpression.Create(t.Item1, true, SqlParlotParser.ToImmutableArray(t.Item2))),
-                kLeft.And(arguments)
-                    .Then(static t => SqlFunctionCallScalarExpression.Create(SqlIdentifier.Create(t.Item1), false, SqlParlotParser.ToImmutableArray(t.Item2))),
-                kRight.And(arguments)
-                    .Then(static t => SqlFunctionCallScalarExpression.Create(SqlIdentifier.Create(t.Item1), false, SqlParlotParser.ToImmutableArray(t.Item2))),
+                OneOf(kLeft, kRight).And(arguments)
+                    .Then(static t => SqlFunctionCallScalarExpression.Create(SqlIdentifier.Create(t.Item1), false, SqlParlotParser.ToImmutableArray(t.Item2))));
+            Parser<SqlFunctionCallScalarExpression> functionCall = OneOf(
+                keywordCall,
                 identifier.And(arguments)
                     .Then(static t => SqlFunctionCallScalarExpression.Create(t.Item1, false, SqlParlotParser.ToImmutableArray(t.Item2))));
 
@@ -114,16 +131,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 kAll.SkipAnd(parenthesizedQuery).Then(static q => (SqlScalarExpression)SqlAllScalarExpression.Create(q)),
                 kFirst.SkipAnd(parenthesizedQuery).Then(static q => (SqlScalarExpression)SqlFirstScalarExpression.Create(q)),
                 kLast.SkipAnd(parenthesizedQuery).Then(static q => (SqlScalarExpression)SqlLastScalarExpression.Create(q)),
-                kUdf.SkipAnd(dot).SkipAnd(identifier).And(arguments)
-                    .Then(static t => (SqlScalarExpression)SqlFunctionCallScalarExpression.Create(t.Item1, true, SqlParlotParser.ToImmutableArray(t.Item2))),
-                kLeft.And(arguments)
-                    .Then(static t => (SqlScalarExpression)SqlFunctionCallScalarExpression.Create(SqlIdentifier.Create(t.Item1), false, SqlParlotParser.ToImmutableArray(t.Item2))),
-                kRight.And(arguments)
-                    .Then(static t => (SqlScalarExpression)SqlFunctionCallScalarExpression.Create(SqlIdentifier.Create(t.Item1), false, SqlParlotParser.ToImmutableArray(t.Item2))),
-                identifier.And(ZeroOrOne(arguments))
-                    .Then(static t => t.Item2.Count == 0
-                        ? (SqlScalarExpression)SqlPropertyRefScalarExpression.Create(null, t.Item1)
-                        : SqlFunctionCallScalarExpression.Create(t.Item1, false, SqlParlotParser.ToImmutableArray(t.Item2[0]))),
+                keywordCall.Then(static call => (SqlScalarExpression)call),
+                identifier.And(arguments.Optional())
+                    .Then(static t => t.Item2.HasValue
+                        ? SqlFunctionCallScalarExpression.Create(t.Item1, false, SqlParlotParser.ToImmutableArray(t.Item2.Value))
+                        : (SqlScalarExpression)SqlPropertyRefScalarExpression.Create(null, t.Item1)),
                 Between(lBracket, Separated(comma, scalarExpression, min: 0), rBracket)
                     .Then(static items => (SqlScalarExpression)SqlArrayCreateScalarExpression.Create(SqlParlotParser.ToImmutableArray(items))),
                 Between(lBrace, Separated(comma, objectProperty, min: 0), rBrace)
@@ -138,17 +150,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                     (dot.SkipAnd(identifier), static (e, id) => SqlPropertyRefScalarExpression.Create(e, id)),
                     (Between(lBracket, scalarExpression, rBracket), static (e, index) => SqlMemberIndexerScalarExpression.Create(e, index)))
                 .Unary(
-                    (Terms.Scan(ScanMinus, "-".AsSpan()), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Minus, e)),
-                    (Terms.Scan(ScanPlus, "+".AsSpan()), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Plus, e)),
-                    (Terms.Char('~').Then(static _ => default(Parlot.TextSpan)), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.BitwiseNot, e)),
-                    (kNot.Then(static _ => default(Parlot.TextSpan)), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Not, e)))
+                    (minus, static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Minus, e)),
+                    (plus, static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Plus, e)),
+                    (Terms.Char('~'), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.BitwiseNot, e)),
+                    (kNot.Then(static _ => default(char)), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Not, e)))
                 .LeftAssociative(
                     (Terms.Char('*'), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Multiply, a, b)),
                     (Terms.Char('/'), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Divide, a, b)),
                     (Terms.Char('%'), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Modulo, a, b)))
                 .LeftAssociative(
-                    (Terms.Scan(ScanPlus, "+".AsSpan()), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Add, a, b)),
-                    (Terms.Scan(ScanMinus, "-".AsSpan()), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Subtract, a, b)))
+                    (plus, static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Add, a, b)),
+                    (minus, static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Subtract, a, b)))
                 .LeftAssociative(
                     (Terms.Text(">="), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.GreaterThanOrEqual, a, b)),
                     (Terms.Text("<="), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.LessThanOrEqual, a, b)),
@@ -166,24 +178,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             // after their binary_scalar_expression.
             Parser<Suffix> inSuffix = kIn.SkipAnd(Between(lParen, scalarExpressionList, rParen))
                 .Then(static list => new Suffix(SuffixKind.In, SqlParlotParser.ToImmutableArray(list), null, null, null));
-            Parser<Suffix> likeSuffix = kLike.SkipAnd(binaryExpression).And(ZeroOrOne(kEscape.SkipAnd(stringLiteral)))
-                .Then(static t => new Suffix(SuffixKind.Like, default, t.Item1, null, t.Item2.Count == 0 ? null : t.Item2[0]));
+            Parser<Suffix> likeSuffix = kLike.SkipAnd(binaryExpression).And(kEscape.SkipAnd(stringLiteral).Optional())
+                .Then(static t => new Suffix(SuffixKind.Like, default, t.Item1, null, t.Item2.OrSome(null)));
             Parser<Suffix> betweenSuffix = kBetween.SkipAnd(binaryExpression).AndSkip(kAnd).And(binaryExpression)
                 .Then(static t => new Suffix(SuffixKind.Between, default, t.Item1, t.Item2, null));
 
-            Parser<Suffix> logicalSuffix = ZeroOrOne(kNot).And(OneOf(inSuffix, likeSuffix))
-                .Then(static t => t.Item2.WithNot(t.Item1.Count != 0));
-            Parser<Suffix> firstSuffix = ZeroOrOne(kNot).And(OneOf(inSuffix, likeSuffix, betweenSuffix))
-                .Then(static t => t.Item2.WithNot(t.Item1.Count != 0));
+            Parser<Suffix> logicalSuffix = kNot.Optional().And(OneOf(inSuffix, likeSuffix))
+                .Then(static t => t.Item2.WithNot(t.Item1.HasValue));
+            Parser<Suffix> firstSuffix = kNot.Optional().And(OneOf(inSuffix, likeSuffix, betweenSuffix))
+                .Then(static t => t.Item2.WithNot(t.Item1.HasValue));
 
-            Parser<SqlScalarExpression> logicalOperand = binaryExpression.And(ZeroOrOne(logicalSuffix))
-                .Then(static t => SqlParlotParser.CreateLeaf(t.Item1, t.Item2).Expression);
+            Parser<SqlScalarExpression> logicalOperand = binaryExpression.And(logicalSuffix.Optional())
+                .Then(static t => t.Item2.HasValue ? SqlParlotParser.CreateLeaf(t.Item1, t.Item2.Value).Expression : t.Item1);
             Parser<SqlScalarExpression> andExpression = logicalOperand.LeftAssociative(
                 (kAnd, static (left, right) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.And, left, right)));
 
             // logical_scalar_expression | BETWEEN, the primary alternatives of scalar_expression.
-            Parser<SqlScalarExpression> scalarPrimary = binaryExpression.And(ZeroOrOne(firstSuffix))
-                .Then(static t => SqlParlotParser.CreateLeaf(t.Item1, t.Item2))
+            Parser<SqlScalarExpression> scalarPrimary = binaryExpression.And(firstSuffix.Optional())
+                .Then(static t => t.Item2.HasValue ? SqlParlotParser.CreateLeaf(t.Item1, t.Item2.Value) : new Leaf(t.Item1, isBetween: false))
                 .And(ZeroOrMany(kAnd.SkipAnd(logicalOperand)))
                 .And(ZeroOrMany(kOr.SkipAnd(andExpression)))
                 .When(static (c, t) => SqlParlotParser.IsValidLogical(t.Item1, t.Item2, t.Item3))
@@ -205,14 +217,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             Parser<SqlTopSpec> topSpec = kTop.SkipAnd(OneOf(
                 number.Then(static n => SqlTopSpec.Create(n)),
                 parameter.Then(static p => SqlTopSpec.Create(p))));
-            Parser<SqlSelectItem> selectItem = scalarExpression.And(ZeroOrOne(kAs.SkipAnd(identifier)))
-                .Then(static t => SqlSelectItem.Create(t.Item1, t.Item2.Count == 0 ? null : t.Item2[0]));
+            Parser<SqlSelectItem> selectItem = scalarExpression.And(kAs.SkipAnd(identifier).Optional())
+                .Then(static t => SqlSelectItem.Create(t.Item1, t.Item2.OrSome(null)));
             Parser<SqlSelectSpec> selection = OneOf(
                 Terms.Char('*').Then(static _ => (SqlSelectSpec)SqlSelectStarSpec.Create()),
                 kValue.SkipAnd(scalarExpression).Then(static e => (SqlSelectSpec)SqlSelectValueSpec.Create(e)),
                 Separated(comma, selectItem).Then(static items => (SqlSelectSpec)SqlSelectListSpec.Create(SqlParlotParser.ToImmutableArray(items))));
-            Parser<SqlSelectClause> selectClause = kSelect.SkipAnd(ZeroOrOne(kDistinct)).And(ZeroOrOne(topSpec)).And(selection)
-                .Then(static t => SqlSelectClause.Create(t.Item3, t.Item2.Count == 0 ? null : t.Item2[0], t.Item1.Count != 0));
+            Parser<SqlSelectClause> selectClause = kSelect.SkipAnd(kDistinct.Optional()).And(topSpec.Optional()).And(selection)
+                .Then(static t => SqlSelectClause.Create(t.Item3, t.Item2.OrSome(null), t.Item1.HasValue));
 
             // FROM
             Parser<PathSegment> pathSegment = OneOf(
@@ -226,8 +238,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             Parser<SqlCollectionExpression> collectionPrimary = OneOf(
                 identifier.AndSkip(kIn).And(collection)
                     .Then(static t => (SqlCollectionExpression)SqlArrayIteratorCollectionExpression.Create(t.Item1, t.Item2)),
-                collection.And(ZeroOrOne(ZeroOrOne(kAs).SkipAnd(identifier)))
-                    .Then(static t => (SqlCollectionExpression)SqlAliasedCollectionExpression.Create(t.Item1, t.Item2.Count == 0 ? null : t.Item2[0])));
+                collection.And(kAs.Optional().SkipAnd(identifier).Optional())
+                    .Then(static t => (SqlCollectionExpression)SqlAliasedCollectionExpression.Create(t.Item1, t.Item2.OrSome(null))));
             Parser<SqlCollectionExpression> collectionExpression = collectionPrimary.LeftAssociative(
                 (kJoin, static (left, right) => (SqlCollectionExpression)SqlJoinCollectionExpression.Create(left, right)));
             Parser<SqlFromClause> fromClause = kFrom.SkipAnd(collectionExpression).Then(static c => SqlFromClause.Create(c));
@@ -239,10 +251,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
             // ORDER BY
             Parser<bool> sortOrder = OneOf(kAsc.Then(static _ => false), kDesc.Then(static _ => true));
-            Parser<SqlOrderByItem> orderByItem = scalarExpression.And(ZeroOrOne(sortOrder))
-                .Then(static t => SqlOrderByItem.Create(t.Item1, t.Item2.Count != 0 && t.Item2[0]));
-            Parser<SqlOrderByItem> scoreOrderByItem = functionCall.And(ZeroOrOne(sortOrder))
-                .Then(static t => SqlOrderByItem.Create(t.Item1, t.Item2.Count == 0 ? null : t.Item2[0]));
+            Parser<SqlOrderByItem> orderByItem = scalarExpression.And(sortOrder.Optional())
+                .Then(static t => SqlOrderByItem.Create(t.Item1, t.Item2.OrSome(false)));
+            Parser<SqlOrderByItem> scoreOrderByItem = functionCall.And(sortOrder.Optional())
+                .Then(static t => SqlOrderByItem.Create(t.Item1, t.Item2.HasValue ? t.Item2.Value : null));
             Parser<SqlOrderByClause> orderByClause = kOrder.SkipAnd(kBy).SkipAnd(OneOf(
                 kRank.SkipAnd(Separated(comma, scoreOrderByItem))
                     .Then(static items => SqlOrderByClause.Create(true, SqlParlotParser.ToImmutableArray(items))),
@@ -260,22 +272,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 .Then(static t => SqlOffsetLimitClause.Create(t.Item1, t.Item2));
 
             sqlQuery.Parser = selectClause
-                .And(ZeroOrOne(fromClause))
-                .And(ZeroOrOne(whereClause))
-                .And(ZeroOrOne(groupByClause))
-                .And(ZeroOrOne(orderByClause))
-                .And(ZeroOrOne(offsetLimitClause))
+                .And(fromClause.Optional())
+                .And(whereClause.Optional())
+                .And(groupByClause.Optional())
+                .And(orderByClause.Optional())
+                .And(offsetLimitClause.Optional())
                 .Then(static t => SqlQuery.Create(
                     t.Item1,
-                    t.Item2.Count == 0 ? null : t.Item2[0],
-                    t.Item3.Count == 0 ? null : t.Item3[0],
-                    t.Item4.Count == 0 ? null : t.Item4[0],
-                    t.Item5.Count == 0 ? null : t.Item5[0],
-                    t.Item6.Count == 0 ? null : t.Item6[0]));
+                    t.Item2.OrSome(null),
+                    t.Item3.OrSome(null),
+                    t.Item4.OrSome(null),
+                    t.Item5.OrSome(null),
+                    t.Item6.OrSome(null)));
 
             // The white space is space, tab, carriage return and line feed.
             return sqlQuery
-                .AndSkip(ZeroOrOne(Literals.WhiteSpace(includeNewLines: true)))
+                .AndSkip(Literals.WhiteSpace(includeNewLines: true).Optional())
                 .Eof()
                 .WithWhiteSpaceSet(Parlot.WhiteSpaceSet.SpaceTabCrLf);
         }
