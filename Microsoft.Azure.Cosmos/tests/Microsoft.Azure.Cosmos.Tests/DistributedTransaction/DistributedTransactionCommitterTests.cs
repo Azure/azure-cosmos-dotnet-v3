@@ -17,12 +17,15 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Moq.Protected;
+    using Newtonsoft.Json.Linq;
     using PartitionKey = Microsoft.Azure.Cosmos.PartitionKey;
 
     [TestClass]
@@ -36,6 +39,962 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
 
         // Known-valid collection resource ID that passes ResourceId.Parse.
         private const string TestCollectionResourceId = "ccZ1ANCszwk=";
+
+        [DataTestMethod]
+        [DataRow(false, ConnectionMode.Gateway)]
+        [DataRow(true, ConnectionMode.Gateway)]
+        [DataRow(false, ConnectionMode.Direct)]
+        [DataRow(true, ConnectionMode.Direct)]
+        public async Task ExecuteTransactionAsync_RecreatedContainer_RealPipelineRefreshesMetadataAndSessions(
+            bool readOnly, ConnectionMode connectionMode)
+        {
+            const string unchangedContainerName = "unchanged";
+            const string sessionToken = "0:1#9#4=8#5=7";
+            string currentRid = CollectionResourceId;
+            string replacementRid = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
+            string unchangedRid = ResourceId.NewDocumentCollectionId(42, 131).DocumentCollectionId.ToString();
+            Mock<IHttpHandler> http = new Mock<IHttpHandler>(MockBehavior.Strict);
+            Uri endpoint = MockSetupsHelper.SetupSingleRegionAccount(
+                "dtx-recreation", Cosmos.ConsistencyLevel.Session, http, out string regionEndpoint);
+            MockSetupsHelper.SetupContainerProperties(http, regionEndpoint, DatabaseName, ContainerName, currentRid);
+            MockSetupsHelper.SetupContainerProperties(http, regionEndpoint, DatabaseName, unchangedContainerName, unchangedRid);
+            List<JObject> payloads = new List<JObject>();
+            List<Guid> tokens = new List<Guid>();
+            http.Setup(h => h.SendAsync(
+                    It.Is<HttpRequestMessage>(request => request.RequestUri.AbsolutePath == "/operations/dtc"),
+                    It.IsAny<CancellationToken>()))
+                .Returns<HttpRequestMessage, CancellationToken>(async (request, _) =>
+                {
+                    JObject payload = JObject.Parse(await request.Content.ReadAsStringAsync());
+                    payloads.Add(payload);
+                    tokens.Add(Guid.Parse(request.Headers.GetValues(HttpConstants.HttpHeaders.IdempotencyToken).Single()));
+                    if ((string)payload[DistributedTransactionSerializer.Operations][0]
+                        [DistributedTransactionSerializer.CollectionResourceId] != currentRid)
+                    {
+                        HttpResponseMessage stale = new HttpResponseMessage(HttpStatusCode.Gone)
+                        {
+                            Content = new StringContent(
+                                "{\"isRetriable\":true,\"diagnosticString\":\"original stale participant\"}",
+                                Encoding.UTF8, "application/json")
+                        };
+                        stale.Headers.Add(WFConstants.BackendHeaders.SubStatus, "1000");
+                        return stale;
+                    }
+
+                    return new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent(BuildDtcResponseJson(Enumerable.Repeat(
+                            (statusCode: readOnly ? 200 : 201, subStatusCode: (int?)null,
+                            sessionToken: "1#9#4=8#5=7", partitionKeyRangeId: "0"), 2).ToArray()),
+                            Encoding.UTF8, "application/json")
+                    };
+                });
+            using HttpClient transport = new HttpClient(new HttpHandlerHelper(http.Object));
+            using CosmosClient client = new CosmosClient(endpoint.ToString(), MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                new CosmosClientOptions
+                {
+                    ConnectionMode = connectionMode,
+                    ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                    HttpClientFactory = () => transport,
+                    MaxRetryAttemptsOnAbortedTransactions = 0
+                });
+            Container container = client.GetContainer(DatabaseName, ContainerName);
+            Container unchanged = client.GetContainer(DatabaseName, unchangedContainerName);
+            string containerPath = DistributedTransactionConstants.GetCollectionFullName(DatabaseName, ContainerName);
+            string unchangedPath = DistributedTransactionConstants.GetCollectionFullName(DatabaseName, unchangedContainerName);
+            int execution = 0;
+            Task<DistributedTransactionResponse> ExecuteAsync()
+            {
+                string id = "item-" + execution++;
+                return readOnly
+                    ? client.CreateDistributedReadTransaction()
+                        .ReadItem(container, new PartitionKey("pk"), id)
+                        .ReadItem(unchanged, new PartitionKey("pk"), id)
+                        .ExecuteTransactionAsync(CancellationToken.None)
+                    : client.CreateDistributedWriteTransaction()
+                        .CreateItem(container, new PartitionKey("pk"), id, new { id, pk = "pk" })
+                        .CreateItem(unchanged, new PartitionKey("pk"), id, new { id, pk = "pk" })
+                        .ExecuteTransactionAsync(CancellationToken.None);
+            }
+
+            using (DistributedTransactionResponse warm = await ExecuteAsync())
+            {
+                Assert.IsTrue(warm.IsSuccessStatusCode);
+            }
+
+            Assert.IsInstanceOfType(client.DocumentClient.sessionContainer, typeof(SessionContainer));
+            SessionContainer sessions = (SessionContainer)client.DocumentClient.sessionContainer;
+            Assert.AreEqual(sessionToken, sessions.GetSessionToken(containerPath));
+            Assert.AreEqual(sessionToken, sessions.GetSessionToken(unchangedPath));
+            currentRid = replacementRid;
+            MockSetupsHelper.SetupContainerProperties(http, regionEndpoint, DatabaseName, ContainerName, replacementRid);
+            using (DistributedTransactionResponse stale = await ExecuteAsync())
+            {
+                Assert.AreEqual(HttpStatusCode.Gone, stale.StatusCode);
+                Assert.AreEqual(SubStatusCodes.NameCacheIsStale, stale.SubStatusCode);
+                Assert.AreEqual("original stale participant", stale.DiagnosticString);
+                Assert.IsTrue(stale.IsRetriable);
+                Assert.AreEqual(2, payloads.Count, "A changed-RID transaction must not be resubmitted.");
+                Assert.AreEqual(tokens[1], stale.IdempotencyToken);
+                Assert.IsNotNull(stale.Diagnostics);
+            }
+
+            Assert.AreEqual(string.Empty, sessions.GetSessionToken(containerPath));
+            Assert.AreEqual(sessionToken, sessions.GetSessionToken(unchangedPath));
+            using (DistributedTransactionResponse subsequent = await ExecuteAsync())
+            {
+                Assert.IsTrue(subsequent.IsSuccessStatusCode);
+            }
+
+            Assert.AreEqual(3, payloads.Count);
+            Assert.AreEqual(CollectionResourceId, (string)payloads[1][DistributedTransactionSerializer.Operations][0]
+                [DistributedTransactionSerializer.CollectionResourceId]);
+            Assert.AreEqual(replacementRid, (string)payloads[2][DistributedTransactionSerializer.Operations][0]
+                [DistributedTransactionSerializer.CollectionResourceId]);
+            Assert.AreEqual(unchangedRid, (string)payloads[2][DistributedTransactionSerializer.Operations][1]
+                [DistributedTransactionSerializer.CollectionResourceId]);
+            Assert.AreNotEqual(tokens[1], tokens[2]);
+            Assert.AreEqual(sessionToken, sessions.GetSessionToken(containerPath));
+            foreach (string name in new[] { ContainerName, unchangedContainerName })
+            {
+                Uri metadataUri = new Uri($"{regionEndpoint}/dbs/{DatabaseName}/colls/{name}");
+                http.Verify(h => h.SendAsync(It.Is<HttpRequestMessage>(request => request.RequestUri == metadataUri),
+                    It.IsAny<CancellationToken>()), Times.Exactly(2));
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false, false, false, false, false, false)]
+        [DataRow(true, false, false, false, false, false)]
+        [DataRow(false, false, false, true, false, false)]
+        [DataRow(true, false, false, true, false, false)]
+        [DataRow(false, true, false, true, false, false)]
+        [DataRow(true, true, false, true, false, false)]
+        [DataRow(false, true, false, true, false, true)]
+        [DataRow(true, true, false, true, false, true)]
+        [DataRow(false, false, false, false, true, false)]
+        [DataRow(true, false, false, false, true, false)]
+        [DataRow(false, false, false, true, true, false)]
+        [DataRow(true, false, false, true, true, false)]
+        [DataRow(false, true, false, true, true, false)]
+        [DataRow(true, true, false, true, true, false)]
+        [DataRow(false, true, false, true, true, true)]
+        [DataRow(true, true, false, true, true, true)]
+        [DataRow(false, false, true, true, true, false)]
+        [DataRow(true, false, true, true, true, false)]
+        [DataRow(false, true, true, true, true, false)]
+        [DataRow(true, true, true, true, true, false)]
+        [DataRow(false, true, true, true, true, true)]
+        [DataRow(true, true, true, true, true, true)]
+        public async Task ExecuteTransactionAsync_NameCacheIsStale_RetriesOnlyWithUnchangedRids(
+            bool readOnly,
+            bool perOperation,
+            bool remainsStale,
+            bool hasBody,
+            bool unchangedRids,
+            bool durablyAborted)
+        {
+            const string sessionToken = "0:1#9#4=8#5=7";
+            Mock<CosmosClientContext> context = this.CreateMockClientContext();
+            SessionContainer sessions = new SessionContainer("testhost");
+            Mock<ISessionContainer> sessionContainer = new Mock<ISessionContainer>();
+            sessionContainer.Setup(s => s.ClearTokenByResourceId(It.IsAny<string>()))
+                .Callback<string>(sessions.ClearTokenByResourceId);
+            using MockDocumentClient documentClient = CreateCollectionCacheDocumentClient(sessionContainer.Object);
+            context.Setup(c => c.DocumentClient).Returns(documentClient);
+            Mock<ClientCollectionCache> cache = Mock.Get(await documentClient.GetCollectionCacheAsync(NoOpTrace.Singleton));
+            string refreshedRid = unchangedRids ? TestCollectionResourceId
+                : ResourceId.NewDocumentCollectionId(43, 130).DocumentCollectionId.ToString();
+            string secondRid = ResourceId.NewDocumentCollectionId(44, 131).DocumentCollectionId.ToString();
+            context.Setup(c => c.GetCachedContainerPropertiesAsync(
+                    DistributedTransactionConstants.GetCollectionFullName("testDb", "secondContainer"),
+                    It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ContainerProperties.CreateWithResourceId(secondRid));
+            SetupCollectionRefresh(cache, (path, _) => Task.FromResult(ContainerProperties.CreateWithResourceId(
+                path.EndsWith("/secondContainer", StringComparison.Ordinal) ? secondRid : refreshedRid)));
+
+            List<DistributedTransactionOperation> operations = CreateTestOperations(3).ToList();
+            DistributedTransactionRequestOptions options = new DistributedTransactionRequestOptions { IfMatchEtag = "original" };
+            operations[0] = new DistributedTransactionOperation<object>(
+                OperationType.Create, 0, "testDb", "testContainer", PartitionKey.Null,
+                "doc1", new { id = "doc1", value = "original" }, options);
+            operations[2].Container = "secondContainer";
+            if (readOnly)
+            {
+                operations.ForEach(op => op.OperationType = OperationType.Read);
+            }
+
+            foreach (string container in new[] { "testContainer", "secondContainer" })
+            {
+                sessions.SetSessionToken(
+                    container == "secondContainer" ? secondRid : TestCollectionResourceId,
+                    DistributedTransactionConstants.GetCollectionFullName("testDb", container),
+                    new RequestNameValueCollection { [HttpConstants.HttpHeaders.SessionToken] = sessionToken });
+            }
+
+            List<JObject> payloads = new List<JObject>();
+            List<Guid> tokens = new List<Guid>();
+            List<(bool IsRetry, bool IsCrossRegionRedirect)> dispatchSignals = new List<(bool, bool)>();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                context,
+                (stream, enrich) =>
+                {
+                    using StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 1024, leaveOpen: true);
+                    payloads.Add(JObject.Parse(reader.ReadToEnd()));
+                    using RequestMessage request = new RequestMessage(HttpMethod.Post, new Uri("https://localhost/operations/dtc"));
+                    enrich(request);
+                    tokens.Add(Guid.Parse(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]));
+                    if (request.DistributedTransactionDispatchTracker != null)
+                    {
+                        dispatchSignals.Add(request.DistributedTransactionDispatchTracker.RecordDispatch("East US"));
+                    }
+                    options.IfMatchEtag = "changed-after-dispatch";
+                },
+                () =>
+                {
+                    if (payloads.Count > 1 && !remainsStale)
+                    {
+                        return Task.FromResult(CreateSuccessResponseMessage(3));
+                    }
+
+                    ResponseMessage response = new ResponseMessage(durablyAborted
+                        ? (HttpStatusCode)StatusCodes.TransactionAborted
+                        : perOperation ? (HttpStatusCode)207 : HttpStatusCode.Gone);
+                    if (perOperation)
+                    {
+                        response.Content = new MemoryStream(Encoding.UTF8.GetBytes(
+                            "{\"isRetriable\":true,\"diagnosticString\":\"original failure\",\"operationResponses\":[" +
+                            "{\"index\":0,\"statusCode\":400}," +
+                            "{\"index\":1,\"statusCode\":410,\"subStatusCode\":1000}," +
+                            "{\"index\":2,\"statusCode\":424}]}"));
+                    }
+                    else
+                    {
+                        response.Headers.SubStatusCode = SubStatusCodes.NameCacheIsStale;
+                        if (hasBody)
+                        {
+                            response.Content = new MemoryStream(Encoding.UTF8.GetBytes(
+                                "{\"isRetriable\":true,\"diagnosticString\":\"original failure\"}"));
+                        }
+                    }
+
+                    return Task.FromResult(response);
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations,
+                context.Object,
+                readOnly ? OperationType.Read : OperationType.CommitDistributedTransaction,
+                TimeSpan.Zero,
+                maxIsRetriableRetryCount: 2);
+            using DistributedTransactionResponse result = await committer.ExecuteTransactionAsync(
+                NoOpTrace.Singleton, CancellationToken.None);
+
+            bool canRetry = unchangedRids && hasBody;
+            int expectedRequests = canRetry ? (remainsStale ? 3 : 2) : 1;
+            bool failed = !canRetry || remainsStale;
+            HttpStatusCode failureStatus = durablyAborted ? (HttpStatusCode)StatusCodes.TransactionAborted
+                : perOperation ? HttpStatusCode.BadRequest : HttpStatusCode.Gone;
+            Assert.AreEqual(failed ? failureStatus : HttpStatusCode.OK, result.StatusCode);
+            Assert.AreEqual(expectedRequests, payloads.Count);
+            Assert.IsNotNull(result.Diagnostics);
+            Assert.AreEqual(tokens.Last(), result.IdempotencyToken);
+            if (failed)
+            {
+                Assert.AreEqual(hasBody ? "original failure" : null, result.DiagnosticString);
+                Assert.AreEqual(perOperation ? SubStatusCodes.Unknown : SubStatusCodes.NameCacheIsStale,
+                    result.SubStatusCode);
+                if (perOperation)
+                {
+                    Assert.AreEqual(HttpStatusCode.Gone, result[1].StatusCode);
+                    Assert.AreEqual(SubStatusCodes.NameCacheIsStale, result[1].SubStatusCode);
+                }
+            }
+
+            for (int i = 1; i < tokens.Count; i++)
+            {
+                Assert.AreEqual(!durablyAborted, tokens[i - 1] == tokens[i]);
+            }
+
+            if (!readOnly)
+            {
+                Assert.AreEqual((false, false), dispatchSignals[0]);
+                for (int i = 1; i < dispatchSignals.Count; i++)
+                {
+                    Assert.AreEqual((!durablyAborted, false), dispatchSignals[i]);
+                }
+            }
+
+            for (int i = 0; i < operations.Count; i++)
+            {
+                string expectedRid = i == 2 ? secondRid : TestCollectionResourceId;
+                Assert.AreEqual(expectedRid, operations[i].CollectionResourceId);
+                Assert.AreEqual(ResourceId.Parse(expectedRid).DatabaseId.ToString(),
+                    operations[i].DatabaseResourceId);
+            }
+
+            Assert.IsTrue(payloads.All(payload => JToken.DeepEquals(payloads[0], payload)),
+                "Refreshing metadata must not change the submitted body.");
+            sessionContainer.Verify(s => s.ClearTokenByResourceId(TestCollectionResourceId),
+                unchangedRids ? Times.Never() : Times.Once());
+            sessionContainer.Verify(s => s.ClearTokenByResourceId(It.Is<string>(rid => rid != TestCollectionResourceId)),
+                Times.Never());
+            sessionContainer.Verify(s => s.ClearTokenByCollectionFullname(It.IsAny<string>()), Times.Never());
+            Assert.AreEqual(unchangedRids ? sessionToken : string.Empty,
+                sessions.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName("testDb", "testContainer")));
+            Assert.AreEqual(sessionToken,
+                sessions.GetSessionToken(DistributedTransactionConstants.GetCollectionFullName("testDb", "secondContainer")));
+            foreach (string container in new[] { "testContainer", "secondContainer" })
+            {
+                string path = DistributedTransactionConstants.GetCollectionFullName("testDb", container);
+                cache.Verify(c => c.RefreshCollectionAsync(
+                    HttpConstants.Versions.CurrentVersion, path, It.IsAny<string>(), It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(), It.IsAny<CancellationToken>()),
+                    Times.Once());
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(410, 0)]
+        [DataRow(410, 1002)]
+        [DataRow(404, 1003)]
+        [DataRow(400, 1000)]
+        public async Task ExecuteTransactionAsync_OtherRoutingErrors_DoNotRefresh(int statusCode, int subStatusCode)
+        {
+            Mock<CosmosClientContext> context = this.CreateMockClientContext();
+            this.SetupProcessResourceOperation(context, () =>
+            {
+                ResponseMessage response = new ResponseMessage((HttpStatusCode)statusCode);
+                response.Headers.SubStatusCode = (SubStatusCodes)subStatusCode;
+                return Task.FromResult(response);
+            });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(), context.Object, OperationType.CommitDistributedTransaction);
+            using DistributedTransactionResponse result = await committer.ExecuteTransactionAsync(
+                NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.AreEqual((HttpStatusCode)statusCode, result.StatusCode);
+            Assert.AreEqual((SubStatusCodes)subStatusCode, result.SubStatusCode);
+            this.VerifyProcessResourceOperationCallCount(context, Times.Once());
+            context.Verify(c => c.DocumentClient, Times.Once(), "Only session-token bookkeeping accesses the client.");
+        }
+
+        [DataTestMethod]
+        [DataRow(false, 0, true, false)]
+        [DataRow(true, 0, true, false)]
+        [DataRow(false, 1, true, false)]
+        [DataRow(true, 1, true, false)]
+        [DataRow(false, 2, true, false)]
+        [DataRow(true, 2, true, false)]
+        [DataRow(false, 0, false, false)]
+        [DataRow(true, 0, false, false)]
+        [DataRow(false, 0, true, true)]
+        [DataRow(true, 0, true, true)]
+        [DataRow(false, 0, false, true)]
+        [DataRow(true, 0, false, true)]
+        [DataRow(false, 1, true, true)]
+        [DataRow(true, 1, true, true)]
+        [DataRow(false, 2, true, true)]
+        [DataRow(true, 2, true, true)]
+        public async Task ExecuteTransactionAsync_EarlierRetries_ChangedRidsAlwaysStop(
+            bool readOnly, int failureKind, bool changedRid, bool durablyAborted)
+        {
+            Mock<CosmosClientContext> context = this.CreateMockClientContext();
+            using MockDocumentClient documentClient = CreateCollectionCacheDocumentClient();
+            using CosmosClient client = new CosmosClient(
+                "https://localhost", MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                new CosmosClientOptions(), documentClient);
+            context.Setup(c => c.DocumentClient).Returns(documentClient);
+            string refreshedRid = changedRid
+                ? ResourceId.NewDocumentCollectionId(43, 130).DocumentCollectionId.ToString()
+                : TestCollectionResourceId;
+            Mock<ClientCollectionCache> cache = Mock.Get(await documentClient.GetCollectionCacheAsync(NoOpTrace.Singleton));
+            SetupCollectionRefresh(cache, (path, _) =>
+            {
+                ContainerProperties properties = ContainerProperties.CreateWithResourceId(
+                    path.EndsWith("/unchangedContainer", StringComparison.Ordinal)
+                        ? TestCollectionResourceId : refreshedRid);
+                context.Setup(c => c.GetCachedContainerPropertiesAsync(
+                        path, It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(properties);
+                return Task.FromResult(properties);
+            });
+
+            List<Guid> tokens = new List<Guid>();
+            RetryHandler handler = new RetryHandler(client)
+            {
+                InnerHandler = new TestHandler((request, _) =>
+                {
+                    request.ToDocumentServiceRequest();
+                    tokens.Add(Guid.Parse(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]));
+                    Assert.AreEqual(readOnly, request.DistributedTransactionDispatchTracker == null);
+                    int dispatch = tokens.Count;
+                    if (dispatch == 1)
+                    {
+                        if (failureKind == 2)
+                        {
+                            throw new HttpRequestException("Response lost after dispatch.");
+                        }
+
+                        return Task.FromResult(failureKind == 1
+                            ? new ResponseMessage(HttpStatusCode.RequestTimeout)
+                            : CreateRetriableNonAbortedResponseMessage());
+                    }
+
+                    if (dispatch == 2)
+                    {
+                        ResponseMessage stale = new ResponseMessage(durablyAborted
+                            ? (HttpStatusCode)StatusCodes.TransactionAborted : HttpStatusCode.Gone);
+                        stale.Headers.SubStatusCode = SubStatusCodes.NameCacheIsStale;
+                        if (durablyAborted)
+                        {
+                            stale.Content = new MemoryStream(Encoding.UTF8.GetBytes(
+                                "{\"isRetriable\":true,\"operationResponses\":[{\"index\":0,\"statusCode\":410,\"subStatusCode\":1000}," +
+                                "{\"index\":1,\"statusCode\":424}]}"));
+                        }
+                        else
+                        {
+                            stale.Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true}"));
+                        }
+
+                        return Task.FromResult(stale);
+                    }
+
+                    return Task.FromResult(CreateSuccessResponseMessage(2));
+                })
+            };
+            RequestMessage pending = null;
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                context,
+                (stream, enrich) =>
+                {
+                    pending = new RequestMessage(HttpMethod.Post, new Uri("https://localhost/operations/dtc"))
+                    {
+                        Content = stream,
+                        ResourceType = ResourceType.DistributedTransactionBatch,
+                        OperationType = readOnly ? OperationType.Read : OperationType.CommitDistributedTransaction,
+                        Trace = NoOpTrace.Singleton
+                    };
+                    enrich(pending);
+                },
+                async () =>
+                {
+                    using (pending)
+                    {
+                        return await handler.SendAsync(pending, CancellationToken.None);
+                    }
+                });
+            List<DistributedTransactionOperation> operations = CreateTestOperations(2).ToList();
+            operations[1].Container = "unchangedContainer";
+            if (readOnly)
+            {
+                operations.ForEach(op => op.OperationType = OperationType.Read);
+            }
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, context.Object,
+                readOnly ? OperationType.Read : OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+            using DistributedTransactionResponse result = await committer.ExecuteTransactionAsync(
+                NoOpTrace.Singleton, CancellationToken.None);
+            bool shouldStop = changedRid;
+            Assert.AreEqual(shouldStop
+                ? (durablyAborted ? (HttpStatusCode)StatusCodes.TransactionAborted : HttpStatusCode.Gone)
+                : HttpStatusCode.OK, result.StatusCode);
+            Assert.AreEqual(shouldStop ? 2 : 3, tokens.Count);
+            Assert.AreEqual(tokens[0], tokens[1]);
+            Assert.AreEqual(TestCollectionResourceId, operations[0].CollectionResourceId);
+            if (shouldStop)
+            {
+                Assert.AreEqual(tokens[0], result.IdempotencyToken);
+                Assert.IsNotNull(result.Diagnostics);
+                DistributedTransactionCommitter subsequent = new DistributedTransactionCommitter(
+                    operations, context.Object,
+                    readOnly ? OperationType.Read : OperationType.CommitDistributedTransaction);
+                using DistributedTransactionResponse recovered = await subsequent.ExecuteTransactionAsync(
+                    NoOpTrace.Singleton, CancellationToken.None);
+                Assert.AreEqual(HttpStatusCode.OK, recovered.StatusCode);
+                Assert.AreEqual(refreshedRid, operations[0].CollectionResourceId);
+                Assert.AreNotEqual(tokens[0], tokens[2]);
+            }
+            else
+            {
+                Assert.AreEqual(!durablyAborted, tokens[0] == tokens[2]);
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(true, 408, 0, true)]
+        [DataRow(true, 408, 1, true)]
+        [DataRow(true, 408, 2, true)]
+        [DataRow(true, 408, 0, false)]
+        [DataRow(false, 408, 0, true)]
+        [DataRow(false, 408, 1, true)]
+        [DataRow(false, 408, 2, true)]
+        [DataRow(true, 503, 0, true)]
+        [DataRow(true, 503, 1, true)]
+        [DataRow(true, 503, 2, true)]
+        public async Task ExecuteTransactionAsync_TerminalFailure_DoesNotRefreshMetadata(
+            bool readOnly, int statusCode, int stopKind, bool hasBody)
+        {
+            Mock<CosmosClientContext> context = this.CreateMockClientContext();
+            Mock<ISessionContainer> sessions = new Mock<ISessionContainer>();
+            using MockDocumentClient documentClient = CreateCollectionCacheDocumentClient(sessions.Object);
+            context.Setup(c => c.DocumentClient).Returns(documentClient);
+            Mock<ClientCollectionCache> cache = Mock.Get(await documentClient.GetCollectionCacheAsync(NoOpTrace.Singleton));
+            SetupCollectionRefresh(cache, (_, _) => Task.FromResult(ContainerProperties.CreateWithResourceId(
+                ResourceId.NewDocumentCollectionId(43, 130).DocumentCollectionId.ToString())));
+
+            List<DistributedTransactionOperation> operations = CreateTestOperations(3).ToList();
+            operations[2].Container = "secondContainer";
+            if (readOnly)
+            {
+                operations.ForEach(operation => operation.OperationType = OperationType.Read);
+            }
+
+            List<Guid> tokens = new List<Guid>();
+            List<JObject> payloads = new List<JObject>();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
+                context,
+                (stream, enrich) =>
+                {
+                    using StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 1024, leaveOpen: true);
+                    payloads.Add(JObject.Parse(reader.ReadToEnd()));
+                    using RequestMessage request = new RequestMessage(HttpMethod.Post, new Uri("https://localhost/operations/dtc"));
+                    enrich(request);
+                    tokens.Add(Guid.Parse(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]));
+                },
+                () =>
+                {
+                    ResponseMessage response = new ResponseMessage((HttpStatusCode)statusCode)
+                    {
+                        Content = hasBody ? new MemoryStream(Encoding.UTF8.GetBytes(
+                        "{\"isRetriable\":" + (stopKind != 0 ? "true" : "false") +
+                        ",\"diagnosticString\":\"original failure\",\"operationResponses\":[" +
+                        "{\"index\":0,\"statusCode\":" + statusCode + "}," +
+                        "{\"index\":1,\"statusCode\":" + statusCode + "}," +
+                        "{\"index\":2,\"statusCode\":" + statusCode + "}]}")) : null
+                    };
+                    return Task.FromResult(response);
+                });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, context.Object,
+                readOnly ? OperationType.Read : OperationType.CommitDistributedTransaction,
+                retryBaseDelay: stopKind == 2 ? TimeSpan.FromSeconds(1) : TimeSpan.Zero,
+                maxCumulativeRetryDelay: stopKind == 2 ? TimeSpan.Zero : TimeSpan.FromMinutes(1),
+                maxIsRetriableRetryCount: 1);
+            using DistributedTransactionResponse result = await committer.ExecuteTransactionAsync(
+                NoOpTrace.Singleton, CancellationToken.None);
+
+            int expectedRequests = stopKind == 1 ? 2 : 1;
+            Assert.AreEqual(expectedRequests, payloads.Count);
+            Assert.AreEqual((HttpStatusCode)statusCode, result.StatusCode);
+            if (hasBody)
+            {
+                Assert.AreEqual("original failure", result.DiagnosticString);
+            }
+
+            Assert.AreEqual(3, result.Count);
+            Assert.IsTrue(result.All(operation => operation.StatusCode == (HttpStatusCode)statusCode));
+            Assert.IsNotNull(result.Diagnostics);
+            Assert.IsTrue(tokens.All(token => token == result.IdempotencyToken));
+            Assert.IsTrue(payloads.All(payload => JToken.DeepEquals(payloads[0], payload)));
+            Assert.IsTrue(operations.All(operation => operation.CollectionResourceId == TestCollectionResourceId));
+            Assert.IsTrue(operations.All(operation =>
+                operation.DatabaseResourceId == ResourceId.Parse(TestCollectionResourceId).DatabaseId.ToString()));
+
+            foreach (string container in new[] { "testContainer", "secondContainer" })
+            {
+                string path = DistributedTransactionConstants.GetCollectionFullName("testDb", container);
+                context.Verify(c => c.GetCachedContainerPropertiesAsync(
+                    path, It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once());
+                cache.Verify(c => c.RefreshCollectionAsync(
+                    HttpConstants.Versions.CurrentVersion, path, It.IsAny<string>(), It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(), It.IsAny<CancellationToken>()), Times.Never());
+            }
+
+            sessions.Verify(s => s.ClearTokenByResourceId(It.IsAny<string>()), Times.Never());
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ExecuteTransactionAsync_TerminalReadTimeout_DoesNotRepeatAnEarlierMetadataRefresh(bool changedRids)
+        {
+            Mock<CosmosClientContext> context = this.CreateMockClientContext();
+            using MockDocumentClient documentClient = CreateCollectionCacheDocumentClient();
+            context.Setup(c => c.DocumentClient).Returns(documentClient);
+            Mock<ClientCollectionCache> cache = Mock.Get(await documentClient.GetCollectionCacheAsync(NoOpTrace.Singleton));
+            string refreshedRid = changedRids
+                ? ResourceId.NewDocumentCollectionId(43, 130).DocumentCollectionId.ToString()
+                : TestCollectionResourceId;
+            SetupCollectionRefresh(cache, (_, _) => Task.FromResult(ContainerProperties.CreateWithResourceId(refreshedRid)));
+
+            int requests = 0;
+            this.SetupProcessResourceOperation(context, () =>
+            {
+                if (++requests == 1)
+                {
+                    ResponseMessage stale = new ResponseMessage(HttpStatusCode.Gone);
+                    stale.Headers.SubStatusCode = SubStatusCodes.NameCacheIsStale;
+                    stale.Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true}"));
+                    return Task.FromResult(stale);
+                }
+
+                return Task.FromResult(CreateResponseMessageWithDiagnosticString(
+                    HttpStatusCode.RequestTimeout, 1, "original timeout"));
+            });
+            List<DistributedTransactionOperation> operations = CreateTestOperations().ToList();
+            operations[0].OperationType = OperationType.Read;
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, context.Object, OperationType.Read, TimeSpan.Zero);
+            using DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(
+                NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.AreEqual(changedRids ? HttpStatusCode.Gone : HttpStatusCode.RequestTimeout, response.StatusCode);
+            Assert.AreEqual(changedRids ? 1 : 2, requests);
+            Assert.AreEqual(TestCollectionResourceId, operations[0].CollectionResourceId);
+            cache.Verify(c => c.RefreshCollectionAsync(
+                HttpConstants.Versions.CurrentVersion, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ITrace>(),
+                It.IsAny<IClientSideRequestStatistics>(), It.IsAny<CancellationToken>()), Times.Once());
+        }
+
+        [DataTestMethod]
+        [DataRow(false, 0)]
+        [DataRow(true, 0)]
+        [DataRow(false, 1)]
+        [DataRow(true, 1)]
+        [DataRow(false, 2)]
+        [DataRow(true, 2)]
+        [DataRow(false, 3)]
+        [DataRow(true, 3)]
+        public async Task ExecuteTransactionAsync_MetadataRefreshFailure_DoesNotResubmit(bool readOnly, int failureKind)
+        {
+            Mock<CosmosClientContext> context = this.CreateMockClientContext();
+            using MockDocumentClient documentClient = CreateCollectionCacheDocumentClient();
+            using CancellationTokenSource cancellation = new CancellationTokenSource();
+            context.Setup(c => c.DocumentClient).Returns(documentClient);
+            Mock<ClientCollectionCache> cache = Mock.Get(await documentClient.GetCollectionCacheAsync(NoOpTrace.Singleton));
+            InvalidOperationException unexpected = new InvalidOperationException("Unexpected refresh failure.");
+            SetupCollectionRefresh(cache, (_, token) =>
+            {
+                Assert.AreEqual(cancellation.Token, token);
+                if (failureKind == 2)
+                {
+                    cancellation.Cancel();
+                    return Task.FromCanceled<ContainerProperties>(cancellation.Token);
+                }
+
+                Exception failure = failureKind switch
+                {
+                    0 => new CosmosException("Container deleted", HttpStatusCode.NotFound, 1003, null, 0),
+                    1 => new DocumentClientException(
+                        "Container deleted", innerException: null,
+                        statusCode: HttpStatusCode.NotFound, substatusCode: SubStatusCodes.OwnerResourceNotFound,
+                        requestUri: null, responseHeaders: new DictionaryNameValueCollection()),
+                    _ => unexpected
+                };
+                return Task.FromException<ContainerProperties>(failure);
+            });
+            this.SetupProcessResourceOperation(context, () =>
+            {
+                ResponseMessage response = new ResponseMessage(HttpStatusCode.Gone);
+                response.Headers.SubStatusCode = SubStatusCodes.NameCacheIsStale;
+                response.Content = new MemoryStream(Encoding.UTF8.GetBytes(
+                    "{\"isRetriable\":true,\"diagnosticString\":\"original transaction failure\"}"));
+                return Task.FromResult(response);
+            });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(), context.Object,
+                readOnly ? OperationType.Read : OperationType.CommitDistributedTransaction);
+            List<string> warnings = new List<string>();
+            using System.Diagnostics.TraceListener listener = new DelegatingTraceListener(
+                (eventType, message) =>
+                {
+                    if (eventType == System.Diagnostics.TraceEventType.Warning)
+                    {
+                        warnings.Add(message);
+                    }
+                });
+            System.Diagnostics.SourceLevels previousLevel = DefaultTrace.TraceSource.Switch.Level;
+            DefaultTrace.TraceSource.Switch.Level = System.Diagnostics.SourceLevels.All;
+            DefaultTrace.TraceSource.Listeners.Add(listener);
+            try
+            {
+                if (failureKind == 2)
+                {
+                    await Assert.ThrowsExceptionAsync<TaskCanceledException>(() =>
+                        committer.ExecuteTransactionAsync(NoOpTrace.Singleton, cancellation.Token));
+                }
+                else if (failureKind == 3)
+                {
+                    InvalidOperationException thrown = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() =>
+                        committer.ExecuteTransactionAsync(NoOpTrace.Singleton, cancellation.Token));
+                    Assert.AreSame(unexpected, thrown);
+                }
+                else
+                {
+                    using DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(
+                        NoOpTrace.Singleton, cancellation.Token);
+                    Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
+                    Assert.AreEqual(SubStatusCodes.NameCacheIsStale, response.SubStatusCode);
+                    Assert.AreEqual("original transaction failure", response.DiagnosticString);
+                    Assert.IsTrue(response.IsRetriable);
+                    Assert.IsNotNull(response.Diagnostics);
+                    Assert.IsTrue(warnings.Any(message =>
+                        message.Contains("metadata refresh failed") &&
+                        message.Contains("SubStatusCode=1003") &&
+                        message.Contains("Returning the original transaction failure")));
+                }
+            }
+            finally
+            {
+                DefaultTrace.TraceSource.Listeners.Remove(listener);
+                DefaultTrace.TraceSource.Switch.Level = previousLevel;
+            }
+
+            this.VerifyProcessResourceOperationCallCount(context, Times.Once());
+        }
+
+        [DataTestMethod]
+        [DataRow(false, false)]
+        [DataRow(true, false)]
+        [DataRow(false, true)]
+        [DataRow(true, true)]
+        public async Task ExecuteTransactionAsync_RealCacheRefresh_PreservesSessionRecordedBeforeCleanup(
+            bool readOnly, bool alreadyRefreshed)
+        {
+            const string token = "0:1#9#4=8#5=7";
+            string path = DistributedTransactionConstants.GetCollectionFullName("testDb", "testContainer");
+            string unrelatedPath = DistributedTransactionConstants.GetCollectionFullName("testDb", "unrelatedContainer");
+            string replacementRid = ResourceId.NewDocumentCollectionId(43, 130).DocumentCollectionId.ToString();
+            SessionContainer sessions = new SessionContainer("testhost");
+            RequestNameValueCollection headers = new RequestNameValueCollection
+            {
+                [HttpConstants.HttpHeaders.SessionToken] = token
+            };
+            sessions.SetSessionToken(TestCollectionResourceId, path, headers);
+            sessions.SetSessionToken(CollectionResourceId, unrelatedPath, headers);
+            bool recordedReplacementSession = false;
+            void RecordReplacementSession()
+            {
+                if (recordedReplacementSession)
+                {
+                    return;
+                }
+
+                // Both production refresh paths publish replacement metadata before invoking cleanup.
+                sessions.SetSessionToken(replacementRid, path, headers);
+                recordedReplacementSession = true;
+            }
+
+            Mock<ISessionContainer> sessionContainer = new Mock<ISessionContainer>();
+            sessionContainer.Setup(s => s.ClearTokenByResourceId(It.IsAny<string>()))
+                .Callback<string>(rid =>
+                {
+                    RecordReplacementSession();
+                    sessions.ClearTokenByResourceId(rid);
+                });
+            sessionContainer.Setup(s => s.ClearTokenByCollectionFullname(It.IsAny<string>()))
+                .Callback<string>(name =>
+                {
+                    RecordReplacementSession();
+                    sessions.ClearTokenByCollectionFullname(name);
+                });
+            Mock<ClientCollectionCache> cache = new Mock<ClientCollectionCache>(
+                sessionContainer.Object, new ServerStoreModel(null), null, null, null, true, null)
+            {
+                CallBase = true
+            };
+            cache.Setup(c => c.RefreshCollectionAsync(
+                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(), It.IsAny<CancellationToken>()))
+                .Callback<string, string, string, ITrace, IClientSideRequestStatistics, CancellationToken>(
+                    (apiVersion, resourceAddress, submittedRid, _, _, cancellationToken) =>
+                    {
+                        Assert.AreEqual(HttpConstants.Versions.CurrentVersion, apiVersion);
+                        Assert.AreEqual(TestCollectionResourceId, submittedRid);
+                        Assert.AreEqual(path, resourceAddress);
+                        Assert.AreEqual(CancellationToken.None, cancellationToken);
+                    })
+                .CallBase();
+            string currentRid = TestCollectionResourceId;
+            int metadataReads = 0;
+            cache.Protected().Setup<Task<ContainerProperties>>(
+                "GetByNameAsync", ItExpr.IsAny<string>(), ItExpr.IsAny<string>(),
+                ItExpr.IsAny<ITrace>(), ItExpr.IsAny<IClientSideRequestStatistics>(),
+                ItExpr.IsAny<CancellationToken>())
+                .Returns(() =>
+                {
+                    metadataReads++;
+                    return Task.FromResult(ContainerProperties.CreateWithResourceId(currentRid));
+                });
+            await cache.Object.ResolveByNameAsync(
+                HttpConstants.Versions.CurrentVersion, path, false, NoOpTrace.Singleton, null, CancellationToken.None);
+            currentRid = replacementRid;
+            if (alreadyRefreshed)
+            {
+                cache.Object.Refresh(path, HttpConstants.Versions.CurrentVersion);
+                await cache.Object.ResolveByNameAsync(
+                    HttpConstants.Versions.CurrentVersion, path, false, NoOpTrace.Singleton, null, CancellationToken.None);
+            }
+
+            using MockDocumentClient client = new CollectionCacheDocumentClient(cache.Object);
+            client.sessionContainer = sessionContainer.Object;
+            Mock<CosmosClientContext> context = this.CreateMockClientContext();
+            context.Setup(c => c.DocumentClient).Returns(client);
+            this.SetupProcessResourceOperation(context, () =>
+            {
+                ResponseMessage stale = new ResponseMessage(HttpStatusCode.Gone);
+                stale.Headers.SubStatusCode = SubStatusCodes.NameCacheIsStale;
+                stale.Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true}"));
+                return Task.FromResult(stale);
+            });
+            List<DistributedTransactionOperation> operations = CreateTestOperations(2).ToList();
+            if (readOnly)
+            {
+                operations.ForEach(operation => operation.OperationType = OperationType.Read);
+            }
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, context.Object,
+                readOnly ? OperationType.Read : OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+            using DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(
+                NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
+            Assert.IsTrue(recordedReplacementSession);
+            Assert.AreEqual(token, sessions.GetSessionToken(path), "Cleanup must preserve the replacement container's session.");
+            Assert.AreEqual(token, sessions.GetSessionToken(unrelatedPath));
+            Assert.AreEqual(2, metadataReads, "An already refreshed cache should not fetch metadata again.");
+            Assert.IsTrue(operations.All(operation => operation.CollectionResourceId == TestCollectionResourceId));
+            this.VerifyProcessResourceOperationCallCount(context, Times.Once());
+            sessionContainer.Verify(s => s.ClearTokenByResourceId(TestCollectionResourceId), Times.Once());
+            sessionContainer.Verify(s => s.ClearTokenByResourceId(It.Is<string>(rid => rid != TestCollectionResourceId)),
+                Times.Never());
+            sessionContainer.Verify(s => s.ClearTokenByCollectionFullname(It.IsAny<string>()), Times.Never());
+        }
+
+        [DataTestMethod]
+        [DataRow(false, false)]
+        [DataRow(true, false)]
+        [DataRow(false, true)]
+        [DataRow(true, true)]
+        public async Task ExecuteTransactionAsync_SharedCacheAlreadyRefreshed_ClearsOnlyOldSubmittedSession(
+            bool readOnly, bool replacementSessionExists)
+        {
+            const string token = "0:1#9#4=8#5=7";
+            string refreshedRid = ResourceId.NewDocumentCollectionId(43, 130).DocumentCollectionId.ToString();
+            string path = DistributedTransactionConstants.GetCollectionFullName("testDb", "testContainer");
+            string unrelatedPath = DistributedTransactionConstants.GetCollectionFullName("testDb", "unrelatedContainer");
+            SessionContainer sessions = new SessionContainer("testhost");
+            RequestNameValueCollection headers = new RequestNameValueCollection
+            {
+                [HttpConstants.HttpHeaders.SessionToken] = token
+            };
+            sessions.SetSessionToken(TestCollectionResourceId, path, headers);
+            sessions.SetSessionToken(CollectionResourceId, unrelatedPath, headers);
+            Mock<ISessionContainer> sessionContainer = new Mock<ISessionContainer>();
+            sessionContainer.Setup(s => s.ClearTokenByResourceId(It.IsAny<string>()))
+                .Callback<string>(sessions.ClearTokenByResourceId);
+            using MockDocumentClient documentClient = CreateCollectionCacheDocumentClient(sessionContainer.Object);
+            Mock<CosmosClientContext> context = this.CreateMockClientContext();
+            context.Setup(c => c.DocumentClient).Returns(documentClient);
+            Mock<ClientCollectionCache> cache = Mock.Get(await documentClient.GetCollectionCacheAsync(NoOpTrace.Singleton));
+            ContainerProperties replacement = ContainerProperties.CreateWithResourceId(refreshedRid);
+            SetupCollectionRefresh(cache, (_, _) => Task.FromResult(replacement));
+            await cache.Object.ResolveByNameAsync(
+                HttpConstants.Versions.CurrentVersion, path, false, NoOpTrace.Singleton, null, CancellationToken.None);
+            this.SetupProcessResourceOperation(context, () =>
+            {
+                context.Setup(c => c.GetCachedContainerPropertiesAsync(
+                        path, It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(replacement);
+                if (replacementSessionExists)
+                {
+                    sessions.SetSessionToken(refreshedRid, path, headers);
+                }
+
+                ResponseMessage stale = new ResponseMessage(HttpStatusCode.Gone);
+                stale.Headers.SubStatusCode = SubStatusCodes.NameCacheIsStale;
+                stale.Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true}"));
+                return Task.FromResult(stale);
+            });
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(2), context.Object,
+                readOnly ? OperationType.Read : OperationType.CommitDistributedTransaction, TimeSpan.Zero);
+            using DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(
+                NoOpTrace.Singleton, CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
+            this.VerifyProcessResourceOperationCallCount(context, Times.Once());
+            sessionContainer.Verify(s => s.ClearTokenByResourceId(TestCollectionResourceId), Times.Once());
+            sessionContainer.Verify(s => s.ClearTokenByResourceId(It.Is<string>(rid => rid != TestCollectionResourceId)),
+                Times.Never());
+            sessionContainer.Verify(s => s.ClearTokenByCollectionFullname(It.IsAny<string>()), Times.Never());
+            Assert.AreEqual(replacementSessionExists ? token : string.Empty, sessions.GetSessionToken(path));
+            Assert.AreEqual(token, sessions.GetSessionToken(unrelatedPath));
+        }
+
+        [DataTestMethod]
+        [DataRow(false, false)]
+        [DataRow(true, false)]
+        [DataRow(false, true)]
+        [DataRow(true, true)]
+        public async Task ExecuteTransactionAsync_RepeatedStaleResponses_RefreshOnlyOncePerCommit(
+            bool readOnly, bool delayBudgetExhausted)
+        {
+            Mock<CosmosClientContext> context = this.CreateMockClientContext();
+            Mock<ISessionContainer> sessions = new Mock<ISessionContainer>();
+            using MockDocumentClient documentClient = CreateCollectionCacheDocumentClient(sessions.Object);
+            context.Setup(c => c.DocumentClient).Returns(documentClient);
+            Mock<ClientCollectionCache> cache = Mock.Get(await documentClient.GetCollectionCacheAsync(NoOpTrace.Singleton));
+            SetupCollectionRefresh(cache, (_, _) => Task.FromResult(ContainerProperties.CreateWithResourceId(TestCollectionResourceId)));
+            List<Guid> tokens = new List<Guid>();
+            List<string> payloads = new List<string>();
+            List<TimeSpan> delays = new List<TimeSpan>();
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(context, (stream, enrich) =>
+            {
+                using StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 1024, leaveOpen: true);
+                payloads.Add(reader.ReadToEnd());
+                using RequestMessage request = new RequestMessage(HttpMethod.Post, new Uri("https://localhost/operations/dtc"));
+                enrich(request);
+                tokens.Add(Guid.Parse(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]));
+            }, () =>
+            {
+                ResponseMessage stale = new ResponseMessage(HttpStatusCode.Gone);
+                stale.Headers.SubStatusCode = SubStatusCodes.NameCacheIsStale;
+                stale.Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"isRetriable\":true}"));
+                return Task.FromResult(stale);
+            });
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                CreateTestOperations(), context.Object,
+                readOnly ? OperationType.Read : OperationType.CommitDistributedTransaction,
+                TimeSpan.FromSeconds(1),
+                delayProvider: (delay, _) =>
+                {
+                    delays.Add(delay);
+                    return Task.CompletedTask;
+                },
+                maxCumulativeRetryDelay: delayBudgetExhausted ? TimeSpan.Zero : TimeSpan.FromMinutes(1),
+                maxIsRetriableRetryCount: 3);
+            using DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(
+                NoOpTrace.Singleton, CancellationToken.None);
+
+            int expectedRequests = delayBudgetExhausted ? 1 : 4;
+            Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
+            Assert.AreEqual(expectedRequests, tokens.Count);
+            Assert.IsTrue(tokens.All(token => token == response.IdempotencyToken));
+            Assert.IsTrue(payloads.All(payload => payload == payloads[0]));
+            Assert.AreEqual(expectedRequests - 1, delays.Count);
+            Assert.IsTrue(delays.All(delay => delay > TimeSpan.Zero));
+            cache.Verify(c => c.RefreshCollectionAsync(
+                HttpConstants.Versions.CurrentVersion, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ITrace>(),
+                It.IsAny<IClientSideRequestStatistics>(), It.IsAny<CancellationToken>()), Times.Once());
+            sessions.Verify(s => s.ClearTokenByResourceId(It.IsAny<string>()), Times.Never());
+        }
 
         [TestMethod]
         [Description("Verifies that when the DTC response carries a session token, the token is merged into the SessionContainer")]
@@ -2588,6 +3547,58 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             }
 
             return response;
+        }
+
+        private static CollectionCacheDocumentClient CreateCollectionCacheDocumentClient(ISessionContainer sessions = null)
+        {
+            Mock<ClientCollectionCache> cache = new Mock<ClientCollectionCache>(
+                sessions, new ServerStoreModel(null), null, null, null, true, null)
+            {
+                CallBase = true
+            };
+            cache.Setup(c => c.RefreshCollectionAsync(
+                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(), It.IsAny<CancellationToken>()))
+                .Callback<string, string, string, ITrace, IClientSideRequestStatistics, CancellationToken>(
+                    (apiVersion, resourceAddress, submittedRid, _, _, _) =>
+                    {
+                        Assert.IsTrue(PathsHelper.IsNameBased(resourceAddress));
+                        Assert.IsNotNull(submittedRid);
+                        Assert.AreEqual(HttpConstants.Versions.CurrentVersion, apiVersion);
+                    })
+                .CallBase();
+            cache.Setup(c => c.ResolveByNameAsync(
+                    It.IsAny<string>(), It.IsAny<string>(), true, It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(), It.IsAny<CancellationToken>()))
+                .Throws(new AssertFailedException("Transaction refresh must not use name-scoped session cleanup."));
+            return new CollectionCacheDocumentClient(cache.Object) { sessionContainer = sessions };
+        }
+
+        private static void SetupCollectionRefresh(
+            Mock<ClientCollectionCache> cache,
+            Func<string, CancellationToken, Task<ContainerProperties>> resolve)
+        {
+            cache.Protected().Setup<Task<ContainerProperties>>(
+                "GetByNameAsync", ItExpr.IsAny<string>(), ItExpr.IsAny<string>(),
+                ItExpr.IsAny<ITrace>(), ItExpr.IsAny<IClientSideRequestStatistics>(),
+                ItExpr.IsAny<CancellationToken>())
+                .Returns<string, string, ITrace, IClientSideRequestStatistics, CancellationToken>(
+                    (_, path, _, _, cancellationToken) => resolve(path, cancellationToken));
+        }
+
+        private sealed class CollectionCacheDocumentClient : MockDocumentClient
+        {
+            private readonly ClientCollectionCache collectionCache;
+
+            public CollectionCacheDocumentClient(ClientCollectionCache collectionCache)
+            {
+                this.collectionCache = collectionCache;
+            }
+
+            internal override Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
+            {
+                return Task.FromResult(this.collectionCache);
+            }
         }
 
         private sealed class RecordingHttpMessageHandler : HttpMessageHandler
