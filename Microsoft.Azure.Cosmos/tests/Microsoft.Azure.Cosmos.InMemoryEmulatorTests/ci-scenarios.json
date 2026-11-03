@@ -21,6 +21,10 @@
       }
     },
     "shared": {
+      "Microsoft.Azure.Cosmos.SDK.EmulatorTests.BinaryNumericWireTests": {
+        "PointRoundTripPreservesNumberAndRequestedWireFormat": 14,
+        "FractionalServerIncrementPersistsExactValue": 1
+      },
       "Microsoft.Azure.Cosmos.SDK.EmulatorTests.CosmosItemTests": {
         "ParentResourceTest": 1,
         "HttpRequestVersionIsOnePointOneWhenUsingGatewayMode": 1,

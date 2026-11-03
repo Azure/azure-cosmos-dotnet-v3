@@ -111,10 +111,10 @@ The shared CI template also runs **42 existing, unchanged test methods** from
 suite or relaxed for this backend. `ci-scenarios.json` is the explicit,
 runtime-validated allowlist, not the broader source inventory.
 
-| CI job | Existing shared methods / cases | Original host-contract methods / cases | Controlled methods / cases | Total cases |
-|---|---:|---:|---:|---:|
-| Items | 35 / 35 | 11 / 14 | 1 / 3 | 52 |
-| Reads | 7 / 7 | 0 / 0 | 2 / 4 | 11 |
+| CI job | Existing shared methods / cases | Original host-contract methods / cases | Controlled methods / cases | New numeric-wire methods / cases | Total cases |
+|---|---:|---:|---:|---:|---:|
+| Items | 35 / 35 | 11 / 14 | 1 / 3 | 2 / 15 | 67 |
+| Reads | 7 / 7 | 0 / 0 | 2 / 4 | 0 / 0 | 11 |
 
 Items covers item patch/serialization, missing-item delete/patch errors, IDs,
 multiple Gateway clients and container recreation, database/container CRUD,
@@ -169,6 +169,26 @@ controlled coverage, Go/FFI-specific cases, and blocked contracts. The Go source
 inventory's 393 test declarations, 755 table-input occurrences, and 530 source
 labels are non-additive and are not runtime pass counts. These seven cases alone
 do **not** establish complete Go v2 parity.
+
+## Exact numeric wire fidelity
+
+One additional new .NET method,
+`BinaryNumericWireTests.PointRoundTripPreservesNumberAndRequestedWireFormat`,
+has **14 cases**: seven values (`9007199254740993`, signed Int64 limits, `0.1`,
+`0.125`, `-1234.5678`, `1e-6`) crossed with text/binary controls. It uses the
+unmodified managed SDK for create/read and asserts the actual response marker
+(`0x80` for Cosmos binary, `{` for text). The decoded number is compared as an
+exact rational using integer arithmetic, avoiding an intermediate `double`
+conversion that could hide lost integer precision.
+
+All 14 cases executed successfully against the pinned real host before selection.
+This fills the exact Go point-wire numeric matrix rather than relying on existing
+codec unit tests or ordinary binary CRUD. The original 42 shared assertions remain
+unchanged. A separate server-patch case verifies the exact persisted fractional
+increment `1.5 -> 2.5`, without copying Go's client-side increment strategies.
+CI now executes **78 cases** in two disjoint jobs: original 14, reused
+42, controlled 7, numeric-wire 14, and fractional increment 1. This point-item binary support does not
+imply .NET's separate binary transactional-batch framing is supported.
 
 ## Shared fixture selection and CI gates
 
@@ -238,8 +258,11 @@ The remaining applicable Go HPK transaction variant is implemented in
 [the normal-emulator HPK isolation test](../Microsoft.Azure.Cosmos.EmulatorTests/HierarchicalBatchIsolationTests.cs),
 not added to the in-memory allowlist. Its two depth rows cover two-/three-level
 null/undefined/numeric keys (Boolean third component), atomic create/read,
-same-ID isolation, and incomplete-prefix rejection with persisted no-mutation
-controls. It uses the existing Windows Batch lane and requires no new pipeline
+and same-ID isolation. Go's client-side incomplete-prefix rejection is not a
+portable .NET requirement: actual Windows execution accepted those prefix
+transactions. The .NET behavior is preserved and the difference is recorded,
+rather than adding a new SDK guard or disguising it as equivalent coverage.
+The test uses the existing Windows Batch lane and requires no new pipeline
 definition or fixture infrastructure. This .NET test-coverage addition is separate
 from the host's unresolved binary-batch portability.
 

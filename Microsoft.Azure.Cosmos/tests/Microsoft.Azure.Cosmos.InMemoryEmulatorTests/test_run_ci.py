@@ -19,7 +19,9 @@ import run_ci
 class CoverageGateTests(unittest.TestCase):
     def test_checked_in_groups_are_nonempty_and_disjoint(self):
         groups = run_ci.load_scenarios(run_ci.HERE / "ci-scenarios.json")
-        self.assertEqual(35, sum(groups["Items"]["shared"].values()))
+        self.assertEqual(50, sum(groups["Items"]["shared"].values()))
+        self.assertEqual(14, groups["Items"]["shared"][
+            "Microsoft.Azure.Cosmos.SDK.EmulatorTests.BinaryNumericWireTests.PointRoundTripPreservesNumberAndRequestedWireFormat"])
         self.assertEqual(7, sum(groups["Reads"]["shared"].values()))
         self.assertEqual(17, sum(groups["Items"]["host"].values()))
         self.assertEqual(4, sum(groups["Reads"]["host"].values()))

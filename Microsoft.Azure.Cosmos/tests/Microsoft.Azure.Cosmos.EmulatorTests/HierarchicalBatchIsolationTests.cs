@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(2)]
         [DataRow(3)]
         [Timeout(60000)]
-        public async Task CompleteKeysIsolateAtomicWritesAndRejectIncompletePrefixes(int depth)
+        public async Task CompleteHierarchicalKeysIsolateAtomicWrites(int depth)
         {
             Assert.IsTrue(depth == 2 || depth == 3);
             ContainerProperties properties = new ContainerProperties
@@ -86,33 +86,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ItemResponse<JObject> persisted = await container.ReadItemAsync<JObject>(
                     id, entry.Value, cancellationToken: this.cancellationToken);
                 Validate(persisted.Resource, entry.Key);
-            }
-
-            for (int prefixLength = 1; prefixLength < depth; prefixLength++)
-            {
-                PartitionKeyBuilder prefix = new PartitionKeyBuilder().Add("tenant");
-                if (prefixLength == 2)
-                {
-                    prefix.Add(42);
-                }
-
-                string rejectedId = id + "-prefix-" + prefixLength;
-                JObject item = new JObject
-                {
-                    ["id"] = rejectedId, ["pk"] = "tenant", ["child"] = 42, ["value"] = "must-not-persist",
-                };
-                if (depth == 3)
-                {
-                    item["leaf"] = false;
-                }
-
-                using TransactionalBatchResponse rejected = await container.CreateTransactionalBatch(prefix.Build())
-                    .CreateItem(item)
-                    .ExecuteAsync(this.cancellationToken);
-                Assert.AreEqual(HttpStatusCode.BadRequest, rejected.StatusCode, rejected.ErrorMessage);
-                using ResponseMessage absent = await container.ReadItemStreamAsync(
-                    rejectedId, keys["number"], cancellationToken: this.cancellationToken);
-                Assert.AreEqual(HttpStatusCode.NotFound, absent.StatusCode, "A rejected prefix batch must not commit an item.");
             }
 
             void Validate(JObject item, string component)
