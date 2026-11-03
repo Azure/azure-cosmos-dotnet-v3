@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -224,6 +225,139 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             CollectionAssert.AreEquivalent(expectedIds, actualIds);
         }
 
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_PartialHpkContinuationRoundTripsAcrossSplitChildren()
+        {
+            string[] expectedIds = new[]
+            {
+                "tenant-a-1",
+                "tenant-a-2",
+                "tenant-a-3",
+                "tenant-a-4",
+            };
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition
+            {
+                Paths = new System.Collections.ObjectModel.Collection<string>
+                {
+                    "/tenant",
+                    "/user",
+                },
+                Kind = PartitionKind.MultiHash,
+                Version = PartitionKeyDefinitionVersion.V2,
+            };
+            DocumentContainer documentContainer = new DocumentContainer(
+                new InMemoryContainer(
+                    partitionKeyDefinition,
+                    createSplitForMultiHashAtSecondlevel: true,
+                    resolvePartitionsBasedOnPrefix: true));
+            for (int i = 0; i < expectedIds.Length; i++)
+            {
+                await CreateItemAsync(
+                    documentContainer,
+                    CosmosObject.Parse(
+                        $"{{\"id\":\"{expectedIds[i]}\",\"tenant\":\"tenant-a\",\"user\":\"user-{i}\"}}"));
+            }
+
+            IReadOnlyList<FeedRangeInternal> initialRanges =
+                await documentContainer.GetFeedRangesAsync(
+                    NoOpTrace.Singleton,
+                    cancellationToken: default);
+            Assert.AreEqual(1, initialRanges.Count);
+            await documentContainer.SplitAsync(
+                initialRanges[0],
+                cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(
+                NoOpTrace.Singleton,
+                cancellationToken: default);
+
+            await CreateItemAsync(
+                documentContainer,
+                CosmosObject.Parse(
+                    "{\"id\":\"tenant-b-1\",\"tenant\":\"tenant-b\",\"user\":\"user-1\"}"));
+            await CreateItemAsync(
+                documentContainer,
+                CosmosObject.Parse(
+                    "{\"id\":\"tenant-b-2\",\"tenant\":\"tenant-b\",\"user\":\"user-2\"}"));
+
+            QueryRequestOptions requestOptions = new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKeyBuilder()
+                    .Add("tenant-a")
+                    .Build(),
+            };
+            List<string> actualIds = new List<string>();
+            FeedIterator iterator = CreateReadFeedIterator(
+                documentContainer,
+                continuationToken: null,
+                pageSize: 1,
+                queryRequestOptions: requestOptions);
+            ResponseMessage firstResponse = await iterator.ReadNextAsync();
+            actualIds.AddRange(GetDocumentIds(firstResponse.Content));
+            FeedRangeCompositeContinuation firstContinuation =
+                ParseReadFeedContinuation(firstResponse.ContinuationToken);
+            Assert.AreEqual(
+                2,
+                firstContinuation.CompositeContinuationTokens.Count);
+            iterator.Dispose();
+
+            string reducedContinuationToken = null;
+            iterator = CreateReadFeedIterator(
+                documentContainer,
+                continuationToken: firstResponse.ContinuationToken,
+                pageSize: 1,
+                queryRequestOptions: requestOptions);
+            while (iterator.HasMoreResults)
+            {
+                ResponseMessage response = await iterator.ReadNextAsync();
+                actualIds.AddRange(GetDocumentIds(response.Content));
+                if (response.ContinuationToken == null)
+                {
+                    break;
+                }
+
+                FeedRangeCompositeContinuation continuation =
+                    ParseReadFeedContinuation(response.ContinuationToken);
+                if (continuation.CompositeContinuationTokens.Count == 1)
+                {
+                    reducedContinuationToken = response.ContinuationToken;
+                    break;
+                }
+            }
+
+            Assert.IsNotNull(reducedContinuationToken);
+            iterator.Dispose();
+
+            FeedRangeCompositeContinuation reducedContinuation =
+                ParseReadFeedContinuation(reducedContinuationToken);
+            Assert.AreEqual(
+                1,
+                reducedContinuation.CompositeContinuationTokens.Count);
+            FeedRangeEpk reducedOuterRange =
+                (FeedRangeEpk)reducedContinuation.FeedRange;
+            CompositeContinuationToken remainingToken =
+                reducedContinuation.CompositeContinuationTokens.Peek();
+            Assert.AreEqual(
+                remainingToken.Range.Min,
+                reducedOuterRange.Range.Min);
+            Assert.AreEqual(
+                remainingToken.Range.Max,
+                reducedOuterRange.Range.Max);
+
+            iterator = CreateReadFeedIterator(
+                documentContainer,
+                continuationToken: reducedContinuationToken,
+                pageSize: 1,
+                queryRequestOptions: requestOptions);
+            while (iterator.HasMoreResults)
+            {
+                ResponseMessage response = await iterator.ReadNextAsync();
+                actualIds.AddRange(GetDocumentIds(response.Content));
+            }
+
+            CollectionAssert.AreEquivalent(expectedIds, actualIds);
+            Assert.AreEqual(expectedIds.Length, actualIds.Distinct().Count());
+        }
+
         [DataTestMethod]
         [DataRow(true, "AA000", "CC00")]
         [DataRow(false, "AA00", "CC000")]
@@ -305,6 +439,45 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             return GetDocuments(stream)
                 .Select(document => ((CosmosString)((CosmosObject)document)["id"]).Value.ToString())
                 .ToList();
+        }
+
+        private static FeedRangeCompositeContinuation ParseReadFeedContinuation(
+            string continuationToken)
+        {
+            Assert.IsFalse(string.IsNullOrEmpty(continuationToken));
+            Assert.IsFalse(
+                continuationToken.StartsWith("[", StringComparison.Ordinal));
+            Assert.IsTrue(
+                FeedRangeContinuation.TryParse(
+                    continuationToken,
+                    out FeedRangeContinuation parsedContinuation));
+            Assert.IsInstanceOfType(
+                parsedContinuation,
+                typeof(FeedRangeCompositeContinuation));
+
+            FeedRangeCompositeContinuation compositeContinuation =
+                (FeedRangeCompositeContinuation)parsedContinuation;
+            Assert.IsInstanceOfType(
+                compositeContinuation.FeedRange,
+                typeof(FeedRangeEpk));
+            return compositeContinuation;
+        }
+
+        private static async Task CreateItemAsync(
+            IDocumentContainer documentContainer,
+            CosmosObject item)
+        {
+            while (true)
+            {
+                TryCatch<Record> result =
+                    await documentContainer.MonadicCreateItemAsync(
+                        item,
+                        cancellationToken: default);
+                if (result.Succeeded)
+                {
+                    return;
+                }
+            }
         }
 
         private static FeedIteratorInternal CreateReadFeedIterator(
