@@ -19,16 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
-- [6195](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6195) Adds preview SQL predicate filtering for typed and stream change feed iterators, preserving existing continuation and partition filtering behavior.
-- [6195](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6195) Adds preview `WithQuery(string)` configuration for change feed processors, with exact-query lease compatibility checks and immutable query configuration after build.
+- [6195](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6195) Change Feed: Adds preview server-side SQL filtering for typed and stream readers and change feed processors, preserving read progress and preventing incompatible filters from sharing processor leases.
 
 #### Breaking Changes
 
 #### Bugs Fixed
 
-- [6195](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6195) Change Feed: Stops a partition worker and reports an error when lease renewal detects an incompatible query filter, instead of continuing with stale lease state.
-- [6195](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6195) Change Feed: Preserves all-versions-and-deletes processor startup and restart with in-memory leases while validating query compatibility.
-- [6195](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6195) Change Feed: Retains the last processor read position after a failed request so subsequent reads do not resume from an error response's ETag.
 - [6141](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6141) Distributed Transactions (preview): Fixes operation results synthesized from bodyless or unusable responses reporting index `0` for every operation instead of the corresponding zero-based request index.
 - [6119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6119) Distributed Transactions (preview): Isolates submitted operations from later additions to a read or write transaction, avoiding incorrect failures when interpreting a successful response. Each transaction instance still supports only one nonempty execution attempt.
 - [6119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6119) Distributed Transactions (preview): Captures ETags, session tokens, and typed-patch conditions consistently when constructing the request, preventing changes to caller options during payload preparation from producing inconsistent option values.
@@ -38,9 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
-- [6195](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6195) Change Feed: Preserves optional query fingerprints when reading and writing processor lease documents; existing leases without fingerprints remain compatible.
-- [6195](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6195) Change Feed: Rejects incompatible query identities during lease creation and ownership updates, preserving the existing owner's lease when acquisition is rejected.
-- [6195](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6195) Change Feed: Checks every existing lease for query compatibility before processor startup and rechecks leases during initialization, rejecting mixed or incompatible query filters before processing begins.
 - [6154](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6154) Direct: Expands the available managed source with resource models, serialization, partition-key routing, session tokens, and their supporting types and unit tests. The SDK still uses the existing Direct package and native query-planning library; runtime behavior and public APIs are unchanged.
 - [6137](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6137) Direct: Begins making the managed Direct implementation available as source in this repository with a buildable foundation of 53 unchanged source files. The SDK continues to use the existing Direct package; runtime behavior and public APIs are unchanged.
 
