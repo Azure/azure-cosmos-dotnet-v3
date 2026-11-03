@@ -232,6 +232,16 @@ the approved jobs. All remain covered by their existing full-emulator selections
 | `CosmosContainerTests.IteratorTest` | Its exact SQL-filtered metadata query returns zero results instead of one; the separate database and container stream-query methods in Reads pass unchanged. |
 | `NegativePartitionedCreateDelete` | The host accepts a partition-key definition the existing test expects to reject with 400. |
 | Full FeedRange/split-routing recovery and automatic session capture | RID-addressed partition metadata is not resolved by this host. `GetFeedRangesAsync` fails before splitting; a no-explicit-token replica-lag probe sends no usable cached session token and returns 404/0 rather than recovering. |
+| .NET transactional batch, including complete hierarchical keys | The host's Gateway V1 batch handler expects a JSON operation array. The unmodified .NET binary batch request fails with 400, `Invalid batch JSON body`; no framing rewrite is installed. |
+
+The remaining applicable Go HPK transaction variant is implemented in
+[the normal-emulator HPK isolation test](../Microsoft.Azure.Cosmos.EmulatorTests/HierarchicalBatchIsolationTests.cs),
+not added to the in-memory allowlist. Its two depth rows cover two-/three-level
+null/undefined/numeric keys (Boolean third component), atomic create/read,
+same-ID isolation, and incomplete-prefix rejection with persisted no-mutation
+controls. It uses the existing Windows Batch lane and requires no new pipeline
+definition or fixture infrastructure. This .NET test-coverage addition is separate
+from the host's unresolved binary-batch portability.
 
 Binary response variants, quota/exact metrics, broader SQL/LINQ, HPK/range
 semantics, encryption fixtures, change-feed history/processors, auth/TLS/Direct,
