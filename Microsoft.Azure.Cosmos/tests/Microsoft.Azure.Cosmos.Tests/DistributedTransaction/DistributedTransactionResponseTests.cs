@@ -26,6 +26,111 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         // Null or malformed content
 
+        [DataTestMethod]
+        [DataRow(false, DisplayName = "Null content")]
+        [DataRow(true, DisplayName = "Empty content")]
+        [Description("A bodyless 304 response synthesizes one result per read with the corresponding zero-based request index, without treating the index as wire-provided.")]
+        public async Task FromResponseMessage_BodylessNotModified_SynthesizesRequestIndices(bool hasEmptyContent)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(
+                operationCount: 2,
+                operationType: OperationType.Read);
+            using ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.NotModified)
+            {
+                Content = hasEmptyContent ? new MemoryStream() : null
+            };
+
+            using DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(HttpStatusCode.NotModified, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(2, response.Count);
+            Assert.IsFalse(response.IsRetriable);
+            Assert.AreEqual(serverRequest.IdempotencyToken, response.IdempotencyToken);
+            Assert.AreEqual(DistributedTransactionResponseMode.Standard, response.ResponseMode);
+
+            for (int i = 0; i < response.Count; i++)
+            {
+                DistributedTransactionOperationResult result = response[i];
+                Assert.AreEqual(HttpStatusCode.NotModified, result.StatusCode);
+                Assert.IsFalse(result.IsSuccessStatusCode);
+                Assert.AreEqual(i, result.Index, $"Result[{i}] must identify the corresponding request operation.");
+                Assert.IsFalse(result.HasIndex, "A synthesized index was not supplied by the server.");
+                Assert.IsNull(result.ETag);
+                Assert.IsNull(result.SessionToken);
+                Assert.IsNull(result.PartitionKeyRangeId);
+                Assert.IsNull(result.ActivityId);
+                Assert.IsNull(result.ResourceStream);
+                Assert.AreEqual(0d, result.RequestCharge);
+
+                DistributedTransactionOperationResult<TestDocument> typedResult = response.GetOperationResultAtIndex<TestDocument>(i);
+                Assert.AreEqual(i, typedResult.Index);
+                Assert.IsFalse(typedResult.HasIndex);
+                Assert.IsNull(typedResult.Resource);
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(HttpStatusCode.Conflict, null, HttpStatusCode.Conflict, DisplayName = "Error with null content")]
+        [DataRow(HttpStatusCode.Conflict, "", HttpStatusCode.Conflict, DisplayName = "Error with empty content")]
+        [DataRow(HttpStatusCode.Conflict, "{invalid-json", HttpStatusCode.Conflict, DisplayName = "Error with malformed JSON")]
+        [DataRow(HttpStatusCode.OK, "{invalid-json", HttpStatusCode.InternalServerError, DisplayName = "Success with malformed JSON")]
+        [DataRow(HttpStatusCode.OK, "", HttpStatusCode.InternalServerError, DisplayName = "Success with empty content")]
+        [DataRow(HttpStatusCode.Conflict, @"{""operationResponses"":[{""index"":0,""statusCode"":""abc""}]}", HttpStatusCode.Conflict, DisplayName = "Error with malformed operation")]
+        [DataRow(HttpStatusCode.OK, @"{""operationResponses"":[{""index"":0,""statusCode"":""abc""}]}", HttpStatusCode.InternalServerError, DisplayName = "Success with malformed operation")]
+        [DataRow(HttpStatusCode.Conflict, @"{""operationResponses"":[{""index"":0,""statusCode"":409}]}", HttpStatusCode.Conflict, DisplayName = "Error with too few results")]
+        [DataRow(HttpStatusCode.Conflict, @"{""operationResponses"":[{""index"":0,""statusCode"":409},{""index"":1,""statusCode"":409},{""index"":2,""statusCode"":409}]}", HttpStatusCode.Conflict, DisplayName = "Error with too many results")]
+        [DataRow(HttpStatusCode.Conflict, @"{""operationResponses"":[{""statusCode"":409},{""statusCode"":409}]}", HttpStatusCode.Conflict, DisplayName = "Error with missing wire indices")]
+        [DataRow(HttpStatusCode.Conflict, @"{""operationResponses"":[{""index"":0,""statusCode"":409},{""index"":0,""statusCode"":409}]}", HttpStatusCode.Conflict, DisplayName = "Error with duplicate wire indices")]
+        [DataRow(HttpStatusCode.Conflict, @"{""operationResponses"":[{""index"":0,""statusCode"":409},{""index"":2,""statusCode"":409}]}", HttpStatusCode.Conflict, DisplayName = "Error with out-of-range wire index")]
+        [DataRow(HttpStatusCode.OK, @"{""operationResponses"":[{""statusCode"":200},{""statusCode"":200}]}", HttpStatusCode.InternalServerError, DisplayName = "Success with missing wire indices fails closed")]
+        [DataRow(HttpStatusCode.OK, @"{""operationResponses"":[{""index"":0,""statusCode"":200},{""index"":0,""statusCode"":200}]}", HttpStatusCode.InternalServerError, DisplayName = "Success with duplicate wire indices fails closed")]
+        [DataRow(HttpStatusCode.OK, @"{""operationResponses"":[{""index"":0,""statusCode"":200},{""index"":2,""statusCode"":200}]}", HttpStatusCode.InternalServerError, DisplayName = "Success with out-of-range wire index fails closed")]
+        [Description("Fallback results retain their existing status and count while identifying each request operation without a wire-provided index.")]
+        public async Task FromResponseMessage_FallbackResults_SynthesizesRequestIndices(
+            HttpStatusCode wireStatusCode,
+            string json,
+            HttpStatusCode expectedStatusCode)
+        {
+            DistributedTransactionServerRequest serverRequest = await BuildServerRequestAsync(operationCount: 2);
+            using ResponseMessage responseMessage = json == null
+                ? new ResponseMessage(wireStatusCode)
+                : BuildResponseMessage(wireStatusCode, json);
+            responseMessage.Headers.SubStatusCode = (SubStatusCodes)1009;
+            Guid expectedToken = Guid.NewGuid();
+            responseMessage.Headers.Add(HttpConstants.HttpHeaders.IdempotencyToken, expectedToken.ToString());
+
+            using DistributedTransactionResponse response = await DistributedTransactionResponse.FromResponseMessageAsync(
+                responseMessage,
+                serverRequest,
+                MockCosmosUtil.Serializer,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(expectedStatusCode, response.StatusCode);
+            Assert.IsFalse(response.IsSuccessStatusCode);
+            Assert.AreEqual(2, response.Count);
+            Assert.IsFalse(response.IsRetriable);
+            Assert.AreEqual(expectedToken, response.IdempotencyToken);
+            Assert.AreEqual(DistributedTransactionResponseMode.Standard, response.ResponseMode);
+            Assert.AreEqual(
+                wireStatusCode == HttpStatusCode.OK ? SubStatusCodes.Unknown : (SubStatusCodes)1009,
+                response.SubStatusCode);
+
+            for (int i = 0; i < response.Count; i++)
+            {
+                Assert.AreEqual(expectedStatusCode, response[i].StatusCode);
+                Assert.AreEqual(response.SubStatusCode, response[i].SubStatusCode);
+                Assert.AreEqual(i, response[i].Index, $"Result[{i}] must identify the corresponding request operation.");
+                Assert.IsFalse(response[i].HasIndex, "A synthesized index was not supplied by the server.");
+            }
+        }
+
         [TestMethod]
         [Description("When the response has no content body and the HTTP status is success, the SDK must return 500 because the server should always return a body on success.")]
         public async Task FromResponseMessage_NullContent_SuccessStatus_ReturnsInternalServerError()
@@ -2429,15 +2534,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         /// <summary>
         /// Builds a <see cref="DistributedTransactionServerRequest"/> with <paramref name="operationCount"/>
-        /// simple Create operations (no resource body — safe for response-parsing tests).
+        /// simple operations (no resource body — safe for response-parsing tests).
         /// </summary>
-        private static async Task<DistributedTransactionServerRequest> BuildServerRequestAsync(int operationCount)
+        private static async Task<DistributedTransactionServerRequest> BuildServerRequestAsync(
+            int operationCount,
+            OperationType operationType = OperationType.Create)
         {
             List<DistributedTransactionOperation> operations = new List<DistributedTransactionOperation>();
             for (int i = 0; i < operationCount; i++)
             {
                 operations.Add(new DistributedTransactionOperation(
-                    operationType: OperationType.Create,
+                    operationType: operationType,
                     operationIndex: i,
                     database: "testDb",
                     container: "testContainer",

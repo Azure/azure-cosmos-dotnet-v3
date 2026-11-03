@@ -324,8 +324,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 isContinuationExpected: true,
                 maxConcurrency: 10,
                 fullTextScoreScope: FullTextScoreScope.Global,
-                requestContinuationToken: null,
-                isHybridSearchCompetitionRankingEnabled: false);
+                requestContinuationToken: null);
             tryCreatePipeline.ThrowIfFailed();
 
             await tryCreatePipeline.Result.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default);

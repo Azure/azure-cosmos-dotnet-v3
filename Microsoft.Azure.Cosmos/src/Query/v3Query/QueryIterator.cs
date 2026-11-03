@@ -150,7 +150,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 returnResultsInDeterministicOrder: queryRequestOptions.ReturnResultsInDeterministicOrder,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
-                isHybridSearchCompetitionRankingEnabled: queryRequestOptions.IsHybridSearchCompetitionRankingEnabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode && (clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway),
                 fullTextScoreScope: queryRequestOptions.FullTextScoreScope,
                 testInjections: queryRequestOptions.TestSettings,
