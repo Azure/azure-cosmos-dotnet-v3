@@ -1,18 +1,21 @@
 # Direct implementation
 
 This component follows the FaultInjection layout: `Direct\src` is outside the
-Client project's `src` directory. Imported implementation files retain their
-upstream bytes and namespaces. Git line-ending conversion is disabled for those
-files.
+Client project's `src` directory. Imported implementation files match PR #6159's
+source snapshot and retain their upstream namespaces. Git line-ending conversion
+is disabled for those files.
 
 The import is pinned to CosmosDB release branch
 `sdkReleases/direct/EN20260409-3.44.1`, commit
-`743dc32433dc51e3d5357934014154419ae812aa`. `source-manifest.json` records each
-original path, local path and SHA-256 hash. It includes the release project's
-explicit managed/shared inputs, project-local C# sources, resources, four T4
-templates, notices and the common assembly metadata template. MSBuild evaluation
-of an isolated pinned release snapshot reconciles all 371 source/resource inputs
-and two generated metadata inputs. The latter are replaced by the imported
+`743dc32433dc51e3d5357934014154419ae812aa`, plus the five diagnostics-related
+source additions/updates from `sdkReleases/direct/EN20260409-3.44.3`, commit
+`328ec1b615ce9ea8f734863e369321e9edb83116`. The imported snapshot is PR #6159
+at `1efd117583a2315c84bffdec206df725fe7d24fb`. `source-manifest.json` records
+each original path, local path and local SHA-256 hash, including per-file release
+overrides. Encoding normalization and four generated-template comment cleanups
+match that PR; the four T4 templates are excluded. Notices remain for packaging.
+The inventory contains 373 C# files and one resource, including the common
+assembly metadata template. Upstream generated metadata inputs are replaced by the imported
 `AssemblyRef` template, SDK assembly metadata and local version generation.
 This is an input-inventory check, not a full internal release build.
 

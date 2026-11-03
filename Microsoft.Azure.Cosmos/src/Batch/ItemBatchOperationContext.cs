@@ -26,6 +26,8 @@ namespace Microsoft.Azure.Cosmos
 
         public Task<TransactionalBatchOperationResult> OperationTask => this.taskCompletionSource.Task;
 
+        public CancellationToken CallerCancellationToken { get; }
+
         private readonly IDocumentClientRetryPolicy retryPolicy;
 
         private readonly TaskCompletionSource<TransactionalBatchOperationResult> taskCompletionSource = new TaskCompletionSource<TransactionalBatchOperationResult>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -35,7 +37,8 @@ namespace Microsoft.Azure.Cosmos
         public ItemBatchOperationContext(
             string partitionKeyRangeId,
             ITrace trace,
-            IDocumentClientRetryPolicy retryPolicy = null)
+            IDocumentClientRetryPolicy retryPolicy = null,
+            CancellationToken callerCancellationToken = default)
         {
             if (trace == null)
             {
@@ -45,6 +48,7 @@ namespace Microsoft.Azure.Cosmos
             this.PartitionKeyRangeId = partitionKeyRangeId ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
             this.initialTrace = trace;
             this.retryPolicy = retryPolicy;
+            this.CallerCancellationToken = callerCancellationToken;
         }
 
         /// <summary>
@@ -78,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.initialTrace.AddChild(result.Trace);
                 result.Trace = this.initialTrace;
-                this.taskCompletionSource.SetResult(result);
+                this.taskCompletionSource.TrySetResult(result);
             }
 
             this.Dispose();
@@ -90,7 +94,19 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.AssertBatcher(completer, exception))
             {
-                this.taskCompletionSource.SetException(exception);
+                this.taskCompletionSource.TrySetException(exception);
+            }
+
+            this.Dispose();
+        }
+
+        public void Cancel(
+            BatchAsyncBatcher completer,
+            CancellationToken cancellationToken)
+        {
+            if (this.AssertBatcher(completer))
+            {
+                this.taskCompletionSource.TrySetCanceled(cancellationToken);
             }
 
             this.Dispose();
@@ -116,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
             if (!object.ReferenceEquals(completer, this.CurrentBatcher))
             {
                 DefaultTrace.TraceCritical($"Operation was completed by incorrect batcher.");
-                this.taskCompletionSource.SetException(new Exception($"Operation was completed by incorrect batcher.", innerException));
+                this.taskCompletionSource.TrySetException(new Exception($"Operation was completed by incorrect batcher.", innerException));
                 return false;
             }
 

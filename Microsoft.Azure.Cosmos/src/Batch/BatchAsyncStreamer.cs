@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly BatchAsyncBatcherRetryDelegate retrier;
         private readonly CosmosSerializerCore serializerCore;
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        private readonly CancellationToken cancellationToken;
 
         private readonly int congestionIncreaseFactor = 1;
         private readonly int congestionDecreaseFactor = 5;
@@ -50,6 +51,7 @@ namespace Microsoft.Azure.Cosmos
 
         private int congestionDegreeOfConcurrency = 1;
         private long congestionWaitTimeInMilliseconds = 1000;
+        private bool isDisposed;
 
         public BatchAsyncStreamer(
             int maxBatchOperationCount,
@@ -106,6 +108,7 @@ namespace Microsoft.Azure.Cosmos
             this.serializerCore = serializerCore;
             this.clientContext = clientContext;
             this.options = options;
+            this.cancellationToken = this.cancellationTokenSource.Token;
             this.currentBatcher = this.CreateBatchAsyncBatcher();
             this.ResetTimer();
 
@@ -122,6 +125,11 @@ namespace Microsoft.Azure.Cosmos
             BatchAsyncBatcher toDispatch = null;
             lock (this.dispatchLimiter)
             {
+                if (this.isDisposed)
+                {
+                    throw new ObjectDisposedException(nameof(BatchAsyncStreamer));
+                }
+
                 while (!this.currentBatcher.TryAdd(operation))
                 {
                     // Batcher is full
@@ -132,37 +140,54 @@ namespace Microsoft.Azure.Cosmos
             if (toDispatch != null)
             {
                 // Discarded for Fire & Forget
-                _ = toDispatch.DispatchAsync(this.partitionMetric, this.cancellationTokenSource.Token);
+                _ = toDispatch.DispatchAsync(this.partitionMetric, this.cancellationToken);
             }
         }
 
         public void Dispose()
         {
-            this.cancellationTokenSource.Cancel();
-            this.cancellationTokenSource.Dispose();
-
-            this.currentTimer.CancelTimer();
-            this.currentTimer = null;
-            this.timerTask = null;
-
-            if (this.congestionControlTimer != null)
+            lock (this.dispatchLimiter)
             {
-                this.congestionControlTimer.CancelTimer();
-                this.congestionControlTimer = null;
-                this.congestionControlTask = null;
+                if (this.isDisposed)
+                {
+                    return;
+                }
+
+                this.isDisposed = true;
+                this.cancellationTokenSource.Cancel();
+                this.cancellationTokenSource.Dispose();
+
+                this.currentTimer.CancelTimer();
+                this.currentTimer = null;
+                this.timerTask = null;
+
+                if (this.congestionControlTimer != null)
+                {
+                    this.congestionControlTimer.CancelTimer();
+                    this.congestionControlTimer = null;
+                    this.congestionControlTask = null;
+                }
             }
         }
 
         private void ResetTimer()
         {
-            this.currentTimer = this.timerWheel.CreateTimer(BatchAsyncStreamer.batchTimeout);
-            this.timerTask = this.GetTimerTaskAsync();
+            lock (this.dispatchLimiter)
+            {
+                if (this.isDisposed)
+                {
+                    return;
+                }
+
+                this.currentTimer = this.timerWheel.CreateTimer(BatchAsyncStreamer.batchTimeout);
+                this.timerTask = this.GetTimerTaskAsync(this.currentTimer);
+            }
         }
 
-        private async Task GetTimerTaskAsync()
+        private async Task GetTimerTaskAsync(TimerWheelTimer timer)
         {
-            await this.currentTimer.StartTimerAsync();
-            if (!this.cancellationTokenSource.IsCancellationRequested)
+            await timer.StartTimerAsync();
+            if (!this.cancellationToken.IsCancellationRequested)
             {
                 this.DispatchTimer();
             }
@@ -170,16 +195,24 @@ namespace Microsoft.Azure.Cosmos
 
         private void StartCongestionControlTimer()
         {
-            this.congestionControlTimer = this.timerWheel.CreateTimer(BatchAsyncStreamer.congestionControllerDelay);
-            this.congestionControlTask = this.congestionControlTimer.StartTimerAsync().ContinueWith(async (task) =>
+            lock (this.dispatchLimiter)
             {
-                await this.RunCongestionControlAsync();
-            }, this.cancellationTokenSource.Token);
+                if (this.isDisposed)
+                {
+                    return;
+                }
+
+                this.congestionControlTimer = this.timerWheel.CreateTimer(BatchAsyncStreamer.congestionControllerDelay);
+                this.congestionControlTask = this.congestionControlTimer.StartTimerAsync().ContinueWith(async (task) =>
+                {
+                    await this.RunCongestionControlAsync();
+                }, this.cancellationToken);
+            }
         }
 
         private void DispatchTimer()
         {
-            if (this.cancellationTokenSource.IsCancellationRequested)
+            if (this.cancellationToken.IsCancellationRequested)
             {
                 return;
             }
@@ -187,13 +220,18 @@ namespace Microsoft.Azure.Cosmos
             BatchAsyncBatcher toDispatch;
             lock (this.dispatchLimiter)
             {
+                if (this.isDisposed)
+                {
+                    return;
+                }
+
                 toDispatch = this.GetBatchToDispatchAndCreate();
             }
 
             if (toDispatch != null)
             {
                 // Discarded for Fire & Forget
-                _ = toDispatch.DispatchAsync(this.partitionMetric, this.cancellationTokenSource.Token);
+                _ = toDispatch.DispatchAsync(this.partitionMetric, this.cancellationToken);
             }
 
             this.ResetTimer();
@@ -218,7 +256,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task RunCongestionControlAsync()
         {
-            while (!this.cancellationTokenSource.Token.IsCancellationRequested)
+            while (!this.cancellationToken.IsCancellationRequested)
             {
                 long elapsedTimeInMilliseconds = this.partitionMetric.TimeTakenInMilliseconds - this.oldPartitionMetric.TimeTakenInMilliseconds;
 
@@ -236,7 +274,7 @@ namespace Microsoft.Azure.Cosmos
                         // We got a throttle so we need to back off on the degree of concurrency.
                         for (int i = 0; i < decreaseCount; i++)
                         {
-                            await this.limiter.WaitAsync(this.cancellationTokenSource.Token);
+                            await this.limiter.WaitAsync(this.cancellationToken);
                         }
 
                         this.congestionDegreeOfConcurrency -= decreaseCount;
@@ -261,7 +299,10 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            this.StartCongestionControlTimer();
+            if (!this.cancellationToken.IsCancellationRequested)
+            {
+                this.StartCongestionControlTimer();
+            }
         }
     }
 }

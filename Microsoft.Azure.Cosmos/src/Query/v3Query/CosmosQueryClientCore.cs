@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
@@ -80,13 +81,24 @@ namespace Microsoft.Azure.Cosmos
                 };
             }
 
+            IEnumerable<ISecondaryIndexMetadata> globalSecondaryIndexes = Array.Empty<ISecondaryIndexMetadata>();
+            if (this.clientContext.ClientOptions.EnableSecondaryIndexRouting)
+            {
+                globalSecondaryIndexes =
+                    await this.clientContext.SecondaryIndexMetadataCache.GetSecondaryIndexMetadataAsync(
+                        containerProperties,
+                        trace,
+                        cancellationToken: cancellationToken);
+            }
+
             return new ContainerQueryProperties(
                 containerProperties.ResourceId,
                 effectivePartitionKeyRange,
                 containerProperties.PartitionKey,
                 containerProperties.VectorEmbeddingPolicy,
                 containerProperties.GeospatialConfig.GeospatialType,
-                this.documentClient.UseLengthAwareRangeComparer);
+                this.documentClient.UseLengthAwareRangeComparer,
+                globalSecondaryIndexes);
         }
 
         public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(

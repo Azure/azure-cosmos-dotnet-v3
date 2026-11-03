@@ -33,7 +33,7 @@ if (!$expected.SetEquals([string[]]$actual) -or $actual.Count -ne $expected.Coun
     $difference = Compare-Object @($expected) $actual | Out-String
     throw "Evaluated Direct source/resource inputs differ from the manifest:`n$difference"
 }
-Write-Host "Verified $($manifest.files.Count) byte-preserved inputs and $($actual.Count) evaluated source/resource inputs."
+Write-Host "Verified $($manifest.files.Count) manifest-matched inputs and $($actual.Count) evaluated source/resource inputs."
 
 if ($BaselineAssemblyPath -or $ApiCompatPath) {
     if (!$BaselineAssemblyPath -or !$ApiCompatPath) {

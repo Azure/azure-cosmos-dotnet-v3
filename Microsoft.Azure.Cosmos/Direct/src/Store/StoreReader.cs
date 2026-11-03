@@ -316,12 +316,12 @@ namespace Microsoft.Azure.Documents
 
                         if (storeResponse != null)
                         {
-                            entity.RequestContext.ClientRequestStatistics.ContactedReplicas.Add(targetUri);
+                            entity.RequestContext.ClientRequestStatistics.AppendContactedReplica(targetUri);
                         }
 
                         if (storeException != null && storeException.InnerException is TransportException)
                         {
-                            entity.RequestContext.ClientRequestStatistics.FailedReplicas.Add(targetUri);
+                            entity.RequestContext.ClientRequestStatistics.AppendFailedReplica(targetUri);
                         }
 
                         entity.RequestContext.ClientRequestStatistics.RecordResponse(
