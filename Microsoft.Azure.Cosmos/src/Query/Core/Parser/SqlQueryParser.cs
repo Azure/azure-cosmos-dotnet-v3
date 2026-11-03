@@ -35,7 +35,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                     if (!SqlParlotParser.TryParse(text, out sqlQuery, out (int Offset, int Line, int Column) failure))
                     {
                         return TryCatch<SqlQuery>.FromException(
-                            new ParseException($"The query has a syntax error at line {failure.Line}, column {failure.Column}."));
+                            new ParseException(
+                                MayBeNestedTooDeeply(text, failure.Offset)
+                                    ? $"The query has a syntax error at line {failure.Line}, column {failure.Column}, or is nested too deeply."
+                                    : $"The query has a syntax error at line {failure.Line}, column {failure.Column}."));
                     }
                 }
                 catch (Exception ex)
@@ -44,6 +47,34 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 }
 
                 return TryCatch<SqlQuery>.FromResult(sqlQuery);
+            }
+
+            // The parser reports reaching its depth limit, or the end of the stack, like a syntax error. Reaching the
+            // limit takes at least 191 nested subqueries, so fewer tokens that open a level than that can't have.
+            private static bool MayBeNestedTooDeeply(string text, int offset)
+            {
+                const int MinimumLevels = 150;
+
+                int levels = 0;
+                for (int i = 0; i < offset && i < text.Length; i++)
+                {
+                    switch (text[i])
+                    {
+                        case '(':
+                        case '[':
+                        case '{':
+                        case '?':
+                        case '-':
+                        case '+':
+                        case '~':
+                        case 'n':
+                        case 'N':
+                            levels++;
+                            break;
+                    }
+                }
+
+                return levels >= MinimumLevels;
             }
         }
 
