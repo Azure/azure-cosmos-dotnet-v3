@@ -471,6 +471,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             IReadOnlyList<List<ScoreTuple>> componentScores = tryGetComponentScores.Result;
 
+            Debug.Assert(
+                componentRankingInfos.Count == componentScores.Count,
+                "The number of component ranking infos should match the number of score components.");
+
             for (int index = 0; index < componentScores.Count; ++index)
             {
                 ComponentRankingInfo component = componentRankingInfos[index];
