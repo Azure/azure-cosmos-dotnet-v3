@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -41,6 +42,8 @@ namespace Microsoft.Azure.Cosmos
         /// An integer defining the maximum retry count on unavailable endpoint.
         /// </summary>
         private readonly int maxUnavailableEndpointRetryCount;
+
+        private readonly HashSet<Uri> attemptedEndpoints = new HashSet<Uri>();
 
         /// <summary>
         /// An instance of <see cref="Uri"/> containing the location endpoint where the partition key
@@ -220,6 +223,17 @@ namespace Microsoft.Azure.Cosmos
                 this.retryContext.RetryRequestOnPreferredLocations);
 
             Uri metadataLocationEndpoint = this.globalEndpointManager.ResolveServiceEndpoint(request);
+            int endpointsToCheck = Math.Max(1, this.globalEndpointManager.PreferredLocationCount);
+            while (endpointsToCheck-- > 0
+                && this.attemptedEndpoints.Contains(metadataLocationEndpoint))
+            {
+                this.retryContext.RetryLocationIndex++;
+                request.RequestContext.ClearRouteToLocation();
+                request.RequestContext.RouteToLocation(
+                    this.retryContext.RetryLocationIndex,
+                    this.retryContext.RetryRequestOnPreferredLocations);
+                metadataLocationEndpoint = this.globalEndpointManager.ResolveServiceEndpoint(request);
+            }
 
             DefaultTrace.TraceInformation("MetadataRequestThrottleRetryPolicy: Routing the metadata request to: {0} for operation type: {1} and resource type: {2} for collection: {3} with collection rid {4}.", 
                 metadataLocationEndpoint, 
@@ -227,6 +241,7 @@ namespace Microsoft.Azure.Cosmos
                 request.ResourceType, 
                 request.CollectionName, 
                 request.ResourceId);
+            this.attemptedEndpoints.Add(metadataLocationEndpoint);
             request.RequestContext.RouteToLocation(metadataLocationEndpoint);
         }
 

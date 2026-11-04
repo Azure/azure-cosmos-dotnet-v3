@@ -66,11 +66,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException($"ApplicationRegion configuration '{location}' is not a valid Azure region or the current SDK version does not recognize it. If the value represents a valid region, make sure you are using the latest SDK version.");
             }
 
+            this.CurrentLocation = location;
+
             List<string> proximityBasedPreferredLocations = RegionProximityUtil.GeneratePreferredRegionList(location);
 
             if (proximityBasedPreferredLocations != null)
             {
-                this.preferredLocations.Clear();
                 foreach (string preferredLocation in proximityBasedPreferredLocations)
                 {
                     this.preferredLocations.Add(preferredLocation);
@@ -310,6 +311,13 @@ namespace Microsoft.Azure.Cosmos
                 return this.accountInitializationCustomEndpoints;
             }
         }
+
+        /// <summary>
+        /// Gets the current location (region) that this client is configured to run in,
+        /// as set by <see cref="SetCurrentLocation"/>. Used to send region proximity hints
+        /// to the server during account discovery.
+        /// </summary>
+        internal string CurrentLocation { get; private set; }
 
         /// <summary>
         /// Gets or sets the flag to enable endpoint discovery for geo-replicated database accounts in the Azure Cosmos DB service.

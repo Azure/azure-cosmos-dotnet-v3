@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private readonly bool isThinClientEnabled;
+        private readonly HashSet<Uri> attemptedEndpoints = new HashSet<Uri>();
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
@@ -276,6 +277,25 @@ namespace Microsoft.Azure.Cosmos
                 ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 
+            if (this.retryContext?.AvoidPreviouslyAttemptedEndpoints == true)
+            {
+                int endpointsToCheck = this.globalEndpointManager.PreferredLocationCount;
+                while (endpointsToCheck-- > 0
+                    && this.attemptedEndpoints.Contains(this.locationEndpoint))
+                {
+                    this.retryContext.RetryLocationIndex++;
+                    request.RequestContext.ClearRouteToLocation();
+                    request.RequestContext.RouteToLocation(
+                        this.retryContext.RetryLocationIndex,
+                        this.retryContext.RetryRequestOnPreferredLocations);
+                    this.locationEndpoint = this.isThinClientEnabled
+                        && GatewayStoreModel.IsOperationSupportedByThinClient(request)
+                        ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
+                        : this.globalEndpointManager.ResolveServiceEndpoint(request);
+                }
+            }
+
+            this.attemptedEndpoints.Add(this.locationEndpoint);
             request.RequestContext.RouteToLocation(this.locationEndpoint);
         }
 
@@ -489,7 +509,8 @@ namespace Microsoft.Azure.Cosmos
                         this.retryContext = new RetryContext()
                         {
                             RetryLocationIndex = this.sessionTokenRetryCount,
-                            RetryRequestOnPreferredLocations = true
+                            RetryRequestOnPreferredLocations = true,
+                            AvoidPreviouslyAttemptedEndpoints = true
                         };
 
                         return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
@@ -603,7 +624,8 @@ namespace Microsoft.Azure.Cosmos
             this.retryContext = new RetryContext()
             {
                 RetryLocationIndex = this.serviceUnavailableRetryCount,
-                RetryRequestOnPreferredLocations = true
+                RetryRequestOnPreferredLocations = true,
+                AvoidPreviouslyAttemptedEndpoints = true
             };
 
             return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
@@ -770,6 +792,8 @@ namespace Microsoft.Azure.Cosmos
             public bool RetryRequestOnPreferredLocations { get; set; }
 
             public bool RouteToHub { get; set; }
+
+            public bool AvoidPreviouslyAttemptedEndpoints { get; set; }
         }
     }
 }
