@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         TResult Transform(ChangeFeedStateBeginning changeFeedStateBeginning);
         TResult Transform(ChangeFeedStateTime changeFeedStateTime);
         TResult Transform(ChangeFeedStateContinuation changeFeedStateContinuation);
+        TResult Transform(ChangeFeedStateContinuationAndStartTime changeFeedStateContinuationAndStartTime);
         TResult Transform(ChangeFeedStateNow changeFeedStateNow);
     }
 }

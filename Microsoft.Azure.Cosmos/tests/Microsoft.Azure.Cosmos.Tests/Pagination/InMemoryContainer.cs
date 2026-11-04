@@ -762,7 +762,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                 if (filteredChanges.Count == 0)
                 {
-                    ChangeFeedState notModifiedResponseState = new ChangeFeedStateTime(DateTime.UtcNow);
+                    ChangeFeedState notModifiedResponseState;
+                    if (feedRangeState.State is ChangeFeedStateContinuationAndStartTime composite)
+                    {
+                        notModifiedResponseState = composite; // preserve as-is
+                    }
+                    else
+                    {
+                        notModifiedResponseState = new ChangeFeedStateTime(DateTime.UtcNow);
+                    }
+
                     return Task.FromResult(
                     TryCatch<ChangeFeedPage>.FromResult(
                         new ChangeFeedNotModifiedPage(
@@ -780,7 +789,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         { "LSN", CosmosNumber64.Create(lastChange.LogicalSequenceNumber) }
                     });
 
-                ChangeFeedState responseState = ChangeFeedState.Continuation(continuationToken);
+                ChangeFeedState responseState;
+                if (feedRangeState.State is ChangeFeedStateTime changeFeedStateTime)
+                {
+                    responseState = ChangeFeedState.ContinuationAndStartTime(continuationToken, changeFeedStateTime.StartTime);
+                }
+                else if (feedRangeState.State is ChangeFeedStateContinuationAndStartTime existingComposite)
+                {
+                    responseState = ChangeFeedState.ContinuationAndStartTime(continuationToken, existingComposite.StartTime);
+                }
+                else
+                {
+                    responseState = ChangeFeedState.Continuation(continuationToken);
+                }
 
                 List<CosmosObject> documents = new List<CosmosObject>();
                 foreach (Change change in filteredChanges)
@@ -1738,6 +1759,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 DateTime now = DateTime.UtcNow;
                 ChangeFeedStateTime startTime = new ChangeFeedStateTime(now);
                 return this.Visit(startTime, input);
+            }
+
+            public bool Visit(ChangeFeedStateContinuationAndStartTime changeFeedStateContinuationAndStartTime, Change input)
+            {
+                // For in-memory tests, apply both the continuation-based filter and the time-based filter
+                ChangeFeedStateContinuation continuationState = new ChangeFeedStateContinuation(changeFeedStateContinuationAndStartTime.ContinuationToken);
+                bool passesLsn = this.Visit(continuationState, input);
+                bool passesTime = input.Record.Timestamp >= changeFeedStateContinuationAndStartTime.StartTime;
+                return passesLsn && passesTime;
             }
         }
 

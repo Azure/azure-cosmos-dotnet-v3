@@ -93,6 +93,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 bool shouldAnchorStartTime =
                     !this.changeFeedProcessorOptions.StartFromBeginning
                     && this.changeFeedProcessorOptions.StartTime == null
+                    && !this.changeFeedProcessorOptions.IsStartTimeUserExplicit
                     && string.IsNullOrEmpty(this.changeFeedProcessorOptions.StartContinuation)
                     && this.changeFeedProcessorOptions.Mode != ChangeFeedMode.AllVersionsAndDeletes;
 
@@ -143,7 +144,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                         this.leaseContainer,
                         leaseContainerPrefix,
                         this.instanceName,
-                        changeFeedMode: this.changeFeedProcessorOptions.Mode)
+                        changeFeedMode: this.changeFeedProcessorOptions.Mode,
+                        startTime: this.changeFeedProcessorOptions.StartTime,
+                        isStartTimeUserExplicit: this.changeFeedProcessorOptions.IsStartTimeUserExplicit)
                     .ConfigureAwait(false);
             }
 
