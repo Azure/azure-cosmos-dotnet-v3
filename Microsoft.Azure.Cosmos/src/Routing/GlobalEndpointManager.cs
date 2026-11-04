@@ -41,6 +41,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly object isAccountRefreshInProgressLock = new object();
         private bool isAccountRefreshInProgress = false;
         private bool isBackgroundAccountRefreshActive = false;
+        private int isServerProximityApplied;
+        private int regionProximityFallbackTraced;
         private DateTime LastBackgroundRefreshUtc = DateTime.MinValue;
 
         /// <summary>
@@ -114,9 +116,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             get
             {
-                IList<string> effectivePreferredLocations = this.GetEffectivePreferredLocations();
-
-                return effectivePreferredLocations.Count;
+                return this.GetEffectivePreferredLocations().Count;
             }
         }
 
@@ -556,7 +556,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
-        /// Parse thinClientWritableLocations / thinClientReadableLocations from AdditionalProperties. 
+        /// Parse thinClientWritableLocations / thinClientReadableLocations from AdditionalProperties.
         /// </summary>
         private static void ParseThinClientLocationsFromAdditionalProperties(AccountProperties databaseAccount)
         {
@@ -573,6 +573,112 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     databaseAccount.ThinClientReadableLocationsInternal = ParseAccountRegionArray(readableArray);
                 }
+            }
+        }
+
+        private static void ParseRegionProximityFromAdditionalProperties(AccountProperties databaseAccount)
+        {
+            if (databaseAccount?.AdditionalProperties != null
+                && databaseAccount.AdditionalProperties.TryGetValue(Constants.Properties.RegionProximity, out JToken proximityToken)
+                && proximityToken is JArray proximityArray)
+            {
+                databaseAccount.RegionProximityInternal = ParseRegionProximityArray(proximityArray);
+            }
+        }
+
+        private static Collection<string> ParseRegionProximityArray(JArray array)
+        {
+            Collection<string> result = new Collection<string>();
+            foreach (JToken token in array)
+            {
+                if (token?.Type == JTokenType.String
+                    && !string.IsNullOrEmpty(token.Value<string>()))
+                {
+                    result.Add(token.Value<string>()!);
+                }
+            }
+            return result;
+        }
+
+        private ReadOnlyCollection<string>? ResolveServerProximity(AccountProperties databaseAccount)
+        {
+            if (string.IsNullOrEmpty(this.connectionPolicy.CurrentLocation))
+            {
+                return null;
+            }
+
+            List<string> destinations = databaseAccount.WritableRegions
+                .Concat(databaseAccount.ReadableRegions)
+                .Where(region => !string.IsNullOrEmpty(region?.Name))
+                .Select(region => region.Name)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (destinations.Count == 0)
+            {
+                return null;
+            }
+
+            List<string> currentPreferredLocations = this.GetEffectivePreferredLocations().ToList();
+            Dictionary<string, string> displayNameBySanitized = destinations
+                .GroupBy(
+                    RegionNameMapper.SanitizeRegionName,
+                    StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.First(),
+                    StringComparer.OrdinalIgnoreCase);
+
+            bool canAdoptRanking = (databaseAccount.RegionProximityInternal?.Count ?? 0) > 0;
+            List<string> ranked = canAdoptRanking
+                ? databaseAccount.RegionProximityInternal
+                    .Select(RegionNameMapper.SanitizeRegionName)
+                    .Where(displayNameBySanitized.ContainsKey)
+                    .Select(sanitized => displayNameBySanitized[sanitized])
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList()
+                : new List<string>();
+
+            IEnumerable<string> orderedPrefix;
+            if (ranked.Count > 0)
+            {
+                orderedPrefix = ranked;
+            }
+            else
+            {
+                this.TraceRegionProximityFallbackOnce();
+                orderedPrefix = currentPreferredLocations
+                    .Where(region => destinations.Contains(region, StringComparer.OrdinalIgnoreCase));
+            }
+
+            List<string> resolved = orderedPrefix
+                .Concat(destinations)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return resolved.AsReadOnly();
+        }
+
+        private void ApplyAccountTopology(AccountProperties databaseAccount)
+        {
+            ReadOnlyCollection<string>? serverPreferredLocations =
+                this.ResolveServerProximity(databaseAccount);
+            this.locationCache.OnDatabaseAccountRead(
+                databaseAccount,
+                serverPreferredLocations);
+
+            if (serverPreferredLocations != null)
+            {
+                Volatile.Write(ref this.isServerProximityApplied, 1);
+            }
+        }
+
+        private void TraceRegionProximityFallbackOnce()
+        {
+            if (Interlocked.Exchange(ref this.regionProximityFallbackTraced, 1) == 0)
+            {
+                DefaultTrace.TraceWarning(
+                    "Server-provided region proximity ordering is unavailable. The SDK will preserve the existing order of active regions and append any new account regions.");
             }
         }
 
@@ -614,8 +720,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
-
-            this.locationCache.OnDatabaseAccountRead(databaseAccount);
+            GlobalEndpointManager.ParseRegionProximityFromAdditionalProperties(databaseAccount);
+            this.ApplyAccountTopology(databaseAccount);
 
             if (this.isBackgroundAccountRefreshActive)
             {
@@ -729,8 +835,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private void OnPreferenceChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            this.locationCache.OnLocationPreferenceChanged(new ReadOnlyCollection<string>(
-                this.connectionPolicy.PreferredLocations));
+            this.locationCache.OnLocationPreferenceChanged(
+                new ReadOnlyCollection<string>(this.connectionPolicy.PreferredLocations));
         }
 
         /// <summary>
@@ -770,7 +876,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
                 AccountProperties accountProperties = await this.GetDatabaseAccountAsync(true);
 
-                if (!this.connectionPolicy.DisablePartitionLevelFailoverClientLevelOverride 
+                if (!this.connectionPolicy.DisablePartitionLevelFailoverClientLevelOverride
                     && accountProperties.EnablePartitionLevelFailover.HasValue
                     && (this.connectionPolicy.EnablePartitionLevelFailover != accountProperties.EnablePartitionLevelFailover.Value))
                 {
@@ -778,8 +884,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(accountProperties);
-
-                this.locationCache.OnDatabaseAccountRead(accountProperties);
+                GlobalEndpointManager.ParseRegionProximityFromAdditionalProperties(accountProperties);
+                this.ApplyAccountTopology(accountProperties);
 
             }
             catch (Exception ex)
@@ -827,13 +933,18 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public IList<string> GetEffectivePreferredLocations()
         {
-            if (this.connectionPolicy.PreferredLocations != null && this.connectionPolicy.PreferredLocations.Count > 0)
+            if (Volatile.Read(ref this.isServerProximityApplied) != 0)
+            {
+                return this.locationCache.EffectivePreferredLocations;
+            }
+
+            if (this.connectionPolicy.PreferredLocations != null
+                && this.connectionPolicy.PreferredLocations.Count > 0)
             {
                 return this.connectionPolicy.PreferredLocations;
             }
 
-            return this.connectionPolicy.PreferredLocations?.Count > 0 ? 
-                this.connectionPolicy.PreferredLocations : this.locationCache.EffectivePreferredLocations;
+            return this.locationCache.EffectivePreferredLocations;
         }
 
         public Uri ResolveThinClientEndpoint(DocumentServiceRequest request)

@@ -6542,6 +6542,10 @@ namespace Microsoft.Azure.Cosmos
             await this.EnsureValidClientAsync(NoOpTrace.Singleton);
             if (this.GatewayStoreModel is GatewayStoreModel gatewayModel)
             {
+                serviceEndpoint = GatewayAccountReader.AddRegionProximitySourceRegion(
+                    serviceEndpoint,
+                    this.ConnectionPolicy.CurrentLocation);
+
                 async ValueTask<HttpRequestMessage> CreateRequestMessage()
                 {
                     HttpRequestMessage request = new HttpRequestMessage

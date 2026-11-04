@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
@@ -17,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class GatewayAccountReader
     {
+        private const string RegionProximitySourceRegionQueryParameter = "regionproximitysourceregion";
         private readonly bool isThinClientEnabled;
         private readonly ConnectionPolicy connectionPolicy;
         private readonly AuthorizationTokenProvider cosmosAuthorization;
@@ -42,6 +44,10 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
         {
+            serviceEndpoint = GatewayAccountReader.AddRegionProximitySourceRegion(
+                serviceEndpoint,
+                this.connectionPolicy.CurrentLocation);
+
             INameValueCollection headers = new RequestNameValueCollection();
             await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
                 headersCollection: headers,
@@ -98,6 +104,46 @@ namespace Microsoft.Azure.Cosmos
                                                 trace: trace);
                 }
             }
+        }
+
+        internal static Uri AddRegionProximitySourceRegion(
+            Uri serviceEndpoint,
+            string currentLocation)
+        {
+            if (string.IsNullOrEmpty(currentLocation))
+            {
+                return serviceEndpoint;
+            }
+
+            string sanitizedRegion = RegionNameMapper.SanitizeRegionName(currentLocation);
+            if (string.IsNullOrEmpty(sanitizedRegion))
+            {
+                return serviceEndpoint;
+            }
+
+            UriBuilder builder = new UriBuilder(serviceEndpoint);
+            string existingQuery = builder.Query?.TrimStart('?') ?? string.Empty;
+            List<string> queryParameters = new List<string>();
+            foreach (string queryParameter in existingQuery.Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                int separatorIndex = queryParameter.IndexOf('=');
+                string encodedName = separatorIndex >= 0
+                    ? queryParameter.Substring(0, separatorIndex)
+                    : queryParameter;
+                if (!string.Equals(
+                    Uri.UnescapeDataString(encodedName),
+                    GatewayAccountReader.RegionProximitySourceRegionQueryParameter,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    queryParameters.Add(queryParameter);
+                }
+            }
+
+            queryParameters.Add(
+                $"{GatewayAccountReader.RegionProximitySourceRegionQueryParameter}=" +
+                $"{Uri.EscapeDataString(sanitizedRegion)}");
+            builder.Query = string.Join("&", queryParameters);
+            return builder.Uri;
         }
 
         public async Task<AccountProperties> InitializeReaderAsync()
