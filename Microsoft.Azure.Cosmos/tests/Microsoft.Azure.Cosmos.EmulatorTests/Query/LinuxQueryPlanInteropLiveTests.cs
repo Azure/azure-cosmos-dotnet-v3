@@ -23,15 +23,26 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     [DoNotParallelize]
     public sealed class LinuxQueryPlanInteropLiveTests
     {
+        [TestInitialize]
+        public void TestInitialize()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                Assert.Inconclusive("Requires Linux.");
+            }
+
+            string runtimeIdentifier = RuntimeInformation.RuntimeIdentifier;
+            if (runtimeIdentifier.StartsWith("linux-musl-", StringComparison.Ordinal)
+                || runtimeIdentifier.StartsWith("alpine", StringComparison.Ordinal))
+            {
+                Assert.Inconclusive("Requires glibc Linux. Alpine/musl is not supported by QueryPlanInterop.");
+            }
+        }
+
         [TestMethod]
         [TestCategory("LinuxQueryPlanInteropLive")]
         public async Task TestQueryUnicodeDocumentHttpsGateway()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                Assert.Inconclusive("Windows runs the original QueryTests Unicode test.");
-            }
-
             // Reuse the assertions without QueryTests' account-wide setup/cleanup.
             await LegacyQueryTests.TestQueryUnicodeDocument(useGateway: true, protocol: Protocol.Https);
         }
@@ -40,8 +51,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         [TestCategory("LinuxQueryPlanInteropLive")]
         public async Task CityCaseFoldingMatchesGatewayAsync()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
-                || !ConfigurationManager.IsQueryInteropEnabled())
+            if (!ConfigurationManager.IsQueryInteropEnabled())
             {
                 Assert.Inconclusive("Requires Linux with AZURE_COSMOS_USE_QUERY_INTEROP=true.");
             }

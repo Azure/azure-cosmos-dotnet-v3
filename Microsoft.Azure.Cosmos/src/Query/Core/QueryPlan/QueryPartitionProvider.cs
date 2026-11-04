@@ -372,12 +372,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             return true;
         }
 
-        internal static TryCatch<IntPtr> TryCreateServiceProvider(string queryEngineConfiguration)
+        internal static TryCatch<IntPtr> TryCreateServiceProvider(IQueryPlanInterop queryPlanInterop, string queryEngineConfiguration)
         {
             try
             {
                 IntPtr serviceProvider = IntPtr.Zero;
-                uint errorCode = QueryPlanInterop.Instance.CreateServiceProvider(
+                uint errorCode = queryPlanInterop.CreateServiceProvider(
                                 queryEngineConfiguration,
                                 out serviceProvider);
                 Exception exception = Marshal.GetExceptionForHR((int)errorCode);
@@ -411,7 +411,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     {
                         if (!this.disposed && this.serviceProvider == IntPtr.Zero)
                         {
-                            TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.TryCreateServiceProvider(this.queryengineConfiguration);
+                            TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.TryCreateServiceProvider(
+                                QueryPlanInterop.Instance,
+                                this.queryengineConfiguration);
                             if (tryCreateServiceProvider.Failed)
                             {
                                 throw ExceptionWithStackTraceException.UnWrapMonadExcepion(tryCreateServiceProvider.Exception, NoOpTrace.Singleton);

@@ -127,13 +127,10 @@ namespace Microsoft.Azure.Cosmos
 
             ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() =>
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    return false;
-                }
-
                 // Attemp to create an instance of the ServiceInterop assembly
-                TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.TryCreateServiceProvider("{}");
+                TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.TryCreateServiceProvider(
+                    ServiceInteropQueryPlan.Instance,
+                    "{}");
                 if (tryCreateServiceProvider.Failed)
                 {
                     // Failed, either the DLL is not present or one of its dependencies

@@ -143,10 +143,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         private bool TryLoadLibrary()
         {
-            TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.TryCreateServiceProvider("{}");
+            TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.TryCreateServiceProvider(this, "{}");
             if (tryCreateServiceProvider.Failed)
             {
-                DefaultTrace.TraceWarning("Linux QueryPlanInterop is unavailable. Falling back to gateway query planning.");
+                DefaultTrace.TraceWarning(
+                    "QueryPlanInterop native library for Linux {0} could not be loaded: {1}. Query plans will be retrieved from the Gateway.",
+                    RuntimeInformation.ProcessArchitecture,
+                    tryCreateServiceProvider.Exception.Message);
                 return false;
             }
 
