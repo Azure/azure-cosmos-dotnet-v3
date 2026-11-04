@@ -208,12 +208,13 @@ jobs:
 
         Type interop = typeof(Microsoft.Azure.Cosmos.CosmosClient).Assembly
             .GetType("Microsoft.Azure.Cosmos.Query.Core.QueryPlan.QueryPlanInterop", throwOnError: true)!;
-        bool available = (bool)interop
-            .GetMethod("SupportsLinuxPlanning", BindingFlags.Static | BindingFlags.NonPublic)!
-            .Invoke(null, null)!;
+        object instance = interop
+            .GetProperty("Instance", BindingFlags.Static | BindingFlags.Public)!
+            .GetValue(null)!;
+        bool bypass = (bool)instance.GetType().GetMethod("BypassQueryParsing")!.Invoke(instance, null)!;
         Console.WriteLine($"{RuntimeInformation.OSDescription} | {RuntimeInformation.ProcessArchitecture} | {RuntimeInformation.FrameworkDescription}");
-        Console.WriteLine($"QueryPlanInterop.SupportsLinuxPlanning={available}");
-        if (available)
+        Console.WriteLine($"QueryPlanInterop.Instance={instance.GetType().Name}, BypassQueryParsing={bypass}");
+        if (instance.GetType().Name == "LinuxQueryPlanInterop" && !bypass)
         {
             return 0;
         }
@@ -360,8 +361,8 @@ jobs:
 
           [xml] $trx = Get-Content -LiteralPath (Join-Path $liveResults 'linux-live.trx') -Raw
           $counters = $trx.TestRun.ResultSummary.Counters
-          if (-not $counters -or [int]$counters.total -ne 7 -or [int]$counters.executed -ne 7) {
-              throw 'Expected exactly 7 executed LinuxQueryPlanInteropLive tests; missing or skipped tests are not accepted.'
+          if (-not $counters -or [int]$counters.total -ne 8 -or [int]$counters.executed -ne 8) {
+              throw 'Expected exactly 8 executed LinuxQueryPlanInteropLive tests; missing or skipped tests are not accepted.'
           }
           if ($testExitCode -ne 0) {
               throw 'Linux query-plan live regressions failed. See linux-live.trx; failures are not suppressed.'

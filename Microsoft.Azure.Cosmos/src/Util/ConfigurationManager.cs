@@ -578,6 +578,19 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets the boolean value indicating whether Linux clients opted into local native query planning.
+        /// Default: false
+        /// </summary>
+        /// <returns>A boolean flag indicating if local native query planning is enabled on Linux.</returns>
+        public static bool IsQueryInteropEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.UseQueryInterop,
+                        defaultValue: false);
+        }
+
+        /// <summary>
         /// Gets the boolean value indicating if length-aware range comparator is enabled.
         /// Default: true for GA and Preview builds, false for INTERNAL builds.
         /// Can be overridden via the AZURE_COSMOS_USE_LENGTH_AWARE_RANGE_COMPARATOR environment variable.

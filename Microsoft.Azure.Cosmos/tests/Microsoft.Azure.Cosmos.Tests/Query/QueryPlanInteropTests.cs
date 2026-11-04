@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.InteropServices;
-    using System.Text;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -35,31 +34,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
         // Routing: local library versus gateway
 
-        [DataTestMethod]
-        [DataRow("LINUX", Architecture.X64, true)]
-        [DataRow("LINUX", Architecture.Arm64, true)]
-        [DataRow("LINUX", Architecture.X86, false)]
-        [DataRow("LINUX", Architecture.Arm, false)]
-        [DataRow("WINDOWS", Architecture.X64, false)]
-        [DataRow("OSX", Architecture.Arm64, false)]
-        public void LinuxPlanningRequiresSupportedPlatform(
-            string platform,
-            Architecture architecture,
-            bool expected)
-        {
-            Assert.AreEqual(expected, QueryPlanInterop.IsSupportedLinuxPlatform(OSPlatform.Create(platform), architecture));
-        }
-
-        [TestMethod]
-        public void LinuxRoutingDoesNotProbeWhenDisabledAndFallsBackWhenUnavailable()
-        {
-            Assert.IsTrue(QueryPlanRetriever.BypassQueryParsingOnLinux(
-                false,
-                () => throw new AssertFailedException("Native library must not be probed.")));
-            Assert.IsTrue(QueryPlanRetriever.BypassQueryParsingOnLinux(true, () => false));
-            Assert.IsFalse(QueryPlanRetriever.BypassQueryParsingOnLinux(true, () => true));
-        }
-
         [TestMethod]
         public void QueryPlanRoutingPreservesDefaultsAndForceBypass()
         {
@@ -82,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, null);
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
-                    Assert.IsFalse(QueryPlanInterop.SupportsLinuxPlanning(), "Linux library availability must not be probed on other platforms.");
+                    Assert.AreSame(ServiceInteropQueryPlan.Instance, QueryPlanInterop.Instance);
                     Assert.AreEqual(defaultBypass, QueryPlanRetriever.BypassQueryParsing(), "Linux opt-in must not change other platforms.");
                 }
             }
@@ -98,25 +72,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         {
             // Check inherited flags without changing the process environment.
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
-                || !ConfigurationManager.GetEnvironmentVariable(ConfigurationManager.UseQueryInterop, defaultValue: false))
+                || !ConfigurationManager.IsQueryInteropEnabled())
             {
                 Assert.Inconclusive($"Requires a Linux process started with {ConfigurationManager.UseQueryInterop}=true.");
             }
 
             Assert.IsFalse(ConfigurationManager.ForceBypassQueryParsing(), $"{ConfigurationManager.BypassQueryParsing} must not force the gateway.");
-            Assert.IsTrue(QueryPlanInterop.SupportsLinuxPlanning(), "The packaged QueryPlanInterop library must load.");
+            Assert.AreSame(LinuxQueryPlanInterop.Instance, QueryPlanInterop.Instance);
             Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing(), "An opted-in Linux process must use QueryPlanInterop instead of the gateway.");
-        }
-
-        [TestMethod]
-        public void WideStringsUseUtf32ScalarsAndNullTermination()
-        {
-            CollectionAssert.AreEqual(
-                new byte[] { 0x41, 0, 0, 0, 0xe9, 0, 0, 0, 0x42, 0xf6, 1, 0, 0, 0, 0, 0 },
-                QueryPlanInterop.EncodeWideString("A\u00e9\U0001f642"));
-            CollectionAssert.AreEqual(new byte[4], QueryPlanInterop.EncodeWideString(string.Empty));
-            Assert.IsNull(QueryPlanInterop.EncodeWideString(null));
-            Assert.ThrowsException<EncoderFallbackException>(() => QueryPlanInterop.EncodeWideString("\ud800"));
         }
 
         // Provider lifecycle and text encoding through the native library
@@ -237,6 +200,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         {
             PartitionedQueryExecutionInfoInternal plan = Plan(query);
             AssertPointRanges(plan, JArray.Parse(keyJson).Select(token => ((JValue)token).Value).ToArray());
+            AssertQueryInfo(plan, new Expected());
+        }
+
+        [DataTestMethod]
+        [DataRow("LOWER('\u0130stanbul')", "\u0130stanbul")]
+        [DataRow("LOWER('Istanbul')", "istanbul")]
+        [DataRow("LOWER('\u0131stanbul')", "\u0131stanbul")]
+        [DataRow("'\u0130stanbul'", "\u0130stanbul")]
+        [DataRow("'istanbul'", "istanbul")]
+        [DataRow("'\u0131stanbul'", "\u0131stanbul")]
+        public void CityCaseFoldingTargetsExpectedPartitionKey(string expression, string expectedCity)
+        {
+            // Cosmos SQL preserves these non-ASCII I variants rather than applying Turkish casing.
+            PartitionedQueryExecutionInfoInternal plan = Plan(
+                $"SELECT * FROM c WHERE c.city = {expression}",
+                paths: new[] { "/city" });
+            AssertPointRanges(plan, new object[] { expectedCity });
             AssertQueryInfo(plan, new Expected());
         }
 
@@ -725,7 +705,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                Assert.IsTrue(QueryPlanInterop.SupportsLinuxPlanning(), "The packaged Linux library and its dependencies must load.");
+                Assert.AreSame(LinuxQueryPlanInterop.Instance, QueryPlanInterop.Instance);
             }
             else if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {

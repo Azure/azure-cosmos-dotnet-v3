@@ -70,7 +70,7 @@ PR CI runs `templates/build-linux-queryplaninterop.yml` with native planning ena
   x64 and ARM64. It checks native-library availability and reports `dlopen`
   diagnostics for recoverable loading failures.
 - `LinuxQueryPlanInteropLive` reuses the existing secret `COSMOSDB_MULTI_REGION`
-  and runs the seven account-backed regressions tagged `LinuxQueryPlanInteropLive`
+  and runs the eight account-backed regressions tagged `LinuxQueryPlanInteropLive`
   on Ubuntu x64. The account must be reachable from hosted Ubuntu agents and allow
   key authentication, full-text/vector queries, and containers with 25,000 RU/s.
   Tests use temporary databases and delete only their own resources; the Unicode
