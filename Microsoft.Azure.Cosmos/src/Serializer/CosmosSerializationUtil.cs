@@ -14,7 +14,41 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class CosmosSerializationUtil
     {
+        internal const string SupportedBinarySerializationFormat = nameof(SupportedSerializationFormats.CosmosBinary)
+            + "+" + nameof(SupportedSerializationFeatures.Base64Strings)
+            + "+" + nameof(SupportedSerializationFeatures.NumberArrays)
+            + "+" + nameof(SupportedSerializationFeatures.UInt64);
+
+        internal static readonly string DefaultSupportedSerializationFormats = string.Join(",", SupportedSerializationFormats.JsonText, CosmosSerializationUtil.SupportedBinarySerializationFormat);
+
         private static readonly CamelCaseNamingStrategy camelCaseNamingStrategy = new CamelCaseNamingStrategy();
+
+        internal static string GetSupportedSerializationFormatsAndFeatures(
+            SupportedSerializationFormats? formats,
+            SupportedSerializationFeatures? features = null)
+        {
+            if (!formats.HasValue && !features.HasValue)
+            {
+                return CosmosSerializationUtil.DefaultSupportedSerializationFormats;
+            }
+
+            string supportedFormats = formats.HasValue
+                ? formats.Value.ToString()
+                : string.Join(",", SupportedSerializationFormats.JsonText, SupportedSerializationFormats.CosmosBinary);
+            string binaryFormat = CosmosSerializationUtil.SupportedBinarySerializationFormat;
+            if (features.HasValue)
+            {
+                binaryFormat = nameof(SupportedSerializationFormats.CosmosBinary);
+                if (features.Value != SupportedSerializationFeatures.None)
+                {
+                    binaryFormat += "+" + features.Value.ToString().Replace(", ", "+");
+                }
+            }
+
+            return supportedFormats.Replace(
+                nameof(SupportedSerializationFormats.CosmosBinary),
+                binaryFormat);
+        }
 
         internal static string GetStringWithPropertyNamingPolicy(CosmosLinqSerializerOptions options, string name)
         {

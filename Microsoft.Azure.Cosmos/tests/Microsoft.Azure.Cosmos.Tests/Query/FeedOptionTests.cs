@@ -44,16 +44,40 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         [TestMethod]
-        public void TestCopyConstructor()
+        [DataRow(null)]
+        [DataRow((int)SupportedSerializationFeatures.None)]
+        [DataRow((int)(SupportedSerializationFeatures.Base64Strings | SupportedSerializationFeatures.UInt64))]
+        public void TestCopyConstructor(int? features)
         {
-            FeedOptions fo = new FeedOptions();
-            _ = new FeedOptions(fo);
+            FeedOptions options = new FeedOptions
+            {
+                SupportedSerializationFormats = SupportedSerializationFormats.CosmosBinary,
+                SupportedSerializationFeatures = (SupportedSerializationFeatures?)features,
+            };
+
+            FeedOptions copy = new FeedOptions(options);
+
+            Assert.AreEqual(options.SupportedSerializationFormats, copy.SupportedSerializationFormats);
+            Assert.AreEqual(options.SupportedSerializationFeatures, copy.SupportedSerializationFeatures);
         }
 
         [TestMethod]
-        public async Task TestSupportedSerializationFormats()
+        [DataRow(null, null, "JsonText,CosmosBinary+Base64Strings+NumberArrays+UInt64")]
+        [DataRow((int)(SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow), null, "CosmosBinary+Base64Strings+NumberArrays+UInt64, HybridRow")]
+        [DataRow((int)SupportedSerializationFormats.JsonText, null, "JsonText")]
+        [DataRow(null, (int)SupportedSerializationFeatures.None, "JsonText,CosmosBinary")]
+        [DataRow(null, (int)SupportedSerializationFeatures.NumberArrays, "JsonText,CosmosBinary+NumberArrays")]
+        [DataRow((int)SupportedSerializationFormats.CosmosBinary, (int)SupportedSerializationFeatures.None, "CosmosBinary")]
+        [DataRow((int)SupportedSerializationFormats.CosmosBinary, (int)SupportedSerializationFeatures.UInt64, "CosmosBinary+UInt64")]
+        [DataRow((int)(SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow), (int)(SupportedSerializationFeatures.Base64Strings | SupportedSerializationFeatures.NumberArrays), "CosmosBinary+Base64Strings+NumberArrays, HybridRow")]
+        [DataRow((int)SupportedSerializationFormats.JsonText, (int)SupportedSerializationFeatures.UInt64, "JsonText")]
+        public async Task TestSupportedSerializationFormats(int? formats, int? features, string expected)
         {
-            FeedOptions feedOptions = new FeedOptions();
+            FeedOptions feedOptions = new FeedOptions
+            {
+                SupportedSerializationFormats = (SupportedSerializationFormats?)formats,
+                SupportedSerializationFeatures = (SupportedSerializationFeatures?)features,
+            };
             Mock<IDocumentQueryClient> client = new Mock<IDocumentQueryClient>(MockBehavior.Strict);
             client.Setup(x => x.GetDefaultConsistencyLevelAsync()).Returns(Task.FromResult(ConsistencyLevel.BoundedStaleness));
             client.Setup(x => x.GetDesiredConsistencyLevelAsync()).Returns(Task.FromResult<ConsistencyLevel?>(ConsistencyLevel.BoundedStaleness));
@@ -68,11 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 string.Empty,
                 true, Guid.NewGuid());
             INameValueCollection headers = await testQueryExecutionContext.CreateCommonHeadersAsync(feedOptions);
-            Assert.AreEqual("JsonText,CosmosBinary", headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
-
-            feedOptions.SupportedSerializationFormats = SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow;
-            headers = await testQueryExecutionContext.CreateCommonHeadersAsync(feedOptions);
-            Assert.AreEqual("CosmosBinary, HybridRow", headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
+            Assert.AreEqual(expected, headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
         }
 
         internal class TestQueryExecutionContext : DocumentQueryExecutionContextBase

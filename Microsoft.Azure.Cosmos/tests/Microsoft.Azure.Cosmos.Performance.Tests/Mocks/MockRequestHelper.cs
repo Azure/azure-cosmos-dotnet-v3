@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         internal static readonly byte[] notFoundPayload = Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}");
 
-        private static readonly string BinarySerializationFormat = SupportedSerializationFormats.CosmosBinary.ToString();
+        private static readonly string BinarySerializationFormat = CosmosSerializationUtil.SupportedBinarySerializationFormat;
 
         static MockRequestHelper()
         {
