@@ -10,8 +10,8 @@ steps:
     echo "CPU count:     $(nproc)"
     dotnet --list-sdks
     dotnet --list-runtimes
-    if [ "${AZURE_COSMOS_USE_QUERY_INTEROP:-}" != "true" ] || [ "${AZURE_COSMOS_BYPASS_QUERY_PARSING:-}" != "false" ]; then
-      echo "##vso[task.logissue type=error]Set AZURE_COSMOS_USE_QUERY_INTEROP=true and AZURE_COSMOS_BYPASS_QUERY_PARSING=false."
+    if [ "${AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX:-}" != "true" ] || [ "${AZURE_COSMOS_BYPASS_QUERY_PARSING:-}" != "false" ]; then
+      echo "##vso[task.logissue type=error]Set AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX=true and AZURE_COSMOS_BYPASS_QUERY_PARSING=false."
       exit 1
     fi
   displayName: Linux environment and query-interop flags

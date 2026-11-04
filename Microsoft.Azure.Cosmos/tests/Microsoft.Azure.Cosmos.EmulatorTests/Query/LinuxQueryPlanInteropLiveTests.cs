@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         {
             if (!ConfigurationManager.IsQueryInteropEnabled())
             {
-                Assert.Inconclusive("Requires Linux with AZURE_COSMOS_USE_QUERY_INTEROP=true.");
+                Assert.Inconclusive("Requires Linux with AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX=true.");
             }
 
             Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing(), "Native planning must be available and enabled.");

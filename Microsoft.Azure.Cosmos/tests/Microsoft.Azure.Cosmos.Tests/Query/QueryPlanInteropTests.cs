@@ -34,6 +34,26 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
         // Routing: local library versus gateway
 
+        [DataTestMethod]
+        [DataRow(null, false)]
+        [DataRow("false", false)]
+        [DataRow("true", true)]
+        [DataRow("TrUe", true)]
+        public void LinuxQueryPlanOptInReadsEnvironmentVariable(string value, bool expected)
+        {
+            const string variable = "AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX";
+            string original = Environment.GetEnvironmentVariable(variable);
+            try
+            {
+                Environment.SetEnvironmentVariable(variable, value);
+                Assert.AreEqual(expected, ConfigurationManager.IsQueryInteropEnabled());
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(variable, original);
+            }
+        }
+
         [TestMethod]
         public void QueryPlanRoutingPreservesDefaultsAndForceBypass()
         {
@@ -78,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             }
 
             Assert.IsFalse(ConfigurationManager.ForceBypassQueryParsing(), $"{ConfigurationManager.BypassQueryParsing} must not force the gateway.");
-            Assert.AreSame(LinuxQueryPlanInterop.Instance, QueryPlanInterop.Instance);
+            AssertLinuxArchitectureImplementation();
             Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing(), "An opted-in Linux process must use QueryPlanInterop instead of the gateway.");
         }
 
@@ -705,11 +725,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                Assert.AreSame(LinuxQueryPlanInterop.Instance, QueryPlanInterop.Instance);
+                AssertLinuxArchitectureImplementation();
             }
             else if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Assert.Inconclusive("Native query planning is only available on Windows and Linux.");
+            }
+        }
+
+        private static void AssertLinuxArchitectureImplementation()
+        {
+            switch (RuntimeInformation.ProcessArchitecture)
+            {
+                case Architecture.X64:
+                    Assert.AreSame(LinuxQueryPlanInterop.X64.Instance, QueryPlanInterop.Instance);
+                    break;
+                case Architecture.Arm64:
+                    Assert.AreSame(LinuxQueryPlanInterop.Arm64.Instance, QueryPlanInterop.Instance);
+                    break;
+                default:
+                    Assert.Fail($"Unsupported native query-planning architecture: {RuntimeInformation.ProcessArchitecture}.");
+                    break;
             }
         }
 

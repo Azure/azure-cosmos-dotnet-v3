@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Opts Linux clients into local native query planning. Default: false.
         /// </summary>
-        public static readonly string UseQueryInterop = "AZURE_COSMOS_USE_QUERY_INTEROP";
+        public static readonly string UseQueryInterop = "AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX";
 
         /// <summary>
         /// A read-only string containing the environment variable name for disabling length aware range comparator.

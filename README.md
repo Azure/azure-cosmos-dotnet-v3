@@ -40,7 +40,7 @@ For available versions, see [SDK versioning](./docs/versioning.md).
 
 ### Opt-in local query planning on Linux
 
-Set `AZURE_COSMOS_USE_QUERY_INTEROP=true` before starting a Linux x64 or ARM64
+Set `AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX=true` before starting a Linux x64 or ARM64
 application to generate query plans locally using the bundled
 `Microsoft.Azure.Cosmos.QueryPlanInterop.Linux` library. Publish with `linux-x64`
 or `linux-arm64` to include the matching native asset. RID-independent builds
@@ -62,7 +62,7 @@ PR CI runs `templates/build-linux-queryplaninterop.yml` with native planning ena
   and native-asset publishing tests on Ubuntu 22.04 x64 and ARM64 (an ARM64
   container under QEMU on the hosted x64 agent). Each leg checks the native
   library's dependencies with `ldd`, confirms the test process inherits
-  `AZURE_COSMOS_USE_QUERY_INTEROP=true`, and requires two sentinel tests to pass:
+  `AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX=true`, and requires two sentinel tests to pass:
   `OptedInLinuxProcessUsesNativePlanning` (the inherited flag routes queries to
   QueryPlanInterop) and `AbsFilterTargetsBothSigns` (the library plans a query).
 - `LinuxQueryPlanInteropRuntimeImage` loads the library inside the stock

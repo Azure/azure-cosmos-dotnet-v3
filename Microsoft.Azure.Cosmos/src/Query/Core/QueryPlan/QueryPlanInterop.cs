@@ -12,11 +12,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         private static IQueryPlanInterop Create()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
-                && (RuntimeInformation.ProcessArchitecture == Architecture.X64
-                    || RuntimeInformation.ProcessArchitecture == Architecture.Arm64))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                return LinuxQueryPlanInterop.Instance;
+                switch (RuntimeInformation.ProcessArchitecture)
+                {
+                    case Architecture.X64:
+                        return LinuxQueryPlanInterop.X64.Instance;
+                    case Architecture.Arm64:
+                        return LinuxQueryPlanInterop.Arm64.Instance;
+                }
             }
 
             return ServiceInteropQueryPlan.Instance;

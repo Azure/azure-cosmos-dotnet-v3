@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
 bool expectGateway = System.Array.IndexOf(args, ""--verify-linux-query-planning-fallback"") >= 0;
 if (expectGateway || System.Array.IndexOf(args, ""--verify-linux-query-planning"") >= 0)
 {
-    System.Environment.SetEnvironmentVariable(""AZURE_COSMOS_USE_QUERY_INTEROP"", ""true"");
+    System.Environment.SetEnvironmentVariable(""AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX"", ""true"");
     System.Environment.SetEnvironmentVariable(""AZURE_COSMOS_BYPASS_QUERY_PARSING"", ""false"");
     System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(Microsoft.Azure.Cosmos.CosmosClient).TypeHandle);
     var retriever = typeof(Microsoft.Azure.Cosmos.CosmosClient).Assembly.GetType(
