@@ -503,21 +503,21 @@
 
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
-                    expectedResult: new List<int>{3, 1, 2, 8, 7, 5, 6},
+                    expectedResult: new List<int>{ 8, 3, 1, 7, 2, 6, 5 },
                     partitionKey: null,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.Specialized),
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
-                    expectedResult: new List<int>{ 3, 1, 2 },
+                    expectedResult: new List<int>{ 3, 2, 1 },
                     partitionKey: PartitionKey1,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.Specialized),
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
-                    expectedResult: new List<int>{ 8, 7, 5, 6},
+                    expectedResult: new List<int>{ 8, 7, 6, 5 },
                     partitionKey: PartitionKey2,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
