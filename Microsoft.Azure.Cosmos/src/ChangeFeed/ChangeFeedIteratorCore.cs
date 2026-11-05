@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>> lazyMonadicEnumerator;
         private readonly CosmosClientContext clientContext;
         private readonly ChangeFeedQuerySpec changeFeedQuerySpec;
+        private readonly bool enableContinuationTokenOnly;
         private bool hasMoreResults;
 
         public ChangeFeedIteratorCore(
@@ -50,6 +51,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.changeFeedRequestOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
             this.changeFeedQuerySpec = changeFeedQuerySpec;
+            this.enableContinuationTokenOnly = this.changeFeedRequestOptions.EnableContinuationTokenOnly;
+            if (this.enableContinuationTokenOnly && !(changeFeedStartFrom is ChangeFeedStartFromNow))
+            {
+                throw new ArgumentException(
+                    $"{nameof(ChangeFeedRequestOptions.EnableContinuationTokenOnly)} requires {nameof(ChangeFeedStartFrom)}.{nameof(ChangeFeedStartFrom.Now)}.",
+                    nameof(changeFeedStartFrom));
+            }
+
+            int? pageSizeHint = this.changeFeedRequestOptions.PageSizeHint;
+            ChangeFeedRequestOptions.ValidatePageSizeHint(pageSizeHint, this.enableContinuationTokenOnly);
 
             this.operationName = OpenTelemetryConstants.Operations.QueryChangeFeed;
 
@@ -208,10 +219,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                         new CrossFeedRangeState<ChangeFeedState>(monadicChangeFeedCrossFeedRangeState.Result.FeedRangeStates),
                         new ChangeFeedExecutionOptions(
                             changeFeedMode,
-                            changeFeedRequestOptions?.PageSizeHint,
+                            this.enableContinuationTokenOnly ? pageSizeHint : changeFeedRequestOptions?.PageSizeHint,
                             changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat,
                             additionalHeaders,
-                            this.changeFeedQuerySpec));
+                            this.changeFeedQuerySpec,
+                            enableContinuationTokenOnly: this.enableContinuationTokenOnly));
 
                     TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromResult(enumerator);
                     return monadicEnumerator;
@@ -339,6 +351,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             responseMessage.Headers.RequestCharge = changeFeedPage.RequestCharge;
             responseMessage.Headers.ActivityId = changeFeedPage.ActivityId;
             responseMessage.Trace = trace;
+
+            if (this.enableContinuationTokenOnly && enumerator.IsCycleComplete)
+            {
+                this.hasMoreResults = false;
+            }
 
             return responseMessage;
         }

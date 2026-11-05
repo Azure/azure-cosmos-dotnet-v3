@@ -39,6 +39,240 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             await base.TestCleanup();
         }
 
+        /// <summary>
+        /// Verifies the service's zero-item contract, scoped token acquisition, and normal resume.
+        /// Requires the Windows emulator with preview/full-fidelity support as configured by
+        /// templates/emulator-setup.yml (EMULATORMSIURL supplies the CI installer).
+        /// Uses the existing emulator endpoint configuration; no live account is required.
+        /// </summary>
+        [DataTestMethod]
+        [DataRow(false, false, "single", false)]
+        [DataRow(true, true, "single", true)]
+        [DataRow(false, true, "container", true)]
+        [DataRow(true, false, "container", false)]
+        [DataRow(false, false, "range", true)]
+        [DataRow(true, true, "range", false)]
+        [DataRow(false, true, "partitionKey", false)]
+        [DataRow(true, false, "partitionKey", true)]
+        [DataRow(false, false, "prefix", false)]
+        [DataRow(true, true, "prefix", true)]
+        [Timeout(120000)]
+        public async Task TokenOnlyCapturesScopedContinuationAndResumes(
+            bool fullFidelity, bool gateway, string scope, bool typed)
+        {
+            using CosmosClient client = TestCommon.CreateCosmosClient(useGateway: gateway);
+            ContainerProperties properties = new ContainerProperties(
+                Guid.NewGuid().ToString(), new List<string> { "/tenant", "/user" });
+            if (fullFidelity)
+            {
+                properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
+            }
+
+            ContainerInternal container = (ContainerInternal)await client.GetDatabase(this.database.Id)
+                .CreateContainerAsync(properties, throughput: scope == "single" ? 400 : 20000,
+                    cancellationToken: this.cancellationToken);
+            IReadOnlyList<FeedRange> physicalRanges = await container.GetFeedRangesAsync(this.cancellationToken);
+            FeedRange feedRange = scope switch
+            {
+                "range" => physicalRanges[0],
+                "partitionKey" => FeedRange.FromPartitionKey(new PartitionKeyBuilder().Add("tenant-a").Add("user-0").Build()),
+                "prefix" => FeedRange.FromPartitionKey(new PartitionKeyBuilder().Add("tenant-a").Build()),
+                _ => FeedRangeEpk.FullRange,
+            };
+            List<(JObject Item, PartitionKey Key)> documents = new List<(JObject, PartitionKey)>();
+            if (scope == "partitionKey" || scope == "prefix")
+            {
+                for (int i = 0; i < (scope == "prefix" ? 3 : 1); i++)
+                {
+                    string user = $"user-{i}";
+                    documents.Add((new JObject { ["id"] = $"before-{i}", ["tenant"] = "tenant-a", ["user"] = user },
+                        new PartitionKeyBuilder().Add("tenant-a").Add(user).Build()));
+                }
+            }
+            else
+            {
+                IEnumerable<FeedRange> targetRanges = scope == "range" ? physicalRanges.Take(1) : physicalRanges;
+                foreach (FeedRangeEpk range in targetRanges)
+                {
+                    bool found = false;
+                    for (int candidate = 0; candidate < 10000; candidate++)
+                    {
+                        string tenant = $"tenant-{candidate}";
+                        PartitionKey key = new PartitionKeyBuilder().Add(tenant).Add("user-0").Build();
+                        string epk = key.InternalKey.GetEffectivePartitionKeyString(properties.PartitionKey);
+                        if (range.Range.Contains(epk))
+                        {
+                            documents.Add((new JObject
+                            {
+                                ["id"] = $"before-{documents.Count}", ["tenant"] = tenant, ["user"] = "user-0",
+                            }, key));
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    Assert.IsTrue(found, "Could not select a document in every target physical range.");
+                }
+            }
+
+            ChangeFeedMode mode = fullFidelity ? ChangeFeedMode.AllVersionsAndDeletes : ChangeFeedMode.LatestVersion;
+            await this.CaptureTokenOnlyAsync(container, mode, feedRange, typed, properties);
+            foreach ((JObject item, PartitionKey key) in documents)
+            {
+                await container.CreateItemAsync(item, key, cancellationToken: this.cancellationToken);
+            }
+
+            string continuation = await this.CaptureTokenOnlyAsync(container, mode, feedRange, typed, properties);
+            HashSet<string> expectedIds = new HashSet<string>();
+            foreach ((JObject item, PartitionKey key) in documents)
+            {
+                JObject after = (JObject)item.DeepClone();
+                after["id"] = item["id"].Value<string>().Replace("before-", "after-");
+                expectedIds.Add(after["id"].Value<string>());
+                await container.CreateItemAsync(after, key, cancellationToken: this.cancellationToken);
+            }
+
+            if (scope == "prefix" || scope == "partitionKey")
+            {
+                await container.CreateItemAsync(
+                    new { id = "excluded", tenant = "other-tenant", user = "user-0" },
+                    new PartitionKeyBuilder().Add("other-tenant").Add("user-0").Build(),
+                    cancellationToken: this.cancellationToken);
+            }
+
+            if (fullFidelity)
+            {
+                (JObject item, PartitionKey key) = documents[0];
+                item["updated"] = true;
+                await container.UpsertItemAsync(item, key, cancellationToken: this.cancellationToken);
+                await container.DeleteItemAsync<JObject>(item["id"].Value<string>(), key, cancellationToken: this.cancellationToken);
+            }
+
+            HashSet<string> actualIds = new HashSet<string>();
+            HashSet<ChangeFeedOperationType> operations = new HashSet<ChangeFeedOperationType>();
+            using FeedIterator<JObject> latestReader = container.GetChangeFeedIterator<JObject>(
+                ChangeFeedStartFrom.ContinuationToken(continuation), mode);
+            using FeedIterator<ChangeFeedItem<JObject>> fullReader = container.GetChangeFeedIterator<ChangeFeedItem<JObject>>(
+                ChangeFeedStartFrom.ContinuationToken(continuation), mode);
+            for (int read = 0; read < 100; read++)
+            {
+                HttpStatusCode status;
+                if (fullFidelity)
+                {
+                    FeedResponse<ChangeFeedItem<JObject>> page = await fullReader.ReadNextAsync(this.cancellationToken);
+                    status = page.StatusCode;
+                    foreach (ChangeFeedItem<JObject> change in page)
+                    {
+                        operations.Add(change.Metadata.OperationType);
+                        if (change.Metadata.OperationType == ChangeFeedOperationType.Create)
+                        {
+                            actualIds.Add(change.Current["id"].Value<string>());
+                        }
+                    }
+                }
+                else
+                {
+                    FeedResponse<JObject> page = await latestReader.ReadNextAsync(this.cancellationToken);
+                    status = page.StatusCode;
+                    foreach (JObject item in page)
+                    {
+                        actualIds.Add(item["id"].Value<string>());
+                    }
+                }
+
+                if (status == HttpStatusCode.NotModified)
+                {
+                    break;
+                }
+            }
+
+            CollectionAssert.AreEquivalent(expectedIds.ToArray(), actualIds.ToArray());
+            if (fullFidelity)
+            {
+                Assert.IsTrue(operations.Contains(ChangeFeedOperationType.Replace));
+                Assert.IsTrue(operations.Contains(ChangeFeedOperationType.Delete));
+            }
+        }
+
+        private async Task<string> CaptureTokenOnlyAsync(
+            ContainerInternal container, ChangeFeedMode mode, FeedRange feedRange, bool typed, ContainerProperties properties)
+        {
+            ChangeFeedRequestOptions options = new ChangeFeedRequestOptions
+            {
+                EnableContinuationTokenOnly = true,
+                PageSizeHint = 0,
+            };
+            string continuation = null;
+            using FeedIterator streamIterator = container.GetChangeFeedStreamIterator(ChangeFeedStartFrom.Now(feedRange), mode, options);
+            using FeedIterator<JObject> typedIterator = container.GetChangeFeedIterator<JObject>(ChangeFeedStartFrom.Now(feedRange), mode, options);
+            Assert.IsTrue(streamIterator.HasMoreResults);
+            Assert.IsTrue(typedIterator.HasMoreResults);
+            for (int cycle = 0; cycle < 2; cycle++)
+            {
+                if (typed)
+                {
+                    FeedResponse<JObject> page = await typedIterator.ReadNextAsync(this.cancellationToken);
+                    Assert.AreEqual(0, page.Count);
+                    Assert.IsTrue(page.StatusCode == HttpStatusCode.OK || page.StatusCode == HttpStatusCode.NotModified);
+                    Assert.IsFalse(typedIterator.HasMoreResults);
+                    continuation = page.ContinuationToken;
+                }
+                else
+                {
+                    using ResponseMessage page = await streamIterator.ReadNextAsync(this.cancellationToken);
+                    Assert.IsTrue(page.StatusCode == HttpStatusCode.OK || page.StatusCode == HttpStatusCode.NotModified);
+                    if (page.Content != null)
+                    {
+                        JObject body = TestCommon.SerializerCore.FromStream<JObject>(page.Content);
+                        Assert.AreEqual(0, ((JArray)body["Documents"]).Count);
+                    }
+
+                    Assert.IsFalse(streamIterator.HasMoreResults);
+                    continuation = page.Headers.ContinuationToken;
+                }
+
+                Assert.IsFalse(string.IsNullOrEmpty(continuation));
+                VersionedAndRidCheckedCompositeToken versioned = VersionedAndRidCheckedCompositeToken
+                    .MonadicCreateFromCosmosElement(CosmosElement.Parse(continuation)).Result;
+                ChangeFeedCrossFeedRangeState state = ChangeFeedCrossFeedRangeState.Monadic
+                    .CreateFromCosmosElement(versioned.ContinuationToken).Result;
+                foreach (Cosmos.Pagination.FeedRangeState<Cosmos.ChangeFeed.Pagination.ChangeFeedState> range in state.FeedRangeStates.ToArray())
+                {
+                    Assert.IsInstanceOfType<Cosmos.ChangeFeed.Pagination.ChangeFeedStateContinuation>(range.State);
+                }
+
+                FeedRangeEpk expectedScope = feedRange as FeedRangeEpk;
+                if (feedRange is FeedRangePartitionKey partitionKeyScope)
+                {
+                    if (state.FeedRangeStates.ToArray().All(range => range.FeedRange is FeedRangePartitionKey))
+                    {
+                        Assert.AreEqual(1, state.FeedRangeStates.Length);
+                        Assert.AreEqual(partitionKeyScope.PartitionKey,
+                            ((FeedRangePartitionKey)state.FeedRangeStates.Span[0].FeedRange).PartitionKey);
+                        continue;
+                    }
+
+                    Assert.IsTrue(FeedRangeEpk.TryCreateFromPartialPartitionKey(
+                        partitionKeyScope, properties.PartitionKey, out expectedScope));
+                }
+
+                Assert.IsNotNull(expectedScope);
+                string cursor = expectedScope.Range.Min;
+                foreach (FeedRangeEpk range in state.FeedRangeStates.ToArray()
+                    .Select(range => range.FeedRange).Cast<FeedRangeEpk>()
+                    .OrderBy(range => range.Range.Min, StringComparer.Ordinal))
+                {
+                    Assert.AreEqual(cursor, range.Range.Min, "Continuation ranges must exactly cover the requested scope.");
+                    cursor = range.Range.Max;
+                }
+
+                Assert.AreEqual(expectedScope.Range.Max, cursor);
+            }
+
+            Assert.AreEqual(0, options.PageSizeHint);
+            return continuation;
+        }
+
         private async Task<ContainerInternal> InitializeLargeContainerAsync()
         {
             ContainerResponse response = await this.database.CreateContainerAsync(

@@ -15,20 +15,26 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     internal sealed class CrossPartitionChangeFeedAsyncEnumerator : ITracingAsyncEnumerator<TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>>
     {
         private readonly CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator;
+        private readonly bool enableContinuationTokenOnly;
         private TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>? bufferedException;
 
         private CrossPartitionChangeFeedAsyncEnumerator(
-            CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator)
+            CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator,
+            bool enableContinuationTokenOnly)
         {
             this.crossPartitionEnumerator = crossPartitionEnumerator ?? throw new ArgumentNullException(nameof(crossPartitionEnumerator));
+            this.enableContinuationTokenOnly = enableContinuationTokenOnly;
         }
 
         public TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>> Current { get; private set; }
+
+        public bool IsCycleComplete { get; private set; }
 
         public ValueTask DisposeAsync() => this.crossPartitionEnumerator.DisposeAsync();
 
         public async ValueTask<bool> MoveNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
+            this.IsCycleComplete = false;
             cancellationToken.ThrowIfCancellationRequested();
 
             if (trace == null)
@@ -59,70 +65,100 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
                 CrossFeedRangePage<ChangeFeedPage, ChangeFeedState> crossFeedRangePage = monadicCrossPartitionPage.Result;
                 ChangeFeedPage backendPage = crossFeedRangePage.Page;
-                if (backendPage is ChangeFeedNotModifiedPage)
+                bool pageReturned = false;
+                try
                 {
-                    // Keep draining the cross partition enumerator until
-                    // We get a non 304 page or we loop back to the same range or run into an exception
-                    FeedRangeInternal originalRange = this.crossPartitionEnumerator.CurrentRange;
-                    // No point on draining when the state has 1 range
-                    if (!IsNextRangeEqualToOriginal(this.crossPartitionEnumerator, originalRange))
+                    if (this.enableContinuationTokenOnly)
                     {
-                        using (ITrace drainNotModifedPages = changeFeedMoveNextTrace.StartChild("Drain NotModified Pages", TraceComponent.ChangeFeed, TraceLevel.Info))
+                        ValidateTokenOnlyPage(backendPage);
+                    }
+
+                    if (this.enableContinuationTokenOnly || backendPage is ChangeFeedNotModifiedPage)
+                    {
+                        FeedRangeInternal originalRange = this.crossPartitionEnumerator.CurrentRange;
+                        HashSet<FeedRangeInternal> visitedRanges = this.enableContinuationTokenOnly
+                            ? new HashSet<FeedRangeInternal>() { originalRange }
+                            : null;
+                        this.IsCycleComplete = this.enableContinuationTokenOnly
+                            && HasVisitedAllRanges(crossFeedRangePage.State, visitedRanges);
+                        if (!(this.enableContinuationTokenOnly
+                            ? this.IsCycleComplete
+                            : IsNextRangeEqualToOriginal(this.crossPartitionEnumerator, originalRange)))
                         {
-                            double totalRequestCharge = backendPage.RequestCharge;
-                            do
+                            using (ITrace drainPages = changeFeedMoveNextTrace.StartChild(
+                                this.enableContinuationTokenOnly ? "Drain TokenOnly Pages" : "Drain NotModified Pages",
+                                TraceComponent.ChangeFeed,
+                                TraceLevel.Info))
                             {
-                                if (!await this.crossPartitionEnumerator.MoveNextAsync(drainNotModifedPages, cancellationToken))
+                                double totalRequestCharge = backendPage.RequestCharge;
+                                do
                                 {
-                                    throw new InvalidOperationException("ChangeFeed should always have a next page.");
-                                }
+                                    if (!await this.crossPartitionEnumerator.MoveNextAsync(drainPages, cancellationToken))
+                                    {
+                                        throw new InvalidOperationException("ChangeFeed should always have a next page.");
+                                    }
 
-                                monadicCrossPartitionPage = this.crossPartitionEnumerator.Current;
-                                if (monadicCrossPartitionPage.Failed)
-                                {
-                                    // Buffer the exception, since we need to return the request charge so far.
-                                    this.bufferedException = TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>.FromException(monadicCrossPartitionPage.Exception);
-                                }
-                                else
-                                {
-                                    crossFeedRangePage = monadicCrossPartitionPage.Result;
-                                    backendPage = crossFeedRangePage.Page;
-                                    totalRequestCharge += backendPage.RequestCharge;
-                                }
-                            }
-                            while (!(backendPage is ChangeFeedSuccessPage
-                                || IsNextRangeEqualToOriginal(this.crossPartitionEnumerator, originalRange)
-                                || this.bufferedException.HasValue));
+                                    monadicCrossPartitionPage = this.crossPartitionEnumerator.Current;
+                                    if (monadicCrossPartitionPage.Failed)
+                                    {
+                                        // Return the request charge so far before surfacing the error.
+                                        this.bufferedException = TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>.FromException(monadicCrossPartitionPage.Exception);
+                                    }
+                                    else
+                                    {
+                                        if (backendPage is ChangeFeedSuccessPage supersededPage)
+                                        {
+                                            supersededPage.Content.Dispose();
+                                        }
 
-                            // Create a page with the aggregated request charge
-                            if (backendPage is ChangeFeedSuccessPage changeFeedSuccessPage)
-                            {
-                                backendPage = new ChangeFeedSuccessPage(
-                                    changeFeedSuccessPage.Content,
-                                    totalRequestCharge,
-                                    changeFeedSuccessPage.ItemCount,
-                                    changeFeedSuccessPage.ActivityId,
-                                    changeFeedSuccessPage.AdditionalHeaders,
-                                    changeFeedSuccessPage.State);
-                            }
-                            else
-                            {
-                                backendPage = new ChangeFeedNotModifiedPage(
-                                    totalRequestCharge,
-                                    backendPage.ActivityId,
-                                    backendPage.AdditionalHeaders,
-                                    backendPage.State);
+                                        crossFeedRangePage = monadicCrossPartitionPage.Result;
+                                        backendPage = crossFeedRangePage.Page;
+                                        totalRequestCharge += backendPage.RequestCharge;
+                                        if (this.enableContinuationTokenOnly)
+                                        {
+                                            ValidateTokenOnlyPage(backendPage);
+                                            visitedRanges.Add(this.crossPartitionEnumerator.CurrentRange);
+                                            this.IsCycleComplete = HasVisitedAllRanges(crossFeedRangePage.State, visitedRanges);
+                                        }
+                                    }
+                                }
+                                while (!this.bufferedException.HasValue && !(this.enableContinuationTokenOnly
+                                    ? this.IsCycleComplete
+                                    : backendPage is ChangeFeedSuccessPage
+                                        || IsNextRangeEqualToOriginal(this.crossPartitionEnumerator, originalRange)));
+
+                                backendPage = backendPage is ChangeFeedSuccessPage successPage
+                                    ? new ChangeFeedSuccessPage(
+                                        successPage.Content,
+                                        totalRequestCharge,
+                                        successPage.ItemCount,
+                                        successPage.ActivityId,
+                                        successPage.AdditionalHeaders,
+                                        successPage.State)
+                                    : new ChangeFeedNotModifiedPage(
+                                        totalRequestCharge,
+                                        backendPage.ActivityId,
+                                        backendPage.AdditionalHeaders,
+                                        backendPage.State);
                             }
                         }
                     }
+
+                    crossFeedRangePage = new CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>(
+                        backendPage,
+                        crossFeedRangePage.State);
+
+                    this.Current = TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>.FromResult(crossFeedRangePage);
+                    pageReturned = true;
+                    return true;
                 }
-
-                crossFeedRangePage = new CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>(
-                    backendPage,
-                    crossFeedRangePage.State);
-
-                this.Current = TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>.FromResult(crossFeedRangePage);
-                return true;
+                finally
+                {
+                    if (!pageReturned && backendPage is ChangeFeedSuccessPage discardedPage)
+                    {
+                        discardedPage.Content.Dispose();
+                    }
+                }
             }
         }
 
@@ -149,9 +185,34 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 state: state);
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = new CrossPartitionChangeFeedAsyncEnumerator(
-                crossPartitionEnumerator);
+                crossPartitionEnumerator,
+                changeFeedPaginationOptions.EnableContinuationTokenOnly);
 
             return enumerator;
+        }
+
+        private static void ValidateTokenOnlyPage(ChangeFeedPage page)
+        {
+            if (page is ChangeFeedSuccessPage successPage && successPage.ItemCount != 0)
+            {
+                throw new InvalidOperationException("The service returned documents despite a token-only change feed request with a maximum item count of zero.");
+            }
+        }
+
+        private static bool HasVisitedAllRanges(
+            CrossFeedRangeState<ChangeFeedState> state,
+            HashSet<FeedRangeInternal> visitedRanges)
+        {
+            // A split may enqueue unvisited children behind an already visited range.
+            foreach (FeedRangeState<ChangeFeedState> rangeState in state.Value.Span)
+            {
+                if (!visitedRanges.Contains(rangeState.FeedRange))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool IsNextRangeEqualToOriginal(

@@ -422,6 +422,241 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             }
         }
 
+        [DataTestMethod]
+        [DataRow(1, 0, false)]
+        [DataRow(1, 1, true)]
+        [DataRow(3, 0, true)]
+        [DataRow(3, 7, false)]
+        [DataRow(3, 5, true)]
+        [DataRow(3, 2, false)]
+        [Timeout(5000)]
+        public async Task TokenOnlyCyclesThroughEmptySuccessAndNotModifiedPages(int partitions, int successMask, bool fullFidelity)
+        {
+            FeedRangeState<ChangeFeedState>[] states = CreateTokenOnlyStates(partitions);
+            List<MemoryStream> streams = new List<MemoryStream>();
+            int calls = 0;
+            Mock<IDocumentContainer> container = new Mock<IDocumentContainer>();
+            container.Setup(c => c.MonadicChangeFeedAsync(
+                It.IsAny<FeedRangeState<ChangeFeedState>>(), It.IsAny<ChangeFeedExecutionOptions>(),
+                It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((FeedRangeState<ChangeFeedState> state, ChangeFeedExecutionOptions options, ITrace trace, CancellationToken token) =>
+                {
+                    Assert.AreEqual(0, options.PageSizeLimit);
+                    int index = calls++ % partitions;
+                    if (calls > partitions)
+                    {
+                        Assert.IsInstanceOfType<ChangeFeedStateContinuation>(state.State);
+                    }
+
+                    MemoryStream content = new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\":[],\"_count\":0}"));
+                    streams.Add(content);
+                    return TryCatch<ChangeFeedPage>.FromResult(CreateEmptyTokenOnlyPage(
+                        (successMask & (1 << index)) != 0, calls, content));
+                });
+            CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
+                container.Object, new CrossFeedRangeState<ChangeFeedState>(states),
+                new ChangeFeedExecutionOptions(
+                    fullFidelity ? ChangeFeedMode.AllVersionsAndDeletes : ChangeFeedMode.LatestVersion,
+                    pageSizeHint: 0, enableContinuationTokenOnly: true));
+
+            for (int cycle = 1; cycle <= 2; cycle++)
+            {
+                Assert.IsTrue(await enumerator.MoveNextAsync(NoOpTrace.Singleton, default));
+                Assert.IsTrue(enumerator.Current.Succeeded);
+                Assert.IsTrue(enumerator.IsCycleComplete);
+                Assert.AreEqual(cycle * partitions, calls);
+                Assert.AreEqual((double)partitions, enumerator.Current.Result.Page.RequestCharge);
+                Assert.AreEqual($"activity-{calls}", enumerator.Current.Result.Page.ActivityId);
+                Assert.AreEqual(calls.ToString(), enumerator.Current.Result.Page.AdditionalHeaders["x-test-token"]);
+                Assert.AreEqual((successMask & (1 << (partitions - 1))) != 0,
+                    enumerator.Current.Result.Page is ChangeFeedSuccessPage);
+                Assert.AreEqual(partitions, enumerator.Current.Result.State.Value.Length);
+                foreach (FeedRangeState<ChangeFeedState> state in enumerator.Current.Result.State.Value.ToArray())
+                {
+                    Assert.IsInstanceOfType<ChangeFeedStateContinuation>(state.State);
+                }
+
+                for (int i = (cycle - 1) * partitions; i < calls - 1; i++)
+                {
+                    Assert.IsFalse(streams[i].CanRead);
+                }
+
+                if (enumerator.Current.Result.Page is ChangeFeedSuccessPage finalPage)
+                {
+                    Assert.IsTrue(finalPage.Content.CanRead);
+                    Assert.AreEqual(0, finalPage.ItemCount);
+                    finalPage.Content.Dispose();
+                }
+            }
+
+            foreach (MemoryStream stream in streams)
+            {
+                stream.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public async Task TokenOnlyDefersMidCycleErrorsWithoutMarkingCycleComplete()
+        {
+            int calls = 0;
+            CosmosException failure = new CosmosException("throttled", System.Net.HttpStatusCode.TooManyRequests, 0, "error", 0);
+            Mock<IDocumentContainer> container = new Mock<IDocumentContainer>();
+            container.Setup(c => c.MonadicChangeFeedAsync(
+                It.IsAny<FeedRangeState<ChangeFeedState>>(), It.IsAny<ChangeFeedExecutionOptions>(),
+                It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() => ++calls == 2
+                    ? TryCatch<ChangeFeedPage>.FromException(failure)
+                    : TryCatch<ChangeFeedPage>.FromResult(CreateEmptyTokenOnlyPage(true, calls)));
+            CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
+                container.Object, new CrossFeedRangeState<ChangeFeedState>(CreateTokenOnlyStates(3)),
+                new ChangeFeedExecutionOptions(ChangeFeedMode.LatestVersion, pageSizeHint: 0, enableContinuationTokenOnly: true));
+
+            await enumerator.MoveNextAsync(NoOpTrace.Singleton, default);
+            Assert.IsTrue(enumerator.Current.Succeeded);
+            Assert.IsFalse(enumerator.IsCycleComplete);
+            Assert.AreEqual(1d, enumerator.Current.Result.Page.RequestCharge);
+            ((ChangeFeedSuccessPage)enumerator.Current.Result.Page).Content.Dispose();
+            await enumerator.MoveNextAsync(NoOpTrace.Singleton, default);
+            Assert.IsTrue(enumerator.Current.Failed);
+            Exception surfaced = enumerator.Current.Exception;
+            while (surfaced.InnerException != null)
+            {
+                surfaced = surfaced.InnerException;
+            }
+
+            Assert.AreSame(failure, surfaced);
+            Assert.IsFalse(enumerator.IsCycleComplete);
+            Assert.AreEqual(2, calls);
+            await enumerator.MoveNextAsync(NoOpTrace.Singleton, default);
+            Assert.IsTrue(enumerator.Current.Succeeded);
+            Assert.IsTrue(enumerator.IsCycleComplete);
+            ((ChangeFeedSuccessPage)enumerator.Current.Result.Page).Content.Dispose();
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        [Timeout(5000)]
+        public async Task TokenOnlyIncludesChildrenEnqueuedBehindVisitedRanges(bool merge)
+        {
+            FeedRangeState<ChangeFeedState>[] states = CreateTokenOnlyStates(2);
+            FeedRangeEpk splitRange = (FeedRangeEpk)states[1].FeedRange;
+            int calls = 0;
+            bool topologyChanged = false;
+            Mock<IDocumentContainer> container = new Mock<IDocumentContainer>();
+            container.Setup(c => c.MonadicChangeFeedAsync(
+                It.IsAny<FeedRangeState<ChangeFeedState>>(), It.IsAny<ChangeFeedExecutionOptions>(),
+                It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((FeedRangeState<ChangeFeedState> state, ChangeFeedExecutionOptions options, ITrace trace, CancellationToken token) =>
+                {
+                    calls++;
+                    if (state.FeedRange.Equals(splitRange) && !topologyChanged)
+                    {
+                        topologyChanged = true;
+                        return TryCatch<ChangeFeedPage>.FromException(new CosmosException(
+                            "range gone", System.Net.HttpStatusCode.Gone,
+                            (int)SubStatusCodes.PartitionKeyRangeGone, string.Empty, 0));
+                    }
+
+                    return TryCatch<ChangeFeedPage>.FromResult(CreateEmptyTokenOnlyPage(false, calls));
+                });
+            List<FeedRangeEpk> children = merge
+                ? new List<FeedRangeEpk>() { FeedRangeEpk.FullRange }
+                : new List<FeedRangeEpk>()
+                {
+                    new FeedRangeEpk(new Documents.Routing.Range<string>(splitRange.Range.Min, "C0", true, false)),
+                    new FeedRangeEpk(new Documents.Routing.Range<string>("C0", splitRange.Range.Max, true, false)),
+                };
+            container.Setup(c => c.GetChildRangeAsync(
+                It.IsAny<FeedRangeInternal>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(children);
+            container.Setup(c => c.RefreshProviderAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+            CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
+                container.Object, new CrossFeedRangeState<ChangeFeedState>(states),
+                new ChangeFeedExecutionOptions(ChangeFeedMode.LatestVersion, pageSizeHint: 0, enableContinuationTokenOnly: true));
+
+            await enumerator.MoveNextAsync(NoOpTrace.Singleton, default);
+            Assert.IsTrue(enumerator.Current.Succeeded);
+            Assert.IsTrue(enumerator.IsCycleComplete);
+            Assert.AreEqual(merge ? 4 : 5, calls);
+            Assert.AreEqual(merge ? 2 : 3, enumerator.Current.Result.State.Value.Length);
+            foreach (FeedRangeState<ChangeFeedState> state in enumerator.Current.Result.State.Value.ToArray())
+            {
+                Assert.IsInstanceOfType<ChangeFeedStateContinuation>(state.State);
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task TokenOnlyDisposesContentOnCancellationOrUnexpectedDocuments(bool unexpectedDocuments)
+        {
+            using MemoryStream content = new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\":[]}"));
+            int calls = 0;
+            Mock<IDocumentContainer> container = new Mock<IDocumentContainer>();
+            container.Setup(c => c.MonadicChangeFeedAsync(
+                It.IsAny<FeedRangeState<ChangeFeedState>>(), It.IsAny<ChangeFeedExecutionOptions>(),
+                It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() =>
+                {
+                    if (++calls == 2)
+                    {
+                        throw new OperationCanceledException();
+                    }
+
+                    return TryCatch<ChangeFeedPage>.FromResult(new ChangeFeedSuccessPage(
+                        content, 1, unexpectedDocuments ? 1 : 0, "activity", null,
+                        ChangeFeedState.Continuation(CosmosString.Create("token"))));
+                });
+            CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
+                container.Object, new CrossFeedRangeState<ChangeFeedState>(CreateTokenOnlyStates(3)),
+                new ChangeFeedExecutionOptions(ChangeFeedMode.LatestVersion, pageSizeHint: 0, enableContinuationTokenOnly: true));
+            if (unexpectedDocuments)
+            {
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    () => enumerator.MoveNextAsync(NoOpTrace.Singleton, default).AsTask());
+            }
+            else
+            {
+                await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                    () => enumerator.MoveNextAsync(NoOpTrace.Singleton, default).AsTask());
+            }
+
+            Assert.IsFalse(content.CanRead);
+            Assert.IsFalse(enumerator.IsCycleComplete);
+        }
+
+        private static FeedRangeState<ChangeFeedState>[] CreateTokenOnlyStates(int partitions)
+        {
+            FeedRangeState<ChangeFeedState>[] states = new FeedRangeState<ChangeFeedState>[partitions];
+            for (int i = 0; i < partitions; i++)
+            {
+                states[i] = new FeedRangeState<ChangeFeedState>(
+                    new FeedRangeEpk(new Documents.Routing.Range<string>(
+                        i == 0 ? string.Empty : (i * 128 / partitions).ToString("X2"),
+                        i == partitions - 1 ? "FF" : ((i + 1) * 128 / partitions).ToString("X2"),
+                        true, false)), ChangeFeedState.Now());
+            }
+
+            return states;
+        }
+
+        private static ChangeFeedPage CreateEmptyTokenOnlyPage(bool success, int call, Stream content = null)
+        {
+            ChangeFeedState state = ChangeFeedState.Continuation(CosmosString.Create($"token-{call}"));
+            Dictionary<string, string> headers = new Dictionary<string, string> { ["x-test-token"] = call.ToString() };
+            if (success)
+            {
+                return new ChangeFeedSuccessPage(
+                    content ?? new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\":[],\"_count\":0}")),
+                    1, 0, $"activity-{call}", headers, state);
+            }
+
+            content?.Dispose();
+            return new ChangeFeedNotModifiedPage(1, $"activity-{call}", headers, state);
+        }
+
         private static async Task<(int, double)> DrainUntilNotModifedAsync(CrossPartitionChangeFeedAsyncEnumerator enumerator)
         {
             int globalCount = 0;
