@@ -305,20 +305,7 @@ namespace Microsoft.Azure.Cosmos.Common
 
         private static void SetSessionToken(SessionContainerState self, ResourceId resourceId, string collectionName, string encodedToken)
         {
-            string partitionKeyRangeId;
-            ISessionToken token;
-            if (VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.VersionDates.v2015_12_16))
-            {
-                string[] tokenParts = encodedToken.Split(':');
-                partitionKeyRangeId = tokenParts[0];
-                token = SessionTokenHelper.Parse(tokenParts[1], HttpConstants.Versions.CurrentVersion);
-            }
-            else
-            {
-                //todo: elasticcollections remove after first upgrade.
-                partitionKeyRangeId = "0";
-                token = SessionTokenHelper.Parse(encodedToken, HttpConstants.Versions.CurrentVersion);
-            }
+            SessionContainer.ParseSessionToken(encodedToken, out string partitionKeyRangeId, out ISessionToken token);
 
             DefaultTrace.TraceVerbose("Update Session token {0} {1} {2}", resourceId.UniqueDocumentCollectionId, collectionName, token);
 
@@ -362,6 +349,25 @@ namespace Microsoft.Azure.Cosmos.Common
                 {
                     self.rwlock.ExitWriteLock();
                 }
+            }
+        }
+
+        internal static void ParseSessionToken(
+            string encodedToken,
+            out string partitionKeyRangeId,
+            out ISessionToken token)
+        {
+            if (VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.VersionDates.v2015_12_16))
+            {
+                string[] tokenParts = encodedToken.Split(':');
+                partitionKeyRangeId = tokenParts[0];
+                token = SessionTokenHelper.Parse(tokenParts[1], HttpConstants.Versions.CurrentVersion);
+            }
+            else
+            {
+                //todo: elasticcollections remove after first upgrade.
+                partitionKeyRangeId = "0";
+                token = SessionTokenHelper.Parse(encodedToken, HttpConstants.Versions.CurrentVersion);
             }
         }
 
