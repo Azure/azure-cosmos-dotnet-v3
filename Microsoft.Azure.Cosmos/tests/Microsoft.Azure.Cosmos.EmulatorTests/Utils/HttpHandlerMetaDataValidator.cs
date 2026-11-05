@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class HttpHandlerMetaDataValidator : DelegatingHandler
     {
         private readonly ConcurrentDictionary<Uri, int> numOfPkRangeCachePerCollection = new ConcurrentDictionary<Uri, int>();
-        public HttpHandlerMetaDataValidator() : base(new HttpClientHandler())
+        public HttpHandlerMetaDataValidator(bool useProxy = true) : base(new HttpClientHandler { UseProxy = useProxy })
         {
         }
 

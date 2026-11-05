@@ -7,6 +7,12 @@ jobs:
 - job: InMemoryEmulatorTests
   displayName: SDK in-memory emulator tests ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 30
+  strategy:
+    matrix:
+      Items:
+        ScenarioGroup: Items
+      Reads:
+        ScenarioGroup: Reads
   pool:
     vmImage: ${{ parameters.VmImage }}
   variables:
@@ -14,8 +20,7 @@ jobs:
     EmulatorRustVersion: '1.95.0'
     EmulatorCargoHome: '$(Agent.TempDirectory)/cosmos-emulator-cargo'
     EmulatorTarget: '$(Agent.TempDirectory)/cosmos-emulator-target'
-    EmulatorResults: '$(Agent.TempDirectory)/inmemory-results'
-    TestProject: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.InMemoryEmulatorTests/Microsoft.Azure.Cosmos.InMemoryEmulatorTests.csproj'
+    EmulatorResults: '$(Agent.TempDirectory)/inmemory-results/$(ScenarioGroup)'
 
   steps:
   - checkout: self
@@ -74,37 +79,28 @@ jobs:
 
   - bash: |
       set -euo pipefail
-      test -x "$COSMOS_IN_MEMORY_EMULATOR_PATH"
-      dotnet test "$(TestProject)" --configuration "${{ parameters.BuildConfiguration }}" \
-        --logger "console;verbosity=normal" --logger "trx;LogFileName=inmemory.trx" \
+      python3 -B -m unittest discover \
+        -s Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.InMemoryEmulatorTests \
+        -p test_run_ci.py
+    displayName: Test discovery and execution gates
+    condition: and(succeeded(), eq(variables['ScenarioGroup'], 'Items'))
+
+  - bash: |
+      set -euo pipefail
+      python3 -B Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.InMemoryEmulatorTests/run_ci.py \
+        --group "$(ScenarioGroup)" --configuration "${{ parameters.BuildConfiguration }}" \
         --results-directory "$(EmulatorResults)"
-      python3 - <<'PY'
-      import xml.etree.ElementTree as ET
-      root = ET.parse("$(EmulatorResults)/inmemory.trx").getroot()
-      ns = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
-      results = root.findall(".//t:UnitTestResult", ns)
-      if not results or any(r.attrib["outcome"] != "Passed" for r in results):
-          raise SystemExit("In-memory emulator tests failed, were skipped, or did not run")
-      host_tests = {
-          t.attrib["id"]
-          for t in root.findall(".//t:UnitTest", ns)
-          if t.find("t:TestMethod", ns).attrib["className"].split(",")[0].endswith(".ItemTests")
-      }
-      executed_host_tests = {r.attrib["testId"] for r in results} & host_tests
-      if not executed_host_tests or executed_host_tests != host_tests:
-          raise SystemExit("The process-backed emulator tests did not all execute")
-      print(f"Verified {len(results)} passing tests, including {len(executed_host_tests)} process-backed tests")
-      PY
-    displayName: Run SDK tests (process-backed tests required; no skips)
+    displayName: Run disjoint SDK scenarios (exact discovery and execution; no skips)
     env:
       COSMOS_IN_MEMORY_EMULATOR_PATH: '$(EmulatorTarget)/release/azure_data_cosmos_emulator'
+      COSMOS_IN_MEMORY_EMULATOR_SOURCE_REVISION: $(EmulatorSourceRevision)
 
   - task: PublishTestResults@2
     condition: succeededOrFailed()
     inputs:
       testResultsFormat: VSTest
       testResultsFiles: '$(EmulatorResults)/*.trx'
-      testRunTitle: Cosmos in-memory emulator ${{ parameters.BuildConfiguration }}
+      testRunTitle: Cosmos in-memory emulator $(ScenarioGroup) ${{ parameters.BuildConfiguration }}
       failTaskOnFailedTests: true
       failTaskOnMissingResultsFile: true
 
@@ -113,5 +109,5 @@ jobs:
     condition: and(succeededOrFailed(), ne(variables['Agent.JobStatus'], 'Canceled'))
     inputs:
       PathtoPublish: '$(EmulatorResults)'
-      ArtifactName: 'inmemory-emulator-results'
+      ArtifactName: 'inmemory-emulator-$(ScenarioGroup)-results'
       publishLocation: Container

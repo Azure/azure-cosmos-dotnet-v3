@@ -1,0 +1,28 @@
+{
+  "account": {
+    "id": "cosmos-dotnet-control-tests",
+    "writeMode": "single",
+    "consistency": "session",
+    "perPartitionFailover": false,
+    "throttling": false,
+    "regions": [
+      { "name": "East US", "gatewayPort": 0, "regionId": 0 },
+      { "name": "West US", "gatewayPort": 0, "regionId": 1 }
+    ],
+    "replication": { "minDelayMs": 0, "maxDelayMs": 0, "maxBufferedReplications": 10000 }
+  },
+  "management": { "port": 0 },
+  "databases": [
+    {
+      "id": "complexdb",
+      "containers": [
+        {
+          "id": "items",
+          "partitionKey": { "paths": ["/pk"], "kind": "Hash", "version": 2 },
+          "partitionCount": 1,
+          "throughput": 400
+        }
+      ]
+    }
+  ]
+}
