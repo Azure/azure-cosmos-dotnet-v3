@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         private const string CollectionDataPath = "Documents\\text-3properties-1536dimensions-100documents.json";
         private const int RrfDocumentCount = 1000;
         private const int RrfLexicalMatchIndex = 49;
-        private const int CompetitionRrfLexicalMatchRank = 47;
         private const int OrdinalRrfLexicalMatchRank = 1;
 
         private const string SampleVector = @"[0.02, 0, -0.02, 0, -0.04, -0.01, -0.04, -0.01, 0.06, 0.08, -0.05, -0.04, -0.03, 0.05, -0.03, 0, -0.03, 0, 0.05, 0, 0.03,
@@ -264,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text, FullTextScore(c.title, 'John') as TitleScore, FullTextScore(c.text, 'John') as TextScore, FullTextScore(c.text, 'United States') as UnitedStatesScore
                     FROM c
-                    WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0) 
+                    WHERE (FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')) AND (FullTextScore(c.title, 'John') > 0 OR FullTextScore(c.text, 'John') > 0 OR FullTextScore(c.text, 'United States') > 0)
                     ORDER BY RANK RRF(FullTextScore(c.title, 'John'), FullTextScore(c.text, 'United States'), [1, 1])",
                     new List<int>{ 51, 49, 61, 75, 77, 2, 24, 76, 54, 80, 22, 85, 57 },
                     ValidationMode.TextOrTitleOrUnitedStates),
@@ -329,7 +328,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
-        public async Task HybridSearchRrfRankingModesProduceExpectedRanks()
+        public async Task HybridSearchRrfOrdinalRankingProducesExpectedRanks()
         {
             // One document matches the full-text terms while the other 999 receive the same lexical score.
             // Unique vector distances make changes in the tied documents' ordinal ranks observable.
@@ -345,7 +344,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 connectionModes: ConnectionModes.Direct,
                 collectionTypes: CollectionTypes.MultiPartition,
                 documents: documents,
-                query: ValidateRrfRankingModes,
+                query: ValidateRrfOrdinalRanking,
                 partitionKey: "/index",
                 indexingPolicy: OrdinalRrfIndexingPolicy,
                 vectorEmbeddingPolicy: OrdinalRrfEmbeddingPolicy);
@@ -406,8 +405,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 ORDER BY RANK RRF(VectorDistance(c.vector, [5, 0]), VectorDistance(c.vector, [5, 0]))";
             IReadOnlyList<RidDocument> tiedComponentResults = await QueryWithoutContinuationTokensAsync<RidDocument>(
                 container,
-                tiedComponentQuery,
-                new QueryRequestOptions { IsHybridSearchCompetitionRankingEnabled = false });
+                tiedComponentQuery);
 
             CollectionAssert.AreEqual(
                 expectedRids,
@@ -415,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 "Documents with tied component scores were not ranked by decoded document RID descending.");
         }
 
-        private static async Task ValidateRrfRankingModes(
+        private static async Task ValidateRrfOrdinalRanking(
             Container container,
             IReadOnlyList<CosmosObject> documents)
         {
@@ -424,29 +422,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 FROM c
                 ORDER BY RANK RRF(FullTextScore(c.text, 'unique target'), VectorDistance(c.vector, [0, 0]))";
 
-            int[] firstCompetitionOrder = await QueryRrfOrderAsync(
-                container,
-                hybridQuery,
-                useCompetitionRanking: true);
-            int[] secondCompetitionOrder = await QueryRrfOrderAsync(
-                container,
-                hybridQuery,
-                useCompetitionRanking: true);
-            int[] ordinalOrder = await QueryRrfOrderAsync(
-                container,
-                hybridQuery,
-                useCompetitionRanking: false);
+            int[] ordinalOrder = await QueryRrfOrderAsync(container, hybridQuery);
+            int[] repeatedOrdinalOrder = await QueryRrfOrderAsync(container, hybridQuery);
 
             CollectionAssert.AreEqual(
-                firstCompetitionOrder,
-                secondCompetitionOrder,
-                "Repeated competition-ranking queries returned different orders.");
-            Assert.IsFalse(
-                firstCompetitionOrder.SequenceEqual(ordinalOrder),
-                "Competition and ordinal ranking returned the same order.");
-            Assert.AreEqual(
-                CompetitionRrfLexicalMatchRank,
-                Array.IndexOf(firstCompetitionOrder, RrfLexicalMatchIndex) + 1);
+                ordinalOrder,
+                repeatedOrdinalOrder,
+                "Repeated ordinal-ranking queries returned different orders.");
+            Assert.AreEqual(RrfDocumentCount, ordinalOrder.Length);
+            Assert.AreEqual(RrfDocumentCount, ordinalOrder.Distinct().Count());
             Assert.AreEqual(
                 OrdinalRrfLexicalMatchRank,
                 Array.IndexOf(ordinalOrder, RrfLexicalMatchIndex) + 1);
@@ -454,18 +438,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private static async Task<int[]> QueryRrfOrderAsync(
             Container container,
-            string query,
-            bool useCompetitionRanking)
+            string query)
         {
-            QueryRequestOptions requestOptions = new QueryRequestOptions
-            {
-                IsHybridSearchCompetitionRankingEnabled = useCompetitionRanking,
-            };
-
             return (await QueryWithoutContinuationTokensAsync<OrdinalRrfDocument>(
                 container,
-                query,
-                requestOptions))
+                query))
                 .Select(document => document.Index)
                 .ToArray();
         }

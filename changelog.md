@@ -21,10 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
-- [6130](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6130) Hybrid search RRF now assigns a unique ordinal rank to every component result, including tied scores. Component score ties are broken by the decoded document ID portion of `_rid` in the component's sort direction, rather than by the encoded string. Final RRF score ties use decoded document IDs descending. Set `AZURE_COSMOS_HYBRID_SEARCH_USE_COMPETITION_RANKING=true` to restore the previous competition-ranking behavior.
-
 #### Bugs Fixed
 
+- [6188](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6188) Query: Fixes hybrid search reciprocal rank fusion (RRF) results being ranked incorrectly when component scores are tied. Each result now receives a unique ordinal rank, with deterministic tie-breaking based on the decoded document ID portion of `_rid`.
 - [6141](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6141) Distributed Transactions (preview): Fixes operation results synthesized from bodyless or unusable responses reporting index `0` for every operation instead of the corresponding zero-based request index.
 - [6119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6119) Distributed Transactions (preview): Isolates submitted operations from later additions to a read or write transaction, avoiding incorrect failures when interpreting a successful response. Each transaction instance still supports only one nonempty execution attempt.
 - [6119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6119) Distributed Transactions (preview): Captures ETags, session tokens, and typed-patch conditions consistently when constructing the request, preventing changes to caller options during payload preparation from producing inconsistent option values.
@@ -32,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [6139](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6139) Query: Fixes an issue where a query whose `OFFSET`, `LIMIT`, or `TOP` value was fractional or too large for a 64-bit integer threw an unexpected `ArgumentOutOfRangeException` during client-side query parsing. These queries are now treated as parse failures.
 - [6138](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6138) CosmosElements: Fixes an issue where parsing an empty, whitespace-only, or malformed JSON payload threw an unexpected `InvalidOperationException`, `ArgumentException`, or `IndexOutOfRangeException`. These payloads are now reported as JSON parse failures.
 - [6174](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6174) Diagnostics: Fixes an issue where serializing `CosmosDiagnostics` (for example with `ToString()`) while a request was still in flight could throw `InvalidOperationException: Collection was modified`. Contacted-replica, failed-replica, and contacted-region statistics are now recorded as immutable snapshots. See [#6155](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/6155).
+- Partial hierarchical partition-key read feeds now retain their requested EPK
+  prefix across physical splits and continuation resume instead of reading the
+  complete child ranges.
 
 #### Other Changes
 
