@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using ServiceInteropWrapper = Microsoft.Azure.Documents.ServiceInteropWrapper;
 
     internal abstract class LinuxQueryPlanInterop : IQueryPlanInterop
     {
@@ -24,9 +23,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         {
             this.libraryLoaded = new Lazy<bool>(this.TryLoadLibrary);
         }
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        private delegate uint ReleaseDelegate(IntPtr serviceProvider);
 
         public bool BypassQueryParsing()
         {
@@ -45,22 +41,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             return this.UpdateServiceProviderNative(serviceProvider, utf8Configuration);
         }
 
-        public void ReleaseServiceProvider(IntPtr serviceProvider)
-        {
-            IntPtr vtable = Marshal.ReadIntPtr(serviceProvider);
-            IntPtr release = Marshal.ReadIntPtr(vtable, 2 * IntPtr.Size);
-            Marshal.GetDelegateForFunctionPointer<ReleaseDelegate>(release)(serviceProvider);
-        }
-
-        public uint GetPartitionKeyRangesFromQuery4(
+        public uint GetPartitionKeyRanges(
             IntPtr serviceProvider,
             string query,
-            ServiceInteropWrapper.PartitionKeyRangesApiOptions options,
+            PartitionKeyRangesOptions options,
             string[] pathTokens,
             uint[] pathTokenLengths,
             uint pathCount,
             string vectorPolicy,
-            int vectorPolicyLength,
             IntPtr buffer,
             uint bufferLength,
             out uint resultLength)
@@ -108,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         protected abstract uint GetPartitionKeyRangesNative(
             IntPtr serviceProvider,
             byte[] query,
-            ServiceInteropWrapper.PartitionKeyRangesApiOptions options,
+            PartitionKeyRangesOptions options,
             IntPtr[] pathTokens,
             uint[] pathTokenLengths,
             uint pathCount,
@@ -126,17 +114,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         private bool TryLoadLibrary()
         {
             TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.TryCreateServiceProvider(this, "{}");
+            Exception exception;
             if (tryCreateServiceProvider.Failed)
             {
-                DefaultTrace.TraceWarning(
-                    "QueryPlanInterop native library for Linux {0} could not be loaded: {1}. Query plans will be retrieved from the Gateway.",
-                    RuntimeInformation.ProcessArchitecture,
-                    tryCreateServiceProvider.Exception.Message);
-                return false;
+                exception = tryCreateServiceProvider.Exception;
+            }
+            else
+            {
+                try
+                {
+                    Marshal.Release(tryCreateServiceProvider.Result);
+                    return true;
+                }
+                catch (PlatformNotSupportedException ex)
+                {
+                    // Marshal.Release supports Linux only on .NET 6 and later.
+                    exception = ex;
+                }
             }
 
-            this.ReleaseServiceProvider(tryCreateServiceProvider.Result);
-            return true;
+            DefaultTrace.TraceWarning(
+                "QueryPlanInterop native library for Linux {0} could not be loaded: {1}. Query plans will be retrieved from the Gateway.",
+                RuntimeInformation.ProcessArchitecture,
+                exception.Message);
+            return false;
         }
 
         internal sealed class X64 : LinuxQueryPlanInterop
@@ -160,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             protected override uint GetPartitionKeyRangesNative(
                 IntPtr serviceProvider,
                 byte[] query,
-                ServiceInteropWrapper.PartitionKeyRangesApiOptions options,
+                PartitionKeyRangesOptions options,
                 IntPtr[] pathTokens,
                 uint[] pathTokenLengths,
                 uint pathCount,
@@ -202,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 internal static extern uint GetPartitionKeyRangesFromQuery4(
                     IntPtr serviceProvider,
                     [In] byte[] query,
-                    ServiceInteropWrapper.PartitionKeyRangesApiOptions options,
+                    PartitionKeyRangesOptions options,
                     [In] IntPtr[] pathTokens,
                     [In] uint[] pathTokenLengths,
                     uint pathCount,
@@ -235,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             protected override uint GetPartitionKeyRangesNative(
                 IntPtr serviceProvider,
                 byte[] query,
-                ServiceInteropWrapper.PartitionKeyRangesApiOptions options,
+                PartitionKeyRangesOptions options,
                 IntPtr[] pathTokens,
                 uint[] pathTokenLengths,
                 uint pathCount,
@@ -277,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 internal static extern uint GetPartitionKeyRangesFromQuery4(
                     IntPtr serviceProvider,
                     [In] byte[] query,
-                    ServiceInteropWrapper.PartitionKeyRangesApiOptions options,
+                    PartitionKeyRangesOptions options,
                     [In] IntPtr[] pathTokens,
                     [In] uint[] pathTokenLengths,
                     uint pathCount,

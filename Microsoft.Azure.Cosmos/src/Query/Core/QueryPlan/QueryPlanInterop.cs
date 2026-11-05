@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 }
             }
 
-            return ServiceInteropQueryPlan.Instance;
+            return WindowsX64QueryPlanInterop.Instance;
         }
     }
 }

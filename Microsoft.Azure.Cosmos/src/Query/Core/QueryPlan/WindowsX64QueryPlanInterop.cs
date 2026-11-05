@@ -5,17 +5,16 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System;
-    using System.Runtime.InteropServices;
     using CustomTypeExtensions = Microsoft.Azure.Documents.CustomTypeExtensions;
     using ServiceInteropWrapper = Microsoft.Azure.Documents.ServiceInteropWrapper;
 
-    internal sealed class ServiceInteropQueryPlan : IQueryPlanInterop
+    internal sealed class WindowsX64QueryPlanInterop : IQueryPlanInterop
     {
-        private ServiceInteropQueryPlan()
+        private WindowsX64QueryPlanInterop()
         {
         }
 
-        public static IQueryPlanInterop Instance { get; } = new ServiceInteropQueryPlan();
+        public static IQueryPlanInterop Instance { get; } = new WindowsX64QueryPlanInterop();
 
         public bool BypassQueryParsing()
         {
@@ -32,33 +31,40 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             return ServiceInteropWrapper.UpdateServiceProvider(serviceProvider, configuration);
         }
 
-        public void ReleaseServiceProvider(IntPtr serviceProvider)
-        {
-            Marshal.Release(serviceProvider);
-        }
-
-        public uint GetPartitionKeyRangesFromQuery4(
+        public uint GetPartitionKeyRanges(
             IntPtr serviceProvider,
             string query,
-            ServiceInteropWrapper.PartitionKeyRangesApiOptions options,
+            PartitionKeyRangesOptions options,
             string[] pathTokens,
             uint[] pathTokenLengths,
             uint pathCount,
             string vectorPolicy,
-            int vectorPolicyLength,
             IntPtr buffer,
             uint bufferLength,
             out uint resultLength)
         {
+            ServiceInteropWrapper.PartitionKeyRangesApiOptions nativeOptions = new ServiceInteropWrapper.PartitionKeyRangesApiOptions()
+            {
+                bRequireFormattableOrderByQuery = Convert.ToInt32(options.RequireFormattableOrderByQuery),
+                bIsContinuationExpected = Convert.ToInt32(options.IsContinuationExpected),
+                bAllowNonValueAggregateQuery = Convert.ToInt32(options.AllowNonValueAggregateQuery),
+                bHasLogicalPartitionKey = Convert.ToInt32(options.HasLogicalPartitionKey),
+                bAllowDCount = Convert.ToInt32(options.AllowDCount),
+                bUseSystemPrefix = Convert.ToInt32(options.UseSystemPrefix),
+                ePartitionKind = Convert.ToInt32(options.PartitionKind),
+                eGeospatialType = Convert.ToInt32(options.GeospatialType),
+                bHybridSearchSkipOrderByRewrite = Convert.ToInt32(options.HybridSearchSkipOrderByRewrite),
+            };
+
             return ServiceInteropWrapper.GetPartitionKeyRangesFromQuery4(
                 serviceProvider,
                 query,
-                options,
+                nativeOptions,
                 pathTokens,
                 pathTokenLengths,
                 pathCount,
                 vectorPolicy,
-                vectorPolicyLength,
+                vectorPolicy?.Length ?? 0,
                 buffer,
                 bufferLength,
                 out resultLength);

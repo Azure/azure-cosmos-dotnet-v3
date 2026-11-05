@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Attemp to create an instance of the ServiceInterop assembly
                 TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.TryCreateServiceProvider(
-                    ServiceInteropQueryPlan.Instance,
+                    WindowsX64QueryPlanInterop.Instance,
                     "{}");
                 if (tryCreateServiceProvider.Failed)
                 {

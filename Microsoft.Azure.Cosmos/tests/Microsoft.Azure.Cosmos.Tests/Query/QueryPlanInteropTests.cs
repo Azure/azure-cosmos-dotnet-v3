@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -55,6 +56,24 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         }
 
         [TestMethod]
+        public void PartitionKeyRangesOptionsLayoutMatchesServiceInterop()
+        {
+            Type sdkOptions = typeof(PartitionKeyRangesOptions);
+            Type serviceInteropOptions = typeof(ServiceInteropWrapper.PartitionKeyRangesApiOptions);
+            BindingFlags fields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            FieldInfo[] sdkFields = sdkOptions.GetFields(fields).OrderBy(field => Marshal.OffsetOf(sdkOptions, field.Name).ToInt64()).ToArray();
+            FieldInfo[] serviceInteropFields = serviceInteropOptions.GetFields(fields).OrderBy(field => Marshal.OffsetOf(serviceInteropOptions, field.Name).ToInt64()).ToArray();
+
+            Assert.AreEqual(Marshal.SizeOf(serviceInteropOptions), Marshal.SizeOf(sdkOptions));
+            Assert.AreEqual(serviceInteropFields.Length, sdkFields.Length);
+            for (int i = 0; i < serviceInteropFields.Length; i++)
+            {
+                Assert.AreEqual(serviceInteropFields[i].FieldType, sdkFields[i].FieldType, sdkFields[i].Name);
+                Assert.AreEqual(Marshal.OffsetOf(serviceInteropOptions, serviceInteropFields[i].Name), Marshal.OffsetOf(sdkOptions, sdkFields[i].Name), sdkFields[i].Name);
+            }
+        }
+
+        [TestMethod]
         public void QueryPlanRoutingPreservesDefaultsAndForceBypass()
         {
             string originalOptIn = Environment.GetEnvironmentVariable(ConfigurationManager.UseQueryInterop);
@@ -76,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, null);
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
-                    Assert.AreSame(ServiceInteropQueryPlan.Instance, QueryPlanInterop.Instance);
+                    Assert.AreSame(WindowsX64QueryPlanInterop.Instance, QueryPlanInterop.Instance);
                     Assert.AreEqual(defaultBypass, QueryPlanRetriever.BypassQueryParsing(), "Linux opt-in must not change other platforms.");
                 }
             }

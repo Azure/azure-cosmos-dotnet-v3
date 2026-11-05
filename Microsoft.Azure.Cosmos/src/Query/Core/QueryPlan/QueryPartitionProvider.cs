@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
     using PartitionKeyInternal = Documents.Routing.PartitionKeyInternal;
     using PartitionKind = Documents.PartitionKind;
-    using ServiceInteropWrapper = Documents.ServiceInteropWrapper;
 
     internal sealed class QueryPartitionProvider : IDisposable
     {
@@ -235,31 +234,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             unsafe
             {
-                ServiceInteropWrapper.PartitionKeyRangesApiOptions partitionKeyRangesApiOptions =
-                    new ServiceInteropWrapper.PartitionKeyRangesApiOptions()
-                    {
-                        bAllowDCount = Convert.ToInt32(allowDCount),
-                        bAllowNonValueAggregateQuery = Convert.ToInt32(allowNonValueAggregateQuery),
-                        bHasLogicalPartitionKey = Convert.ToInt32(hasLogicalPartitionKey),
-                        bIsContinuationExpected = Convert.ToInt32(isContinuationExpected),
-                        bRequireFormattableOrderByQuery = Convert.ToInt32(requireFormattableOrderByQuery),
-                        bUseSystemPrefix = Convert.ToInt32(useSystemPrefix),
-                        bHybridSearchSkipOrderByRewrite = Convert.ToInt32(hybridSearchSkipOrderByRewrite),
-                        eGeospatialType = Convert.ToInt32(geospatialType),
-                        ePartitionKind = Convert.ToInt32(partitionKind)
-                    };
+                PartitionKeyRangesOptions partitionKeyRangesOptions = new PartitionKeyRangesOptions(
+                    requireFormattableOrderByQuery,
+                    isContinuationExpected,
+                    allowNonValueAggregateQuery,
+                    hasLogicalPartitionKey,
+                    allowDCount,
+                    useSystemPrefix,
+                    hybridSearchSkipOrderByRewrite,
+                    partitionKind,
+                    geospatialType);
 
                 fixed (byte* bytePtr = buffer)
                 {
-                    errorCode = QueryPlanInterop.Instance.GetPartitionKeyRangesFromQuery4(
+                    errorCode = QueryPlanInterop.Instance.GetPartitionKeyRanges(
                         this.serviceProvider,
                         querySpecJsonString,
-                        partitionKeyRangesApiOptions,
+                        partitionKeyRangesOptions,
                         allParts,
                         partsLengths,
                         (uint)partitionKeyDefinition.Paths.Count,
                         vectorEmbeddingPolicyString,
-                        vectorEmbeddingPolicyString?.Length ?? 0,
                         new IntPtr(bytePtr),
                         (uint)buffer.Length,
                         out serializedQueryExecutionInfoResultLength);
@@ -273,15 +268,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                         fixed (byte* bytePtr2 = buffer)
                         {
-                            errorCode = QueryPlanInterop.Instance.GetPartitionKeyRangesFromQuery4(
+                            errorCode = QueryPlanInterop.Instance.GetPartitionKeyRanges(
                                 this.serviceProvider,
                                 querySpecJsonString,
-                                partitionKeyRangesApiOptions,
+                                partitionKeyRangesOptions,
                                 allParts,
                                 partsLengths,
                                 (uint)partitionKeyDefinition.Paths.Count,
                                 vectorEmbeddingPolicyString,
-                                vectorEmbeddingPolicyString?.Length ?? 0,
                                 new IntPtr(bytePtr2),
                                 (uint)buffer.Length,
                                 out serializedQueryExecutionInfoResultLength);
@@ -446,7 +440,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             {
                 if (this.serviceProvider != IntPtr.Zero)
                 {
-                    QueryPlanInterop.Instance.ReleaseServiceProvider(this.serviceProvider);
+                    Marshal.Release(this.serviceProvider);
                     this.serviceProvider = IntPtr.Zero;
                 }
 

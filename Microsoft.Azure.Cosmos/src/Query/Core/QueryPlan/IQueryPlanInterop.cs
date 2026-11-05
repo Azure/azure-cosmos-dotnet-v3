@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System;
-    using ServiceInteropWrapper = Microsoft.Azure.Documents.ServiceInteropWrapper;
 
     internal interface IQueryPlanInterop
     {
@@ -15,17 +14,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         uint UpdateServiceProvider(IntPtr serviceProvider, string configuration);
 
-        void ReleaseServiceProvider(IntPtr serviceProvider);
-
-        uint GetPartitionKeyRangesFromQuery4(
+        uint GetPartitionKeyRanges(
             IntPtr serviceProvider,
             string query,
-            ServiceInteropWrapper.PartitionKeyRangesApiOptions options,
+            PartitionKeyRangesOptions options,
             string[] pathTokens,
             uint[] pathTokenLengths,
             uint pathCount,
             string vectorPolicy,
-            int vectorPolicyLength,
             IntPtr buffer,
             uint bufferLength,
             out uint resultLength);
