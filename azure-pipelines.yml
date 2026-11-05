@@ -21,6 +21,8 @@ variables:
 
 
 jobs:
+- template: templates/build-inmemory-emulator.yml
+
 - template:  templates/static-tools.yml
   parameters:
     BuildConfiguration: Release
