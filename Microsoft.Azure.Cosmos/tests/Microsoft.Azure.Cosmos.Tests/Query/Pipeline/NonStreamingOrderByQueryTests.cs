@@ -527,6 +527,63 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
+        public async Task HybridSearchComponentLimitAboveInt32MaxTests()
+        {
+            // For OFFSET 10 LIMIT 2147483647 the native query plan can emit a component over-fetch limit of
+            // uint.MaxValue. The pipeline must treat it as unbounded instead of failing with a negative limit.
+            const int DocumentCount = 20;
+            IReadOnlyList<FeedRangeEpk> ranges = new List<FeedRangeEpk>
+            {
+                new FeedRangeEpk(new Documents.Routing.Range<string>(string.Empty, "FF", true, false)),
+            };
+
+            foreach (bool requiresGlobalStatistics in new[] { false, true })
+            {
+                MockDocumentContainer documentContainer = MockDocumentContainer.CreateHybridSearchContainer(
+                    ranges,
+                    new[] { PartitionedFeedMode.NonStreamingReversed, PartitionedFeedMode.NonStreamingReversed },
+                    leafPageCount: 1,
+                    backendPageSize: DocumentCount,
+                    returnEmptyGlobalStatistics: false,
+                    skipOrderByRewrite: false,
+                    calculateScores: CalculateDefaultScores);
+
+                HybridSearchQueryInfo hybridSearchQueryInfo = Create2ItemHybridSearchQueryInfo(
+                    requiresGlobalStatistics,
+                    skip: 10,
+                    take: int.MaxValue,
+                    weights: null);
+                foreach (QueryInfo componentQueryInfo in hybridSearchQueryInfo.ComponentQueryInfos)
+                {
+                    componentQueryInfo.Top = null;
+                    componentQueryInfo.Offset = 0;
+                    componentQueryInfo.Limit = uint.MaxValue;
+                }
+
+                TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
+                    documentContainer,
+                    Create2ItemSqlQuerySpec(),
+                    ranges,
+                    partitionKey: null,
+                    queryInfo: null,
+                    hybridSearchQueryInfo: hybridSearchQueryInfo,
+                    maxItemCount: DocumentCount,
+                    new ContainerQueryProperties(),
+                    ranges,
+                    isContinuationExpected: true,
+                    maxConcurrency: MaxConcurrency,
+                    fullTextScoreScope: FullTextScoreScope.Global,
+                    requestContinuationToken: null);
+                Assert.IsTrue(tryCreatePipeline.Succeeded);
+
+                (IReadOnlyList<CosmosElement> results, _) = await RunPipelineStage(tryCreatePipeline.Result, DocumentCount);
+                CollectionAssert.AreEqual(
+                    Enumerable.Range(0, DocumentCount).Reverse().Skip(10).ToList(),
+                    results.Select(result => (int)Number64.ToLong(((CosmosNumber)((CosmosObject)result)[Index]).Value)).ToList());
+            }
+        }
+
+        [TestMethod]
         public async Task HybridSearchWeightedRRFTests()
         {
             IReadOnlyList<HybridSearchTest> testCases = new List<HybridSearchTest>

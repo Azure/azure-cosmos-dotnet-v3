@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [6169](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6169) Query: Adds opt-in local query planning on Linux x64 and ARM64 using `AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX=true`, avoiding gateway query-plan requests when the native library is available.
+
 #### Breaking Changes
 
 #### Bugs Fixed
