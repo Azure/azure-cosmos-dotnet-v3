@@ -61,11 +61,13 @@ namespace Microsoft.Azure.Cosmos
         /// iterator's scope and returns a composite continuation token, no documents, and the total
         /// request charge. The response retains the final service status (200 or 304).
         /// The token represents each range when visited, not an atomic cross-partition snapshot.
+        /// Documents returned by the service are suppressed from the SDK response, but may still
+        /// be transferred and incur request charges. The continuation advances past suppressed changes.
         /// </para>
         /// <para>
         /// <see cref="FeedIterator.HasMoreResults"/> starts as <see langword="true"/> and becomes
-        /// <see langword="false"/> after a complete cycle. Explicit subsequent reads are allowed and
-        /// perform another token-only cycle from the current state. If a range fails mid-cycle,
+        /// <see langword="false"/> after a complete cycle. Explicit subsequent reads are allowed
+        /// and perform another token-only cycle from the current state. If a range fails mid-cycle,
         /// the last successful response and partial continuation are returned first; the buffered
         /// error is surfaced on the next explicit read. An interrupted cycle does not mark the
         /// iterator complete. Resume normal reading with a new iterator, the same mode, and this

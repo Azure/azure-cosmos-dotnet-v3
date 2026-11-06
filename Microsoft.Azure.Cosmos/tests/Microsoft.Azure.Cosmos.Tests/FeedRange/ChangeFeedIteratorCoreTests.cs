@@ -508,7 +508,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         [DataRow(false, true)]
         [DataRow(true, false)]
         [DataRow(true, true)]
-        public async Task TokenOnlyCompletesOneCycleAndAllowsExplicitRepeatedReads(bool fullFidelity, bool typed)
+        public async Task TokenOnlySuppressesDocumentsAndAllowsExplicitRepeatedReads(bool fullFidelity, bool typed)
         {
             Mock<IDocumentContainer> documentContainer = CreateTokenOnlyDocumentContainer();
             ChangeFeedRequestOptions options = new ChangeFeedRequestOptions
@@ -526,7 +526,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 core, response => ReadFeedResponse<object>.CreateResponse<object>(response, MockCosmosUtil.Serializer));
             Assert.IsTrue(core.HasMoreResults);
             string continuation = null;
-            for (int cycle = 0; cycle < 2; cycle++)
+            for (int cycle = 1; cycle <= 2; cycle++)
             {
                 if (typed)
                 {
@@ -534,6 +534,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                     Assert.AreEqual(0, response.Count);
                     Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                     Assert.AreEqual(3d, response.RequestCharge);
+                    Assert.AreEqual("0", response.Headers[HttpConstants.HttpHeaders.ItemCount]);
                     continuation = response.ContinuationToken;
                     Assert.IsFalse(typedIterator.HasMoreResults);
                 }
@@ -543,6 +544,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                     Assert.AreEqual(0, GetChanges(response.Content).Count);
                     Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                     Assert.AreEqual(3d, response.Headers.RequestCharge);
+                    Assert.AreEqual("0", response.Headers[HttpConstants.HttpHeaders.ItemCount]);
                     continuation = response.Headers.ContinuationToken;
                 }
 
@@ -558,6 +560,12 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 {
                     Assert.IsInstanceOfType<ChangeFeedStateContinuation>(range.State);
                 }
+
+                documentContainer.Verify(container => container.MonadicChangeFeedAsync(
+                    It.IsAny<FeedRangeState<ChangeFeedState>>(), It.IsAny<ChangeFeedExecutionOptions>(),
+                    It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Exactly(1 + (3 * cycle)));
+                documentContainer.Verify(container => container.GetResourceIdentifierAsync(
+                    It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Exactly(cycle));
             }
 
             using ChangeFeedIteratorCore resumed = new ChangeFeedIteratorCore(
@@ -566,6 +574,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 null, ChangeFeedStartFrom.ContinuationToken(continuation), this.MockClientContext(), null);
             using ResponseMessage resumedPage = await resumed.ReadNextAsync();
             Assert.AreEqual(HttpStatusCode.OK, resumedPage.StatusCode);
+            Assert.AreEqual(1, GetChanges(resumedPage.Content).Count);
             Assert.IsTrue(resumed.HasMoreResults);
         }
 
@@ -647,6 +656,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             options.EnableContinuationTokenOnly = true;
             using ResponseMessage response = await core.ReadNextAsync();
             Assert.IsTrue(core.HasMoreResults);
+            Assert.AreEqual(1, GetChanges(response.Content).Count);
             documentContainer.Verify(c => c.MonadicChangeFeedAsync(
                 It.IsAny<FeedRangeState<ChangeFeedState>>(),
                 It.Is<ChangeFeedExecutionOptions>(execution => !execution.EnableContinuationTokenOnly && execution.PageSizeLimit == null),
@@ -687,8 +697,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                     }
 
                     return TryCatch<ChangeFeedPage>.FromResult(new ChangeFeedSuccessPage(
-                        new MemoryStream(System.Text.Encoding.UTF8.GetBytes("{\"Documents\":[],\"_count\":0}")),
-                        1, 0, "activity", null, ChangeFeedState.Continuation(CosmosString.Create($"etag-{++sequence}"))));
+                        new MemoryStream(System.Text.Encoding.UTF8.GetBytes("{\"Documents\":[{\"id\":\"visible-in-normal-mode\"}],\"_count\":1}")),
+                        1, 1, "activity", null, ChangeFeedState.Continuation(CosmosString.Create($"etag-{++sequence}"))));
                 });
             return container;
         }

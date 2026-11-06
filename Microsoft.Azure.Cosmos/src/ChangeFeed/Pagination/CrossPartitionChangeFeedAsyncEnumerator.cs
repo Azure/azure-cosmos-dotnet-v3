@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -14,6 +16,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
     internal sealed class CrossPartitionChangeFeedAsyncEnumerator : ITracingAsyncEnumerator<TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>>
     {
+        private static readonly byte[] EmptyFeedContent = Encoding.UTF8.GetBytes("{\"Documents\":[],\"_count\":0}");
+
         private readonly CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator;
         private readonly bool enableContinuationTokenOnly;
         private TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>? bufferedException;
@@ -70,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 {
                     if (this.enableContinuationTokenOnly)
                     {
-                        ValidateTokenOnlyPage(backendPage);
+                        backendPage = SuppressDocuments(backendPage);
                     }
 
                     if (this.enableContinuationTokenOnly || backendPage is ChangeFeedNotModifiedPage)
@@ -116,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                                         totalRequestCharge += backendPage.RequestCharge;
                                         if (this.enableContinuationTokenOnly)
                                         {
-                                            ValidateTokenOnlyPage(backendPage);
+                                            backendPage = SuppressDocuments(backendPage);
                                             visitedRanges.Add(this.crossPartitionEnumerator.CurrentRange);
                                             this.IsCycleComplete = HasVisitedAllRanges(crossFeedRangePage.State, visitedRanges);
                                         }
@@ -191,12 +195,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             return enumerator;
         }
 
-        private static void ValidateTokenOnlyPage(ChangeFeedPage page)
+        private static ChangeFeedPage SuppressDocuments(ChangeFeedPage page)
         {
-            if (page is ChangeFeedSuccessPage successPage && successPage.ItemCount != 0)
+            if (page is ChangeFeedSuccessPage successPage)
             {
-                throw new InvalidOperationException("The service returned documents despite a token-only change feed request with a maximum item count of zero.");
+                successPage.Content.Dispose();
+                return new ChangeFeedSuccessPage(
+                    new MemoryStream(EmptyFeedContent, writable: false),
+                    successPage.RequestCharge,
+                    itemCount: 0,
+                    successPage.ActivityId,
+                    successPage.AdditionalHeaders,
+                    successPage.State);
             }
+
+            return page;
         }
 
         private static bool HasVisitedAllRanges(

@@ -352,6 +352,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             responseMessage.Headers.ActivityId = changeFeedPage.ActivityId;
             responseMessage.Trace = trace;
 
+            if (this.enableContinuationTokenOnly)
+            {
+                responseMessage.Headers[HttpConstants.HttpHeaders.ItemCount] = "0";
+            }
+
             if (this.enableContinuationTokenOnly && enumerator.IsCycleComplete)
             {
                 this.hasMoreResults = false;

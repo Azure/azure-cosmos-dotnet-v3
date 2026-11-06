@@ -423,17 +423,21 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         }
 
         [DataTestMethod]
-        [DataRow(1, 0, false)]
-        [DataRow(1, 1, true)]
-        [DataRow(3, 0, true)]
-        [DataRow(3, 7, false)]
-        [DataRow(3, 5, true)]
-        [DataRow(3, 2, false)]
+        [DataRow(1, 0, false, false)]
+        [DataRow(1, 1, true, true)]
+        [DataRow(3, 0, true, false)]
+        [DataRow(3, 7, false, true)]
+        [DataRow(3, 5, true, true)]
+        [DataRow(3, 2, false, true)]
+        [DataRow(3, 7, true, true)]
+        [DataRow(3, 7, true, false)]
+        [DataRow(3, 7, false, false)]
         [Timeout(5000)]
-        public async Task TokenOnlyCyclesThroughEmptySuccessAndNotModifiedPages(int partitions, int successMask, bool fullFidelity)
+        public async Task TokenOnlyCyclesThroughSuccessAndNotModifiedPages(int partitions, int successMask, bool fullFidelity, bool hasDocuments)
         {
             FeedRangeState<ChangeFeedState>[] states = CreateTokenOnlyStates(partitions);
             List<MemoryStream> streams = new List<MemoryStream>();
+            Dictionary<FeedRangeInternal, ChangeFeedState> expectedStates = new Dictionary<FeedRangeInternal, ChangeFeedState>();
             int calls = 0;
             Mock<IDocumentContainer> container = new Mock<IDocumentContainer>();
             container.Setup(c => c.MonadicChangeFeedAsync(
@@ -448,10 +452,14 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                         Assert.IsInstanceOfType<ChangeFeedStateContinuation>(state.State);
                     }
 
-                    MemoryStream content = new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\":[],\"_count\":0}"));
+                    MemoryStream content = new MemoryStream(Encoding.UTF8.GetBytes(hasDocuments
+                        ? "{\"Documents\":[{\"id\":\"suppressed\"}],\"_count\":1}"
+                        : "{\"Documents\":[],\"_count\":0}"));
                     streams.Add(content);
-                    return TryCatch<ChangeFeedPage>.FromResult(CreateEmptyTokenOnlyPage(
-                        (successMask & (1 << index)) != 0, calls, content));
+                    ChangeFeedPage page = CreateBackendPage(
+                        (successMask & (1 << index)) != 0, calls, content, itemCount: hasDocuments ? 1 : 0);
+                    expectedStates[state.FeedRange] = page.State;
+                    return TryCatch<ChangeFeedPage>.FromResult(page);
                 });
             CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 container.Object, new CrossFeedRangeState<ChangeFeedState>(states),
@@ -474,9 +482,10 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 foreach (FeedRangeState<ChangeFeedState> state in enumerator.Current.Result.State.Value.ToArray())
                 {
                     Assert.IsInstanceOfType<ChangeFeedStateContinuation>(state.State);
+                    Assert.AreSame(expectedStates[state.FeedRange], state.State);
                 }
 
-                for (int i = (cycle - 1) * partitions; i < calls - 1; i++)
+                for (int i = (cycle - 1) * partitions; i < calls; i++)
                 {
                     Assert.IsFalse(streams[i].CanRead);
                 }
@@ -485,6 +494,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 {
                     Assert.IsTrue(finalPage.Content.CanRead);
                     Assert.AreEqual(0, finalPage.ItemCount);
+                    Assert.AreEqual(0, GetResponseCount(finalPage.Content));
                     finalPage.Content.Dispose();
                 }
             }
@@ -506,7 +516,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => ++calls == 2
                     ? TryCatch<ChangeFeedPage>.FromException(failure)
-                    : TryCatch<ChangeFeedPage>.FromResult(CreateEmptyTokenOnlyPage(true, calls)));
+                    : TryCatch<ChangeFeedPage>.FromResult(CreateBackendPage(true, calls)));
             CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 container.Object, new CrossFeedRangeState<ChangeFeedState>(CreateTokenOnlyStates(3)),
                 new ChangeFeedExecutionOptions(ChangeFeedMode.LatestVersion, pageSizeHint: 0, enableContinuationTokenOnly: true));
@@ -558,7 +568,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                             (int)SubStatusCodes.PartitionKeyRangeGone, string.Empty, 0));
                     }
 
-                    return TryCatch<ChangeFeedPage>.FromResult(CreateEmptyTokenOnlyPage(false, calls));
+                    return TryCatch<ChangeFeedPage>.FromResult(CreateBackendPage(false, calls));
                 });
             List<FeedRangeEpk> children = merge
                 ? new List<FeedRangeEpk>() { FeedRangeEpk.FullRange }
@@ -587,12 +597,10 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             }
         }
 
-        [DataTestMethod]
-        [DataRow(false)]
-        [DataRow(true)]
-        public async Task TokenOnlyDisposesContentOnCancellationOrUnexpectedDocuments(bool unexpectedDocuments)
+        [TestMethod]
+        public async Task TokenOnlyDisposesPayloadBeforeCancellation()
         {
-            using MemoryStream content = new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\":[]}"));
+            using MemoryStream content = new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\":[{\"id\":\"suppressed\"}],\"_count\":1}"));
             int calls = 0;
             Mock<IDocumentContainer> container = new Mock<IDocumentContainer>();
             container.Setup(c => c.MonadicChangeFeedAsync(
@@ -606,25 +614,41 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     }
 
                     return TryCatch<ChangeFeedPage>.FromResult(new ChangeFeedSuccessPage(
-                        content, 1, unexpectedDocuments ? 1 : 0, "activity", null,
+                        content, 1, 1, "activity", null,
                         ChangeFeedState.Continuation(CosmosString.Create("token"))));
                 });
             CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 container.Object, new CrossFeedRangeState<ChangeFeedState>(CreateTokenOnlyStates(3)),
                 new ChangeFeedExecutionOptions(ChangeFeedMode.LatestVersion, pageSizeHint: 0, enableContinuationTokenOnly: true));
-            if (unexpectedDocuments)
-            {
-                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
-                    () => enumerator.MoveNextAsync(NoOpTrace.Singleton, default).AsTask());
-            }
-            else
-            {
-                await Assert.ThrowsExceptionAsync<OperationCanceledException>(
-                    () => enumerator.MoveNextAsync(NoOpTrace.Singleton, default).AsTask());
-            }
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => enumerator.MoveNextAsync(NoOpTrace.Singleton, default).AsTask());
 
             Assert.IsFalse(content.CanRead);
             Assert.IsFalse(enumerator.IsCycleComplete);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task NormalModePreservesDocumentPages(bool fullFidelity)
+        {
+            using MemoryStream content = new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\":[{\"id\":\"visible\"}],\"_count\":1}"));
+            Mock<IDocumentContainer> container = new Mock<IDocumentContainer>();
+            container.Setup(c => c.MonadicChangeFeedAsync(
+                It.IsAny<FeedRangeState<ChangeFeedState>>(), It.IsAny<ChangeFeedExecutionOptions>(),
+                It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(TryCatch<ChangeFeedPage>.FromResult(CreateBackendPage(true, 1, content, itemCount: 1)));
+            CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
+                container.Object, new CrossFeedRangeState<ChangeFeedState>(CreateTokenOnlyStates(1)),
+                new ChangeFeedExecutionOptions(fullFidelity ? ChangeFeedMode.AllVersionsAndDeletes : ChangeFeedMode.LatestVersion));
+
+            await enumerator.MoveNextAsync(NoOpTrace.Singleton, default);
+            Assert.IsTrue(enumerator.Current.Succeeded);
+            ChangeFeedSuccessPage page = (ChangeFeedSuccessPage)enumerator.Current.Result.Page;
+            Assert.AreSame(content, page.Content);
+            Assert.IsTrue(content.CanRead);
+            Assert.AreEqual(1, page.ItemCount);
+            Assert.AreEqual(1, GetResponseCount(page.Content));
         }
 
         private static FeedRangeState<ChangeFeedState>[] CreateTokenOnlyStates(int partitions)
@@ -642,7 +666,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             return states;
         }
 
-        private static ChangeFeedPage CreateEmptyTokenOnlyPage(bool success, int call, Stream content = null)
+        private static ChangeFeedPage CreateBackendPage(bool success, int call, Stream content = null, int itemCount = 0)
         {
             ChangeFeedState state = ChangeFeedState.Continuation(CosmosString.Create($"token-{call}"));
             Dictionary<string, string> headers = new Dictionary<string, string> { ["x-test-token"] = call.ToString() };
@@ -650,7 +674,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             {
                 return new ChangeFeedSuccessPage(
                     content ?? new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\":[],\"_count\":0}")),
-                    1, 0, $"activity-{call}", headers, state);
+                    1, itemCount, $"activity-{call}", headers, state);
             }
 
             content?.Dispose();
