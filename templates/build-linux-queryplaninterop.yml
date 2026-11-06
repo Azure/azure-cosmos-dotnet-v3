@@ -104,12 +104,11 @@ jobs:
         runner=(docker run --rm --platform linux/arm64 --user 0:0
           -e HOME=/tmp -e DOTNET_CLI_HOME=/tmp -e DOTNET_NOLOGO=1 -e DOTNET_CLI_TELEMETRY_OPTOUT=1
           -e AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX -e AZURE_COSMOS_BYPASS_QUERY_PARSING
-          -v "$BUILD_SOURCESDIRECTORY:$BUILD_SOURCESDIRECTORY" -v "$results:$results" -w "$out" qpi-arm64-test)
-        library=libQueryPlanInterop.arm64.so
-      else
-        runner=()
-        library=libQueryPlanInterop.amd64.so
-      fi
+          -v "$BUILD_SOURCESDIRECTORY:$BUILD_SOURCESDIRECTORY" -v "$results:$results" -w "$out"           qpi-arm64-test)
+                else
+                  runner=()
+                fi
+                library=runtimes/linux-$QPIARCH/native/libQueryPlanInterop.so
 
       # Validate flags inside the test process environment.
       "${runner[@]}" bash -c 'echo "Test process flags: AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX=${AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX:-<unset>} AZURE_COSMOS_BYPASS_QUERY_PARSING=${AZURE_COSMOS_BYPASS_QUERY_PARSING:-<unset>}"; [ "${AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX:-}" = "true" ] && [ "${AZURE_COSMOS_BYPASS_QUERY_PARSING:-}" = "false" ]' \
@@ -184,10 +183,11 @@ jobs:
         probe="$AGENT_TEMPDIRECTORY/qpi-runtime-probe"
         rm -rf "$probe"
         mkdir -p "$probe"
-        # Direct and HybridRow require explicit references in the probe project.
+        # Direct, HybridRow and QueryPlanInterop.Linux require explicit references in the probe project.
         props="$BUILD_SOURCESDIRECTORY/Directory.Build.props"
         direct_version=$(sed -n 's:.*<DirectVersion>\(.*\)</DirectVersion>.*:\1:p' "$props")
         hybridrow_version=$(sed -n 's:.*<HybridRowVersion>\(.*\)</HybridRowVersion>.*:\1:p' "$props")
+        qpi_version=$(sed -n 's:.*<QueryPlanInteropLinuxVersion>\(.*\)</QueryPlanInteropLinuxVersion>.*:\1:p' "$props")
         cat > "$probe/QpiRuntimeProbe.csproj" <<EOF
         <Project Sdk="Microsoft.NET.Sdk">
           <PropertyGroup>
@@ -199,6 +199,7 @@ jobs:
             <ProjectReference Include="$BUILD_SOURCESDIRECTORY/Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj" />
             <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$direct_version]" />
             <PackageReference Include="Microsoft.HybridRow" Version="[$hybridrow_version]" />
+            <PackageReference Include="Microsoft.Azure.Cosmos.QueryPlanInterop.Linux" Version="[$qpi_version]" />
           </ItemGroup>
         </Project>
         EOF
@@ -214,20 +215,12 @@ jobs:
         bool bypass = (bool)instance.GetType().GetMethod("BypassQueryParsing")!.Invoke(instance, null)!;
         Console.WriteLine($"{RuntimeInformation.OSDescription} | {RuntimeInformation.ProcessArchitecture} | {RuntimeInformation.FrameworkDescription}");
         Console.WriteLine($"QueryPlanInterop.Instance={instance.GetType().Name}, BypassQueryParsing={bypass}");
-        string expectedType = RuntimeInformation.ProcessArchitecture switch
-        {
-            Architecture.X64 => "Microsoft.Azure.Cosmos.Query.Core.QueryPlan.LinuxQueryPlanInterop+X64",
-            Architecture.Arm64 => "Microsoft.Azure.Cosmos.Query.Core.QueryPlan.LinuxQueryPlanInterop+Arm64",
-            _ => throw new PlatformNotSupportedException()
-        };
-        if (instance.GetType().FullName == expectedType && !bypass)
+        if (instance.GetType().FullName == "Microsoft.Azure.Cosmos.Query.Core.QueryPlan.LinuxQueryPlanInterop" && !bypass)
         {
             return 0;
         }
 
-        string library = Path.Combine(
-            AppContext.BaseDirectory,
-            RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "libQueryPlanInterop.arm64.so" : "libQueryPlanInterop.amd64.so");
+        string library = Path.Combine(AppContext.BaseDirectory, "libQueryPlanInterop.so");
         Marshal.PrelinkAll(typeof(Native));
         IntPtr handle = Native.dlopen(library, 2);
         Console.WriteLine(handle == IntPtr.Zero
@@ -247,7 +240,7 @@ jobs:
         dotnet restore "$probe/QpiRuntimeProbe.csproj" -r "linux-$QPIARCH" /p:OS=Linux --verbosity minimal
         dotnet publish "$probe/QpiRuntimeProbe.csproj" -c Release -r "linux-$QPIARCH" --self-contained false --no-restore \
           -o "$probe/out" /p:OS=Linux --verbosity minimal
-        ls -l "$probe/out"/libQueryPlanInterop.*.so
+        ls -l "$probe/out/libQueryPlanInterop.so"
       displayName: Publish native-load probe (linux-$(QpiArch))
 
     - bash: |

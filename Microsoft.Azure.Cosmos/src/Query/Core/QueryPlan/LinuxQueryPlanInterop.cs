@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
-    internal abstract class LinuxQueryPlanInterop : IQueryPlanInterop
+    internal sealed class LinuxQueryPlanInterop : IQueryPlanInterop
     {
         private static readonly Encoding WideStringEncoding = new UTF32Encoding(
             bigEndian: false,
@@ -24,6 +24,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             this.libraryLoaded = new Lazy<bool>(this.TryLoadLibrary);
         }
 
+        public static IQueryPlanInterop Instance { get; } = new LinuxQueryPlanInterop();
+
         public bool BypassQueryParsing()
         {
             return !ConfigurationManager.IsQueryInteropEnabled() || !this.libraryLoaded.Value;
@@ -32,13 +34,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         public uint CreateServiceProvider(string configuration, out IntPtr serviceProvider)
         {
             byte[] utf8Configuration = Encoding.UTF8.GetBytes(configuration + '\0');
-            return this.CreateServiceProviderNative(utf8Configuration, out serviceProvider);
+            return NativeMethods.CreateServiceProvider(utf8Configuration, out serviceProvider);
         }
 
         public uint UpdateServiceProvider(IntPtr serviceProvider, string configuration)
         {
             byte[] utf8Configuration = Encoding.UTF8.GetBytes(configuration + '\0');
-            return this.UpdateServiceProviderNative(serviceProvider, utf8Configuration);
+            return NativeMethods.UpdateServiceProvider(serviceProvider, utf8Configuration);
         }
 
         public uint GetPartitionKeyRanges(
@@ -67,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     Marshal.Copy(token, 0, widePathTokens[i], token.Length);
                 }
 
-                return this.GetPartitionKeyRangesNative(
+                return NativeMethods.GetPartitionKeyRangesFromQuery4(
                     serviceProvider,
                     wideQuery,
                     options,
@@ -88,23 +90,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 }
             }
         }
-
-        protected abstract uint CreateServiceProviderNative(byte[] configuration, out IntPtr serviceProvider);
-
-        protected abstract uint UpdateServiceProviderNative(IntPtr serviceProvider, byte[] configuration);
-
-        protected abstract uint GetPartitionKeyRangesNative(
-            IntPtr serviceProvider,
-            byte[] query,
-            PartitionKeyRangesOptions options,
-            IntPtr[] pathTokens,
-            uint[] pathTokenLengths,
-            uint pathCount,
-            byte[] vectorPolicy,
-            uint vectorPolicyLength,
-            IntPtr buffer,
-            uint bufferLength,
-            out uint resultLength);
 
         private static byte[] EncodeWideString(string value)
         {
@@ -140,154 +125,34 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             return false;
         }
 
-        internal sealed class X64 : LinuxQueryPlanInterop
+        private static class NativeMethods
         {
-            private X64()
-            {
-            }
+            // The package ships this file name for every Linux architecture under runtimes/<rid>/native.
+            private const string Library = "libQueryPlanInterop.so";
 
-            public static IQueryPlanInterop Instance { get; } = new X64();
+            [DllImport(Library, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+            internal static extern uint CreateServiceProvider(
+                [In] byte[] configuration,
+                out IntPtr serviceProvider);
 
-            protected override uint CreateServiceProviderNative(byte[] configuration, out IntPtr serviceProvider)
-            {
-                return NativeMethods.CreateServiceProvider(configuration, out serviceProvider);
-            }
-
-            protected override uint UpdateServiceProviderNative(IntPtr serviceProvider, byte[] configuration)
-            {
-                return NativeMethods.UpdateServiceProvider(serviceProvider, configuration);
-            }
-
-            protected override uint GetPartitionKeyRangesNative(
+            [DllImport(Library, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+            internal static extern uint UpdateServiceProvider(
                 IntPtr serviceProvider,
-                byte[] query,
+                [In] byte[] configuration);
+
+            [DllImport(Library, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+            internal static extern uint GetPartitionKeyRangesFromQuery4(
+                IntPtr serviceProvider,
+                [In] byte[] query,
                 PartitionKeyRangesOptions options,
-                IntPtr[] pathTokens,
-                uint[] pathTokenLengths,
+                [In] IntPtr[] pathTokens,
+                [In] uint[] pathTokenLengths,
                 uint pathCount,
-                byte[] vectorPolicy,
+                [In] byte[] vectorPolicy,
                 uint vectorPolicyLength,
                 IntPtr buffer,
                 uint bufferLength,
-                out uint resultLength)
-            {
-                return NativeMethods.GetPartitionKeyRangesFromQuery4(
-                    serviceProvider,
-                    query,
-                    options,
-                    pathTokens,
-                    pathTokenLengths,
-                    pathCount,
-                    vectorPolicy,
-                    vectorPolicyLength,
-                    buffer,
-                    bufferLength,
-                    out resultLength);
-            }
-
-            private static class NativeMethods
-            {
-                private const string Library = "libQueryPlanInterop.amd64.so";
-
-                [DllImport(Library, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-                internal static extern uint CreateServiceProvider(
-                    [In] byte[] configuration,
-                    out IntPtr serviceProvider);
-
-                [DllImport(Library, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-                internal static extern uint UpdateServiceProvider(
-                    IntPtr serviceProvider,
-                    [In] byte[] configuration);
-
-                [DllImport(Library, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-                internal static extern uint GetPartitionKeyRangesFromQuery4(
-                    IntPtr serviceProvider,
-                    [In] byte[] query,
-                    PartitionKeyRangesOptions options,
-                    [In] IntPtr[] pathTokens,
-                    [In] uint[] pathTokenLengths,
-                    uint pathCount,
-                    [In] byte[] vectorPolicy,
-                    uint vectorPolicyLength,
-                    IntPtr buffer,
-                    uint bufferLength,
-                    out uint resultLength);
-            }
-        }
-
-        internal sealed class Arm64 : LinuxQueryPlanInterop
-        {
-            private Arm64()
-            {
-            }
-
-            public static IQueryPlanInterop Instance { get; } = new Arm64();
-
-            protected override uint CreateServiceProviderNative(byte[] configuration, out IntPtr serviceProvider)
-            {
-                return NativeMethods.CreateServiceProvider(configuration, out serviceProvider);
-            }
-
-            protected override uint UpdateServiceProviderNative(IntPtr serviceProvider, byte[] configuration)
-            {
-                return NativeMethods.UpdateServiceProvider(serviceProvider, configuration);
-            }
-
-            protected override uint GetPartitionKeyRangesNative(
-                IntPtr serviceProvider,
-                byte[] query,
-                PartitionKeyRangesOptions options,
-                IntPtr[] pathTokens,
-                uint[] pathTokenLengths,
-                uint pathCount,
-                byte[] vectorPolicy,
-                uint vectorPolicyLength,
-                IntPtr buffer,
-                uint bufferLength,
-                out uint resultLength)
-            {
-                return NativeMethods.GetPartitionKeyRangesFromQuery4(
-                    serviceProvider,
-                    query,
-                    options,
-                    pathTokens,
-                    pathTokenLengths,
-                    pathCount,
-                    vectorPolicy,
-                    vectorPolicyLength,
-                    buffer,
-                    bufferLength,
-                    out resultLength);
-            }
-
-            private static class NativeMethods
-            {
-                private const string Library = "libQueryPlanInterop.arm64.so";
-
-                [DllImport(Library, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-                internal static extern uint CreateServiceProvider(
-                    [In] byte[] configuration,
-                    out IntPtr serviceProvider);
-
-                [DllImport(Library, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-                internal static extern uint UpdateServiceProvider(
-                    IntPtr serviceProvider,
-                    [In] byte[] configuration);
-
-                [DllImport(Library, CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-                internal static extern uint GetPartitionKeyRangesFromQuery4(
-                    IntPtr serviceProvider,
-                    [In] byte[] query,
-                    PartitionKeyRangesOptions options,
-                    [In] IntPtr[] pathTokens,
-                    [In] uint[] pathTokenLengths,
-                    uint pathCount,
-                    [In] byte[] vectorPolicy,
-                    uint vectorPolicyLength,
-                    IntPtr buffer,
-                    uint bufferLength,
-                    out uint resultLength);
-            }
+                out uint resultLength);
         }
     }
 }

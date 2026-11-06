@@ -154,16 +154,8 @@
   </ItemGroup>	
 
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-		<None Include="$(PkgMicrosoft_Azure_Cosmos_QueryPlanInterop_Linux)\runtimes\linux-x64\native\libQueryPlanInterop.amd64.so"
-		      Pack="true" PackagePath="runtimes\linux-x64\native" Link="libQueryPlanInterop.amd64.so">
-			<CopyToOutputDirectory Condition="'$(RuntimeIdentifier)' == '' OR '$(RuntimeIdentifier)' == 'linux-x64'">PreserveNewest</CopyToOutputDirectory>
-			<CopyToPublishDirectory Condition="'$(RuntimeIdentifier)' == '' OR '$(RuntimeIdentifier)' == 'linux-x64'">PreserveNewest</CopyToPublishDirectory>
-		</None>
-		<None Include="$(PkgMicrosoft_Azure_Cosmos_QueryPlanInterop_Linux)\runtimes\linux-arm64\native\libQueryPlanInterop.arm64.so"
-		      Pack="true" PackagePath="runtimes\linux-arm64\native" Link="libQueryPlanInterop.arm64.so">
-			<CopyToOutputDirectory Condition="'$(RuntimeIdentifier)' == '' OR '$(RuntimeIdentifier)' == 'linux-arm64'">PreserveNewest</CopyToOutputDirectory>
-			<CopyToPublishDirectory Condition="'$(RuntimeIdentifier)' == '' OR '$(RuntimeIdentifier)' == 'linux-arm64'">PreserveNewest</CopyToPublishDirectory>
-		</None>
+		<None Include="$(PkgMicrosoft_Azure_Cosmos_QueryPlanInterop_Linux)\runtimes\linux-x64\native\libQueryPlanInterop.so" Pack="true" PackagePath="runtimes\linux-x64\native" />
+		<None Include="$(PkgMicrosoft_Azure_Cosmos_QueryPlanInterop_Linux)\runtimes\linux-arm64\native\libQueryPlanInterop.so" Pack="true" PackagePath="runtimes\linux-arm64\native" />
 		<None Include="$(OutputPath)\Cosmos.CRTCompat.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
 		<None Include="$(OutputPath)\Microsoft.Azure.Cosmos.ServiceInterop.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
 		<None Include="$(OutputPath)\vcruntime140_1.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
     using System;
     using System.Diagnostics;
     using System.IO;
-    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -21,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
     [TestCategory("LongRunning")]
     public class CosmosTargetsInteropPublishTests
     {
+        private const string LinuxLibraryName = "libQueryPlanInterop.so";
         private static string testProjectsRoot;
         private static string localNugetPackagePath;
         private static string packageVersion;
@@ -73,12 +73,11 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             string publishPath = await this.CreateAndPublishTestProjectAsync($"NonWinTest_{runtimeIdentifier}", runtimeIdentifier);
 
             this.AssertWindowsDllsNotPresent(publishPath, runtimeIdentifier);
-            string[] linuxLibraries = Directory.GetFiles(publishPath, "libQueryPlanInterop.*.so", SearchOption.AllDirectories);
+            string[] linuxLibraries = Directory.GetFiles(publishPath, LinuxLibraryName, SearchOption.AllDirectories);
             if (runtimeIdentifier == "linux-x64" || runtimeIdentifier == "linux-arm64")
             {
-                string libraryName = runtimeIdentifier == "linux-x64" ? "libQueryPlanInterop.amd64.so" : "libQueryPlanInterop.arm64.so";
                 Assert.AreEqual(1, linuxLibraries.Length, "Only the matching Linux architecture should be published.");
-                Assert.AreEqual(libraryName, Path.GetFileName(linuxLibraries[0]));
+                Assert.AreEqual(Path.Combine(publishPath, LinuxLibraryName), linuxLibraries[0]);
                 using BinaryReader reader = new BinaryReader(File.OpenRead(linuxLibraries[0]));
                 reader.BaseStream.Position = 18; // ELF e_machine.
                 Assert.AreEqual(runtimeIdentifier == "linux-x64" ? (ushort)62 : (ushort)183, reader.ReadUInt16());
@@ -102,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             string publishPath = await this.CreateAndPublishTestProjectAsync($"WinTest_{runtimeIdentifier}", runtimeIdentifier);
 
             this.AssertWindowsDllsPresent(publishPath, runtimeIdentifier);
-            Assert.AreEqual(0, Directory.GetFiles(publishPath, "libQueryPlanInterop.*.so", SearchOption.AllDirectories).Length);
+            Assert.AreEqual(0, Directory.GetFiles(publishPath, LinuxLibraryName, SearchOption.AllDirectories).Length);
         }
 
         /// <summary>
@@ -115,8 +114,9 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             string publishPath = await this.CreateAndPublishTestProjectAsync("NoRidTest", runtimeIdentifier: null);
 
             this.AssertWindowsDllsPresent(publishPath, "no RuntimeIdentifier");
-            Assert.IsTrue(File.Exists(Path.Combine(publishPath, "runtimes", "linux-x64", "native", "libQueryPlanInterop.amd64.so")));
-            Assert.IsTrue(File.Exists(Path.Combine(publishPath, "runtimes", "linux-arm64", "native", "libQueryPlanInterop.arm64.so")));
+            Assert.IsTrue(File.Exists(Path.Combine(publishPath, "runtimes", "linux-x64", "native", LinuxLibraryName)));
+            Assert.IsTrue(File.Exists(Path.Combine(publishPath, "runtimes", "linux-arm64", "native", LinuxLibraryName)));
+            Assert.IsFalse(File.Exists(Path.Combine(publishPath, LinuxLibraryName)), "Portable publish must resolve the Linux library through runtimes/<rid>/native.");
         }
 
         private static async Task CreateLocalNuGetPackageAsync()
@@ -201,10 +201,14 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
                     || (runtimeIdentifier == "linux-arm64" && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)))
             {
                 await RunDotnetCommandAsync($"\"{Path.Combine(publishDir, projectName + ".dll")}\" --verify-linux-query-planning");
-                string libraryName = RuntimeInformation.ProcessArchitecture == Architecture.Arm64
-                    ? "libQueryPlanInterop.arm64.so"
-                    : "libQueryPlanInterop.amd64.so";
-                string libraryPath = Directory.GetFiles(publishDir, libraryName, SearchOption.AllDirectories).Single();
+                string libraryPath = runtimeIdentifier != null
+                    ? Path.Combine(publishDir, LinuxLibraryName)
+                    : Path.Combine(
+                        publishDir,
+                        "runtimes",
+                        RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "linux-arm64" : "linux-x64",
+                        "native",
+                        LinuxLibraryName);
                 string unavailablePath = libraryPath + ".disabled";
                 File.Move(libraryPath, unavailablePath);
                 try
