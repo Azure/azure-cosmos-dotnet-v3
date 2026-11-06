@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [6203](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6203) Diagnostics: Fixes `CosmosException.ToString()` and `CosmosDiagnostics.ToString()` throwing `ArgumentNullException` when a Gateway mode attempt returned a status code without a reason phrase, such as 449 (`RetryWith`). The diagnostics now report a null `ReasonPhrase` for that attempt.
 - [6188](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6188) Query: Fixes hybrid search reciprocal rank fusion (RRF) results being ranked incorrectly when component scores are tied. Each result now receives a unique ordinal rank, with deterministic tie-breaking based on the decoded document ID portion of `_rid`.
 - [6141](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6141) Distributed Transactions (preview): Fixes operation results synthesized from bodyless or unusable responses reporting index `0` for every operation instead of the corresponding zero-based request index.
 - [6119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6119) Distributed Transactions (preview): Isolates submitted operations from later additions to a read or write transaction, avoiding incorrect failures when interpreting a successful response. Each transaction instance still supports only one nonempty execution attempt.
