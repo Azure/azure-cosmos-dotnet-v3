@@ -646,39 +646,47 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
-        public async Task CompetitionRanksDetermineWeightedRrfOrder()
+        public async Task OrdinalRanksDetermineWeightedRrfOrder()
         {
-            await AssertCompetitionRankScenarioAsync(
+            await AssertOrdinalRankScenarioAsync(
                 firstComponentScores: new[] { 10.0, 10.0, 8.0, 7.0, 6.0 },
                 expected: new[] { 1, 0, 2, 3, 4 });
 
-            // Verify the regression case where a middle tie group causes the next rank to skip from 2 to 5.
-            await AssertCompetitionRankScenarioAsync(
+            // Tied scores must receive consecutive ranks.
+            await AssertOrdinalRankScenarioAsync(
                 firstComponentScores: new[] { 10.0, 9.0, 9.0, 9.0, 4.0 },
-                expected: new[] { 3, 0, 2, 1, 4 });
+                expected: new[] { 3, 0, 2, 4, 1 });
 
-            await AssertCompetitionRankScenarioAsync(
+            await AssertOrdinalRankScenarioAsync(
                 firstComponentScores: new[] { 10.0, 9.0, 8.0, 7.0, 7.0 },
                 expected: new[] { 0, 1, 4, 2, 3 });
 
-            await AssertCompetitionRankScenarioAsync(
+            await AssertOrdinalRankScenarioAsync(
                 firstComponentScores: new[] { 5.0, 5.0, 5.0, 5.0, 5.0 },
                 expected: new[] { 4, 3, 2, 1, 0 });
+
+            await AssertOrdinalRankScenarioAsync(
+                firstComponentScores: Enumerable.Repeat(5.0, 200).ToArray(),
+                expected: Enumerable.Range(0, 200).Reverse().ToArray());
         }
 
-        private static async Task AssertCompetitionRankScenarioAsync(double[] firstComponentScores, int[] expected)
+        [TestMethod]
+        public async Task EqualRrfScoresUseDecodedDocumentRidOrder()
         {
-            int[] actual = await RunCompetitionRankScenarioAsync(firstComponentScores);
-            if (!expected.SequenceEqual(actual))
-            {
-                System.Diagnostics.Trace.WriteLine("Mismatch in competition rank results");
-                System.Diagnostics.Trace.WriteLine($"Expected: {string.Join(", ", expected)}");
-                System.Diagnostics.Trace.WriteLine($"Actual: {string.Join(", ", actual)}");
-                Assert.Fail();
-            }
+            int[] actual = await RunOrdinalRankScenarioAsync(
+                firstComponentScores: new[] { 5.0, 4.0, 3.0, 2.0, 1.0 },
+                weights: new[] { 1.0, 1.0 });
+
+            CollectionAssert.AreEqual(new[] { 4, 0, 3, 1, 2 }, actual);
         }
 
-        private static async Task<int[]> RunCompetitionRankScenarioAsync(double[] firstComponentScores)
+        private static async Task AssertOrdinalRankScenarioAsync(double[] firstComponentScores, int[] expected)
+        {
+            int[] actual = await RunOrdinalRankScenarioAsync(firstComponentScores, new[] { 2.0, 1.0 });
+            CollectionAssert.AreEqual(expected, actual, "Unexpected ordinal rank results.");
+        }
+
+        private static async Task<int[]> RunOrdinalRankScenarioAsync(double[] firstComponentScores, double[] weights)
         {
             IReadOnlyList<FeedRangeEpk> feedRanges = new List<FeedRangeEpk>
             {
@@ -710,7 +718,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 pageSize: firstComponentScores.Length,
                 skip: null,
                 take: null,
-                weights: new[] { 2.0, 1.0 },
+                weights: weights,
                 skipOrderByRewrite: false,
                 fullTextScoreScope: FullTextScoreScope.Local);
 
