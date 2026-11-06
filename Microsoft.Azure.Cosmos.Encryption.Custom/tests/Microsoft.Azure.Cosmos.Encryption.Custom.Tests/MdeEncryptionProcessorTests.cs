@@ -406,8 +406,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
             else
             {
-                Assert.IsNotNull(encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
-                Assert.AreNotEqual(testDoc.SensitiveStr, encryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>()); // not equal since value is encrypted
+                JProperty encryptedSensitive = encryptedDoc.Property(nameof(TestDoc.SensitiveStr));
+                Assert.IsNotNull(encryptedSensitive);
+                Assert.AreEqual(JTokenType.String, encryptedSensitive.Value.Type);
+                string encryptedValue = encryptedSensitive.Value.Value<string>();
+                Assert.AreNotEqual(testDoc.SensitiveStr, encryptedValue);
+                Assert.IsTrue(Convert.FromBase64String(encryptedValue).Length > 0);
                 Assert.AreEqual(TestDoc.PathsToEncrypt.Count, encryptionProperties.EncryptedPaths.Count());
             }
 
