@@ -1,0 +1,45 @@
+{
+  "synthetic": true,
+  "candidate": {
+    "repository": "synthetic/sdk",
+    "source": "1111111111111111111111111111111111111111",
+    "base": "2222222222222222222222222222222222222222",
+    "merge": "3333333333333333333333333333333333333333",
+    "tree": "4444444444444444444444444444444444444444"
+  },
+  "inputs": {
+    "evaluator": "5555555555555555555555555555555555555555",
+    "policy": "6666666666666666666666666666666666666666",
+    "spec": "7777777777777777777777777777777777777777777777777777777777777777",
+    "cohort": "60291283da19fa8644200f109755cd06d2bda49ac5da4159e39146d6028706f4"
+  },
+  "binding": {
+    "core": "published-reference",
+    "package": "Synthetic.Package/1.0.0",
+    "artifact": "8888888888888888888888888888888888888888888888888888888888888888",
+    "tfm": "net6.0",
+    "configuration": "Release",
+    "surface": "GA",
+    "runtime": "synthetic-runtime-not-a-loaded-CLR"
+  },
+  "fixture": {
+    "identity": "synthetic-no-service",
+    "msi": "9999999999999999999999999999999999999999999999999999999999999999",
+    "profile": "synthetic-no-access"
+  },
+  "native": {
+    "provider": "synthetic",
+    "build": "synthetic-build",
+    "job": "synthetic-job",
+    "task": "synthetic-task",
+    "jobAttempt": 1,
+    "taskAttempt": 1,
+    "result": "Succeeded",
+    "previousAttempts": []
+  },
+  "cases": [
+    { "id": "synthetic/true", "arguments": [true], "nativeName": "Synthetic.Tests.Patch(true)" },
+    { "id": "synthetic/false", "arguments": [false], "nativeName": "Synthetic.Tests.Patch(false)" }
+  ],
+  "trxSha256": "e1d444cd64be24c99ab9e05085f9c61b799613efebe5fc251cd911bdbdeb2377"
+}

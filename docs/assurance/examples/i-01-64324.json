@@ -1,0 +1,275 @@
+{
+  "formatVersion": 1,
+  "kind": "historical-example",
+  "id": "I-01/build-64324/historical",
+  "recordState": "proposed",
+  "policyRef": {
+    "repository": "kushagraThapar/SuicideSquad",
+    "revision": "447c660872ceaced30a5b5c60abec3bc5c54eb7b",
+    "path": "docs/dotnet/design-handoff.md",
+    "version": "0.2.12"
+  },
+  "provenance": {
+    "sourceType": "published-documentation",
+    "verification": "native-reported",
+    "references": [
+      {
+        "repository": "Azure/azure-cosmos-dotnet-v3",
+        "revision": "c9e11829da397192338459b9d8c58edbe5d7860d",
+        "path": "docs/assurance/specs/i-01-encryption-patch-paired-tests.md",
+        "sha256": "21ce9d37caa9c1a919f2de873c6d03d6027e10b9f4c2ec62303f639936867c2c"
+      }
+    ],
+    "limits": [
+      "Historical index only. Published v0.1.4 documentation and bounded assertion bodies were inspected; original native TRX/attachments were not independently reconciled by this foundation author or coordinator.",
+      "The policyRef is this index's D-12 recording policy, not a relabeling of the original execution's historical shared-policy state. Original policy and attempt history remain in the pinned v0.1.4 source.",
+      "Do not replace tested ee19f83e or merge 0babdeb0 with later c9e11829/73300881 documentation heads.",
+      "Native run hashes/counters are attributed published receipts, not newly collected evidence. No service access, artifact download, migration or qualification occurred.",
+      "A-01's 37 lanes, eight atomic candidates, 28 seeds, 12 families and 41 initial rows remain navigation/backlog inputs, not coverage denominators."
+    ]
+  },
+  "unknowns": [
+    { "id": "native-originals", "reason": "Original TRX and subresult/attachment contents have not been independently reconciled here. Native names remain null rather than guessed from collapsed API labels.", "proofImpact": "Cannot satisfy native required proof or qualification." },
+    { "id": "pre-implementation-authority", "reason": "The original local-freeze digest/order is attributed to the published author receipt; individual API/history oracle approval is unresolved.", "proofImpact": "Existing tests/agreement are regression witnesses, not independent correctness authority." },
+    { "id": "actual-payload-and-fixture", "reason": "Installed runtime/SDK labels do not establish loaded CLR/payload hashes, emulator MSI identity, instantiated fixture/capabilities or cleanup proof.", "proofImpact": "Runtime/service/artifact admission remains incomplete." },
+    { "id": "binding-boundaries", "reason": "These native companion-source tasks reference published core packages. Current-core service, produced nupkg and installed-consumer proof are separate and missing.", "proofImpact": "Cannot borrow these results for another core/package/consumer binding." },
+    { "id": "discovery", "reason": "Pre-execution discovery listed methods, not independently expanded five/eight argument sets.", "proofImpact": "Execution-reported tuples do not manufacture independent expanded discovery." },
+    { "id": "counter-scope", "reason": "Unit raw-parent/aggregate values not established by this index are null. reportedParent for service is the documented API-level result count, not the number of nonterminal XML nodes.", "proofImpact": "Do not treat any aggregate as the complete terminal-case denominator." },
+    { "id": "native-attempts-and-roles", "reason": "Attempt 1 is author-reported. Protected producer, operating profile, independent Router judgments/test challenge and semantic peer comparison were not executed here.", "proofImpact": "Unqualified historical example; no merge eligibility." },
+    { "id": "ignored-neighbor", "reason": "EncryptionChangeFeedDecryptionSuccessful is documented as ignored in each service suite despite notExecuted=0 counters.", "proofImpact": "One retained ignored terminal per service run is not passed, retired or whole-suite closure." }
+  ],
+  "specRef": {
+    "repository": "Azure/azure-cosmos-dotnet-v3",
+    "revision": "c9e11829da397192338459b9d8c58edbe5d7860d",
+    "path": "docs/assurance/specs/i-01-encryption-patch-paired-tests.md",
+    "sha256": "21ce9d37caa9c1a919f2de873c6d03d6027e10b9f4c2ec62303f639936867c2c"
+  },
+  "preImplementationReceipt": {
+    "kind": "historical-local-freeze",
+    "sha256": "6e754285dd82c70dcc07a979bd65365274c849e43f4538b58b17b4b7ae61c587",
+    "reference": "I-01 v0.1.0 original local snapshot, as retained/reported in published spec v0.1.4.",
+    "attribution": "Paired-test author's durable receipt; not an independently witnessed freeze or individual oracle approval by this session.",
+    "verification": "documented-not-independently-witnessed"
+  },
+  "impact": {
+    "paths": [
+      "Microsoft.Azure.Cosmos.Encryption/tests/Microsoft.Azure.Cosmos.Encryption.Tests/EncryptionContainerPatchTests.cs",
+      "Microsoft.Azure.Cosmos.Encryption/tests/EmulatorTests/MdeEncryptionTests.cs"
+    ],
+    "obligationIds": ["I01/reject-encrypted-increment", "I01/caller-operations", "I01/rejected-state-and-dispatch", "I01/plain-increment", "I01/broad-patch-neighbor"],
+    "gapIds": ["G-02", "G-03", "G-05", "G-08", "G-10"],
+    "preservation": [
+      "Original single-operation rows and caller operation identities/order.",
+      "Broad encrypted Add/Replace/Set/Remove/plain-Increment sequence, representation and diagnostics.",
+      "Rejected modeled item/ETag, forwarding observer and accepted plain patch through the same observer.",
+      "Original failed/local attempts and native ignored neighboring leaf stay in the published spec."
+    ],
+    "intentionalChanges": ["Historical test observer strengthening and paired selection, not a new SDK functional behavior or independently approved error-message guarantee."]
+  },
+  "obligations": [
+    {
+      "id": "I01/reject-encrypted-increment", "version": "historical-0.1.4", "lifecycle": "unresolved",
+      "preconditions": ["Root encrypted Increment, alone or first/last in a mixed list."],
+      "allowed": ["Required InvalidOperationException with encrypted path as a bounded regression witness."],
+      "forbidden": ["Silent completion or forwarding a successful prefix."],
+      "interactions": ["Typed/stream API and Gateway/Direct are separate required tuples."],
+      "scenarios": [{ "id": "I01/scenario/reject", "kind": "negative", "expectation": "Encrypted Increment is rejected in each declared ordering/API/mode cell." }],
+      "authority": { "status": "unresolved", "reference": null }
+    },
+    {
+      "id": "I01/caller-operations", "version": "historical-0.1.4", "lifecycle": "unresolved",
+      "preconditions": ["Caller supplies immutable Increment operation objects in a declared order."],
+      "allowed": ["Original count/order/reference identities and accepted plain operation types retained."],
+      "forbidden": ["Rewriting/reordering caller operations or mutating a failed mixed list."],
+      "interactions": ["Reference identity is a local CLR observer; actual service preservation has separate state/dispatch witnesses, not fictitious service CLR identity."],
+      "scenarios": [{ "id": "I01/scenario/caller", "kind": "boundary", "expectation": "Single/mixed/two-plain unit cases preserve exact operation objects and order." }],
+      "authority": { "status": "unresolved", "reference": null }
+    },
+    {
+      "id": "I01/rejected-state-and-dispatch", "version": "historical-0.1.4", "lifecycle": "unresolved",
+      "preconditions": ["Real encrypted item exists and the counting Patch handler forwards requests."],
+      "allowed": ["After rejection: zero logical Patch forwarding, fresh modeled document equal, nonempty ETag unchanged."],
+      "forbidden": ["A vacuous inactive observer or a rejected operation changing the modeled service item."],
+      "interactions": ["The accepted plain Increment uses the same handler as a positive control; this is not universal no-commit or physical-attempt proof."],
+      "scenarios": [{ "id": "I01/scenario/state", "kind": "negative", "expectation": "Each eight-way service tuple retains modeled state and proves the observer is active." }],
+      "authority": { "status": "unresolved", "reference": null }
+    },
+    {
+      "id": "I01/plain-increment", "version": "historical-0.1.4", "lifecycle": "unresolved",
+      "preconditions": ["Valid plain Increment after the rejected list."],
+      "allowed": ["Unit pass-through identity; service OK/exact increment, handler count one, changed nonempty ETag and fresh expected document."],
+      "forbidden": ["Accepting encrypted Increment by weakening the positive control or preserving only a status label."],
+      "interactions": ["Published-core companion binding is not current-core service or installed-package proof."],
+      "scenarios": [{ "id": "I01/scenario/plain", "kind": "positive", "expectation": "Accepted single/two-operation units and same-observer service patch remain usable." }],
+      "authority": { "status": "unresolved", "reference": null }
+    },
+    {
+      "id": "I01/broad-patch-neighbor", "version": "historical-0.1.4", "lifecycle": "unresolved",
+      "preconditions": ["Existing parameterless EncryptionPatchItem witness."],
+      "allowed": ["Retain the broad existing patch sequence and require its formerly optional encrypted-Increment rejection."],
+      "forbidden": ["Replacing the neighboring sequence with only new narrow tests."],
+      "interactions": ["Its fixture transport is not independently established as a second eight-way mode/API matrix."],
+      "scenarios": [{ "id": "I01/scenario/neighbor", "kind": "positive", "expectation": "Existing witness remains required separately from the eight new terminal rows." }],
+      "authority": { "status": "unresolved", "reference": null }
+    }
+  ],
+  "assertions": [
+    {
+      "id": "I01/assert/unit-reject", "obligationIds": ["I01/reject-encrypted-increment", "I01/caller-operations"],
+      "scenarioIds": ["I01/scenario/reject", "I01/scenario/caller"],
+      "project": "Microsoft.Azure.Cosmos.Encryption/tests/Microsoft.Azure.Cosmos.Encryption.Tests/Microsoft.Azure.Cosmos.Encryption.Tests.csproj",
+      "sourceRef": { "repository": "Azure/azure-cosmos-dotnet-v3", "revision": "ee19f83e9e13d4f98790a6fbfe09dd4bd087ad29", "path": "Microsoft.Azure.Cosmos.Encryption/tests/Microsoft.Azure.Cosmos.Encryption.Tests/EncryptionContainerPatchTests.cs", "sha256": "c1b0a6c1ac4a7a98fc6cee5c7c104a479fe7a995f0473c43f6b1ffde22edb8c7" },
+      "symbol": "EncryptPatchOperationsAsync_Increment_On_Encrypted_Path_Throws",
+      "observes": "Inspected 37-96 bounded unit source: required exception/path and original list count/order/reference identities across three bool tuples.",
+      "limits": ["Local operation validation, not service/no-commit proof or independently approved message contract."]
+    },
+    {
+      "id": "I01/assert/unit-plain", "obligationIds": ["I01/caller-operations", "I01/plain-increment"],
+      "scenarioIds": ["I01/scenario/caller", "I01/scenario/plain"],
+      "project": "Microsoft.Azure.Cosmos.Encryption/tests/Microsoft.Azure.Cosmos.Encryption.Tests/Microsoft.Azure.Cosmos.Encryption.Tests.csproj",
+      "sourceRef": { "repository": "Azure/azure-cosmos-dotnet-v3", "revision": "ee19f83e9e13d4f98790a6fbfe09dd4bd087ad29", "path": "Microsoft.Azure.Cosmos.Encryption/tests/Microsoft.Azure.Cosmos.Encryption.Tests/EncryptionContainerPatchTests.cs", "sha256": "c1b0a6c1ac4a7a98fc6cee5c7c104a479fe7a995f0473c43f6b1ffde22edb8c7" },
+      "symbol": "EncryptPatchOperationsAsync_Increment_On_NonEncrypted_Path_Passes_Through",
+      "observes": "Inspected 37-96 bounded unit source: original accepted object count/order/reference identity and Increment types for one/two operations.",
+      "limits": ["Local CLR witness only; service positive control is separately mapped."]
+    },
+    {
+      "id": "I01/assert/service", "obligationIds": ["I01/reject-encrypted-increment", "I01/rejected-state-and-dispatch", "I01/plain-increment"],
+      "scenarioIds": ["I01/scenario/reject", "I01/scenario/state", "I01/scenario/plain"],
+      "project": "Microsoft.Azure.Cosmos.Encryption/tests/EmulatorTests/Microsoft.Azure.Cosmos.Encryption.EmulatorTests.csproj",
+      "sourceRef": { "repository": "Azure/azure-cosmos-dotnet-v3", "revision": "ee19f83e9e13d4f98790a6fbfe09dd4bd087ad29", "path": "Microsoft.Azure.Cosmos.Encryption/tests/EmulatorTests/MdeEncryptionTests.cs", "sha256": "b90b9caf0b972cfd4037facaa092f82890268a8a60286f7d9f8b30024812aab3" },
+      "symbol": "EncryptionPatchItemIncrement",
+      "observes": "Inspected 2938-3054: required typed/stream rejection, zero forwarding, fresh exact modeled state/ETag; valid plain Increment through the same forwarding observer, count one, exact state and changed ETag.",
+      "limits": ["Logical Patch observer, not physical-attempt census or universal no-commit guarantee; original native artifacts and instantiated fixture not independently reconciled here."]
+    },
+    {
+      "id": "I01/assert/neighbor", "obligationIds": ["I01/broad-patch-neighbor"],
+      "scenarioIds": ["I01/scenario/neighbor"],
+      "project": "Microsoft.Azure.Cosmos.Encryption/tests/EmulatorTests/Microsoft.Azure.Cosmos.Encryption.EmulatorTests.csproj",
+      "sourceRef": { "repository": "Azure/azure-cosmos-dotnet-v3", "revision": "ee19f83e9e13d4f98790a6fbfe09dd4bd087ad29", "path": "Microsoft.Azure.Cosmos.Encryption/tests/EmulatorTests/MdeEncryptionTests.cs", "sha256": "b90b9caf0b972cfd4037facaa092f82890268a8a60286f7d9f8b30024812aab3" },
+      "symbol": "EncryptionPatchItem",
+      "observes": "Retained parameterless broad patch witness; formerly optional rejection strengthened, as documented at immutable v0.1.4.",
+      "limits": ["Separate existing fixture witness, not another eight-way Gateway/Direct x API matrix."]
+    }
+  ],
+  "requiredCells": [
+    {
+      "id": "I01/ga-unit", "obligationIds": ["I01/reject-encrypted-increment", "I01/caller-operations", "I01/plain-increment"],
+      "scenarioIds": ["I01/scenario/reject", "I01/scenario/caller", "I01/scenario/plain"], "assertionIds": ["I01/assert/unit-reject", "I01/assert/unit-plain"],
+      "layer": "unit", "variant": "GA", "tfm": "net6.0", "binding": "Candidate Encryption source; published core Microsoft.Azure.Cosmos 3.51.0; Release. Not current-core or produced/installed nupkg proof.",
+      "cases": [
+        { "id": "I01/ga-unit/reject-single", "arguments": [false, true], "nativeName": null },
+        { "id": "I01/ga-unit/reject-first", "arguments": [true, true], "nativeName": null },
+        { "id": "I01/ga-unit/reject-last", "arguments": [true, false], "nativeName": null },
+        { "id": "I01/ga-unit/plain-single", "arguments": [false], "nativeName": null },
+        { "id": "I01/ga-unit/plain-two", "arguments": [true], "nativeName": null }
+      ]
+    },
+    {
+      "id": "I01/preview-unit", "obligationIds": ["I01/reject-encrypted-increment", "I01/caller-operations", "I01/plain-increment"],
+      "scenarioIds": ["I01/scenario/reject", "I01/scenario/caller", "I01/scenario/plain"], "assertionIds": ["I01/assert/unit-reject", "I01/assert/unit-plain"],
+      "layer": "unit", "variant": "preview", "tfm": "net6.0", "binding": "Candidate preview Encryption source; published core Microsoft.Azure.Cosmos 3.52.0-preview.0; Release. Not current-core or produced/installed nupkg proof.",
+      "cases": [
+        { "id": "I01/preview-unit/reject-single", "arguments": [false, true], "nativeName": null },
+        { "id": "I01/preview-unit/reject-first", "arguments": [true, true], "nativeName": null },
+        { "id": "I01/preview-unit/reject-last", "arguments": [true, false], "nativeName": null },
+        { "id": "I01/preview-unit/plain-single", "arguments": [false], "nativeName": null },
+        { "id": "I01/preview-unit/plain-two", "arguments": [true], "nativeName": null }
+      ]
+    },
+    {
+      "id": "I01/ga-service", "obligationIds": ["I01/reject-encrypted-increment", "I01/rejected-state-and-dispatch", "I01/plain-increment"],
+      "scenarioIds": ["I01/scenario/reject", "I01/scenario/state", "I01/scenario/plain"], "assertionIds": ["I01/assert/service"],
+      "layer": "emulator", "variant": "GA", "tfm": "net6.0", "binding": "Candidate Encryption source; published core 3.51.0. Arguments are useGateway, useStream, encryptedFirst; authorized native Windows emulator as reported, not newly verified.",
+      "cases": [
+        { "id": "I01/ga-service/GST", "arguments": [true, true, true], "nativeName": null },
+        { "id": "I01/ga-service/GSF", "arguments": [true, true, false], "nativeName": null },
+        { "id": "I01/ga-service/GTT", "arguments": [true, false, true], "nativeName": null },
+        { "id": "I01/ga-service/GTF", "arguments": [true, false, false], "nativeName": null },
+        { "id": "I01/ga-service/DST", "arguments": [false, true, true], "nativeName": null },
+        { "id": "I01/ga-service/DSF", "arguments": [false, true, false], "nativeName": null },
+        { "id": "I01/ga-service/DTT", "arguments": [false, false, true], "nativeName": null },
+        { "id": "I01/ga-service/DTF", "arguments": [false, false, false], "nativeName": null }
+      ]
+    },
+    {
+      "id": "I01/preview-service", "obligationIds": ["I01/reject-encrypted-increment", "I01/rejected-state-and-dispatch", "I01/plain-increment"],
+      "scenarioIds": ["I01/scenario/reject", "I01/scenario/state", "I01/scenario/plain"], "assertionIds": ["I01/assert/service"],
+      "layer": "emulator", "variant": "preview", "tfm": "net6.0", "binding": "Candidate preview Encryption source; published core 3.52.0-preview.0. Same declared eight-way tuples; not current-core/consumer proof.",
+      "cases": [
+        { "id": "I01/preview-service/GST", "arguments": [true, true, true], "nativeName": null },
+        { "id": "I01/preview-service/GSF", "arguments": [true, true, false], "nativeName": null },
+        { "id": "I01/preview-service/GTT", "arguments": [true, false, true], "nativeName": null },
+        { "id": "I01/preview-service/GTF", "arguments": [true, false, false], "nativeName": null },
+        { "id": "I01/preview-service/DST", "arguments": [false, true, true], "nativeName": null },
+        { "id": "I01/preview-service/DSF", "arguments": [false, true, false], "nativeName": null },
+        { "id": "I01/preview-service/DTT", "arguments": [false, false, true], "nativeName": null },
+        { "id": "I01/preview-service/DTF", "arguments": [false, false, false], "nativeName": null }
+      ]
+    },
+    {
+      "id": "I01/ga-neighbor", "obligationIds": ["I01/broad-patch-neighbor"], "scenarioIds": ["I01/scenario/neighbor"], "assertionIds": ["I01/assert/neighbor"],
+      "layer": "emulator", "variant": "GA", "tfm": "net6.0", "binding": "Existing native fixture/published-core 3.51.0; its transport is not independently established by this index.",
+      "cases": [{ "id": "I01/ga-neighbor/patch", "arguments": [], "nativeName": null }]
+    },
+    {
+      "id": "I01/preview-neighbor", "obligationIds": ["I01/broad-patch-neighbor"], "scenarioIds": ["I01/scenario/neighbor"], "assertionIds": ["I01/assert/neighbor"],
+      "layer": "emulator", "variant": "preview", "tfm": "net6.0", "binding": "Existing native fixture/published-core 3.52.0-preview.0; not an additional eight-way mode matrix.",
+      "cases": [{ "id": "I01/preview-neighbor/patch", "arguments": [], "nativeName": null }]
+    }
+  ],
+  "expectedCohorts": [
+    { "cellId": "I01/ga-unit", "caseIds": ["I01/ga-unit/reject-single", "I01/ga-unit/reject-first", "I01/ga-unit/reject-last", "I01/ga-unit/plain-single", "I01/ga-unit/plain-two"], "sha256": "cc52383a0bf47ee74a680621e71075134c5660a57a8b3dba9b235726b31e3240", "origin": "Five typed tuples declared in original I-01 pre-implementation matrix, retained in published v0.1.4; individual oracle approval unresolved." },
+    { "cellId": "I01/preview-unit", "caseIds": ["I01/preview-unit/reject-single", "I01/preview-unit/reject-first", "I01/preview-unit/reject-last", "I01/preview-unit/plain-single", "I01/preview-unit/plain-two"], "sha256": "c554e015425cc91ce72f0b55e741b715e11cc4552cd3d0e3f533362dd167c77c", "origin": "Distinct preview binding of the same originally declared five tuples, not borrowed GA proof." },
+    { "cellId": "I01/ga-service", "caseIds": ["I01/ga-service/GST", "I01/ga-service/GSF", "I01/ga-service/GTT", "I01/ga-service/GTF", "I01/ga-service/DST", "I01/ga-service/DSF", "I01/ga-service/DTT", "I01/ga-service/DTF"], "sha256": "40ebd2ab20cfad11c2aed611f02a71aacef072c4828a4296812b1cc49c6cd61f", "origin": "Original eight-way pre-implementation mode/API/order matrix; documentation maps subresults 1..8 under result 100037, not independently reconciled here." },
+    { "cellId": "I01/preview-service", "caseIds": ["I01/preview-service/GST", "I01/preview-service/GSF", "I01/preview-service/GTT", "I01/preview-service/GTF", "I01/preview-service/DST", "I01/preview-service/DSF", "I01/preview-service/DTT", "I01/preview-service/DTF"], "sha256": "88f7eb514a4bfd578a499f2281840d92e63323d61a3cae946dc9e5026581491e", "origin": "Distinct preview matrix; documented subresults 1..8 under result 100040, not independent expanded discovery or newly verified originals." },
+    { "cellId": "I01/ga-neighbor", "caseIds": ["I01/ga-neighbor/patch"], "sha256": "1c3fca92bba42d0d26c852cf2475e0209c4e94fdc2e14d27b774bc8f9c41d118", "origin": "Existing parameterless broad patch witness explicitly retained by I-01; no new test quota." },
+    { "cellId": "I01/preview-neighbor", "caseIds": ["I01/preview-neighbor/patch"], "sha256": "403fd45278c6dc9f664d7b6b293bba255a1c8f2dad4e80a1022b0e9f7f92eb15", "origin": "Preview counterpart of the retained existing witness, not inferred mode coverage." }
+  ],
+  "peerComparison": [
+    { "sdk": ".NET", "disposition": "inspected", "reason": "Bounded pinned source/spec; no independent oracle or native raw artifact reconciliation here.", "proofImpact": "Unqualified historical witness." },
+    { "sdk": "Java", "disposition": "not-assessed", "reason": "Frozen workstream; no semantic comparison or equivalence claim.", "proofImpact": "D-08 comparison pending." },
+    { "sdk": "Python", "disposition": "not-assessed", "reason": "No peer work authorized in this slice.", "proofImpact": "No absent-feature/equivalence inference." },
+    { "sdk": "Go", "disposition": "not-assessed", "reason": "No peer work authorized in this slice.", "proofImpact": "No absent-feature/equivalence inference." },
+    { "sdk": "Rust", "disposition": "not-assessed", "reason": "No peer work authorized in this slice.", "proofImpact": "No absent-feature/equivalence inference." },
+    { "sdk": "JS/TS", "disposition": "not-assessed", "reason": "No peer work authorized in this slice.", "proofImpact": "No absent-feature/equivalence inference." }
+  ],
+  "decisions": [],
+  "execution": {
+    "source": "ee19f83e9e13d4f98790a6fbfe09dd4bd087ad29",
+    "base": "52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8",
+    "mergeCandidate": "0babdeb0748c59bd2c552fd3c1a06bb8b63515ef",
+    "binding": "Author-reported build 64324: companion source over published core 3.51.0 / 3.52.0-preview.0, Release/net6.0, Windows Server 2022, SDK 8.0.427, VSTest 17.11.1 x64; installed runtime 6.0.36 is not independently observed loaded CLR identity.",
+    "discovery": "Methods discovered before execution; five/eight typed leaves documented from execution. Unit API labels collapse arguments; service API-level counts differ from original TRX terminal leaves.",
+    "assessment": "Metadata example only, required proof incomplete, qualification not assessed. No current-candidate, full-suite, whole-SDK or G-02/G-03 closure.",
+    "runs": [
+      {
+        "id": "1331299", "layer": "unit", "variant": "GA", "taskAttempt": 1,
+        "requiredCaseIds": ["I01/ga-unit/reject-single", "I01/ga-unit/reject-first", "I01/ga-unit/reject-last", "I01/ga-unit/plain-single", "I01/ga-unit/plain-two"],
+        "trxSha256": "910589c9b9c1d61d14600cfd788ba731f316cdb91cf1a4c3cb84d5a5e022f926",
+        "reportedTerminal": 58, "reportedParent": null, "reportedRawTotal": null, "passedTerminal": 58, "ignoredTerminal": 0,
+        "locator": "https://cosmos-db-sdk-public.visualstudio.com/cosmos-db-sdk-public/_TestManagement/Runs?runId=1331299&_a=runCharts ; documented attachment 3; task 65500a81-e1c7-5931-1116-cabb8c832591 / log 302."
+      },
+      {
+        "id": "1331287", "layer": "unit", "variant": "preview", "taskAttempt": 1,
+        "requiredCaseIds": ["I01/preview-unit/reject-single", "I01/preview-unit/reject-first", "I01/preview-unit/reject-last", "I01/preview-unit/plain-single", "I01/preview-unit/plain-two"],
+        "trxSha256": "9ad4ddf41d1823c5dbb2a129e261d5e799e360ab95bf8277c98e49844dcbdc94",
+        "reportedTerminal": 58, "reportedParent": null, "reportedRawTotal": null, "passedTerminal": 58, "ignoredTerminal": 0,
+        "locator": "https://cosmos-db-sdk-public.visualstudio.com/cosmos-db-sdk-public/_TestManagement/Runs?runId=1331287&_a=runCharts ; documented attachment 3; task 72f8da6b-6798-56ce-67ad-a767b56de89d / log 186."
+      },
+      {
+        "id": "1331291", "layer": "emulator", "variant": "GA", "taskAttempt": 1,
+        "requiredCaseIds": ["I01/ga-service/GST", "I01/ga-service/GSF", "I01/ga-service/GTT", "I01/ga-service/GTF", "I01/ga-service/DST", "I01/ga-service/DSF", "I01/ga-service/DTT", "I01/ga-service/DTF", "I01/ga-neighbor/patch"],
+        "trxSha256": "bf0ec1e50c927da51d15d2c61c2d49969bc601de28a6481540d1be82f230cf9b",
+        "reportedTerminal": 45, "reportedParent": 38, "reportedRawTotal": 46, "passedTerminal": 44, "ignoredTerminal": 1,
+        "locator": "https://cosmos-db-sdk-public.visualstudio.com/cosmos-db-sdk-public/_TestManagement/Runs?runId=1331291&_a=runCharts ; documented attachment 3; task 0205d78d-d659-54ae-cfa6-50e7c8063c58 / log 206; eight subresults 1..8 under 100037."
+      },
+      {
+        "id": "1331290", "layer": "emulator", "variant": "preview", "taskAttempt": 1,
+        "requiredCaseIds": ["I01/preview-service/GST", "I01/preview-service/GSF", "I01/preview-service/GTT", "I01/preview-service/GTF", "I01/preview-service/DST", "I01/preview-service/DSF", "I01/preview-service/DTT", "I01/preview-service/DTF", "I01/preview-neighbor/patch"],
+        "trxSha256": "d5d13c21aa69d27ce956e637131b1dcce4d7020073841f0a9b9d754c10e713c0",
+        "reportedTerminal": 48, "reportedParent": 41, "reportedRawTotal": 49, "passedTerminal": 47, "ignoredTerminal": 1,
+        "locator": "https://cosmos-db-sdk-public.visualstudio.com/cosmos-db-sdk-public/_TestManagement/Runs?runId=1331290&_a=runCharts ; documented attachment 3; task 0df6a108-4e87-55bc-6528-bf38e283e12e / log 198; eight subresults 1..8 under 100040."
+      }
+    ]
+  }
+}

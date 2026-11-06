@@ -1,0 +1,346 @@
+{
+  "formatVersion": 1,
+  "kind": "change",
+  "id": "M-01.1-M-01.4",
+  "recordState": "proposed",
+  "policyRef": {
+    "repository": "kushagraThapar/SuicideSquad",
+    "revision": "447c660872ceaced30a5b5c60abec3bc5c54eb7b",
+    "path": "docs/dotnet/design-handoff.md",
+    "version": "0.2.12"
+  },
+  "provenance": {
+    "sourceType": "candidate-authored",
+    "verification": "inspected",
+    "references": [
+      {
+        "repository": "self",
+        "revision": "6cacc4038e349b5d9aa5d1371c33f06505195f7b",
+        "path": "docs/assurance/README.md",
+        "sha256": "efbcde81f73a145bcba9f72737057b1855ac3907f2c0ffe5cd549022a9bb8f1d"
+      },
+      {
+        "repository": "self",
+        "revision": "32f7653706c3b89ebb79cdbd8e6cf90658b0776b",
+        "path": "docs/assurance/specs/m-01-review-feedback.md",
+        "sha256": "a779dea45d068011256a769dfd64adb08635c86b7dc4503c0998be6bf2af242e"
+      }
+    ],
+    "limits": [
+      "The readable format/spec were committed and pushed before executable implementation. This is Git chronology plus an attributed coordinator receipt, not independent oracle approval.",
+      "Metadata and synthetic self-checks are candidate-local and cannot issue eligibility or attest a protected native producer.",
+      "The bounded plan and A-01 are retained historical inputs, not imported evidence or completeness denominators.",
+      "The separately pinned review-feedback addendum was committed and pushed before its raw-array, TRX topology and diagnostic corrections; it does not replace the original spec/approval receipt."
+    ]
+  },
+  "unknowns": [
+    { "id": "candidate-identity", "reason": "A source-authored assertion mapping cannot contain its own final commit; native candidate reconciliation is not implemented.", "proofImpact": "Blocks current-candidate required proof." },
+    { "id": "approval-time", "reason": "No exact timestamp was supplied for the new direct user decision.", "proofImpact": "Preserve attribution and order without inventing time." },
+    { "id": "native-labels", "reason": "These are local PowerShell control identifiers, not reconciled native SDK/TRX data-row labels.", "proofImpact": "Blocks claims of native SDK execution." },
+    { "id": "protected-entry", "reason": "The new YAML is definition source only; protected invocation/evaluator/registration/enforcement are not admitted.", "proofImpact": "RequiredProof remains blocked even when metadata passes." },
+    { "id": "native-service-and-oracle", "reason": "Actual native integration, service applicability, runtime/fixture identity, independent oracle/roles and operating profiles are outside this slice.", "proofImpact": "No service proof, qualification, general exemption or G-gap closure." },
+    { "id": "peer-comparison", "reason": "Six SDK cells are visible but no semantic peer review is authorized here.", "proofImpact": "D-08 comparison and D-07 judgment remain unexecuted." }
+  ],
+  "specRef": {
+    "repository": "self",
+    "revision": "6cacc4038e349b5d9aa5d1371c33f06505195f7b",
+    "path": "docs/assurance/specs/m-01-assurance-foundation.md",
+    "sha256": "a57cc64c75105d7a6630e45984a9e5ae95ec7e13ccf047648c1b15360516be77"
+  },
+  "preImplementationReceipt": {
+    "kind": "coordinator-delivered-approved-plan",
+    "sha256": "ecb2d5b22c3d4c9bbc608206e63c7bc29ca3f1efd6c85c93db214e8f11d9f0c5",
+    "reference": "M-01 foundation plan v0.1; 420 lines, 70210 bytes; byte-identical coordinator-owned Library receipt.",
+    "attribution": "The coordinator relayed a NEW direct user selection. I-01-first/I-02-follow-on was the coordinator's proposed bounded order, not an earlier user implementation approval. The unattributed native Plan approved event was not authority.",
+    "verification": "Plan bytes verified locally; user decision attributed to the coordinator relay, not independently authenticated by this JSON.",
+    "approvalLabel": "Approve M-01.1\u2013M-01.4 implementation (Recommended)",
+    "approvalQuestion": "Confirm implementation of only M-01.1\u2013M-01.4 and publication of its feature-branch PR: the foundation spec/JSON format, offline validator and synthetic fixtures, historical I-01 example, and lightweight native validation YAML/CI guide. This permits local validator-fixture checks and ordinary repository CI automatically started by the PR, but not manual SDK/emulator/live campaigns, new pipeline registration or required-check enforcement, protected evaluator admission, migration, permission changes, merging or releases.",
+    "approvalTimestamp": null
+  },
+  "impact": {
+    "paths": [
+      "docs/assurance/README.md",
+      "docs/assurance/specs/m-01-assurance-foundation.md",
+      "docs/assurance/specs/m-01-review-feedback.md",
+      "docs/assurance/specs/m-01-assurance-foundation.json",
+      "docs/assurance/examples/i-01-64324.json",
+      "scripts/Validate-Assurance.ps1",
+      "scripts/tests/Validate-Assurance.Tests.ps1",
+      "scripts/tests/assurance/expected.json",
+      "scripts/tests/assurance/results.trx",
+      "azure-pipelines-assurance.yml",
+      "templates/assurance-validation.yml",
+      "docs/builds-and-pipelines.md"
+    ],
+    "obligationIds": ["M01/format", "M01/local-links", "M01/mapping", "M01/terminal", "M01/identity", "M01/history", "M01/protected-inputs", "M01/result-boundary"],
+    "gapIds": ["G-04", "G-07", "G-10", "G-11"],
+    "preservation": [
+      "No shipped SDK code/dependency/API/version or existing executable SDK test changes.",
+      "No edits to the main pipeline, existing unit/emulator/preview templates, #6182 or Java.",
+      "Keep original failed/ignored attempts, lifecycle, policy/spec pins and pending admission visible."
+    ],
+    "intentionalChanges": [
+      "Add candidate-local record validation and an unregistered lightweight native definition source.",
+      "Correct raw JSON array validation and unsupported TRX result accounting; make validation failures locatable without changing proof admission."
+    ]
+  },
+  "obligations": [
+    {
+      "id": "M01/format", "version": "0.1", "lifecycle": "unresolved",
+      "preconditions": ["Untrusted JSON submitted for version-1 metadata validation."],
+      "allowed": ["Only supported fields, types, versions, enums and unambiguous IDs."],
+      "forbidden": ["Duplicate keys, malformed data or successful defaults for missing fields."],
+      "interactions": ["Explicit historical unknowns are not required proof."],
+      "scenarios": [{ "id": "M01/scenario/format", "kind": "negative", "expectation": "Malformed/unknown/duplicate inputs produce explicit nonzero rejection." }],
+      "authority": { "status": "unresolved", "reference": null }
+    },
+    {
+      "id": "M01/local-links", "version": "0.1", "lifecycle": "unresolved",
+      "preconditions": ["A self source/spec reference is declared."],
+      "allowed": ["Existing in-checkout byte-identical files and actual PowerShell function definitions."],
+      "forbidden": ["Traversal, reparse links, missing/stale sources or name-only witnesses."],
+      "interactions": ["Immutable external references are syntax-checked, not fetched or runtime-attested."],
+      "scenarios": [{ "id": "M01/scenario/links", "kind": "boundary", "expectation": "Path/hash/symbol mismatches fail without following links." }],
+      "authority": { "status": "unresolved", "reference": null }
+    },
+    {
+      "id": "M01/mapping", "version": "0.1", "lifecycle": "unresolved",
+      "preconditions": ["Obligations, assertions, cells and expected cohorts are declared."],
+      "allowed": ["Resolved links and complete unique typed case sets with content digests."],
+      "forbidden": ["Empty/shrunken/ambiguous cohorts or collapsed labels masquerading as exact rows."],
+      "interactions": ["Independent semantic adequacy is still pending."],
+      "scenarios": [{ "id": "M01/scenario/mapping", "kind": "negative", "expectation": "Broken links, duplicate typed tuples and stale/incomplete sets fail." }],
+      "authority": { "status": "unresolved", "reference": null }
+    },
+    {
+      "id": "M01/terminal", "version": "0.1", "lifecycle": "unresolved",
+      "preconditions": ["A synthetic supported-shape TRX and separately declared expected set are supplied."],
+      "allowed": ["One passing terminal execution per required case; preserve parent/raw counters and unrelated ignored debt."],
+      "forbidden": ["A passing parent, zero-skip aggregate or partial output replacing missing/failed/skipped/inconclusive required leaves."],
+      "interactions": ["Safe XML parsing and exact artifact/definition identity."],
+      "scenarios": [{ "id": "M01/scenario/terminal", "kind": "boundary", "expectation": "Two required passes coexist with one disclosed ignored leaf; every required nonpass/missing/duplicate fails." }],
+      "authority": { "status": "unresolved", "reference": null }
+    },
+    {
+      "id": "M01/identity", "version": "0.1", "lifecycle": "unresolved",
+      "preconditions": ["Synthetic expected and observed identity envelopes are supplied."],
+      "allowed": ["Exact source/base/merge/tree, evaluator/policy/spec/cohort, dependency/artifact/TFM/runtime/fixture identities."],
+      "forbidden": ["Borrowed candidates, package boundaries, artifacts, runtimes or fixtures."],
+      "interactions": ["No producer or operating profile is admitted by synthetic consistency."],
+      "scenarios": [{ "id": "M01/scenario/identity", "kind": "negative", "expectation": "Each independently varied identity mismatch blocks reconciliation." }],
+      "authority": { "status": "unresolved", "reference": null }
+    },
+    {
+      "id": "M01/history", "version": "0.1", "lifecycle": "unresolved",
+      "preconditions": ["A native task/attempt disposition is represented in synthetic input."],
+      "allowed": ["Complete retained attempts and original failure classification."],
+      "forbidden": ["A later pass erasing failed predecessors or native parent/task failure."],
+      "interactions": ["Retry admissibility and actual collection remain pending, not a new numerical retry policy."],
+      "scenarios": [{ "id": "M01/scenario/history", "kind": "negative", "expectation": "Missing prior attempts and retained failure cannot become a first-pass success." }],
+      "authority": { "status": "unresolved", "reference": null }
+    },
+    {
+      "id": "M01/protected-inputs", "version": "0.1", "lifecycle": "unresolved",
+      "preconditions": ["Explicit base/candidate records are supplied to a pure synthetic comparison."],
+      "allowed": ["Preserved prior obligations, assertion/cell/cohort/lifecycle and policy inputs."],
+      "forbidden": ["Deletion, author-authorized retirement or weakening a denominator/policy."],
+      "interactions": ["Server-derived diff and protected invocation are not implemented here."],
+      "scenarios": [{ "id": "M01/scenario/protected", "kind": "negative", "expectation": "Changing prior protected inputs requires a separate independent decision." }],
+      "authority": { "status": "unresolved", "reference": null }
+    },
+    {
+      "id": "M01/result-boundary", "version": "0.1", "lifecycle": "unresolved",
+      "preconditions": ["The public metadata or RequiredProof entry runs."],
+      "allowed": ["Accurate exit/output distinction: metadata valid/invalid, RequiredProof blocked, qualification not assessed."],
+      "forbidden": ["Synthetic/prose-only/native-trust claims or eligibility from candidate-local green output."],
+      "interactions": ["Output files cannot overwrite the checkout; untrusted text cannot inject logging commands."],
+      "scenarios": [{ "id": "M01/scenario/boundary", "kind": "positive", "expectation": "Metadata can pass while the same records remain blocked for required proof." }],
+      "authority": { "status": "unresolved", "reference": null }
+    }
+  ],
+  "assertions": [
+    {
+      "id": "M01/assert/equal",
+      "obligationIds": ["M01/format", "M01/local-links", "M01/mapping", "M01/terminal", "M01/identity", "M01/history", "M01/protected-inputs", "M01/result-boundary"],
+      "scenarioIds": ["M01/scenario/format", "M01/scenario/links", "M01/scenario/mapping", "M01/scenario/terminal", "M01/scenario/identity", "M01/scenario/history", "M01/scenario/protected", "M01/scenario/boundary"],
+      "project": "scripts/tests/Validate-Assurance.Tests.ps1",
+      "sourceRef": { "repository": "self", "revision": null, "path": "scripts/tests/Validate-Assurance.Tests.ps1", "sha256": "7ad1b447aeff432d3c7d1b9316f7d92941d2f7f216f76f4851a3326f5865525d" },
+      "symbol": "Assert-Equal",
+      "observes": "Exact values/types/counts/digests, real subprocess exit/status output and the complete named control ledger in the same pinned source file.",
+      "limits": ["Pure local harness assertion and call sites; not independent semantic approval or native SDK execution."]
+    },
+    {
+      "id": "M01/assert/rejected",
+      "obligationIds": ["M01/format", "M01/local-links", "M01/mapping", "M01/terminal", "M01/identity", "M01/history", "M01/protected-inputs", "M01/result-boundary"],
+      "scenarioIds": ["M01/scenario/format", "M01/scenario/links", "M01/scenario/mapping", "M01/scenario/terminal", "M01/scenario/identity", "M01/scenario/history", "M01/scenario/protected", "M01/scenario/boundary"],
+      "project": "scripts/tests/Validate-Assurance.Tests.ps1",
+      "sourceRef": { "repository": "self", "revision": null, "path": "scripts/tests/Validate-Assurance.Tests.ps1", "sha256": "7ad1b447aeff432d3c7d1b9316f7d92941d2f7f216f76f4851a3326f5865525d" },
+      "symbol": "Assert-Rejected",
+      "observes": "Every named negative-control call must actually throw its independently specified error code; unexpected success or another failure fails the harness.",
+      "limits": ["Synthetic model inputs only; no protected-entry bypass, service, oracle or role-admission control is passed."]
+    }
+  ],
+  "requiredCells": [
+    {
+      "id": "M01/metadata-controls",
+      "obligationIds": ["M01/format", "M01/local-links", "M01/mapping", "M01/protected-inputs"],
+      "scenarioIds": ["M01/scenario/format", "M01/scenario/links", "M01/scenario/mapping", "M01/scenario/protected"],
+      "assertionIds": ["M01/assert/equal", "M01/assert/rejected"],
+      "layer": "unit", "variant": "local-validator", "tfm": "not-applicable:PowerShell", "binding": "Local PowerShell/.NET parser functions, not a Cosmos package or service.",
+      "cases": [
+        { "id": "M01/metadata-valid", "arguments": ["metadata-valid"], "nativeName": null },
+        { "id": "M01/duplicate-json-key", "arguments": ["duplicate-json-key"], "nativeName": null },
+        { "id": "M01/case-colliding-json-key", "arguments": ["case-colliding-json-key"], "nativeName": null },
+        { "id": "M01/invalid-json", "arguments": ["invalid-json"], "nativeName": null },
+        { "id": "M01/unknown-version", "arguments": ["unknown-version"], "nativeName": null },
+        { "id": "M01/unknown-field", "arguments": ["unknown-field"], "nativeName": null },
+        { "id": "M01/missing-spec", "arguments": ["missing-spec"], "nativeName": null },
+        { "id": "M01/stale-spec", "arguments": ["stale-spec"], "nativeName": null },
+        { "id": "M01/unsafe-path", "arguments": ["unsafe-path"], "nativeName": null },
+        { "id": "M01/symlink-path", "arguments": ["symlink-path"], "nativeName": null },
+        { "id": "M01/missing-symbol", "arguments": ["missing-symbol"], "nativeName": null },
+        { "id": "M01/duplicate-case-id", "arguments": ["duplicate-case-id"], "nativeName": null },
+        { "id": "M01/duplicate-case-tuple", "arguments": ["duplicate-case-tuple"], "nativeName": null },
+        { "id": "M01/typed-cases", "arguments": ["typed-cases"], "nativeName": null },
+        { "id": "M01/empty-cohort", "arguments": ["empty-cohort"], "nativeName": null },
+        { "id": "M01/stale-cohort", "arguments": ["stale-cohort"], "nativeName": null },
+        { "id": "M01/incomplete-cohort", "arguments": ["incomplete-cohort"], "nativeName": null },
+        { "id": "M01/unmapped-obligation", "arguments": ["unmapped-obligation"], "nativeName": null },
+        { "id": "M01/missing-peer", "arguments": ["missing-peer"], "nativeName": null },
+        { "id": "M01/unknown-state", "arguments": ["unknown-state"], "nativeName": null },
+        { "id": "M01/unknown-argument", "arguments": ["unknown-argument"], "nativeName": null },
+        { "id": "M01/synthetic-rejected", "arguments": ["synthetic-rejected"], "nativeName": null },
+        { "id": "M01/retired-historical", "arguments": ["retired-historical"], "nativeName": null },
+        { "id": "M01/unadmitted-kind", "arguments": ["unadmitted-kind"], "nativeName": null },
+        { "id": "M01/base-required-record", "arguments": ["base-required-record"], "nativeName": null },
+        { "id": "M01/base-obligation-removed", "arguments": ["base-obligation-removed"], "nativeName": null },
+        { "id": "M01/base-cell-removed", "arguments": ["base-cell-removed"], "nativeName": null },
+        { "id": "M01/base-lifecycle-changed", "arguments": ["base-lifecycle-changed"], "nativeName": null },
+        { "id": "M01/base-policy-changed", "arguments": ["base-policy-changed"], "nativeName": null },
+        { "id": "M01/base-cohort-shrunk", "arguments": ["base-cohort-shrunk"], "nativeName": null },
+        { "id": "M01/base-comparison-order", "arguments": ["base-comparison-order"], "nativeName": null },
+        { "id": "M01/actual-historical-metadata", "arguments": ["actual-historical-metadata"], "nativeName": null },
+        { "id": "M01/duplicate-record-id", "arguments": ["duplicate-record-id"], "nativeName": null },
+        { "id": "M01/index-singleton-array", "arguments": ["index-singleton-array"], "nativeName": null },
+        { "id": "M01/index-non-array", "arguments": ["index-non-array"], "nativeName": null },
+        { "id": "M01/case-singleton-array", "arguments": ["case-singleton-array"], "nativeName": null },
+        { "id": "M01/case-non-array", "arguments": ["case-non-array"], "nativeName": null },
+        { "id": "M01/metadata-singleton-assertions", "arguments": ["metadata-singleton-assertions"], "nativeName": null },
+        { "id": "M01/metadata-assertions-non-array", "arguments": ["metadata-assertions-non-array"], "nativeName": null },
+        { "id": "M01/metadata-singleton-cases", "arguments": ["metadata-singleton-cases"], "nativeName": null },
+        { "id": "M01/metadata-cases-non-array", "arguments": ["metadata-cases-non-array"], "nativeName": null },
+        { "id": "M01/context-singleton-cases", "arguments": ["context-singleton-cases"], "nativeName": null },
+        { "id": "M01/context-cases-non-array", "arguments": ["context-cases-non-array"], "nativeName": null }
+      ]
+    },
+    {
+      "id": "M01/evidence-controls",
+      "obligationIds": ["M01/terminal", "M01/identity", "M01/history"],
+      "scenarioIds": ["M01/scenario/terminal", "M01/scenario/identity", "M01/scenario/history"],
+      "assertionIds": ["M01/assert/equal", "M01/assert/rejected"],
+      "layer": "unit", "variant": "synthetic-only", "tfm": "not-applicable:PowerShell", "binding": "Invented JSON/TRX; not native SDK/service evidence or admission.",
+      "cases": [
+        { "id": "M01/terminal-not-parent", "arguments": ["terminal-not-parent"], "nativeName": null },
+        { "id": "M01/missing-required-leaf", "arguments": ["missing-required-leaf"], "nativeName": null },
+        { "id": "M01/collapsed-case-label", "arguments": ["collapsed-case-label"], "nativeName": null },
+        { "id": "M01/required-failed", "arguments": ["required-failed"], "nativeName": null },
+        { "id": "M01/required-skipped", "arguments": ["required-skipped"], "nativeName": null },
+        { "id": "M01/required-inconclusive", "arguments": ["required-inconclusive"], "nativeName": null },
+        { "id": "M01/native-task-failed", "arguments": ["native-task-failed"], "nativeName": null },
+        { "id": "M01/native-summary-failed", "arguments": ["native-summary-failed"], "nativeName": null },
+        { "id": "M01/native-parent-failed", "arguments": ["native-parent-failed"], "nativeName": null },
+        { "id": "M01/duplicate-execution", "arguments": ["duplicate-execution"], "nativeName": null },
+        { "id": "M01/ambiguous-leaf", "arguments": ["ambiguous-leaf"], "nativeName": null },
+        { "id": "M01/unknown-trx-shape", "arguments": ["unknown-trx-shape"], "nativeName": null },
+        { "id": "M01/xml-dtd", "arguments": ["xml-dtd"], "nativeName": null },
+        { "id": "M01/wrong-trx-digest", "arguments": ["wrong-trx-digest"], "nativeName": null },
+        { "id": "M01/missing-context", "arguments": ["missing-context"], "nativeName": null },
+        { "id": "M01/wrong-source", "arguments": ["wrong-source"], "nativeName": null },
+        { "id": "M01/wrong-base", "arguments": ["wrong-base"], "nativeName": null },
+        { "id": "M01/wrong-merge", "arguments": ["wrong-merge"], "nativeName": null },
+        { "id": "M01/wrong-tree", "arguments": ["wrong-tree"], "nativeName": null },
+        { "id": "M01/wrong-evaluator", "arguments": ["wrong-evaluator"], "nativeName": null },
+        { "id": "M01/wrong-policy", "arguments": ["wrong-policy"], "nativeName": null },
+        { "id": "M01/wrong-spec", "arguments": ["wrong-spec"], "nativeName": null },
+        { "id": "M01/wrong-package", "arguments": ["wrong-package"], "nativeName": null },
+        { "id": "M01/wrong-artifact", "arguments": ["wrong-artifact"], "nativeName": null },
+        { "id": "M01/wrong-tfm", "arguments": ["wrong-tfm"], "nativeName": null },
+        { "id": "M01/wrong-surface", "arguments": ["wrong-surface"], "nativeName": null },
+        { "id": "M01/wrong-runtime", "arguments": ["wrong-runtime"], "nativeName": null },
+        { "id": "M01/wrong-fixture", "arguments": ["wrong-fixture"], "nativeName": null },
+        { "id": "M01/wrong-msi", "arguments": ["wrong-msi"], "nativeName": null },
+        { "id": "M01/wrong-profile", "arguments": ["wrong-profile"], "nativeName": null },
+        { "id": "M01/wrong-native-task", "arguments": ["wrong-native-task"], "nativeName": null },
+        { "id": "M01/wrong-cohort", "arguments": ["wrong-cohort"], "nativeName": null },
+        { "id": "M01/wrong-core-binding", "arguments": ["wrong-core-binding"], "nativeName": null },
+        { "id": "M01/wrong-native-attempt", "arguments": ["wrong-native-attempt"], "nativeName": null },
+        { "id": "M01/missing-attempt-history", "arguments": ["missing-attempt-history"], "nativeName": null },
+        { "id": "M01/retained-failed-attempt", "arguments": ["retained-failed-attempt"], "nativeName": null },
+        { "id": "M01/unadmitted-real-context", "arguments": ["unadmitted-real-context"], "nativeName": null },
+        { "id": "M01/unknown-result-kind", "arguments": ["unknown-result-kind"], "nativeName": null },
+        { "id": "M01/unknown-inner-result-kind", "arguments": ["unknown-inner-result-kind"], "nativeName": null },
+        { "id": "M01/unknown-result-namespace", "arguments": ["unknown-result-namespace"], "nativeName": null },
+        { "id": "M01/duplicate-inner-results", "arguments": ["duplicate-inner-results"], "nativeName": null },
+        { "id": "M01/misplaced-result-topology", "arguments": ["misplaced-result-topology"], "nativeName": null },
+        { "id": "M01/nested-unit-result-topology", "arguments": ["nested-unit-result-topology"], "nativeName": null }
+      ]
+    },
+    {
+      "id": "M01/entry-controls",
+      "obligationIds": ["M01/result-boundary"], "scenarioIds": ["M01/scenario/boundary"],
+      "assertionIds": ["M01/assert/equal", "M01/assert/rejected"],
+      "layer": "unit", "variant": "local-process", "tfm": "not-applicable:PowerShell", "binding": "Local current PowerShell subprocesses; no native admission.",
+      "cases": [
+        { "id": "M01/entry-metadata", "arguments": ["entry-metadata"], "nativeName": null },
+        { "id": "M01/entry-required-proof", "arguments": ["entry-required-proof"], "nativeName": null },
+        { "id": "M01/entry-empty", "arguments": ["entry-empty"], "nativeName": null },
+        { "id": "M01/entry-invalid", "arguments": ["entry-invalid"], "nativeName": null },
+        { "id": "M01/entry-synthetic", "arguments": ["entry-synthetic"], "nativeName": null },
+        { "id": "M01/entry-no-eligibility", "arguments": ["entry-no-eligibility"], "nativeName": null },
+        { "id": "M01/entry-unsafe-output", "arguments": ["entry-unsafe-output"], "nativeName": null },
+        { "id": "M01/entry-log-escaping", "arguments": ["entry-log-escaping"], "nativeName": null },
+        { "id": "M01/entry-array-shapes", "arguments": ["entry-array-shapes"], "nativeName": null },
+        { "id": "M01/entry-reference-context", "arguments": ["entry-reference-context"], "nativeName": null },
+        { "id": "M01/entry-diagnostic-escaping", "arguments": ["entry-diagnostic-escaping"], "nativeName": null }
+      ]
+    }
+  ],
+  "expectedCohorts": [
+    {
+      "cellId": "M01/metadata-controls",
+      "caseIds": [
+        "M01/metadata-valid", "M01/duplicate-json-key", "M01/case-colliding-json-key", "M01/invalid-json", "M01/unknown-version", "M01/unknown-field", "M01/missing-spec", "M01/stale-spec", "M01/unsafe-path", "M01/symlink-path", "M01/missing-symbol", "M01/duplicate-case-id", "M01/duplicate-case-tuple", "M01/typed-cases", "M01/empty-cohort", "M01/stale-cohort", "M01/incomplete-cohort", "M01/unmapped-obligation", "M01/missing-peer", "M01/unknown-state", "M01/unknown-argument", "M01/synthetic-rejected", "M01/retired-historical", "M01/unadmitted-kind", "M01/base-required-record", "M01/base-obligation-removed", "M01/base-cell-removed", "M01/base-lifecycle-changed", "M01/base-policy-changed", "M01/base-cohort-shrunk", "M01/base-comparison-order", "M01/actual-historical-metadata", "M01/duplicate-record-id",
+        "M01/index-singleton-array", "M01/index-non-array", "M01/case-singleton-array", "M01/case-non-array", "M01/metadata-singleton-assertions", "M01/metadata-assertions-non-array", "M01/metadata-singleton-cases", "M01/metadata-cases-non-array", "M01/context-singleton-cases", "M01/context-cases-non-array"
+      ],
+      "sha256": "6fa53226e6e25834e1e3c52c9bb2dad7c0f0ba182e54ea7eeec3d871139a3d06",
+      "origin": "Original format/link/mapping/protected-input controls plus the preceding review addendum's raw-array regressions; implementation-declared names, not an independently approved whole-SDK denominator."
+    },
+    {
+      "cellId": "M01/evidence-controls",
+      "caseIds": [
+        "M01/terminal-not-parent", "M01/missing-required-leaf", "M01/collapsed-case-label", "M01/required-failed", "M01/required-skipped", "M01/required-inconclusive", "M01/native-task-failed", "M01/native-summary-failed", "M01/native-parent-failed", "M01/duplicate-execution", "M01/ambiguous-leaf", "M01/unknown-trx-shape", "M01/xml-dtd", "M01/wrong-trx-digest", "M01/missing-context", "M01/wrong-source", "M01/wrong-base", "M01/wrong-merge", "M01/wrong-tree", "M01/wrong-evaluator", "M01/wrong-policy", "M01/wrong-spec", "M01/wrong-package", "M01/wrong-artifact", "M01/wrong-tfm", "M01/wrong-surface", "M01/wrong-runtime", "M01/wrong-fixture", "M01/wrong-msi", "M01/wrong-profile", "M01/wrong-native-task", "M01/wrong-cohort", "M01/wrong-core-binding", "M01/wrong-native-attempt", "M01/missing-attempt-history", "M01/retained-failed-attempt", "M01/unadmitted-real-context",
+        "M01/unknown-result-kind", "M01/unknown-inner-result-kind", "M01/unknown-result-namespace", "M01/duplicate-inner-results", "M01/misplaced-result-topology", "M01/nested-unit-result-topology"
+      ],
+      "sha256": "a204b58b96339fd38a06f780235c7e9b29f1e3239ce326fc93213ce0c06eba9d",
+      "origin": "Original synthetic controls plus the preceding review addendum's result-topology regressions. Expected bool tuples remain separate from observed TRX; no live qualification."
+    },
+    {
+      "cellId": "M01/entry-controls",
+      "caseIds": [
+        "M01/entry-metadata", "M01/entry-required-proof", "M01/entry-empty", "M01/entry-invalid", "M01/entry-synthetic", "M01/entry-no-eligibility", "M01/entry-unsafe-output", "M01/entry-log-escaping",
+        "M01/entry-array-shapes", "M01/entry-reference-context", "M01/entry-diagnostic-escaping"
+      ],
+      "sha256": "cc7475dd8199bcac5149f3024135d565bea60eb4edc9a0ce4357403fea2c417a",
+      "origin": "Original process controls plus the preceding review addendum's public array-shape and safe multi-record diagnostic regressions; no service or protected-entry approval."
+    }
+  ],
+  "peerComparison": [
+    { "sdk": ".NET", "disposition": "unverified", "reason": "Local candidate foundation only; no independent semantic review.", "proofImpact": "Comparison/qualification pending." },
+    { "sdk": "Java", "disposition": "not-assessed", "reason": "Java remains frozen; no work or equivalence claim.", "proofImpact": "No inferred peer approval." },
+    { "sdk": "Python", "disposition": "not-assessed", "reason": "No peer semantic investigation authorized.", "proofImpact": "Comparison pending." },
+    { "sdk": "Go", "disposition": "not-assessed", "reason": "No peer semantic investigation authorized.", "proofImpact": "Comparison pending." },
+    { "sdk": "Rust", "disposition": "not-assessed", "reason": "No peer semantic investigation authorized.", "proofImpact": "Comparison pending." },
+    { "sdk": "JS/TS", "disposition": "not-assessed", "reason": "No peer semantic investigation authorized.", "proofImpact": "Comparison pending." }
+  ],
+  "decisions": []
+}

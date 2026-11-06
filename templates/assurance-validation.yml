@@ -1,0 +1,42 @@
+jobs:
+- job: AssuranceRecordValidation
+  displayName: Assurance record validation (not qualification)
+  pool:
+    name: OneES
+
+  steps:
+  - checkout: self
+    persistCredentials: false
+
+  - task: PowerShell@2
+    displayName: Prepare record-validation artifacts
+    inputs:
+      targetType: inline
+      pwsh: true
+      script: |
+        $ErrorActionPreference = 'Stop'
+        $directory = Join-Path $env:BUILD_ARTIFACTSTAGINGDIRECTORY 'assurance'
+        $null = New-Item -ItemType Directory -Path $directory -Force
+
+  - task: PowerShell@2
+    displayName: Check deterministic synthetic validator controls
+    inputs:
+      targetType: filePath
+      filePath: scripts/tests/Validate-Assurance.Tests.ps1
+      arguments: '-Root "$(Build.SourcesDirectory)" -SummaryPath "$(Build.ArtifactStagingDirectory)/assurance/synthetic-controls.json"'
+      pwsh: true
+
+  - task: PowerShell@2
+    displayName: Validate declared record metadata (not required proof)
+    inputs:
+      targetType: filePath
+      filePath: scripts/Validate-Assurance.ps1
+      arguments: '-Mode Metadata -RepositoryRoot "$(Build.SourcesDirectory)" -OutputPath "$(Build.ArtifactStagingDirectory)/assurance/records.json"'
+      pwsh: true
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish candidate-local record-validation summaries
+    condition: always()
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/assurance'
+      ArtifactName: assurance-record-validation

@@ -39,6 +39,7 @@ how to add to or troubleshoot them, and the conventions to follow.
 | File | ADO pipeline | Trigger | Purpose |
 | --- | --- | --- | --- |
 | [`azure-pipelines.yml`](../azure-pipelines.yml) | [dotnet-v3-ci](https://cosmos-db-sdk-public.visualstudio.com/cosmos-db-sdk-public/_build?definitionId=63) | **PR** to `main`/`releases/*` | Primary PR validation (build, unit, emulator, samples, CTL, internal/preview/benchmark, thin client, live AAD). |
+| [`azure-pipelines-assurance.yml`](../azure-pipelines-assurance.yml) | **Definition source only; not registered or required** | Proposed lightweight **PR** validation to `main`/`releases/*`, including Markdown | Offline assurance record metadata and synthetic validator controls; not SDK execution, protected admission or qualification. |
 | [`azure-pipelines-nightly.yml`](../azure-pipelines-nightly.yml) | [dotnet-v3-nightly](https://cosmos-db-sdk-public.visualstudio.com/cosmos-db-sdk-public/_build?definitionId=75) | **Schedule** 00:00 UTC daily | Produce nightly GA + preview NuGet packages; preview-parity build; **live AAD tests**. |
 | [`azure-pipelines-rolling.yml`](../azure-pipelines-rolling.yml) | dotnet-v3-rolling | **Schedule** (weekday hours + weekend every 2h) | Full GA + preview test matrix against live accounts, with hang/crash blame dumps. |
 | [`azure-pipelines-cron.yml`](../azure-pipelines-cron.yml) | dotnet-v3-cron | **Schedule** every 6h | Cross-platform run (macOS, Linux, Windows Release + Debug) of the test suite. |
@@ -79,6 +80,33 @@ The gate every PR to `main` / `releases/*` must pass. It excludes doc-only chang
 `/azp run` comment after confirming the change (see [CONTRIBUTING](../CONTRIBUTING.md#contribution-flow)).
 
 ---
+
+## Assurance record validation (definition source only)
+
+[`azure-pipelines-assurance.yml`](../azure-pipelines-assurance.yml) calls
+[`templates/assurance-validation.yml`](../templates/assurance-validation.yml).
+It has no Markdown/path exclusions: the intended small check covers assurance
+specs/mappings, policy-bearing prose, validator/fixture changes and ordinary docs
+without changing the expensive main pipeline's filters or SDK test matrix.
+It uses the existing `OneES` pool, `PowerShell@2` with `pwsh: true`, and
+`PublishBuildArtifacts@1`. It installs no tools and accesses no emulator, live
+account, service connection, credential or write-back token.
+
+The job checks deterministic synthetic JSON/TRX controls, validates the supported
+SDK-local record format, and publishes `records.json` and
+`synthetic-controls.json` under `assurance-record-validation`. A metadata pass
+is explicitly candidate-local and untrusted; historical records can remain
+incomplete/unqualified. Required proof cannot fall back to a green metadata check.
+See the [record contract and local commands](assurance/README.md).
+
+**This change supplies YAML source, not a registered definition or required
+check.** Effective native PowerShell/agent support, protected invocation and
+evaluator/policy pins, server-derived candidate/diff context, raw artifact/attempt
+retention, actual service/fixture identity, independent oracle/role judgments
+and operating-profile admission remain pending. A candidate can remove its own
+job, so invoking a base script from candidate YAML would not establish trust.
+CI/policy owners need separate authorization for registration, enforcement,
+protection or producer/evaluator admission. No such activation is performed here.
 
 ## Scheduled pipelines
 
