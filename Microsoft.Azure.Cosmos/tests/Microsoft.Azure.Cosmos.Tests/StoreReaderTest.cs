@@ -6,11 +6,13 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -539,6 +541,78 @@ namespace Microsoft.Azure.Cosmos
 
             // make sure we got 2 responses from the store reader
             Assert.IsTrue(result.Count == 2);
+        }
+
+        /// <summary>
+        /// The real Direct <see cref="StoreReader"/> must record contacted and failed replicas on the SDK's datum
+        /// through the thread-safe helpers, since the datum's getters only return copies.
+        /// </summary>
+        [TestMethod]
+        public async Task ReadMultipleReplicaAsync_RecordsContactedAndFailedReplicasOnTraceDatum()
+        {
+            DocumentServiceRequest entity = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(
+                DateTime.UtcNow,
+                Tracing.Trace.GetRootTrace(nameof(ReadMultipleReplicaAsync_RecordsContactedAndFailedReplicasOnTraceDatum)));
+            entity.RequestContext = new DocumentServiceRequestContext
+            {
+                ClientRequestStatistics = datum,
+                RequestChargeTracker = new RequestChargeTracker(),
+                TimeoutHelper = new TimeoutHelper(TimeSpan.FromMinutes(1))
+            };
+
+            AddressInformation[] addressInformation = this.GetMockAddressInformationDuringUpgrade();
+            TransportAddressUri[] replicas = addressInformation
+                .Select(address => new TransportAddressUri(new Uri(address.PhysicalUri)))
+                .ToArray();
+            TransportAddressUri failedReplica = replicas[2];
+
+            StoreResponse storeResponse = new StoreResponse
+            {
+                Headers = new StoreResponseNameValueCollection()
+                {
+                    { WFConstants.BackendHeaders.LSN, "50" },
+                    { WFConstants.BackendHeaders.ActivityId, "ACTIVITYID1_1" }
+                }
+            };
+
+            Mock<TransportClient> mockTransportClient = new Mock<TransportClient>();
+            mockTransportClient.Setup(
+                client => client.InvokeResourceOperationAsync(It.IsAny<TransportAddressUri>(), It.IsAny<DocumentServiceRequest>()))
+                .ReturnsAsync(storeResponse);
+            mockTransportClient.Setup(
+                client => client.InvokeResourceOperationAsync(failedReplica, It.IsAny<DocumentServiceRequest>()))
+                .ThrowsAsync(new GoneException(
+                    new TransportException(
+                        TransportErrorCode.ConnectFailed,
+                        innerException: null,
+                        activityId: Guid.NewGuid(),
+                        requestUri: failedReplica.Uri,
+                        sourceDescription: "description",
+                        userPayload: true,
+                        payloadSent: false),
+                    SubStatusCodes.TransportGenerated410));
+
+            StoreReader storeReader = new StoreReader(
+                mockTransportClient.Object,
+                new AddressSelector(this.GetMockAddressCache(addressInformation).Object, Protocol.Tcp),
+                new AddressEnumerator(),
+                new SessionContainer(string.Empty),
+                enableReplicaValidation: false);
+
+            // forceReadAll fans out to every replica, so the failing one is always contacted.
+            IList<ReferenceCountedDisposable<StoreResult>> results = await storeReader.ReadMultipleReplicaAsync(
+                entity,
+                includePrimary: true,
+                replicaCountToRead: 2,
+                requiresValidLsn: true,
+                useSessionToken: false,
+                readMode: ReadMode.Strong,
+                forceReadAll: true);
+
+            Assert.AreEqual(2, results.Count);
+            CollectionAssert.AreEquivalent(new[] { replicas[0], replicas[1] }, datum.ContactedReplicas);
+            CollectionAssert.AreEqual(new[] { failedReplica }, datum.FailedReplicas.ToList());
         }
 
         /// <summary>
