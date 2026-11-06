@@ -41,7 +41,7 @@
       <Query><![CDATA[SELECT VALUE FIRST(SELECT *]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 28.]]></Exception>
     </Output>
   </Result>
 </Results>

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.InteropServices;
     using System.Text;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -140,6 +141,12 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 foreach (ParserType parserType in Enum.GetValues(typeof(ParserType)))
                 {
+                    // The native parser is ServiceInterop, which is only available on Windows x64.
+                    if (parserType == ParserType.Native && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        continue;
+                    }
+
                     yield return new object[] { queryLength, parserType };
                 }
             }

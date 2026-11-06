@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using Antlr4.Runtime.Misc;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 

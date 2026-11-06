@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
@@ -200,11 +201,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             parsed = SqlQueryParser.TryParse(inputParameters.SqlQuerySpec.QueryText, out sqlQuery);
                         }
 
-                        if (parsed)
+                        // A query too deep to inspect goes to the gateway, like one that doesn't parse.
+                        if (parsed && AggregateProjectionDetector.TryHasAggregate(sqlQuery.SelectClause.SelectSpec, out bool hasAggregates))
                         {
                             bool hasDistinct = sqlQuery.SelectClause.HasDistinct;
                             bool hasGroupBy = sqlQuery.GroupByClause != default;
-                            bool hasAggregates = AggregateProjectionDetector.HasAggregate(sqlQuery.SelectClause.SelectSpec);
                             bool hasOrderBy = sqlQuery.OrderByClause != default;
                             bool createPassthroughQuery = !hasAggregates && !hasDistinct && !hasGroupBy && !hasOrderBy;
 
@@ -961,16 +962,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
         }
 
-        private sealed class AggregateProjectionDetector
+        internal sealed class AggregateProjectionDetector
         {
             /// <summary>
             /// Determines whether or not the SqlSelectSpec has an aggregate in the outer most query.
             /// </summary>
             /// <param name="selectSpec">The select spec to traverse.</param>
-            /// <returns>Whether or not the SqlSelectSpec has an aggregate in the outer most query.</returns>
-            public static bool HasAggregate(SqlSelectSpec selectSpec)
+            /// <param name="hasAggregate">Whether or not the SqlSelectSpec has an aggregate in the outer most query.</param>
+            /// <returns>Whether the select spec could be traversed: a long chain of operators can be too deep for the stack.</returns>
+            public static bool TryHasAggregate(SqlSelectSpec selectSpec, out bool hasAggregate)
             {
-                return selectSpec.Accept(AggregateProjectionDectorVisitor.Singleton);
+                try
+                {
+                    hasAggregate = selectSpec.Accept(AggregateProjectionDectorVisitor.Singleton);
+                    return true;
+                }
+                catch (InsufficientExecutionStackException)
+                {
+                    hasAggregate = default;
+                    return false;
+                }
             }
 
             private sealed class AggregateProjectionDectorVisitor : SqlSelectSpecVisitor<bool>
@@ -1046,18 +1057,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                     public override bool Visit(SqlBinaryScalarExpression sqlBinaryScalarExpression)
                     {
+                        RuntimeHelpers.EnsureSufficientExecutionStack();
                         return sqlBinaryScalarExpression.LeftExpression.Accept(this) ||
                             sqlBinaryScalarExpression.RightExpression.Accept(this);
                     }
 
                     public override bool Visit(SqlCoalesceScalarExpression sqlCoalesceScalarExpression)
                     {
+                        RuntimeHelpers.EnsureSufficientExecutionStack();
                         return sqlCoalesceScalarExpression.Left.Accept(this) ||
                             sqlCoalesceScalarExpression.Right.Accept(this);
                     }
 
                     public override bool Visit(SqlConditionalScalarExpression sqlConditionalScalarExpression)
                     {
+                        RuntimeHelpers.EnsureSufficientExecutionStack();
                         return sqlConditionalScalarExpression.Condition.Accept(this) ||
                             sqlConditionalScalarExpression.Consequent.Accept(this) ||
                             sqlConditionalScalarExpression.Alternative.Accept(this);
@@ -1105,6 +1119,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                     public override bool Visit(SqlMemberIndexerScalarExpression sqlMemberIndexerScalarExpression)
                     {
+                        RuntimeHelpers.EnsureSufficientExecutionStack();
                         return sqlMemberIndexerScalarExpression.Member.Accept(this) ||
                             sqlMemberIndexerScalarExpression.Indexer.Accept(this);
                     }
@@ -1122,6 +1137,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                     public override bool Visit(SqlPropertyRefScalarExpression sqlPropertyRefScalarExpression)
                     {
+                        RuntimeHelpers.EnsureSufficientExecutionStack();
                         bool hasAggregates = false;
                         if (sqlPropertyRefScalarExpression.Member != null)
                         {

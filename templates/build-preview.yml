@@ -39,8 +39,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 8.0
     inputs:
-      packageType: 'sdk'
+      packageType: 'runtime'
       version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 10.0 SDK
+    inputs:
+      packageType: 'sdk'
+      version: '10.x'
 
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.Cosmos PREVIEW
@@ -71,8 +77,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 8.0
     inputs:
-      packageType: 'sdk'
+      packageType: 'runtime'
       version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 10.0 SDK
+    inputs:
+      packageType: 'sdk'
+      version: '10.x'
       
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.Cosmos.Encryption Project Ref
@@ -149,8 +161,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 8.0
     inputs:
-      packageType: 'sdk'
+      packageType: 'runtime'
       version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 10.0 SDK
+    inputs:
+      packageType: 'sdk'
+      version: '10.x'
 
   - template:  emulator-setup.yml
 
@@ -184,8 +202,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 8.0
     inputs:
-      packageType: 'sdk'
+      packageType: 'runtime'
       version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 10.0 SDK
+    inputs:
+      packageType: 'sdk'
+      version: '10.x'
 
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.Cosmos.Encryption.Custom Project Ref
@@ -241,8 +265,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 8.0
     inputs:
-      packageType: 'sdk'
+      packageType: 'runtime'
       version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 10.0 SDK
+    inputs:
+      packageType: 'sdk'
+      version: '10.x'
 
   - task: DotNetCoreCLI@2
     displayName: PREVIEW Microsoft.Azure.Cosmos.Tests
@@ -274,8 +304,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 8.0
     inputs:
-      packageType: 'sdk'
+      packageType: 'runtime'
       version: '8.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 10.0 SDK
+    inputs:
+      packageType: 'sdk'
+      version: '10.x'
 
   - task: DotNetCoreCLI@2
     displayName: PREVIEW Microsoft.Azure.Cosmos.Tests

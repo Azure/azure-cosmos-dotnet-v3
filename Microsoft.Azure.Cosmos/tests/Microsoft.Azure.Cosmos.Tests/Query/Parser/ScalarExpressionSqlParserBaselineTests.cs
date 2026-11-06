@@ -526,7 +526,7 @@
             List<SqlParserBaselineTestInput> inputs = new List<SqlParserBaselineTestInput>()
             {
                 // Single quoted string literals do not allow ' even when it's escaped.
-                // Parser currently fails with Antlr4.Runtime.NoViableAltException
+                // Parser currently fails with a syntax error
                 CreateInput(
                     description: @"Single quoted string literals with escape seqence",
                     scalarExpression: @"['\""DoubleQuote', '\\ReverseSolidus', '\/solidus', '\bBackspace', '\fSeparatorFeed', '\nLineFeed', '\rCarriageReturn', '\tTab', '\u1234']"),

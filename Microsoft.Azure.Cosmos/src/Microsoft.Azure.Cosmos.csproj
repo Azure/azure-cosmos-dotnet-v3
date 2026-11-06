@@ -153,6 +153,15 @@
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
   </ItemGroup>	
 
+  <!--
+    SQL query parser. Query/Core/Parser/SqlParlotParser.parlot.cs is a Parlot grammar that the Parlot source generator
+    compiles to C# on every build (it needs the .NET 10 SDK). The generated parser is self-contained: the SDK has no
+    runtime Parlot dependency.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Parlot.SourceGenerator" Version="2.2.1" PrivateAssets="All" />
+  </ItemGroup>
+
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
 		<None Include="$(PkgMicrosoft_Azure_Cosmos_QueryPlanInterop_Linux)\runtimes\linux-x64\native\libQueryPlanInterop.so" Pack="true" PackagePath="runtimes\linux-x64\native" />
 		<None Include="$(PkgMicrosoft_Azure_Cosmos_QueryPlanInterop_Linux)\runtimes\linux-arm64\native\libQueryPlanInterop.so" Pack="true" PackagePath="runtimes\linux-arm64\native" />

@@ -32,7 +32,7 @@
       <Query><![CDATA[SELECT * GROUP BY ]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 19.]]></Exception>
     </Output>
   </Result>
   <Result>
@@ -41,7 +41,7 @@
       <Query><![CDATA[SELECT * GROUPBY 1]]></Query>
     </Input>
     <Output>
-      <Exception><![CDATA[can not recover.]]></Exception>
+      <Exception><![CDATA[The query has a syntax error at line 1, column 15.]]></Exception>
     </Output>
   </Result>
 </Results>
