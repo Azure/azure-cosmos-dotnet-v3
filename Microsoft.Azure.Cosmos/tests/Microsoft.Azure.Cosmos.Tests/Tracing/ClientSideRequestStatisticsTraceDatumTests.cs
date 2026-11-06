@@ -3,7 +3,9 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Net.Http;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -12,6 +14,7 @@
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
@@ -339,6 +342,115 @@
             Assert.IsTrue(
                 lines.Any(line => line.EndsWith("IsDtxRetry: true")),
                 "The captured request header was not emitted.");
+        }
+
+        [TestMethod]
+        public void TraceToJsonWritesNullReasonPhrase()
+        {
+            Trace trace = ClientSideRequestStatisticsTraceDatumTests.CreateTraceWithRetryWithResponse(
+                nameof(TraceToJsonWritesNullReasonPhrase));
+
+            JToken httpResponseStat = JObject.Parse(new CosmosTraceDiagnostics(trace).ToString())
+                ["data"]["stats"]["HttpResponseStats"][0];
+
+            Assert.AreEqual(((int)StatusCodes.RetryWith).ToString(), httpResponseStat["StatusCode"].Value<string>());
+            Assert.AreEqual(JTokenType.Null, httpResponseStat["ReasonPhrase"].Type);
+        }
+
+        [TestMethod]
+        public void CosmosExceptionWithNullReasonPhraseFormatsDiagnostics()
+        {
+            Trace trace = ClientSideRequestStatisticsTraceDatumTests.CreateTraceWithRetryWithResponse(
+                nameof(CosmosExceptionWithNullReasonPhraseFormatsDiagnostics));
+
+            // ServiceUnavailable is one of the status codes whose Message also embeds the diagnostics.
+            CosmosException exception = new CosmosException(
+                statusCode: HttpStatusCode.ServiceUnavailable,
+                message: "Test",
+                stackTrace: null,
+                headers: null,
+                trace: trace,
+                error: null,
+                innerException: null);
+
+            StringAssert.Contains(exception.Message, "\"ReasonPhrase\":null");
+            StringAssert.Contains(exception.ToString(), "\"ReasonPhrase\":null");
+        }
+
+        [TestMethod]
+        public async Task GatewayRetryWithThenConflictFormatsCosmosException()
+        {
+            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
+            Uri endpoint = MockSetupsHelper.SetupSingleRegionAccount(
+                "mockAccountInfo",
+                consistencyLevel: Cosmos.ConsistencyLevel.Session,
+                mockHttpHandler,
+                out string primaryRegionEndpoint);
+
+            string databaseName = "mockDbName";
+            string containerName = "mockContainerName";
+            string containerRid = "ccZ1ANCszwk=";
+            MockSetupsHelper.SetupContainerProperties(
+                mockHttpHandler: mockHttpHandler,
+                regionEndpoint: primaryRegionEndpoint,
+                databaseName: databaseName,
+                containerName: containerName,
+                containerRid: containerRid);
+            MockSetupsHelper.SetupPartitionKeyRanges(
+                mockHttpHandler: mockHttpHandler,
+                regionEndpoint: primaryRegionEndpoint,
+                containerResourceId: ResourceId.Parse(containerRid),
+                out _);
+
+            int createAttempts = 0;
+            Uri documentsUri = new Uri($"{primaryRegionEndpoint}/dbs/{databaseName}/colls/{containerName}/docs");
+            mockHttpHandler.Setup(x => x.SendAsync(It.Is<HttpRequestMessage>(x => x.RequestUri == documentsUri), It.IsAny<CancellationToken>()))
+                .Returns<HttpRequestMessage, CancellationToken>((request, cancellationToken) =>
+                {
+                    HttpStatusCode statusCode = ++createAttempts == 1 ? (HttpStatusCode)StatusCodes.RetryWith : HttpStatusCode.Conflict;
+                    return Task.FromResult(new HttpResponseMessage(statusCode)
+                    {
+                        Content = new StringContent(string.Empty),
+                        RequestMessage = request
+                    });
+                });
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+            };
+
+            using CosmosClient client = new CosmosClient(
+                endpoint.ToString(),
+                Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                cosmosClientOptions);
+
+            Container container = client.GetContainer(databaseName, containerName);
+            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(
+                () => container.CreateItemAsync(new { id = "a", pk = "a" }, new Cosmos.PartitionKey("a")));
+
+            Assert.AreEqual(HttpStatusCode.Conflict, exception.StatusCode);
+            Assert.AreEqual(2, createAttempts);
+            StringAssert.Contains(exception.ToString(), "\"ReasonPhrase\":null");
+            StringAssert.Contains(exception.ToString(), "\"ReasonPhrase\":\"Conflict\"");
+        }
+
+        private static Trace CreateTraceWithRetryWithResponse(string traceName)
+        {
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, ClientSideRequestStatisticsTraceDatumTests.uri);
+
+            // .NET has no reason phrase for status codes outside the HTTP registry.
+            HttpResponseMessage responseMessage = new HttpResponseMessage((HttpStatusCode)StatusCodes.RetryWith);
+            Assert.IsNull(responseMessage.ReasonPhrase);
+
+            Trace trace = Trace.GetRootTrace(traceName);
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+            datum.RecordHttpResponse(requestMessage, responseMessage, ResourceType.Document, DateTime.UtcNow);
+            trace.AddDatum("stats", datum);
+
+            return trace;
         }
 
         private async Task ConcurrentUpdateTestHelper<T>(
