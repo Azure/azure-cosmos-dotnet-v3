@@ -678,6 +678,24 @@ namespace Microsoft.Azure.Cosmos
                 openTelemetry: new (OpenTelemetryConstants.Operations.DeleteAllItemsByPartitionKey, (response) => new OpenTelemetryResponse(response)));
         }
 
+#if PREVIEW
+#nullable enable annotations
+        public override Task<FeedRange?> TryGetFeedRangeForPartitionKeyAsync(
+            IReadOnlyList<FeedRange> feedRanges,
+            PartitionKey partitionKey,
+            CancellationToken cancellationToken = default)
+        {
+            return this.ClientContext.OperationHelperAsync(
+                operationName: nameof(TryGetFeedRangeForPartitionKeyAsync),
+                containerName: this.Id,
+                databaseName: this.Database.Id,
+                operationType: Documents.OperationType.ReadFeed,
+                requestOptions: null,
+                task: (trace) => base.TryGetFeedRangeForPartitionKeyAsync(feedRanges, partitionKey, trace, cancellationToken));
+        }
+#nullable restore annotations
+#endif
+
         public override Task<bool> IsFeedRangePartOfAsync(
             FeedRange x,
             FeedRange y,

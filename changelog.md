@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- Added preview `Container.TryGetFeedRangeForPartitionKeyAsync` to find the original feed range that owns a partition key within a caller-supplied list. Each call captures and validates the current ranges without reordering the list or consulting current physical partition ownership.
+
 #### Breaking Changes
 
 #### Bugs Fixed
