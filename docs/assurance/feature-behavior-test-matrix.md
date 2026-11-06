@@ -6,11 +6,11 @@
 
 | Field | Draft receipt |
 |---|---|
-| Version / recorded | 0.3.3 / 2026-11-02 UTC |
+| Version / recorded | 0.3.6 / 2026-11-02 UTC |
 | Status | Evolving proposed matrix with separate local/native testing receipts; no approved complete contract/oracle catalog or whole-SDK assurance |
 | Source | A-01 at `52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8`, tree `2c89abbd9680af78d5072b523df277d8c46b755d`; this assessment's once-resolved main matched |
 | Audit receipt | A-01 SHA-256 `63e368bc66f5c876bb853de62116a9d54ce34f9e1066b5f0b89da8df95b4949c`, 98,011 bytes; original policy provenance preserved in the linked intake |
-| Additional policy | Historical `3b141f8c...`, [D-05/testing `532e2401...`][implementation-policy], [D-06 `72e9f579...`][implementation-d06], [D-07 roles/written scope][current-d07], D-08 `12c7cc3a...` and I-02's D-09 `d05b94e4...` retained. Current [handoff v0.2.10][current-policy] at `90368a6ac0fa0434fcf972cd66109ebcf57cda54`, sections 8.8-8.9/10.10, baseline/domain v0.1.10: D-01..D-10 selected, D-11..D-12 open (two). Received source in open [kushagraThapar/SuicideSquad#8](https://github.com/kushagraThapar/SuicideSquad/pull/8), not relabeled merged main. Six-SDK/tool/profile approaches are not executed comparisons/reviews/challenge, oracle approval, concrete operating admission or new operational/merge authority |
+| Additional policy | Historical `3b141f8c...`, [D-05/testing `532e2401...`][implementation-policy], [D-06 `72e9f579...`][implementation-d06], [D-07 roles/written scope][current-d07], D-08 `12c7cc3a...`, I-02's D-09 `d05b94e4...` and [D-10 v0.2.10][current-policy] at `90368a6ac0fa0434fcf972cd66109ebcf57cda54` retained, including the then-open D-11/D-12 and shared PR8 receipt. Current I-03 input is [handoff v0.2.12][i03-policy] at `447c660872ceaced30a5b5c60abec3bc5c54eb7b`, baseline/domain v0.1.12: D-01..D-12 selected, zero unselected approaches. Original shared PR10 publication and later integration remain distinct below. No factual/oracle/tooling/operational/qualification closure, actual retirement/waiver, review/fanout or new operational/merge authority follows |
 | Layout / IDs | Human-readable provisional `docs/assurance/` draft; B-/DB-IDs are local traceability handles, not a selected global schema |
 
 The delivered v0.1.0 matrix SHA-256 `9649d2f7face0e452ed46eaeac1ec22d7bfb7ff9c5a13cf6446db42d889a2600` remains historical. The new user-directed scope requires both focused unit and meaningful emulator/isolated-service evidence for every behavior/test assessed; existing sufficient witnesses count. [I-01's versioned spec](specs/i-01-encryption-patch-paired-tests.md) precedes implementation. Its new evidence supplements, rather than relabels, A-01.
@@ -156,6 +156,86 @@ budget/retention inputs remain unqualified; it does not block unrelated
 separately authorized testing or waive its required evidence.
 The existing class cleanup targets its unique fixture but does not assert its
 delete response; test success alone does not qualify cleanup/lease fencing.
+
+### I-03 legacy discovery and paired protection: G-07 / N-05
+
+The [I-03 spec](specs/i-03-custom-legacy-paired-tests.md) was frozen before
+test edits, SHA-256
+`fc42ebd194dae1603c98d433aeda49f46c1e34e7b3f7f9486c4c436d2688a8b4`,
+and persisted verbatim in pushed commit
+`721e7b2f51239895bb99cafa0eb91ae6afd5d082`. This is a separate child from
+I-01/I-02 head `7330088136240c8586ed5eea63f2a4f9a0c366e5`, tree
+`ec1584846a7b553195840a174b07bb551ebde57d`, targeting
+`kuthapar-microsoft-net-assurance-gap-plan`; no I-03 result is assigned to
+build 64334 or PR6182.
+
+The following **supplemental subrows**, not new historical B-IDs or coverage
+denominators, refine the N-05/G-07 Custom backlog. All 41 historical B-IDs,
+37 navigation lanes, eight atomic candidates, 28 scenario seeds, 12 families
+and G-01..G-12 remain intact. Legacy is obsolete-but-present, not retired.
+Existing implementation/negative tests justify unchanged-behavior protection;
+independent .NET/service oracle and D-12 authority qualification remain open.
+
+| Supplemental row / exact unit identity | Intended observer / preservation | Actual unit receipt | Paired real-service mapping / actual state |
+|---|---|---|---|
+| I-03.L1 `InvalidPathToEncrypt` | Present `/SensitiveStr` encrypts; absent `/Invalid` stays absent. Untargeted integer/array/dictionary/plain fields unchanged; exact format-2 metadata and exactly one decrypted path | Newtonsoft `(0)` passed in ordinary/preview net6/net8 and source preview; Stream `(1)` net8 explicitly rejects without encryptor calls/input mutation | New `EncryptionLegacyProcessorRoundTrip` missing-path rows, Gateway/Direct, both TFMs: compiled and one parent listed per assembly, not executed |
+| I-03.L2 `EncryptDecryptPropertyWithNullValue` | Present JSON null restored, all other modeled fields/types exact; selected fields absent from raw legacy document; exact context | Same variants; original null body retained and strengthened. Stream row is rejection, not a null round-trip | New null rows, Gateway/Direct, both TFMs; independent raw read plus typed/stream/decryptable reads implemented, execution pending |
+| I-03.L3 `ValidateEncryptDecryptDocument` | Every selected string/integer/array/dictionary removed from plaintext; nonempty encrypted bytes; exact key/algorithm/version/configured paths; exact decrypted document and context | Same variants and boundary disposition | Existing `EncryptionCreateItem` remains a normal typed/stream witness. New normal rows add both transports, wider data and raw-format control; no new native execution claimed |
+| I-03.L4 `ValidateDecryptStream` and plaintext control | Nonempty seekable decrypted output at position zero, exact document/context; plaintext retains same stream, length/content, zero position and null context | Legacy class 5/5 net6 and 9/9 net8 in both package variants; same exact leaves pass source preview | Every new row performs public stream reads; net8 selects Stream for decryption fallback after rejected Stream Create and successful Newtonsoft Create. Six declared leaves per TFM, none locally executed |
+
+Baseline execution passed only one plaintext leaf per TFM and emitted all
+four UTA007 warnings; hidden rows were neither passed nor skipped. A retained
+signature-only candidate exposed five passing / four failing net8 leaves,
+all four failures the explicit unsupported Stream-encryption error. Final
+ordinary/preview full Custom units each pass 428/428 net6 and 763/763 net8,
+with zero failed/skipped/inconclusive results, exact five/nine Legacy leaves,
+13 cache, 39 diagnostics and 8/24 MDE neighbors. Focused source preview passes
+14/14 and 41/41. [Spec v0.1.3](specs/i-03-custom-legacy-paired-tests.md#actual-local-receipt)
+retains original/final TRX digests, source-file blobs, commands and the
+introduced CS0200 compile failure followed by its typed-dictionary repair.
+
+Both emulator TFMs compile in package Release and source-preview
+Debug/Optimize with `SDKPROJECTREF` on/off. Package core
+`3.41.0-preview.0`, source core `3.64.0-preview.0`, compiled dependency
+identity, loaded payload and installed consumers remain distinct.
+The existing unit/service tasks and both native parity gates are unchanged.
+Root PR CI targets main/releases/* and has `trigger: none`; the requested
+stacked feature target is not automatically selected by that YAML.
+Native service/build/attempt/TRX proof remains unobtained. Following actual
+publication and absent automatic selection, the later user choice permits
+exactly one existing Windows/emulator PR-validation build with current
+limits/fixtures, after safe definition/source/branch/reason inspection.
+That allowance is unconsumed. No new filter/job/evaluator, second queue/
+rerun/cancellation, retarget, resource/permission/release/merge change,
+local Gateway-only substitute or borrowed I-02 execution is allowed.
+Source `3748a6a873f08cb9a5bfb71fb2d1ab581faa6d77`, tree
+`8f2e7bc9903cd8a471e755232a55cf7c6904a29a`, is pushed with the validated
+test-file blobs. Standard linked-account publication failed **403:
+Enterprise Managed User cannot access this content**. Read-only observation
+at `2026-11-02T01:55:05Z` found no matching PR, zero head checks/statuses;
+aggregate `pending` with zero entries is not queued execution. No new PR URL
+or actual PR/native merge/build/attempt/service/TRX identity is available.
+No alternate personal publisher or login/permission change was used.
+After the user reported correcting the repository account to personal,
+the standard publication retry for receipt head
+`9697fa53f1602f04a93f26f48bfd9e33bee5a457` again received the same EMU
+403, request `CDF6:3B1635:81A46:BB23F:6AE7F087`. The duplicate check at
+`2026-11-02T02:08:21Z` still found no matching PR. The tool exposes neither
+the actual account selection nor the mismatch's cause; direct app inspection
+is safety-blocked and was not bypassed. Publication remains the prerequisite
+to observing selection and consuming the single authorized validation run.
+
+For this substantive update, shared source
+`447c660872ceaced30a5b5c60abec3bc5c54eb7b` is distinct from original
+[kushagraThapar/SuicideSquad#10](https://github.com/kushagraThapar/SuicideSquad/pull/10)
+OPEN publication and its later observed `2026-11-02T01:12:37Z` integration
+to `79fe48b9cb00896e1bb04095ae2fde684b480914`. D-11 source
+`725724e4cb6f24c75191cb9c192a48b596366eec`, original
+[kushagraThapar/SuicideSquad#9](https://github.com/kushagraThapar/SuicideSquad/pull/9)
+publication and later `2e7d97f46ce2ee28cd1a6a707a596a6e33ab167e`
+integration are also retained separately. Earlier D-10-frozen receipt history
+is unchanged; zero unselected approaches is not missing-proof closure,
+retirement/waiver authority or M-01 evaluator/CI implementation activation.
 
 **Counterpart backlog for every other existing B-row and unexpanded lane:** unit and emulator/live counterpart identifiers, exact shared intended rule, preservation neighbors, eligibility/transport/runtime and separate actual artifact/execution receipts are **unreconciled**, not presumed absent or satisfied. Retain G-06.F-/N-, G-06.SC-, database families and G-10 follow-ups below to expand this progressively. A local/compile-time rule or unsupported capability must surface its explicit proposed treatment before closure. The new paired expectation applies to existing tests as well as new ones; four navigation input sets remain distinct.
 
@@ -390,6 +470,7 @@ inventory, merge or release eligibility beyond separately recorded user scope.
 [implementation-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/532e2401be02da06becbbc459dd58b78ae9b35d4/docs/dotnet/design-handoff.md
 [implementation-d06]: https://github.com/kushagraThapar/SuicideSquad/blob/72e9f57918ed81a38bd750f4a6aca58173877d7b/docs/dotnet/design-handoff.md#106-user-approved-d-06-approach
 [current-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/90368a6ac0fa0434fcf972cd66109ebcf57cda54/docs/dotnet/design-handoff.md
+[i03-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/447c660872ceaced30a5b5c60abec3bc5c54eb7b/docs/dotnet/design-handoff.md
 [current-d07]: https://github.com/kushagraThapar/SuicideSquad/blob/1fef335ecb72e15e75518cffc2d39814c2e6bd13/docs/dotnet/design-handoff.md#107-user-selected-d-07-approach-and-router-scope-addition
 [shared-handoff]: https://github.com/kushagraThapar/SuicideSquad/blob/3b141f8c82a18d660069627c399ccfc9efc837c0/docs/dotnet/design-handoff.md
 [j-unit]: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/52ff1383daf7a1a0e8f2d77da0ce819c8ea2f2c8/templates/build-test.yml#L23-L55

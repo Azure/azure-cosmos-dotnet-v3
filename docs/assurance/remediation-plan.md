@@ -2,11 +2,11 @@
 
 [Initial feature/behavior-to-test matrix](feature-behavior-test-matrix.md) |
 [Existing SDK CI guide](../builds-and-pipelines.md) |
-[Current shared design handoff][current-policy]
+[Current received shared design handoff][i03-policy]
 
 | Field | Draft receipt |
 |---|---|
-| Version / recorded | 0.3.3 / 2026-11-02 UTC |
+| Version / recorded | 0.3.6 / 2026-11-02 UTC |
 | Status | Evolving proposed plan with authorized bounded testing increments; not an approved contract catalog, whole-SDK executed assessment or merge recommendation |
 | Scope | All repository SDK source and companion packages; Gateway and Direct; improve established SDK tests and CI |
 | Starting evidence | Completed A-01 reconciliation audit, identified below; no duplicate SDK audit |
@@ -38,6 +38,25 @@ identities/permissions/enforcement remain unqualified. This pointer is folded
 into the necessary SDK result update, not an immediate pointer-only commit/CI run.
 
 D-01 through D-10 approaches are selected; D-11 through D-12 remain open (two). No tool installation/spike/campaign, peer research/execution/review fanout, operational/merge activation, credentials/permissions, governance change, individual Q-oracle approval or paired-service waiver follows from those publications. Actual .NET/service contracts, source/history/API closure, qualified comparison/review/challenge and protected runtime/identity/wiring remain unfinished. D-10 neither adds authority nor revokes the separately authorized bounded SDK work.
+
+The preceding D-10 queue is the retained **I-02-era receipt**, not today's
+unselected-approach count. For the substantive I-03 update, the current received
+[handoff v0.2.12][i03-policy] is pinned to shared source
+`447c660872ceaced30a5b5c60abec3bc5c54eb7b`, with baseline/domain matrix
+v0.1.12. All D-01..D-12 approaches are selected, **zero unselected approaches**;
+factual/oracle/tooling/operational/qualification closure and actual change/
+waiver/retirement/activation authority do not follow. D-12 sections 8.12-8.13
+require classification, independent authority, replacement proof and retained
+history, not removal on deprecation or candidate self-approval.
+[kushagraThapar/SuicideSquad#10](https://github.com/kushagraThapar/SuicideSquad/pull/10)
+was originally published OPEN, then independently observed merged at
+`2026-11-02T01:12:37Z` to main
+`79fe48b9cb00896e1bb04095ae2fde684b480914`; source, publication and later
+integration remain distinct. D-11's source
+`725724e4cb6f24c75191cb9c192a48b596366eec`, original publication in
+[kushagraThapar/SuicideSquad#9](https://github.com/kushagraThapar/SuicideSquad/pull/9)
+and later integration `2e7d97f46ce2ee28cd1a6a707a596a6e33ab167e` are
+likewise not collapsed. No older receipt below is relabeled.
 
 The first bounded increment is [I-01: paired Encryption patch protection and unit selection](specs/i-01-encryption-patch-paired-tests.md), a partial G-02/B-034 slice. Its versioned spec precedes test/pipeline implementation. Implementation intake main resolved once at `2026-11-01T18:40:10Z` to A-01's unchanged commit. Layer-specific execution, artifact and remaining-input records belong in the linked matrix/spec; they do not refresh other historical rows.
 
@@ -107,6 +126,77 @@ qualification remain backlog.
 
 The delivered v0.2.1 plan SHA-256 `c838ff1c1f9e392ca39e46850422516f66a83e2d1cb97a2856c3963c9c7c3773` remains historical. Continuing the first increment, an existing origin/SSH dry-run push verified a publishing route despite the current CLI account's read-only upstream permission. No account, permission or remote was changed. The local ARM64 vNext emulator is not a faithful alternative for Direct/CE-key fixture proof; the linked spec records that compatibility boundary. Actual pushed-candidate, PR and native CI/service receipts remain separate from this pre-push record.
 
+**I-03 local status:** the user explicitly selected a **separate worktree and
+stacked PR**, preserving PR6182's I-01/I-02 focus. The child starts from
+`7330088136240c8586ed5eea63f2a4f9a0c366e5`, tree
+`ec1584846a7b553195840a174b07bb551ebde57d`, and targets
+`kuthapar-microsoft-net-assurance-gap-plan`; the parent's once-resolved main
+remains A-01's unchanged source. [I-03's spec](specs/i-03-custom-legacy-paired-tests.md)
+v0.1.0 was frozen before test edits, SHA-256
+`fc42ebd194dae1603c98d433aeda49f46c1e34e7b3f7f9486c4c436d2688a8b4`,
+then persisted verbatim in pushed spec-only commit
+`721e7b2f51239895bb99cafa0eb91ae6afd5d082`.
+
+The four formerly UTA007-undiscoverable Legacy methods now use public
+numeric-processor signatures without exposing a product enum. All original
+inputs remain: four Newtonsoft rows plus plaintext control pass on net6;
+net8 additionally passes four **explicit Stream-rejection** rows, not four
+successful legacy streaming encryptions. The signature-only net8 candidate
+first produced the four original unsupported-processor failures, retained in
+the spec. Existing validation/negative-test authority demonstrates that
+Stream encryption is rejected; deprecation is not permission to remove
+legacy compatibility. Exact whole-document/null/non-target/metadata/context
+and stream controls are strengthened, with independent oracle qualification
+still open.
+
+Ordinary and preview package-backed Custom units each pass **428/428 net6
+and 763/763 net8**, with all five/nine Legacy leaves, 13 cache, 39 diagnostics
+and 8/24 MDE preservation leaves. Current-core source-preview focus passes
+14/14 and 41/41; package core `3.41.0-preview.0` versus source core
+`3.64.0-preview.0` remain distinct. The new
+`EncryptionLegacyProcessorRoundTrip` adds six real-provider/key/item
+Gateway/Direct x normal/null/missing-path service rows per TFM, with a
+separate stored-format observer and typed/stream/context reads. Those rows
+compile/list but **have not executed**. The first CS0200 test compile failure
+and its typed-dictionary repair are retained; both repaired package TFMs and
+both source-preview Debug/Optimize symbol surfaces compile.
+
+No unit/service-task YAML change is needed for class selection: I-02's
+existing tasks and source/parity gates remain intact. However, root
+`azure-pipelines.yml` automatically selects
+PR targets main/releases/*, not the requested stacked feature target, and has
+`trigger: none`. After publication, observe actual automatic selection.
+The later user choice permits exactly one validation build in the existing
+Windows/emulator PR pipeline if automatic selection is absent, using current
+limits/fixtures and only after checking definition/source/branch/reason
+conditions for release/publishing safety. That allowance is unconsumed;
+no second queue/rerun/cancellation or filter/resource/permission/release/
+merge change is authorized. Do not retarget the parent or borrow build
+64334. Native service/merge/build/attempt/TRX proof remains unobtained.
+No local Windows fixture or arbitrary account is
+substituted. Source `3748a6a873f08cb9a5bfb71fb2d1ab581faa6d77`, tree
+`8f2e7bc9903cd8a471e755232a55cf7c6904a29a`, is pushed with the exact
+validated test-file blobs. Standard linked-account PR creation was rejected
+by GitHub **403: Enterprise Managed User cannot access this content**.
+Read-only verification at `2026-11-02T01:55:05Z` found no matching PR,
+zero head check runs and zero commit statuses; aggregate `pending` with no
+statuses is not a queued build. No PR URL, actual PR/native merge/build/
+attempt/service/TRX identity exists for I-03. No alternate publisher, login
+or permission change was attempted; PR6182's personal publisher exception
+is not inherited. After the user's reported repository-personal-account
+correction, the standard tool retry at receipt head
+`9697fa53f1602f04a93f26f48bfd9e33bee5a457` still returned the same EMU
+403, request `CDF6:3B1635:81A46:BB23F:6AE7F087`. A duplicate check at
+`2026-11-02T02:08:21Z` found no matching PR. Available metadata exposes
+neither the selected account nor the cause of the mismatch; direct app
+inspection is blocked by its built-in safety policy, not bypassed.
+[Spec v0.1.3](specs/i-03-custom-legacy-paired-tests.md#publication--native-disposition)
+preserves both publication failures, the unconsumed conditional one-run
+allowance and remaining personal-link/native-selection inputs. No build was
+queued without publication and no alternate publisher credential was used.
+M-01 foundation plan/spec work and its evaluator/CI implementation pause
+remain separate; all other gaps and qualification obligations stay open.
+
 ## 1. What needs fixing
 
 The immediate gaps are **trustworthiness and completeness of applicable test evidence**, not twelve diagnosed SDK functional bugs. A-01 establishes concrete selection/configuration distinctions and partial assertion observers, while case execution, effective environments, installed artifacts and many interaction sequences remain unknown. An existing nightly preview check failed, but its cause is unknown.
@@ -160,7 +250,7 @@ Timeout/cancellation does not prove non-commit. Pagination does not imply snapsh
 
 At this plan's shared-policy pin, D-01 selects main/all-source/CI-native/Gateway-and-Direct scope. D-02 prioritizes behavioral and cross-feature preservation, requires applicable testing evidence for every PR (sufficient existing tests count), and requires a proportionate design/spec **before** agents implement a feature or bug. D-03 starts with established CI gates/configured limits and strengthens demonstrated gaps, with finite attempts and original failures retained; it does not approve new tolerances. D-04 places SDK-specific records in SDK docs and shared agentic standards/templates/process in SuicideSquad.
 
-This is additional planning authority, not evidence of existing enforcement. Later D-05 through D-10 approach selections are recorded above, not retroactively inserted into that shared-policy pin or A-01. D-07 selects minimum independent review/challenge roles and written scope, not actual qualifying identities or runtime proof. D-08 adds the visible six-SDK comparison policy; D-09 retains native tools with evidence-qualified admission; D-10 selects the preauthorized operating-envelope approach, not concrete limits or resource admission. Actual oracles, protected enforcement, qualified comparisons, candidate tools and operating profiles remain unfinished; D-11 through D-12 remain open. No oracle owner, actuator identity, new tool, numeric budget, live resource/permission or exception/retirement procedure is implemented here.
+This is additional planning authority, not evidence of existing enforcement. Later D-05 through D-12 approach selections are recorded above, not retroactively inserted into that shared-policy pin or A-01. D-07 selects minimum independent review/challenge roles and written scope, not actual qualifying identities or runtime proof. D-08 adds the visible six-SDK comparison policy; D-09 retains native tools with evidence-qualified admission; D-10 selects the preauthorized operating-envelope approach, not concrete limits or resource admission. D-11 benchmark/shadow/graduation and D-12 controlled-evolution approaches are now selected DESIGN ONLY, with zero unselected approaches; concrete authority/profiles and factual/oracle/tooling/operational/qualification closure remain unfinished. No oracle owner, actuator identity, new tool, numeric budget, live resource/permission or exception/retirement procedure is implemented here.
 
 ## 4. Prioritized work packages
 
@@ -281,7 +371,7 @@ These are five separate proposed slices, not one "feature covered" claim. Common
 | Existing-suite/CI change | Retain native attempt-indexed TRX/log/configuration/artifact receipts in existing publishing. Reconcile expected eligible case/data-row identities with discovered/selected/executed leaves and exclusions; record first and final outcomes separately |
 | Assertion / negative control / neighbors | A missing expected case, zero eligible output without an explicit applicability disposition, skipped required leaf, overwritten original-failure link or parent-row-only receipt must expose incomplete proof. Overlapping normal/Flaky cases receive no duplicate assurance credit. Preserve existing finite retry limits and distinguish test retries from task/startup retries |
 | Dependencies / candidate proof | Uses G-01's variant definitions, G-03's artifact identities and G-08's capabilities; raw receipt inventory can start with explicit unknown fields. Retention/access details are D-10 work |
-| Acceptance / blocked inputs | Exact eligible cohort/dispositions and attempt lineage reconcile for the named job/candidate. Generic green metadata is insufficient. TRX, actual discovery/results and retained original-attempt artifacts remain inaccessible/unobtained here; no discovery or run is performed |
+| Acceptance / blocked inputs | Exact eligible cohort/dispositions and attempt lineage reconcile for the named job/candidate. Generic green metadata is insufficient. A-01's broad TRX/discovery/attempt gaps remain historical and unclosed. I-03 separately reconciles four hidden methods, five/nine local class leaves and original failures; its service/native cells remain unexecuted/blocked, not credited from I-02 |
 
 ### G-08: actual fixture, capability and topology identity
 
@@ -359,8 +449,8 @@ These are five separate proposed slices, not one "feature covered" claim. Common
 | D-08 implementation follow-through | Six visible SDKs and behavior/risk-dependent depth selected; actual applicability, pinned peers/dispositions and complete bounded manifests remain unqualified. No peer research/fanout or frozen Java work launched here |
 | D-09 implementation follow-through | Native stack retained and evidence-qualified tool admission selected; Stryker.NET/FsCheck/selective Coyote remain candidates and existing SharpFuzz needs qualification. No new dependencies, installations/spikes or campaigns authorized by policy alone |
 | D-10 implementation follow-through | Preauthorized-profile envelope selected DESIGN ONLY. Concrete retention/stores, whole-run numeric limits/concurrency/capacity/leases, admitted resources, identities/permissions, stops/recovery and enforcement remain unqualified. Namespace uniqueness or another job does not prove throughput/fault/trust isolation |
-| D-11 | Historical corpus admission, qualification samples/strata/duration/uncertainty and prospective escape criteria |
-| D-12 | Protected intentional contract changes, exceptions, obsolete obligations and historical behavior that is itself incorrect |
+| D-11 implementation follow-through | Benchmark/shadow/scoped-graduation approach selected DESIGN ONLY; concrete corpus admission, qualification samples/strata/duration/uncertainty, owners and prospective escape criteria remain unqualified |
+| D-12 implementation follow-through | Controlled correction/change/exception/retirement approach selected DESIGN ONLY; actual independent authority, supported-version boundaries, exception expiry/enforcement and protected decisions remain unqualified; no actual waiver/retirement is approved |
 | Access / execution receipts | I-01 build 64324 is readable through existing Azure CLI authentication; anonymous 401s retained. All four relevant tasks passed on attempt 1, with exact five unit/eight service leaves each plus existing patch witness; original TRX and effective configuration/host receipts obtained. Whole-build disposition, complete loaded-payload/fixture identity, required-check/protected governance and broader live/consumer/review/challenge proof remain unverified. No inference for other rows |
 | Operational guidance boundary | Coordinator's RCAKit attempt returned MCP OAuth challenge required, HTTP 401; no operational result was obtained. That is not a .NET/service semantic oracle, and this planning work does not depend on rerunning it |
 
@@ -370,7 +460,7 @@ Retain all nine diagnostic dimensions for later comparable assessments: executab
 
 This draft is complete as a planning intake when every A-01 G-01 through G-12 has a stable link, risk, existing-suite proposal, observer/control, preservation neighbors, dependencies and closure/blocked-input criteria; the matrix retains all four navigation inputs and marks unexpanded cells unverified. That document acceptance is **not** SDK assurance, design approval, implementation authorization, applicable test execution evidence or merge eligibility.
 
-The user's new authorization permits [I-01](specs/i-01-encryption-patch-paired-tests.md), [I-02](specs/i-02-custom-cache-paired-tests.md) and later small spec-first paired-testing increments, starting with dependency-ready G-02 and bounded observer/cohort work. G-12 receipt access is independent. Missing emulator/account/ADO inputs remain explicit and do not authorize arbitrary resources or rerunning the nightly. This is not whole-SDK closure or autonomous eligibility; disputed contracts and policy decisions still require their separate decisions.
+The user's authorization permits [I-01](specs/i-01-encryption-patch-paired-tests.md), [I-02](specs/i-02-custom-cache-paired-tests.md) and the separate stacked [I-03](specs/i-03-custom-legacy-paired-tests.md) increment. Stop after the bounded I-03 discovery/paired-protection and honest publication/execution receipt; do not start I-04, a new audit, evaluators or review/peer fanout. Separate M-01 plan/spec work and its implementation pause remain binding. G-12 receipt access is independent. The later one-build I-03 authorization is limited to the published candidate, absent automatic selection, the existing Windows/emulator PR pipeline and current limits/fixtures; it is not a second-run/nightly/release or filter/resource/permission/merge-change allowance. Missing emulator/account/ADO inputs remain explicit. This is not whole-SDK closure or autonomous eligibility; disputed contracts and policy decisions still require their separate decisions.
 
 ## Immutable references
 
@@ -386,6 +476,7 @@ The user's new authorization permits [I-01](specs/i-01-encryption-patch-paired-t
 [implementation-authorization]: https://github.com/kushagraThapar/SuicideSquad/blob/532e2401be02da06becbbc459dd58b78ae9b35d4/docs/dotnet/design-handoff.md#111-separate-sdk-testing-authorization-context
 [implementation-d06]: https://github.com/kushagraThapar/SuicideSquad/blob/72e9f57918ed81a38bd750f4a6aca58173877d7b/docs/dotnet/design-handoff.md#106-user-approved-d-06-approach
 [current-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/90368a6ac0fa0434fcf972cd66109ebcf57cda54/docs/dotnet/design-handoff.md
+[i03-policy]: https://github.com/kushagraThapar/SuicideSquad/blob/447c660872ceaced30a5b5c60abec3bc5c54eb7b/docs/dotnet/design-handoff.md
 [current-d07]: https://github.com/kushagraThapar/SuicideSquad/blob/1fef335ecb72e15e75518cffc2d39814c2e6bd13/docs/dotnet/design-handoff.md#107-user-selected-d-07-approach-and-router-scope-addition
 [implementation-d08]: https://github.com/kushagraThapar/SuicideSquad/blob/12c7cc3af87208d46a81b3f066262bcfdd3ceab2/docs/dotnet/design-handoff.md
 [implementation-d09]: https://github.com/kushagraThapar/SuicideSquad/blob/d05b94e439ad9542d322da96b9821927b4cdf999/docs/dotnet/design-handoff.md
