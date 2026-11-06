@@ -19,6 +19,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+#### Breaking Changes
+
+#### Bugs Fixed
+
+#### Other Changes
+
+### <a name="3.65.0-preview.0"/> [3.65.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.65.0-preview.0) - 2026-11-06
+
+#### Bugs Fixed
+
+- [6141](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6141) Distributed Transactions (preview): Fixes operation results synthesized from bodyless or unusable responses reporting index `0` for every operation instead of the corresponding zero-based request index.
+- [6119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6119) Distributed Transactions (preview): Isolates submitted operations from later additions to a read or write transaction, avoiding incorrect failures when interpreting a successful response. Each transaction instance still supports only one nonempty execution attempt.
+- [6119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6119) Distributed Transactions (preview): Captures ETags, session tokens, and typed-patch conditions consistently when constructing the request, preventing changes to caller options during payload preparation from producing inconsistent option values.
+
+### <a name="3.64.0"/> [3.64.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.64.0) - 2026-11-06
+
+#### Features Added
+
 - [6169](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6169) Query: Adds opt-in local query planning on Linux x64 and ARM64 using `AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX=true`, avoiding gateway query-plan requests when the native library is available.
 
 #### Breaking Changes
@@ -26,14 +44,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Bugs Fixed
 
 - [6188](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6188) Query: Fixes hybrid search reciprocal rank fusion (RRF) results being ranked incorrectly when component scores are tied. Each result now receives a unique ordinal rank, with deterministic tie-breaking based on the decoded document ID portion of `_rid`.
-- [6141](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6141) Distributed Transactions (preview): Fixes operation results synthesized from bodyless or unusable responses reporting index `0` for every operation instead of the corresponding zero-based request index.
-- [6119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6119) Distributed Transactions (preview): Isolates submitted operations from later additions to a read or write transaction, avoiding incorrect failures when interpreting a successful response. Each transaction instance still supports only one nonempty execution attempt.
-- [6119](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6119) Distributed Transactions (preview): Captures ETags, session tokens, and typed-patch conditions consistently when constructing the request, preventing changes to caller options during payload preparation from producing inconsistent option values.
 - [6151](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6151) Query: Updates query-plan deserialization to preserve vector embedding policy paths alongside embedding text and recognize optional hybrid-search score combination metadata. This schema update does not enable `GenerateEmbeddings` or `CombinedScore` execution.
 - [6139](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6139) Query: Fixes an issue where a query whose `OFFSET`, `LIMIT`, or `TOP` value was fractional or too large for a 64-bit integer threw an unexpected `ArgumentOutOfRangeException` during client-side query parsing. These queries are now treated as parse failures.
 - [6138](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6138) CosmosElements: Fixes an issue where parsing an empty, whitespace-only, or malformed JSON payload threw an unexpected `InvalidOperationException`, `ArgumentException`, or `IndexOutOfRangeException`. These payloads are now reported as JSON parse failures.
 - [6174](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6174) Diagnostics: Fixes an issue where serializing `CosmosDiagnostics` (for example with `ToString()`) while a request was still in flight could throw `InvalidOperationException: Collection was modified`. Contacted-replica, failed-replica, and contacted-region statistics are now recorded as immutable snapshots. See [#6155](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/6155).
-- Partial hierarchical partition-key read feeds now retain their requested EPK
+- [6179](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6179) Partial hierarchical partition-key read feeds now retain their requested EPK
   prefix across physical splits and continuation resume instead of reading the
   complete child ranges.
 
