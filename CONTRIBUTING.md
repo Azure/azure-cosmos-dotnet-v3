@@ -89,6 +89,25 @@ All test projects can be interacted with through an IDE (some IDEs like Visual S
 
 When evaluating adding new tests, please search in the existing test files if there is already a test file for the scenario or feature you are working on.
 
+### Vector embedding end-to-end tests
+
+`OptimisticDirectExecutionQueryTests.TestOrderByQueries` covers Float32, Float16,
+Int8, and Uint8 embedding policies with ranked query assertions in Direct and
+Gateway modes, on single- and multi-partition containers. Float16 uses brute-force
+queries without a vector index; the other types retain flat-index coverage.
+These client modes do not establish server-side Compute embedded-SDK coverage.
+
+Run against a Windows emulator build supporting all four vector types, using the
+startup configuration in `templates/emulator-setup.yml`. CI includes these tests
+in the existing `Query` category; `EMULATORMSIURL` must select a compatible build.
+Local tests use the emulator project's `settings.json`; `COSMOSDBEMULATOR_ENDPOINT`
+can override its endpoint. No new credentials or account capabilities are configured
+by the tests. An unavailable or incompatible backend is a test failure, not a pass.
+
+```powershell
+dotnet test .\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Microsoft.Azure.Cosmos.EmulatorTests.csproj --filter FullyQualifiedName~OptimisticDirectExecutionQueryTests.TestOrderByQueries
+```
+
 ## Contribution flow
 
 1. Create a branch for your contribution (if you are an external contributor, on your own fork).

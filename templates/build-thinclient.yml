@@ -8,6 +8,7 @@ parameters:
   EmulatorPipeline5Arguments: ' --filter "TestCategory=ThinClient" --verbosity normal '
   EmulatorPipeline5CategoryListName: 'ThinClient'
   ThinClientStrongConsistencyString: ''
+  # MixedVectorEmbeddingTypesRankFusionTest requires DiskANN for Float32/Float16/Int8/Uint8.
   ThinClientConnectionString: ''
   MultiRegionConnectionString : ''
   IncludeEncryption: true

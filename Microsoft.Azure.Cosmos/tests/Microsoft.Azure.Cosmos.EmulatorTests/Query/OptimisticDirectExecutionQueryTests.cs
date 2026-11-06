@@ -10,6 +10,7 @@
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     [TestCategory("Query")]
@@ -29,18 +30,6 @@
 
         private static readonly PartitionKey PartitionKey1 = new PartitionKey("1");
         private static readonly PartitionKey PartitionKey2 = new PartitionKey("2");
-
-        private static readonly Cosmos.VectorEmbeddingPolicy EmbeddingPolicy = new Cosmos.VectorEmbeddingPolicy(
-            new Collection<Embedding>()
-            {
-                new Embedding()
-                {
-                    Path = $"/{VectorField}",
-                    DataType = VectorDataType.Float32,
-                    DistanceFunction = DistanceFunction.DotProduct,
-                    Dimensions = 3,
-                }
-            });
 
         private static readonly Cosmos.IndexingPolicy VectorIndexingPolicy = new Cosmos.IndexingPolicy()
         {
@@ -439,9 +428,25 @@
                 "/" + PartitionKeyField);
         }
 
-        [TestMethod]
-        public async Task TestOrderByQueries()
+        [DataTestMethod]
+        [DataRow(VectorDataType.Float32)]
+        [DataRow(VectorDataType.Float16)]
+        [DataRow(VectorDataType.Int8)]
+        [DataRow(VectorDataType.Uint8)]
+        public async Task TestOrderByQueries(VectorDataType vectorDataType)
         {
+            Cosmos.VectorEmbeddingPolicy embeddingPolicy = new Cosmos.VectorEmbeddingPolicy(
+                new Collection<Embedding>
+                {
+                    new Embedding
+                    {
+                        Path = $"/{VectorField}",
+                        DataType = vectorDataType,
+                        DistanceFunction = DistanceFunction.DotProduct,
+                        Dimensions = 3,
+                    }
+                });
+
             IReadOnlyList<string> documents = new List<string>
             {
                 $@"{{ {PartitionKeyField}: ""{1}"", {NumberField}: {1}, {VectorField}: [1, 1, 1], {TextField}: ""Dogs have four paws and fur. They make good pets. They are loyal and have an acute sense of smell. They are canines."" }}",
@@ -454,24 +459,40 @@
                 $@"{{ {PartitionKeyField}: ""{2}"", {NumberField}: {8}, {VectorField}: [-1, -1, 0], {TextField}: ""Bears have four paws and thick fur. They are large omnivores. They can be both gentle and fierce depending on the situation. They are ursines."" }}",
             };
 
+            if (vectorDataType == VectorDataType.Uint8)
+            {
+                // Translating every vector by [2, 2, 2] makes it unsigned without changing
+                // dot-product ordering against [1, 1, 1]: every score increases by six.
+                documents = documents.Select(json =>
+                {
+                    JObject document = JObject.Parse(json);
+                    document[VectorField] = new JArray(document[VectorField].Values<int>().Select(value => value + 2));
+                    return document.ToString();
+                }).ToList();
+            }
+
+            // Cover Float16 embeddings without requiring a flat index for that type.
+            bool useBruteForce = vectorDataType == VectorDataType.Float16;
+            string vectorDistance = $"VectorDistance(r.{VectorField}, [1, 1, 1]{(useBruteForce ? ", true" : string.Empty)})";
+
             List<DirectExecutionTestCase> testCases = new List<DirectExecutionTestCase>()
             {
                 CreateInput(
-                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE r.{NumberField} != 1 ORDER BY VectorDistance(r.{VectorField}, [1, 1, 1])",
+                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE r.{NumberField} != 1 ORDER BY {vectorDistance}",
                     expectedResult: new List<int>{5, 4, 6, 3, 2, 8, 7},
                     partitionKey: null,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.Specialized),
                 CreateInput(
-                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE r.{NumberField} != 1 ORDER BY VectorDistance(r.{VectorField}, [1, 1, 1])",
+                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE r.{NumberField} != 1 ORDER BY {vectorDistance}",
                     expectedResult: new List<int>{ 4, 3, 2 },
                     partitionKey: PartitionKey1,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.Specialized),
                 CreateInput(
-                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE r.{NumberField} != 1 ORDER BY VectorDistance(r.{VectorField}, [1, 1, 1])",
+                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE r.{NumberField} != 1 ORDER BY {vectorDistance}",
                     expectedResult: new List<int>{ 5, 6, 8, 7 },
                     partitionKey: PartitionKey2,
                     enableOptimisticDirectExecution: false,
@@ -541,18 +562,23 @@
 
             foreach (ConnectionMode connectionMode in new[] { ConnectionMode.Gateway, ConnectionMode.Direct} )
             {
-                CosmosClient cosmosClient = this.CreateDefaultCosmosClient(connectionMode);
+                using CosmosClient cosmosClient = this.CreateDefaultCosmosClient(connectionMode);
 
                 await this.CreateIngestQueryDeleteAsync(
                     ToTestConnectionMode(connectionMode),
                     CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                     documents,
-                    (container, documents) => RunTestsAsync(cosmosClient, container, testCases),
+                    async (container, documents) =>
+                    {
+                        ContainerResponse response = await container.ReadContainerAsync();
+                        Assert.AreEqual(vectorDataType, response.Resource.VectorEmbeddingPolicy.Embeddings.Single().DataType);
+                        await RunTestsAsync(cosmosClient, container, testCases);
+                    },
                     "/" + PartitionKeyField,
-                    VectorIndexingPolicy,
+                    useBruteForce ? null : VectorIndexingPolicy,
                     (_) => cosmosClient,
                     GeospatialType.Geography,
-                    EmbeddingPolicy);
+                    embeddingPolicy);
             }
         }
 
