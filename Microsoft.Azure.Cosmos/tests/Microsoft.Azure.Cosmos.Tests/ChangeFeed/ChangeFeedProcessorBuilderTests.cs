@@ -17,11 +17,91 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
     public class ChangeFeedProcessorBuilderTests
     {
+        [DataTestMethod]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(2)]
+        [DataRow(3)]
+        [DataRow(4)]
+        [DataRow(5)]
+        public void AllContainerBuilderShapesAcceptQuery(int shape)
+        {
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            Container container = client.GetContainer("myDb", "myContainer");
+            ChangeFeedProcessorBuilder builder = shape switch
+            {
+                0 => container.GetChangeFeedProcessorBuilder<JObject>("filtered", (changes, token) => Task.CompletedTask),
+                1 => container.GetChangeFeedProcessorBuilder<JObject>("filtered", (context, changes, token) => Task.CompletedTask),
+                2 => container.GetChangeFeedProcessorBuilderWithManualCheckpoint<JObject>("filtered", (context, changes, checkpoint, token) => Task.CompletedTask),
+                3 => container.GetChangeFeedProcessorBuilder("filtered", (context, changes, token) => Task.CompletedTask),
+                4 => container.GetChangeFeedProcessorBuilderWithManualCheckpoint("filtered", (context, changes, checkpoint, token) => Task.CompletedTask),
+                5 => container.GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<JObject>("filtered", (context, changes, token) => Task.CompletedTask),
+                _ => throw new ArgumentOutOfRangeException(nameof(shape))
+            };
+            Assert.IsNotNull(builder.WithQuery("SELECT * FROM c").WithInMemoryLeaseContainer().Build());
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void WithQueryPreservesExactSqlAndBecomesImmutableAfterBuild(bool allVersionsAndDeletes)
+        {
+            const string query = " SELECT * FROM c WHERE c.enabled = true ";
+            ChangeFeedProcessorOptions captured = null;
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder(
+                "filtered", GetMockedContainer(), GetMockedProcessor(),
+                (store, leases, instance, leaseOptions, options, container) => captured = options);
+            ChangeFeedMode mode = allVersionsAndDeletes ? ChangeFeedMode.AllVersionsAndDeletes : ChangeFeedMode.LatestVersion;
+            builder.WithChangeFeedMode(mode);
+            Assert.AreSame(builder, builder.WithQuery("SELECT * FROM c"));
+            Assert.AreSame(builder, builder.WithQuery(query));
+            builder.WithInMemoryLeaseContainer().Build();
+
+            Assert.AreEqual(query, captured.QuerySpec.QueryText);
+            Assert.AreEqual(mode, captured.Mode);
+            Assert.ThrowsException<InvalidOperationException>(() => builder.WithQuery("SELECT * FROM c"));
+            Assert.AreEqual(query, captured.QuerySpec.QueryText);
+        }
+
+        [DataTestMethod]
+        [DataRow(null)]
+        [DataRow("")]
+        [DataRow(" \r\n\t")]
+        public void WithQueryRejectsInvalidTextWithoutReplacingConfiguration(string query)
+        {
+            ChangeFeedProcessorOptions captured = null;
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder(
+                "filtered", GetMockedContainer(), GetMockedProcessor(),
+                (store, leases, instance, leaseOptions, options, container) => captured = options);
+            builder.WithQuery("SELECT * FROM c");
+            if (query == null)
+            {
+                Assert.ThrowsException<ArgumentNullException>(() => builder.WithQuery(query));
+            }
+            else
+            {
+                Assert.ThrowsException<ArgumentException>(() => builder.WithQuery(query));
+            }
+
+            builder.WithInMemoryLeaseContainer().Build();
+            Assert.AreEqual("SELECT * FROM c", captured.QuerySpec.QueryText);
+        }
+
+        [TestMethod]
+        public void WithoutQueryRetainsUnfilteredConfiguration()
+        {
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder(
+                "unfiltered", GetMockedContainer(), GetMockedProcessor(),
+                (store, leases, instance, leaseOptions, options, container) => Assert.IsNull(options.QuerySpec));
+            builder.WithInMemoryLeaseContainer().Build();
+        }
+
         [TestMethod]
         [ExpectedException(typeof(InvalidOperationException))]
         public void WorkFlowName_IsRequired()

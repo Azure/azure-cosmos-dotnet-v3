@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -113,6 +114,60 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Verify(feedObserver => feedObserver
                     .CloseAsync(It.Is<string>(lt => lt == this.lease.CurrentLeaseToken),
                         ChangeFeedObserverCloseReason.Unknown));
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task TransientRenewalFailureDoesNotCancelWorker(bool filtered)
+        {
+            DocumentServiceLease lease = new DocumentServiceLeaseCore
+            {
+                LeaseId = "partitionId",
+                LeaseToken = "partitionId",
+                QueryFilterHash = filtered ? "query-hash" : null
+            };
+            ConcurrentDictionary<string, DocumentServiceLease> leases = new ConcurrentDictionary<string, DocumentServiceLease>();
+            leases[lease.Id] = lease;
+            TaskCompletionSource<bool> renewed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            int attempts = 0;
+            Mock<DocumentServiceLeaseUpdater> updater = new Mock<DocumentServiceLeaseUpdater>();
+            updater.Setup(u => u.UpdateLeaseAsync(
+                It.IsAny<DocumentServiceLease>(), It.IsAny<string>(), It.IsAny<PartitionKey>(),
+                It.IsAny<Func<DocumentServiceLease, DocumentServiceLease>>()))
+                .Returns((DocumentServiceLease cached, string id, PartitionKey key, Func<DocumentServiceLease, DocumentServiceLease> update) =>
+                {
+                    if (Interlocked.Increment(ref attempts) == 1)
+                    {
+                        return Task.FromException<DocumentServiceLease>(
+                            new CosmosException("Transient renewal failure", System.Net.HttpStatusCode.ServiceUnavailable, 0, "test", 0));
+                    }
+
+                    DocumentServiceLease result = update(lease);
+                    renewed.TrySetResult(true);
+                    return Task.FromResult(result);
+                });
+            DocumentServiceLeaseManager manager = new DocumentServiceLeaseManagerInMemory(updater.Object, leases);
+            manager.ConfigureQueryFilter(lease.QueryFilterHash);
+            LeaseRenewer renewer = new LeaseRenewerCore(lease, manager, TimeSpan.FromMilliseconds(20));
+            Mock.Get(this.partitionProcessor)
+                .Setup(p => p.RunAsync(It.IsAny<CancellationToken>()))
+                .Returns<CancellationToken>(token => Task.Delay(Timeout.Infinite, token));
+            using PartitionSupervisor supervisor = new PartitionSupervisorCore(lease, this.observer, this.partitionProcessor, renewer);
+            Task running = supervisor.RunAsync(this.shutdownToken.Token);
+            try
+            {
+                await renewed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.IsFalse(running.IsCompleted);
+                Assert.IsTrue(attempts >= 2);
+            }
+            finally
+            {
+                this.shutdownToken.Cancel();
+                await running;
+            }
+
+            Mock.Get(this.observer).Verify(o => o.CloseAsync("partitionId", ChangeFeedObserverCloseReason.Shutdown), Times.Once);
         }
 
         [TestMethod]

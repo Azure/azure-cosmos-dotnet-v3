@@ -15,6 +15,48 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// </summary>
     internal abstract class DocumentServiceLeaseManager
     {
+        private bool queryFilterConfigured;
+
+        protected string QueryFilterHash { get; private set; }
+
+        internal void ConfigureQueryFilter(string queryFilterHash)
+        {
+            if (this.queryFilterConfigured && !string.Equals(this.QueryFilterHash, queryFilterHash, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The lease manager is already configured with a different query filter.");
+            }
+
+            this.QueryFilterHash = queryFilterHash;
+            this.queryFilterConfigured = true;
+        }
+
+        internal void VerifyQueryFilter(DocumentServiceLease lease)
+        {
+            if (lease == null)
+            {
+                throw new ArgumentNullException(nameof(lease));
+            }
+
+            if (!string.Equals(this.QueryFilterHash, lease.QueryFilterHash, StringComparison.Ordinal))
+            {
+                throw new ArgumentException(
+                    "The change feed query filter does not match the existing leases. Use a different processor name, lease prefix, or lease container to change the filter.");
+            }
+        }
+
+        protected void VerifyQueryFilterForLeaseRenewal(DocumentServiceLease lease)
+        {
+            try
+            {
+                this.VerifyQueryFilter(lease);
+            }
+            catch (ArgumentException exception) when (lease != null)
+            {
+                // Renewal only stops the worker and notifies the caller for lease loss.
+                throw new LeaseLostException(lease, exception, isGone: false);
+            }
+        }
+
         /// <summary>
         /// Checks whether the lease exists and creates it if it does not exist for a physical partition.
         /// </summary>
@@ -55,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// </summary>
         /// <param name="lease">Lease to renew.</param>
         /// <returns>Updated renewed lease.</returns>
-        /// <exception cref="LeaseLostException">Thrown if other host acquired the lease or lease was deleted</exception>
+        /// <exception cref="LeaseLostException">Thrown if another host acquired the lease, the lease was deleted, or its query filter no longer matches.</exception>
         public abstract Task<DocumentServiceLease> RenewAsync(DocumentServiceLease lease);
 
         /// <summary>

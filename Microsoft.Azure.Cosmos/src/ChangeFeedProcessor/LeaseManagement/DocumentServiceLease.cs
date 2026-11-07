@@ -75,5 +75,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// Gets or sets the ChangeFeedMode.
         /// </summary>
         public abstract string Mode { get; set; }
+
+        [JsonProperty("QueryFilterHash", NullValueHandling = NullValueHandling.Ignore)]
+        public string QueryFilterHash { get; set; }
     }
 }

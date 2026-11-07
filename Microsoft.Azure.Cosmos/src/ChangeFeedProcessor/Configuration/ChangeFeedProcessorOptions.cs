@@ -35,6 +35,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         /// </summary>
         public int? MaxItemCount { get; set; }
 
+        public ChangeFeedQuerySpec QuerySpec { get; set; }
+
         /// <summary>
         /// Gets or sets the start request continuation token to start looking for changes after.
         /// </summary>
