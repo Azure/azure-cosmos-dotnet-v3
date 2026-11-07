@@ -145,6 +145,11 @@ namespace Microsoft.Azure.Cosmos
         public static readonly string BypassQueryParsing = "AZURE_COSMOS_BYPASS_QUERY_PARSING";
 
         /// <summary>
+        /// Opts Linux clients into local native query planning. Default: false.
+        /// </summary>
+        public static readonly string UseQueryInterop = "AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX";
+
+        /// <summary>
         /// A read-only string containing the environment variable name for disabling length aware range comparator.
         /// Length aware range comparators were intorduced in Range class to handle EPK range comparisons correctly in the case of a container's physical partition set consisting of fully and partially specified EPK values.
         /// By default length aware range comparator is enabled. Refer to Range.cs in Msdata project for more details. Range.LengthAwareMinComparer/LengthAwareMaxComparer.
@@ -569,6 +574,19 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.BypassQueryParsing,
+                        defaultValue: false);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether Linux clients opted into local native query planning.
+        /// Default: false
+        /// </summary>
+        /// <returns>A boolean flag indicating if local native query planning is enabled on Linux.</returns>
+        public static bool IsQueryInteropEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.UseQueryInterop,
                         defaultValue: false);
         }
 

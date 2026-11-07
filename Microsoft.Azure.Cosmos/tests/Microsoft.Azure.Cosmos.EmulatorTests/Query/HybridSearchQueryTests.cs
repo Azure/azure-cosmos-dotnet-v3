@@ -9,14 +9,21 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Parser;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     [TestClass]
     [TestCategory("Query")]
     public sealed class HybridSearchQueryTests : QueryTestsBase
     {
-        private const string CollectionDataPath = "Documents\\text-3properties-1536dimensions-100documents.json";
+        private static readonly string CollectionDataPath = Path.Combine("Documents", "text-3properties-1536dimensions-100documents.json");
+
+        private const double UndefinedComponentScore = 1.79769e+308;
         private const int RrfDocumentCount = 1000;
         private const int RrfLexicalMatchIndex = 49;
         private const int OrdinalRrfLexicalMatchRank = 1;
@@ -74,6 +81,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             });
 
         [TestMethod]
+        [TestCategory("LinuxQueryPlanInteropLive")]
         public async Task SanityTests()
         {
             List<SanityTestCase> testCases = new List<SanityTestCase>
@@ -161,6 +169,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
+        [TestCategory("LinuxQueryPlanInteropLive")]
         public async Task FullTextScoreProjectionAndFilterPredicateTests()
         {
             List<SanityTestCase> testCases = new List<SanityTestCase>
@@ -256,6 +265,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
+        [TestCategory("LinuxQueryPlanInteropLive")]
         public async Task FullTextScoreProjectionAndFilterPredicateWeightedRRFTests()
         {
             List<SanityTestCase> testCases = new List<SanityTestCase>
@@ -294,6 +304,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
+        [TestCategory("LinuxQueryPlanInteropLive")]
         public async Task WeightedRankFusionTests()
         {
             List<SanityTestCase> testCases = new List<SanityTestCase>
@@ -458,25 +469,33 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 documents: documents,
                 query: async (container, _) =>
                 {
+                    bool isEmulator = this.Client.Endpoint.IsLoopback;
+                    AccountProperties account = await this.Client.ReadAccountAsync();
+                    IDictionary<string, object> queryEngineConfiguration = new Dictionary<string, object>(account.QueryEngineConfiguration);
+                    QueryPartitionProvider provider = await this.Client.DocumentClient.QueryPartitionProvider;
                     if (enableFullTextPreviewFeatures)
                     {
-                        AccountProperties account = await this.Client.ReadAccountAsync();
-                        IDictionary<string, object> queryEngineConfiguration = new Dictionary<string, object>(account.QueryEngineConfiguration)
-                        {
-                            ["queryEnableFullTextPreviewFeatures"] = true,
-                        };
-
-                        QueryPartitionProvider provider = await this.Client.DocumentClient.QueryPartitionProvider;
+                        queryEngineConfiguration["queryEnableFullTextPreviewFeatures"] = true;
+                        provider.Update(queryEngineConfiguration);
+                    }
+                    else if (!isEmulator && !queryEngineConfiguration.ContainsKey("queryEnableFullTextPreviewFeatures"))
+                    {
+                        queryEngineConfiguration["queryEnableFullTextPreviewFeatures"] = false;
                         provider.Update(queryEngineConfiguration);
                     }
 
-                    await RunTests(container, testCases);
+                    await RunTests(container, testCases, provider, queryEngineConfiguration, isEmulator);
                 },
                 partitionKey: "/index",
                 indexingPolicy: CompositeIndexPolicy);
         }
 
-        private static async Task RunTests(Container container, IEnumerable<SanityTestCase> testCases)
+        private static async Task RunTests(
+            Container container,
+            IEnumerable<SanityTestCase> testCases,
+            QueryPartitionProvider provider,
+            IDictionary<string, object> queryEngineConfiguration,
+            bool isEmulator)
         {
             foreach (FullTextScoreScope fullTextScoreScope in new[]{ FullTextScoreScope.Local, FullTextScoreScope.Global })
             {
@@ -485,11 +504,32 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     QueryRequestOptions testRequestOptions = new QueryRequestOptions
                     {
                         FullTextScoreScope = fullTextScoreScope,
+                        EnableOptimisticDirectExecution = false,
                     };
 
                     if (testCase.PartitionKey.HasValue)
                     {
                         testRequestOptions.PartitionKey = testCase.PartitionKey;
+                    }
+
+                    Dictionary<int, double> expectedScores = null;
+                    if (testCase.ComputeExpectedOrderingOnLiveAccount && !isEmulator)
+                    {
+                        HybridSearchQueryInfo queryInfo = await GetHybridSearchQueryInfoAsync(container, provider, testCase.Query, testRequestOptions);
+                        IDictionary<string, object> referenceConfiguration = new Dictionary<string, object>(queryEngineConfiguration)
+                        {
+                            ["queryEnableFullTextPreviewFeatures"] = true,
+                        };
+
+                        provider.Update(referenceConfiguration);
+                        try
+                        {
+                            expectedScores = await ComputeExpectedRrfScoresAsync(container, queryInfo, testCase.Query, testRequestOptions);
+                        }
+                        finally
+                        {
+                            provider.Update(queryEngineConfiguration);
+                        }
                     }
 
                     List<TextDocument> result = await RunQueryCombinationsAsync<TextDocument>(
@@ -510,6 +550,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                     IEnumerable<int> actual = result.Select(document => document.Index);
 
+                    if (expectedScores != null)
+                    {
+                        ValidateRrfOrdering(testCase.Query, expectedScores, actual.ToArray());
+                        continue;
+                    }
+
                     if (!testCase.ExpectedOrderings.Any(expected => expected.SequenceEqual(actual)))
                     {
                         Trace.WriteLine($"Query: {testCase.Query}");
@@ -521,6 +567,146 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }
                 }
             }
+        }
+
+        private static async Task<HybridSearchQueryInfo> GetHybridSearchQueryInfoAsync(
+            Container container,
+            QueryPartitionProvider provider,
+            string queryText,
+            QueryRequestOptions requestOptions)
+        {
+            ContainerProperties containerProperties = await container.ReadContainerAsync();
+            return provider.TryGetPartitionedQueryExecutionInfo(
+                querySpecJsonString: JsonConvert.SerializeObject(new SqlQuerySpec(queryText)),
+                partitionKeyDefinition: containerProperties.PartitionKey,
+                vectorEmbeddingPolicy: containerProperties.VectorEmbeddingPolicy,
+                requireFormattableOrderByQuery: true,
+                isContinuationExpected: false,
+                allowNonValueAggregateQuery: true,
+                hasLogicalPartitionKey: requestOptions.PartitionKey.HasValue,
+                allowDCount: true,
+                useSystemPrefix: false,
+                hybridSearchSkipOrderByRewrite: !requestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
+                geospatialType: GeospatialType.Geography).Result.HybridSearchQueryInfo;
+        }
+
+        private static async Task<Dictionary<int, double>> ComputeExpectedRrfScoresAsync(
+            Container container,
+            HybridSearchQueryInfo hybridSearchQueryInfo,
+            string queryText,
+            QueryRequestOptions requestOptions)
+        {
+            SqlQuery query = SqlQueryParser.Parse(queryText);
+            SqlFunctionCallScalarExpression rrf = (SqlFunctionCallScalarExpression)query.OrderByClause.OrderByItems.Single().Expression;
+            SqlArrayCreateScalarExpression weights = rrf.Arguments.Last() as SqlArrayCreateScalarExpression;
+            int componentCount = rrf.Arguments.Length - (weights == null ? 0 : 1);
+            Assert.AreEqual(componentCount, hybridSearchQueryInfo.ComponentQueryInfos.Count);
+            bool useDefaultComponentWeight = hybridSearchQueryInfo.ComponentWeights == null || hybridSearchQueryInfo.ComponentWeights.Count == 0;
+            Assert.AreEqual(useDefaultComponentWeight, weights == null);
+            Dictionary<int, double> scores = new Dictionary<int, double>();
+            HashSet<int> expectedIndices = null;
+            for (int componentIndex = 0; componentIndex < componentCount; componentIndex++)
+            {
+                SqlFunctionCallScalarExpression component = (SqlFunctionCallScalarExpression)rrf.Arguments[componentIndex];
+                QueryInfo componentQueryInfo = hybridSearchQueryInfo.ComponentQueryInfos[componentIndex];
+                SortOrder sortOrder = componentQueryInfo.HasOrderBy ? componentQueryInfo.OrderBy[0] : SortOrder.Descending;
+                double scoreSign = 1;
+                if (weights != null)
+                {
+                    double queryWeight = ReadNumericLiteral(weights.Items[componentIndex]);
+                    Assert.AreEqual(Math.Abs(queryWeight), hybridSearchQueryInfo.ComponentWeights[componentIndex]);
+                    if (queryWeight < 0)
+                    {
+                        if (componentQueryInfo.HasOrderBy)
+                        {
+                            Assert.AreEqual(SortOrder.Ascending, sortOrder);
+                        }
+                        else
+                        {
+                            scoreSign = -1;
+                        }
+                    }
+                }
+
+                string componentQuery = $"SELECT c.index AS Index, c._rid AS Rid, {component} AS Score " +
+                    $"{query.FromClause} {query.WhereClause} ORDER BY RANK {component}";
+                List<ComponentScoreDocument> documents = new List<ComponentScoreDocument>();
+                using (FeedIterator<ComponentScoreDocument> iterator = container.GetItemQueryIterator<ComponentScoreDocument>(
+                    componentQuery,
+                    requestOptions: requestOptions))
+                {
+                    while (iterator.HasMoreResults)
+                    {
+                        documents.AddRange(await iterator.ReadNextAsync());
+                    }
+                }
+
+                HashSet<int> indices = new HashSet<int>(documents.Select(document => document.Index));
+                Assert.AreEqual(documents.Count, indices.Count, "A component must return each eligible document once.");
+                if (expectedIndices == null)
+                {
+                    expectedIndices = indices;
+                }
+                else
+                {
+                    CollectionAssert.AreEquivalent(expectedIndices.ToArray(), indices.ToArray(), "Components must rank the same eligible documents.");
+                }
+
+                double ComponentScore(ComponentScoreDocument document) => scoreSign * (document.Score ?? UndefinedComponentScore);
+                ulong DocumentRid(ComponentScoreDocument document) => Documents.ResourceId.Parse(document.Rid).Document;
+                IOrderedEnumerable<ComponentScoreDocument> ordered = sortOrder == SortOrder.Ascending
+                    ? documents.OrderBy(ComponentScore).ThenBy(DocumentRid)
+                    : documents.OrderByDescending(ComponentScore).ThenByDescending(DocumentRid);
+                double weight = useDefaultComponentWeight ? 1 : hybridSearchQueryInfo.ComponentWeights[componentIndex];
+                int rank = 1;
+                // Ordinal ranking assigns consecutive ranks, with component ties ordered by document RID.
+                foreach (ComponentScoreDocument document in ordered)
+                {
+                    scores.TryGetValue(document.Index, out double score);
+                    scores[document.Index] = score + (weight / (60 + rank));
+                    rank++;
+                }
+            }
+
+            return scores;
+        }
+
+        private static void ValidateRrfOrdering(
+            string queryText,
+            IReadOnlyDictionary<int, double> scores,
+            IReadOnlyList<int> actual)
+        {
+            Assert.AreEqual(actual.Count, actual.Distinct().Count(), "Hybrid results must not contain duplicate documents.");
+            Assert.IsTrue(actual.All(scores.ContainsKey), "Hybrid results must contain only eligible documents.");
+            SqlQuery query = SqlQueryParser.Parse(queryText);
+            IEnumerable<double> expected = scores.Values.OrderByDescending(score => score);
+            if (query.OffsetLimitClause != null)
+            {
+                expected = expected
+                    .Skip(checked((int)ReadNumericLiteral(query.OffsetLimitClause.OffsetSpec.OffsetExpression)))
+                    .Take(checked((int)ReadNumericLiteral(query.OffsetLimitClause.LimitSpec.LimitExpression)));
+            }
+
+            if (query.SelectClause.TopSpec != null)
+            {
+                expected = expected.Take(checked((int)ReadNumericLiteral(query.SelectClause.TopSpec.TopExpresion)));
+            }
+
+            // Equal fused scores may appear in any order, including at TOP/OFFSET boundaries.
+            CollectionAssert.AreEqual(
+                expected.ToArray(),
+                actual.Select(index => scores[index]).ToArray(),
+                $"Hybrid results must follow the independently computed ordinal scores. Query: {queryText}");
+        }
+
+        private static double ReadNumericLiteral(SqlScalarExpression expression)
+        {
+            return expression switch
+            {
+                SqlLiteralScalarExpression { Literal: SqlNumberLiteral number } => Number64.ToDouble(number.Value),
+                SqlUnaryScalarExpression { OperatorKind: SqlUnaryScalarOperatorKind.Minus } negative => -ReadNumericLiteral(negative.Expression),
+                _ => throw new AssertFailedException($"Expected a numeric literal in the test query, not {expression}."),
+            };
         }
 
         private static async Task<CosmosArray> LoadDocuments()
@@ -581,6 +767,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 ExpectedOrderings = expectedOrderings,
                 ValidationMode = validationMode,
                 PartitionKey = partitionKey,
+                ComputeExpectedOrderingOnLiveAccount = SqlQueryParser.Parse(query).OrderByClause.OrderByItems.Single().Expression
+                    is SqlFunctionCallScalarExpression function && function.Name.Value == "RRF",
             };
         }
 
@@ -589,6 +777,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             public string Query { get; init; }
 
             public IReadOnlyList<IReadOnlyList<int>> ExpectedOrderings { get; init; }
+
+            public bool ComputeExpectedOrderingOnLiveAccount { get; init; }
 
             public PartitionKey? PartitionKey { get; init; }
 
@@ -619,6 +809,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             public double TextScore { get; set; }
 
             public double UnitedStatesScore { get; set; }
+        }
+
+        private sealed class ComponentScoreDocument
+        {
+            public int Index { get; set; }
+
+            public string Rid { get; set; }
+
+            public double? Score { get; set; }
         }
 
         private sealed class OrdinalRrfDocument

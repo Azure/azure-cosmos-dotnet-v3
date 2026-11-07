@@ -7,18 +7,20 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
     using System;
     using System.Diagnostics;
     using System.IO;
+    using System.Runtime.InteropServices;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
-    /// Integration tests that verify Windows native DLLs are only copied when publishing
-    /// for Windows RuntimeIdentifiers, and not for Linux/macOS targets.
+    /// Integration tests that verify native assets match the published RuntimeIdentifier,
+    /// including Linux native loading and fallback when the library is unavailable.
     /// These tests pack the SDK into a local NuGet package to properly test the .targets file behavior.
     /// </summary>
     [TestClass]
     [TestCategory("LongRunning")]
     public class CosmosTargetsInteropPublishTests
     {
+        private const string LinuxLibraryName = "libQueryPlanInterop.so";
         private static string testProjectsRoot;
         private static string localNugetPackagePath;
         private static string packageVersion;
@@ -71,6 +73,19 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             string publishPath = await this.CreateAndPublishTestProjectAsync($"NonWinTest_{runtimeIdentifier}", runtimeIdentifier);
 
             this.AssertWindowsDllsNotPresent(publishPath, runtimeIdentifier);
+            string[] linuxLibraries = Directory.GetFiles(publishPath, LinuxLibraryName, SearchOption.AllDirectories);
+            if (runtimeIdentifier == "linux-x64" || runtimeIdentifier == "linux-arm64")
+            {
+                Assert.AreEqual(1, linuxLibraries.Length, "Only the matching Linux architecture should be published.");
+                Assert.AreEqual(Path.Combine(publishPath, LinuxLibraryName), linuxLibraries[0]);
+                using BinaryReader reader = new BinaryReader(File.OpenRead(linuxLibraries[0]));
+                reader.BaseStream.Position = 18; // ELF e_machine.
+                Assert.AreEqual(runtimeIdentifier == "linux-x64" ? (ushort)62 : (ushort)183, reader.ReadUInt16());
+            }
+            else
+            {
+                Assert.AreEqual(0, linuxLibraries.Length, "Linux libraries must not be published for macOS.");
+            }
         }
 
         /// <summary>
@@ -86,6 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             string publishPath = await this.CreateAndPublishTestProjectAsync($"WinTest_{runtimeIdentifier}", runtimeIdentifier);
 
             this.AssertWindowsDllsPresent(publishPath, runtimeIdentifier);
+            Assert.AreEqual(0, Directory.GetFiles(publishPath, LinuxLibraryName, SearchOption.AllDirectories).Length);
         }
 
         /// <summary>
@@ -98,6 +114,9 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             string publishPath = await this.CreateAndPublishTestProjectAsync("NoRidTest", runtimeIdentifier: null);
 
             this.AssertWindowsDllsPresent(publishPath, "no RuntimeIdentifier");
+            Assert.IsTrue(File.Exists(Path.Combine(publishPath, "runtimes", "linux-x64", "native", LinuxLibraryName)));
+            Assert.IsTrue(File.Exists(Path.Combine(publishPath, "runtimes", "linux-arm64", "native", LinuxLibraryName)));
+            Assert.IsFalse(File.Exists(Path.Combine(publishPath, LinuxLibraryName)), "Portable publish must resolve the Linux library through runtimes/<rid>/native.");
         }
 
         private static async Task CreateLocalNuGetPackageAsync()
@@ -151,7 +170,23 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
 </Project>");
 
             // Create a minimal Program.cs
-            File.WriteAllText(programFile, @"System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"");");
+            File.WriteAllText(programFile, @"
+bool expectGateway = System.Array.IndexOf(args, ""--verify-linux-query-planning-fallback"") >= 0;
+if (expectGateway || System.Array.IndexOf(args, ""--verify-linux-query-planning"") >= 0)
+{
+    System.Environment.SetEnvironmentVariable(""AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX"", ""true"");
+    System.Environment.SetEnvironmentVariable(""AZURE_COSMOS_BYPASS_QUERY_PARSING"", ""false"");
+    System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(Microsoft.Azure.Cosmos.CosmosClient).TypeHandle);
+    var retriever = typeof(Microsoft.Azure.Cosmos.CosmosClient).Assembly.GetType(
+        ""Microsoft.Azure.Cosmos.Query.Core.QueryPlan.QueryPlanRetriever"", throwOnError: true)!;
+    var bypass = retriever.GetMethod(""BypassQueryParsing"",
+        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!;
+    if ((bool)bypass.Invoke(null, null)! != expectGateway)
+    {
+        throw new System.InvalidOperationException(""Unexpected published Linux query-plan routing."");
+    }
+}
+System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"");");
 
             // Publish the project
             string publishDir = Path.Combine(projectDir, "bin", "publish", runtimeIdentifier ?? "no-rid");
@@ -159,6 +194,32 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             await RunDotnetCommandAsync(
                 $"publish \"{projectFile}\" -c Release -o \"{publishDir}\" {ridArgument}".Trim(),
                 timeoutMinutes: 5);
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                && (runtimeIdentifier == null
+                    || (runtimeIdentifier == "linux-x64" && RuntimeInformation.ProcessArchitecture == Architecture.X64)
+                    || (runtimeIdentifier == "linux-arm64" && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)))
+            {
+                await RunDotnetCommandAsync($"\"{Path.Combine(publishDir, projectName + ".dll")}\" --verify-linux-query-planning");
+                string libraryPath = runtimeIdentifier != null
+                    ? Path.Combine(publishDir, LinuxLibraryName)
+                    : Path.Combine(
+                        publishDir,
+                        "runtimes",
+                        RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "linux-arm64" : "linux-x64",
+                        "native",
+                        LinuxLibraryName);
+                string unavailablePath = libraryPath + ".disabled";
+                File.Move(libraryPath, unavailablePath);
+                try
+                {
+                    await RunDotnetCommandAsync($"\"{Path.Combine(publishDir, projectName + ".dll")}\" --verify-linux-query-planning-fallback");
+                }
+                finally
+                {
+                    File.Move(unavailablePath, libraryPath);
+                }
+            }
 
             return publishDir;
         }

@@ -10,11 +10,7 @@ namespace Microsoft.Azure.Documents
     /// Represents the read consistency strategies supported by the Azure Cosmos DB service.
     /// The requested strategy can be chosen independent of the account's default consistency level.
     /// </summary>
-#if PREVIEW
-    public
-#else
     internal
-#endif
     enum ReadConsistencyStrategy
     {
         /// <summary>
