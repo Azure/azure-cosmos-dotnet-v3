@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -107,12 +108,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     return (responseMessage, decryptableContent);
                 }
 
-                List<DecryptableItem> decryptableItems = await EncryptionProcessor.ConvertResponseToDecryptableItemsAsync(
-                    responseMessage.Content,
-                    this.encryptor,
-                    this.cosmosSerializer,
-                    this.jsonProcessor,
-                    cancellationToken).ConfigureAwait(false);
+                List<DecryptableItem> decryptableItems;
+                Stream content = responseMessage.Content;
+                try
+                {
+                    decryptableItems = await EncryptionProcessor.ConvertResponseToDecryptableItemsAsync(
+                        content,
+                        this.encryptor,
+                        this.cosmosSerializer,
+                        this.jsonProcessor,
+                        cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    await DecryptedResponseMessage.DisposeOnFailureAsync(responseMessage, content).ConfigureAwait(false);
+                    throw;
+                }
 
                 decryptableContent = new List<T>(decryptableItems.Count);
 

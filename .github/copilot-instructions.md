@@ -48,10 +48,10 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
     - `[v4] Client Encryption: Refactors code to external project`
     - `[Internal] Query: Adds code generator for CosmosNumbers for easy additions in the future`
   - Keep changes minimal and focused; prefer small, targeted edits and follow existing code style.
-  - **Changelog entry required**: Every PR that modifies the shipped package
-    source (anything under `Microsoft.Azure.Cosmos/src/**`, equivalent paths
-    for FaultInjection / Encryption packages) must also add a bullet under
-    `### Unreleased` in `changelog.md`, in one of the four subsections
+  - **Changelog entry required**: Every PR that changes behavior relative to
+    the last published affected package (including a published preview) must
+    either add a bullet under `### Unreleased` in `changelog.md` in one of the
+    four subsections below, or follow the linked changelog-owner exception:
     `Features Added` / `Breaking Changes` / `Bugs Fixed` / `Other Changes`.
     Write the entry in **customer-facing language** — not the PR title
     verbatim. If the change has zero customer-observable impact (test-only,
@@ -61,6 +61,24 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
     customer in the next two minor releases, it does **not** qualify as
     purely internal — it goes under `Other Changes` (or `Bugs Fixed` /
     `Breaking Changes` as appropriate).
+  - **Release-relative and stacked PR policy**:
+    - Evaluate release-note impact against the last published version of the
+      affected package, including a published preview.
+    - Do not add an entry for a defect introduced and fixed entirely within
+      unreleased code or an unreleased feature.
+    - A split or stacked series may designate exactly one final integration or
+      release-metadata PR as its changelog owner. Each intermediate PR
+      description must name and link that owner and explain why the slice does
+      not independently change behavior relative to the published package.
+    - The designated owner writes one polished, customer-facing package
+      summary, not a diary of the series' implementation steps and
+      intermediate fixes.
+    - An independently mergeable change to shipped behavior still needs an
+      entry, unless an ordered, linked consolidation PR explicitly includes it
+      and will merge before the release.
+    - Reviewers verify the published-package baseline and declared ownership
+      rather than automatically requiring a separate entry from every
+      implementation slice.
   - **Changelog classifier** (apply when uncertain whether an entry is required):
 
     1. Does the PR diff touch any of:
@@ -77,7 +95,8 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
        memory/CPU profile, allocation patterns, surfaced types, public
        API.
 
-       *Yes* ⇒ **entry required**. Pick the subsection:
+       *Yes* ⇒ an **entry is required** either in this PR or in its declared,
+       ordered changelog-owner PR. Pick the subsection:
          - New customer-opt-in functionality ⇒ `Features Added`
          - Behavior change that could break customer expectations on upgrade ⇒ `Breaking Changes`
          - Customer-observable defect fixed ⇒ `Bugs Fixed`
