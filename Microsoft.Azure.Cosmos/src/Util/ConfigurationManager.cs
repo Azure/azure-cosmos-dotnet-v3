@@ -90,12 +90,6 @@ namespace Microsoft.Azure.Cosmos
         public static readonly string HybridSearchQueryPlanOptimizationDisabled = "AZURE_COSMOS_HYBRID_SEARCH_QUERYPLAN_OPTIMIZATION_DISABLED";
 
         /// <summary>
-        /// Environment variable name to restore standard competition ranking for hybrid search RRF component scores.
-        /// Ordinal ranking is used by default.
-        /// </summary>
-        public static readonly string HybridSearchUseCompetitionRanking = "AZURE_COSMOS_HYBRID_SEARCH_USE_COMPETITION_RANKING";
-
-        /// <summary>
         /// A read-only string containing the environment variable name for enabling hub region processing for read requests.
         /// When enabled (default), the SDK attaches a hub region header to read requests that encounter repeated 404/1002
         /// (ReadSessionNotAvailable) errors, allowing the hub region to process the request directly. When disabled, the
@@ -149,6 +143,11 @@ namespace Microsoft.Azure.Cosmos
         /// and GA.
         /// </summary>
         public static readonly string BypassQueryParsing = "AZURE_COSMOS_BYPASS_QUERY_PARSING";
+
+        /// <summary>
+        /// Opts Linux clients into local native query planning. Default: false.
+        /// </summary>
+        public static readonly string UseQueryInterop = "AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX";
 
         /// <summary>
         /// A read-only string containing the environment variable name for disabling length aware range comparator.
@@ -493,17 +492,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets whether hybrid search RRF component scores use standard competition ranking.
-        /// </summary>
-        public static bool IsHybridSearchCompetitionRankingEnabled(
-            bool defaultValue)
-        {
-            return ConfigurationManager.GetEnvironmentVariable(
-                variable: ConfigurationManager.HybridSearchUseCompetitionRanking,
-                defaultValue: defaultValue);
-        }
-
-        /// <summary>
         /// Gets the factor applied to the initial per-partition page size of a cross-partition
         /// ORDER BY query that has a TOP or LIMIT clause. Defaults to <see cref="DefaultPageSizeFactorForTop"/>
         /// and can be overridden with the <c>AZURE_COSMOS_PAGE_SIZE_FACTOR_FOR_TOP</c> environment variable.
@@ -586,6 +574,19 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.BypassQueryParsing,
+                        defaultValue: false);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether Linux clients opted into local native query planning.
+        /// Default: false
+        /// </summary>
+        /// <returns>A boolean flag indicating if local native query planning is enabled on Linux.</returns>
+        public static bool IsQueryInteropEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.UseQueryInterop,
                         defaultValue: false);
         }
 
