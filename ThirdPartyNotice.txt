@@ -17,7 +17,7 @@ required to debug changes to any libraries licensed under the GNU Lesser General
 
 ---------------------------------------------------------
 
-Parlot 2.2.1 - BSD-3-Clause
+Parlot 2.3.0 - BSD-3-Clause
 
 BSD 3-Clause License
 
