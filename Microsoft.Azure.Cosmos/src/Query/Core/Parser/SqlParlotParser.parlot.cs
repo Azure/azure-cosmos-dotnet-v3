@@ -149,11 +149,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 .Postfix(
                     (dot.SkipAnd(identifier), static (e, id) => SqlPropertyRefScalarExpression.Create(e, id)),
                     (Between(lBracket, scalarExpression, rBracket), static (e, index) => SqlMemberIndexerScalarExpression.Create(e, index)))
-                .Unary(
-                    (minus, static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Minus, e)),
-                    (plus, static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Plus, e)),
-                    (Terms.Char('~'), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.BitwiseNot, e)),
-                    (kNot.Then(static _ => default(char)), static e => SqlUnaryScalarExpression.Create(SqlUnaryScalarOperatorKind.Not, e)))
+                .Unary((
+                    OneOf(
+                        minus.Then(SqlUnaryScalarOperatorKind.Minus),
+                        plus.Then(SqlUnaryScalarOperatorKind.Plus),
+                        Terms.Char('~').Then(SqlUnaryScalarOperatorKind.BitwiseNot),
+                        kNot.Then(SqlUnaryScalarOperatorKind.Not)),
+                    static (e, kind) => SqlUnaryScalarExpression.Create(kind, e)))
                 .LeftAssociative(
                     (Terms.Char('*'), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Multiply, a, b)),
                     (Terms.Char('/'), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Divide, a, b)),
