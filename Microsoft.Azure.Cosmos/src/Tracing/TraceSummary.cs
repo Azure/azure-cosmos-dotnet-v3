@@ -69,15 +69,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
             {
-                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null ||
-                            clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
+                IReadOnlyList<(string, Uri)> regionsContacted = clientSideRequestStatisticsTraceDatum.RegionsContactedSnapshot;
+                if (regionsContacted.Count == 0)
                 {
                     return;
                 }
 
                 lock (this.regionContactedInternal)
                 {
-                    this.regionContactedInternal.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                    this.regionContactedInternal.UnionWith(regionsContacted);
                 }
             }
         }
