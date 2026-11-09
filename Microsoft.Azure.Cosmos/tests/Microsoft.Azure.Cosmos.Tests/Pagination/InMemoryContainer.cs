@@ -110,6 +110,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             using (ITrace getChildRangesTrace = trace.StartChild(name: "Get Child Ranges", TraceComponent.Routing, TraceLevel.Info))
             {
+                if (this.resolvePartitionsBasedOnPrefix)
+                {
+                    feedRange = (FeedRangeInternal)ResolveFeedRangeBasedOnPrefixContainer(
+                        feedRange,
+                        this.partitionKeyDefinition);
+                }
+
                 FeedRangeEpk CreateRangeFromId(int id)
                 {
                     PartitionKeyHashRange hashRange = this.cachedPartitionKeyRangeIdToHashRange[id];
@@ -348,7 +355,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             using (ITrace readFeed = trace.StartChild("Read Feed Transport", TraceComponent.Transport, TraceLevel.Info))
             {
-                TryCatch<int> monadicPartitionKeyRangeId = this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRangeState.FeedRange);
+                FeedRangeInternal feedRange = this.resolvePartitionsBasedOnPrefix
+                    ? (FeedRangeInternal)ResolveFeedRangeBasedOnPrefixContainer(
+                        feedRangeState.FeedRange,
+                        this.partitionKeyDefinition)
+                    : feedRangeState.FeedRange;
+                TryCatch<int> monadicPartitionKeyRangeId =
+                    this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRange);
                 if (monadicPartitionKeyRangeId.Failed)
                 {
                     return Task.FromResult(TryCatch<ReadFeedPage>.FromException(monadicPartitionKeyRangeId.Exception));
@@ -393,7 +406,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 List<Record> page = records
                     .Where((record) =>
                     {
-                        if (!IsRecordWithinFeedRange(record, feedRangeState.FeedRange, this.partitionKeyDefinition))
+                        if (!IsRecordWithinFeedRange(record, feedRange, this.partitionKeyDefinition))
                         {
                             return false;
                         }
@@ -728,7 +741,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             using (ITrace childTrace = trace.StartChild("Change Feed Transport", TraceComponent.Transport, TraceLevel.Info))
             {
-                TryCatch<int> monadicPartitionKeyRangeId = this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRangeState.FeedRange);
+                FeedRangeInternal feedRange = this.resolvePartitionsBasedOnPrefix
+                    ? (FeedRangeInternal)ResolveFeedRangeBasedOnPrefixContainer(
+                        feedRangeState.FeedRange,
+                        this.partitionKeyDefinition)
+                    : feedRangeState.FeedRange;
+                TryCatch<int> monadicPartitionKeyRangeId =
+                    this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRange);
                 if (monadicPartitionKeyRangeId.Failed)
                 {
                     return Task.FromResult(TryCatch<ChangeFeedPage>.FromException(monadicPartitionKeyRangeId.Exception));
@@ -755,7 +774,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 }
 
                 List<Change> filteredChanges = changes
-                    .Where(change => IsRecordWithinFeedRange(change.Record, feedRangeState.FeedRange, this.partitionKeyDefinition))
+                    .Where(change => IsRecordWithinFeedRange(change.Record, feedRange, this.partitionKeyDefinition))
                     .Where(change => feedRangeState.State.Accept(ChangeFeedPredicate.Singleton, change))
                     .Take((changeFeedPaginationOptions ?? ChangeFeedExecutionOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue))
                     .ToList();
