@@ -157,40 +157,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                         kNot.Then(SqlUnaryScalarOperatorKind.Not)),
                     static (e, kind) => SqlUnaryScalarExpression.Create(kind, e)))
                 .LeftAssociative(
-                    new[]
-                    {
-                        Terms.Char('*').Then(SqlBinaryScalarOperatorKind.Multiply),
-                        Terms.Char('/').Then(SqlBinaryScalarOperatorKind.Divide),
-                        Terms.Char('%').Then(SqlBinaryScalarOperatorKind.Modulo),
-                    },
-                    CreateBinary)
+                    (Terms.Char('*'), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Multiply, a, b)),
+                    (Terms.Char('/'), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Divide, a, b)),
+                    (Terms.Char('%'), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Modulo, a, b)))
                 .LeftAssociative(
-                    new[]
-                    {
-                        plus.Then(SqlBinaryScalarOperatorKind.Add),
-                        minus.Then(SqlBinaryScalarOperatorKind.Subtract),
-                    },
-                    CreateBinary)
+                    (plus, static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Add, a, b)),
+                    (minus, static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Subtract, a, b)))
                 .LeftAssociative(
-                    new[]
-                    {
-                        Terms.Text(">=").Then(SqlBinaryScalarOperatorKind.GreaterThanOrEqual),
-                        Terms.Text("<=").Then(SqlBinaryScalarOperatorKind.LessThanOrEqual),
-                        Terms.Text("<").Then(SqlBinaryScalarOperatorKind.LessThan),
-                        Terms.Text(">").Then(SqlBinaryScalarOperatorKind.GreaterThan),
-                    },
-                    CreateBinary)
+                    (Terms.Text(">="), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.GreaterThanOrEqual, a, b)),
+                    (Terms.Text("<="), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.LessThanOrEqual, a, b)),
+                    (Terms.Text("<"), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.LessThan, a, b)),
+                    (Terms.Text(">"), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.GreaterThan, a, b)))
                 .LeftAssociative(
-                    new[]
-                    {
-                        Terms.Text("=").Then(SqlBinaryScalarOperatorKind.Equal),
-                        Terms.Text("!=").Then(SqlBinaryScalarOperatorKind.NotEqual),
-                    },
-                    CreateBinary)
-                .LeftAssociative(new[] { Terms.Char('&').Then(SqlBinaryScalarOperatorKind.BitwiseAnd) }, CreateBinary)
-                .LeftAssociative(new[] { Terms.Char('^').Then(SqlBinaryScalarOperatorKind.BitwiseXor) }, CreateBinary)
-                .LeftAssociative(new[] { Terms.Char('|').Then(SqlBinaryScalarOperatorKind.BitwiseOr) }, CreateBinary)
-                .LeftAssociative(new[] { Terms.Text("||").Then(SqlBinaryScalarOperatorKind.StringConcat) }, CreateBinary);
+                    (Terms.Text("="), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Equal, a, b)),
+                    (Terms.Text("!="), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.NotEqual, a, b)))
+                .LeftAssociative((Terms.Char('&'), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.BitwiseAnd, a, b)))
+                .LeftAssociative((Terms.Char('^'), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.BitwiseXor, a, b)))
+                .LeftAssociative((Terms.Char('|'), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.BitwiseOr, a, b)))
+                .LeftAssociative((Terms.Text("||"), static (a, b) => SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.StringConcat, a, b)));
 
             // in_scalar_expression, like_scalar_expression and the BETWEEN alternative of scalar_expression,
             // after their binary_scalar_expression.

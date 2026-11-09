@@ -211,11 +211,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return path;
         }
 
-        public static SqlScalarExpression CreateBinary(SqlScalarExpression left, SqlScalarExpression right, SqlBinaryScalarOperatorKind kind)
-        {
-            return SqlBinaryScalarExpression.Create(kind, left, right);
-        }
-
         public static Leaf CreateLeaf(SqlScalarExpression expression, Suffix suffix)
         {
             switch (suffix.Kind)
