@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                     CreateBinary)
                 .LeftAssociative(new[] { Terms.Char('&').Then(SqlBinaryScalarOperatorKind.BitwiseAnd) }, CreateBinary)
                 .LeftAssociative(new[] { Terms.Char('^').Then(SqlBinaryScalarOperatorKind.BitwiseXor) }, CreateBinary)
-                .LeftAssociative(new[] { Terms.Char('|').WhenNotFollowedBy(Literals.Char('|')).Then(SqlBinaryScalarOperatorKind.BitwiseOr) }, CreateBinary)
+                .LeftAssociative(new[] { Terms.Char('|').Then(SqlBinaryScalarOperatorKind.BitwiseOr) }, CreateBinary)
                 .LeftAssociative(new[] { Terms.Text("||").Then(SqlBinaryScalarOperatorKind.StringConcat) }, CreateBinary);
 
             // in_scalar_expression, like_scalar_expression and the BETWEEN alternative of scalar_expression,
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             // conditionals left associative, and the right operand of a coalesce expression can't contain one.
             scalarExpression.Parser = scalarPrimary.Operators()
                 .Ternary(
-                    Terms.Char('?').WhenNotFollowedBy(Literals.Char('?')),
+                    Terms.Char('?'),
                     scalarExpression,
                     colon,
                     static (condition, consequent, alternative) => SqlConditionalScalarExpression.Create(condition, consequent, alternative),
