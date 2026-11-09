@@ -157,34 +157,27 @@ The heart of CI. It defines a set of **parallel jobs** (all on `OneES`):
 | `EmulatorTests … MultiRegion` | `TestCategory=MultiRegion` against a live multi-region account (`COSMOSDB_MULTI_REGION`). |
 | `EmulatorTests … MultiMaster` | `TestCategory=MultiMaster` against a live multi-master account (`COSMOSDB_MULTIMASTER`). |
 
-The Encryption unit task retains caller filters/OS/configuration and explicitly
-uses `SdkProjectRef=false`, matching the existing package-backed Encryption
-emulator lane. An empty caller configuration makes the existing dotnet default
-`Debug` explicit; it is not a Release guarantee. `build-preview.yml` runs the
-same unit project with `IsPreview=true` in its existing Encryption parity job,
-including when emulator execution is disabled. Current-core source-reference
-build parity, package-backed execution and built-nupkg consumer proof remain
-different evidence.
+Encryption and Custom unit tasks forward caller filters, OS and configuration,
+use `SdkProjectRef=false` for package-backed execution, and default an empty
+configuration to `Debug`. Their preview tasks use `IsPreview=true` in the
+existing parity jobs and run even when emulator tests are disabled.
 
-The Custom unit task uses the same ordinary filter/configuration forwarding
-and `SdkProjectRef=false`; its preview counterpart runs in the established
-Custom source/package-symbol parity job with `IsPreview=true`, also when
-emulator tests are disabled. Neither command selects only one of the Custom
-project's two TFMs. Its default core package reference is **unconditionally**
-`3.41.0-preview.0`, so an ordinary Custom run is not a GA-core-package run.
-The existing Custom emulator job supplies the service counterpart; no separate
-preview Custom emulator job or current-source service execution is implied.
-Preserve native TFM/runtime/reference receipts rather than infer them from
-job labels.
+Run both unit projects from the repository root (no emulator required):
 
-The [I-01 patch spec](assurance/specs/i-01-encryption-patch-paired-tests.md),
-[I-02 cache/cancellation spec](assurance/specs/i-02-custom-cache-paired-tests.md)
-and [behavior matrix](assurance/feature-behavior-test-matrix.md) distinguish
-local/native units, listed data-driven parents and actual Gateway/Direct
-service leaves, including missing service and CI receipts. Assurance-spec/mapping changes must
-not silently inherit a waiver from the current docs-path exclusions; wiring
-their applicable checks remains [G-10](assurance/remediation-plan.md#g-10).
-This increment does not change those exclusions.
+```shell
+dotnet test Microsoft.Azure.Cosmos.Encryption/tests/Microsoft.Azure.Cosmos.Encryption.Tests/Microsoft.Azure.Cosmos.Encryption.Tests.csproj --configuration Release /p:SdkProjectRef=false
+dotnet test Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj --configuration Release /p:SdkProjectRef=false
+```
+
+Add `/p:IsPreview=true` to reproduce preview units, or `--filter` to select
+specific tests. Leave `--framework` unset to run both Custom target frameworks
+(`net6.0;net8.0`); Encryption targets `net6.0`. Custom's default core package is
+`3.41.0-preview.0` even without `IsPreview=true`.
+
+For service tests, use the corresponding `tests/EmulatorTests/*.csproj` with
+the same configuration and reference flags after the [emulator setup](#emulator-setup-emulator-setupyml)
+below. The existing Custom emulator job has no separate preview counterpart;
+source-reference parity builds do not execute service tests.
 
 Buckets 1 and 2 exist purely to **parallelize** the large emulator suite and shorten PR feedback
 time. Every emulator job pulls in `emulator-setup.yml` and sets
