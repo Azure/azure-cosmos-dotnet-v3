@@ -1887,7 +1887,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="feedRanges">
         /// A list of non-overlapping effective partition key ranges belonging to this container.
         /// Supports ranges returned by <see cref="Container.GetFeedRangesAsync(CancellationToken)"/>,
-        /// subsets in any order, and ranges restored from their JSON representations.
+        /// subsets in any order, and effective partition key ranges restored from their JSON representations.
+        /// Ranges created by <see cref="FeedRange.FromPartitionKey(PartitionKey)"/> and physical partition key range ID representations are not supported.
         /// </param>
         /// <param name="partitionKey">
         /// The complete partition key to locate. Hierarchical partition key prefixes are not supported.
@@ -1901,7 +1902,7 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         /// <remarks>
         /// <para>
-        /// Each call captures the current ranges and their boundaries without modifying the supplied list.
+        /// Each call copies and validates the entire supplied list and its range boundaries without modifying the list.
         /// Later changes do not affect the captured boundaries. Avoid modifying the list or ranges until the operation completes.
         /// </para>
         /// <para>
