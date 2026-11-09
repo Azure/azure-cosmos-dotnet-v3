@@ -195,6 +195,50 @@ proxy-binary recovery, actual service/diagnostics results, native qualification
 where absent, and protected-CI admission/activation. These local fixture tests
 cannot close those gates or #5996's broader runtime characterization.
 
+## Review correction: MSData/direct framework prerequisite
+
+The [existing review thread][msdata-review] identifies a prerequisite omitted
+from the initial implementation at
+`491a312994e3154b89995d7da80a4e69c843931c`. The user subsequently requested
+implementing applicable review feedback. This addendum precedes the correction
+to the sibling templates; it does not authorize another PR or a TLS repair.
+
+The unconditional `Microsoft.AspNetCore.App` framework reference applies to the
+entire net6.0 testhost, before test filtering/discovery. A Flaky-only selection
+therefore still needs ASP.NET Core 6 even though it does not select this fixture.
+The three core unit jobs in `templates/build-test-msdata.yml` and two core unit
+jobs in `templates/build-preview-msdata.yml` still acquire only runtime 6 and
+SDK 8. `azure-pipelines-msdata-direct.yml` consumes these templates, while the
+jobs select the same core test project as the ordinary templates.
+
+Actual MSData/direct image framework inventories have **not** been verified.
+Neither the `OneES` pool nor a `windows-latest` variable proves that ASP.NET
+Core 6 is installed. This is a source-visible missing acquisition guarantee,
+not an observed MSData job failure or an explanation for the separate native
+TLS fixture failure.
+
+Mirror the already implemented ordinary-template setup: change only the five
+existing core-unit `UseDotNet@2` steps for `version: '6.x'` from
+`packageType: 'runtime'` to `packageType: 'sdk'`. Preserve the following SDK 8
+steps, all TFMs, job/task counts, test projects, filters/arguments, conditions,
+retries/timeouts, pool/trust/fork rules and root pipeline configuration. Do not
+change the MSData preview solution-build, emulator, encryption or performance
+jobs. The [official .NET 6 SDK distribution][sdk6] includes both .NET and ASP.NET
+Core runtimes; no new runtime generation, SDK/product retargeting or global
+installation is needed.
+
+Validation must parse both complete candidate YAML templates and compare them
+with the preceding PR head. Independently identify all five core test jobs by
+their actual test-project selection, require SDK 6 followed by SDK 8 before
+their tests, and reject any other structural change. As controls, the old
+templates must fail that prerequisite assertion and restoring the correction
+must pass; a synthetic filter mutation must fail the unchanged-structure check.
+Retain the existing test runtimeconfig's net6.0/ASP.NET 6 dependency as corroboration,
+not native image evidence. No manual CI run, unrelated suite execution, TLS fix,
+protected-check activation or permission change belongs to this correction.
+
 [transport]: https://github.com/tvaron3/cosmosdb-design-docs/blob/bcfbc786fa5296deebcccd11369efb583e63e48c/06-transport-layer-rntbd.md#two-connectivity-modes
 [retry]: https://github.com/tvaron3/cosmosdb-design-docs/blob/bcfbc786fa5296deebcccd11369efb583e63e48c/17-status-codes-and-sdk-retries.md#1-overview
 [macos]: https://learn.microsoft.com/aspnet/core/grpc/troubleshoot#unable-to-start-aspnet-core-grpc-app-on-macos
+[msdata-review]: https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6190#discussion_r4448100414
+[sdk6]: https://dotnet.microsoft.com/download/dotnet/6.0
