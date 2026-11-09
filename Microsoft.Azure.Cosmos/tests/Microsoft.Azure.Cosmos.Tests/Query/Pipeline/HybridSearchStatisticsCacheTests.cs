@@ -462,6 +462,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
+        public void LookupsRemoveOnlyTheExpiredCountTheyRead()
+        {
+            TestClock clock = new TestClock();
+            Cache cache = Cache.Create(TimeSpan.FromSeconds(10), 8, clock.Read);
+            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), clock.Now));
+            Assert.IsTrue(cache.TryAdd("rid", "other-etag", CreatePlan(), CreateStatistics(), clock.Now));
+            Assert.AreEqual(6, StoredCount(cache));
+            clock.Now = TimeSpan.FromSeconds(10);
+            Assert.IsFalse(cache.TryGet("rid", "etag", CreatePlan(), NoOpTrace.Singleton, out _));
+            Assert.AreEqual(5, StoredCount(cache), "Only the expired document count read by the lookup is removed.");
+        }
+
+        [TestMethod]
         public void LargeAgesAndTimestampsDoNotOverflow()
         {
             TestClock clock = new TestClock { Now = TimeSpan.MaxValue - TimeSpan.FromTicks(1) };

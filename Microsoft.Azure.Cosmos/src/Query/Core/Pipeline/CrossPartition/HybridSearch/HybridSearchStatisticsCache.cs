@@ -251,13 +251,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             private bool TryGetLiveCount(CacheKey key, TimeSpan now, out long value)
             {
+                value = 0;
                 if (this.counts.TryGetValue(key, out CachedCount count) && this.IsFresh(count.CollectionStartedAt, now))
                 {
                     value = count.Value;
                     return true;
                 }
 
-                value = 0;
+                // Removes an expired count. Best effort: a concurrent refresh of this key may also be removed, which only causes a later miss.
+                this.counts.TryRemove(key, out _);
                 return false;
             }
 
