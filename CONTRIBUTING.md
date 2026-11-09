@@ -85,11 +85,10 @@ There are two major test projects:
 - `Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests` contains Unit tests. Any new feature or work should add unit tests covering unless explicitly allowed due to some exceptional circumstance. Unit tests should be isolated and do not depend on any endpoint or Emulator.
 - `Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests` contains Emulator tests. This tests will automatically connect to a running Azure Cosmos DB Emulator (see [prerequisites](#prerequisites)). Any new feature or work should have Emulator tests if the feature is interacting with the service.
 
-An additional opt-in [in-memory emulator test project](Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.InMemoryEmulatorTests/README.md)
-exercises the checkout's SDK over HTTP against the same lightweight Rust emulator
-used by Go v2. It requires no Azure account or Windows emulator and does not replace
-the existing emulator/live-account suites. See its README for the pinned source
-build, executable environment variable, run command, and supported coverage.
+For the optional loopback Rust backend, see the
+[in-memory emulator test run guide](Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.InMemoryEmulatorTests/README.md)
+for prerequisites, pinned host setup, commands and safety limits. It does not replace
+the existing emulator/live-account suites.
 
 All test projects can be interacted with through an IDE (some IDEs like Visual Studio have a Test Explorer to easily navigate through tests) but it can also be executed through the [dotnet test](https://docs.microsoft.com/dotnet/core/tools/dotnet-test) command in any of the above folders.
 
