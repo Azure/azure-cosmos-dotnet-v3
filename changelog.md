@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [6196](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6196) Added preview `Container.TryGetFeedRangeForPartitionKeyAsync` to find the original feed range that owns a partition key within a caller-supplied list. Each call captures and validates the current ranges without reordering the list or consulting current physical partition ownership. Already ordered lists avoid unnecessary sorting.
+
 #### Breaking Changes
 
 #### Bugs Fixed

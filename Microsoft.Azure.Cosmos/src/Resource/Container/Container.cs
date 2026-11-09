@@ -1880,6 +1880,50 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
+#nullable enable annotations
+        /// <summary>
+        /// Finds the <see cref="FeedRange"/> in the supplied list that owns the specified <see cref="PartitionKey"/> as an asynchronous operation.
+        /// </summary>
+        /// <param name="feedRanges">
+        /// A list of non-overlapping effective partition key ranges belonging to this container.
+        /// Supports ranges returned by <see cref="Container.GetFeedRangesAsync(CancellationToken)"/>,
+        /// subsets in any order, and ranges restored from their JSON representations.
+        /// </param>
+        /// <param name="partitionKey">
+        /// The complete partition key to locate. Hierarchical partition key prefixes are not supported.
+        /// <c>default(PartitionKey)</c> is treated as <see cref="PartitionKey.Null"/>.
+        /// <see cref="PartitionKey.None"/> uses this container's missing-key representation.
+        /// </param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing the original <see cref="FeedRange"/> instance from <paramref name="feedRanges"/> that owns the partition key,
+        /// or <see langword="null"/> if the list contains no matching range.
+        /// </returns>
+        /// <remarks>
+        /// <para>
+        /// Each call captures the current ranges and their boundaries without modifying the supplied list.
+        /// Later changes do not affect the captured boundaries. Avoid modifying the list or ranges until the operation completes.
+        /// </para>
+        /// <para>
+        /// Ownership is determined from the supplied ranges, which may contain gaps or predate partition splits.
+        /// The method does not refresh the ranges to match the current physical partitions.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="feedRanges"/> is null.</exception>
+        /// <exception cref="ArgumentException">
+        /// The list contains null, unsupported, invalid, or overlapping ranges,
+        /// or the number of partition key components does not match the container's partition key definition.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+        public virtual Task<FeedRange?> TryGetFeedRangeForPartitionKeyAsync(
+            IReadOnlyList<FeedRange> feedRanges,
+            PartitionKey partitionKey,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException("Deriving classes are expected to override this method with a valid implementation");
+        }
+#nullable restore annotations
+
         /// <summary>
         /// Determines whether the given y feed range is a part of the specified x feed range.
         /// </summary>
