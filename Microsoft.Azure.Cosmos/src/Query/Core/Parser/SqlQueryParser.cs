@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             }
 
             // The parser reports reaching its depth limit, or the end of the stack, like a syntax error. Reaching the
-            // limit takes at least 191 nested subqueries, so fewer tokens that open a level than that can't have.
+            // limit takes at least 247 nested subqueries, so fewer tokens that open a level than that can't have.
             private static bool MayBeNestedTooDeeply(string text, int offset)
             {
                 const int MinimumLevels = 150;

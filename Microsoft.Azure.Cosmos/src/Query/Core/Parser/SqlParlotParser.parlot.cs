@@ -14,8 +14,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
     internal static partial class SqlParlotParser
     {
-        // The limit bounds what the parser recurses on and the prefix operators, which it reads in a loop, to about 300
-        // nested parentheses, 190 subqueries or 1,000 prefix operators. The binary operators and member accesses of a
+        // The limit bounds what the parser recurses on and the prefix operators, which it reads in a loop, to about 500
+        // nested parentheses, 250 subqueries or 1,000 prefix operators. The binary operators and member accesses of a
         // chain aren't counted: a tree can be deeper than this, and the code that visits one has to check the stack.
         [GenerateParser(nameof(TryParse), MaxRecursionDepth = 1000)]
         private static Parser<SqlQuery> Build()
