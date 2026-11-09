@@ -198,8 +198,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 .Then(static t => t.Item2.HasValue ? SqlParlotParser.CreateLeaf(t.Item1, t.Item2.Value) : new Leaf(t.Item1, isBetween: false))
                 .And(ZeroOrMany(kAnd.SkipAnd(logicalOperand)))
                 .And(ZeroOrMany(kOr.SkipAnd(andExpression)))
-                .When(static (c, t) => SqlParlotParser.IsValidLogical(t.Item1, t.Item2, t.Item3))
-                .Then(static t => SqlParlotParser.CreateLogical(t.Item1, t.Item2, t.Item3));
+                .ThenTry(static t => SqlParlotParser.TryCreateLogical(t.Item1, t.Item2, t.Item3));
 
             // scalar_expression '?' scalar_expression ':' scalar_expression and scalar_expression '??' scalar_expression.
             // The alternative of a conditional can't contain a conditional or a coalesce expression, which makes

@@ -226,13 +226,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
 
         // logical_scalar_expression: AND binds tighter than OR, both are left associative.
         // A BETWEEN expression is not a logical_scalar_expression operand, so it can't be followed by AND / OR.
-        public static bool IsValidLogical(Leaf first, IReadOnlyList<SqlScalarExpression> ands, IReadOnlyList<SqlScalarExpression> ors)
+        public static (bool Success, SqlScalarExpression Value) TryCreateLogical(Leaf first, IReadOnlyList<SqlScalarExpression> ands, IReadOnlyList<SqlScalarExpression> ors)
         {
-            return !first.IsBetween || (ands.Count == 0 && ors.Count == 0);
-        }
+            if (first.IsBetween && (ands.Count != 0 || ors.Count != 0))
+            {
+                return (false, null);
+            }
 
-        public static SqlScalarExpression CreateLogical(Leaf first, IReadOnlyList<SqlScalarExpression> ands, IReadOnlyList<SqlScalarExpression> ors)
-        {
             SqlScalarExpression expression = first.Expression;
             for (int i = 0; i < ands.Count; i++)
             {
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 expression = SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Or, expression, ors[i]);
             }
 
-            return expression;
+            return (true, expression);
         }
 
         private static bool IsReserved(ReadOnlySpan<char> word)
