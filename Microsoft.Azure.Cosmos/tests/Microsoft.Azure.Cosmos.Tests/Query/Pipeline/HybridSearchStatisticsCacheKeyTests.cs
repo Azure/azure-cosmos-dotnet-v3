@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 new KeyKindTestCase("Path word count", (rid, etag) => Key.CreateDocumentPathWordCount(rid, etag, new[] { "text" })),
                 new KeyKindTestCase("Term hit count", (rid, etag) => Key.CreateDocumentPathTermHitCount(rid, etag, new[] { "text" }, "run", null)),
             };
+
             for (int index = 0; index < testCases.Count; index++)
             {
                 KeyKindTestCase testCase = testCases[index];
@@ -124,6 +125,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 new NullArgumentTestCase("path", () => Key.CreateDocumentPathTermHitCount("rid", "etag", null, "run", null)),
                 new NullArgumentTestCase("term", () => Key.CreateDocumentPathTermHitCount("rid", "etag", path, null, null)),
             };
+
             for (int index = 0; index < testCases.Count; index++)
             {
                 NullArgumentTestCase testCase = testCases[index];

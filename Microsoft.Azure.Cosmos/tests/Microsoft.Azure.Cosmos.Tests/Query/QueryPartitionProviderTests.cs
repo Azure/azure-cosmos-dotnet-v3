@@ -84,6 +84,7 @@
                 new MetadataTestCase("Unknown fields", @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2}],""future"":true}]", @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2}]}]"),
                 new MetadataTestCase("Date-like strings", @"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00""}]}]", @"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00""}]}]"),
             };
+
             for (int index = 0; index < testCases.Count; index++)
             {
                 MetadataTestCase testCase = testCases[index];
@@ -109,13 +110,16 @@
                 new DeserializedPlanTestCase("Gateway serializer", gatewayPlan.HybridSearchQueryInfo),
                 new DeserializedPlanTestCase("Internal plan serializer", internalPlan.HybridSearchQueryInfo),
             };
+
             for (int index = 0; index < testCases.Count; index++)
             {
                 DeserializedPlanTestCase testCase = testCases[index];
                 this.TestContext.WriteLine($"Deserializer case {index}: {testCase.Name}, Metadata={metadata ?? "<absent>"}, Expected={expected ?? "<null>"}");
                 HybridSearchQueryInfo hybridPlan = testCase.Plan;
+
                 Assert.AreEqual(statisticsQuery, hybridPlan.GlobalStatisticsQuery);
                 Assert.IsTrue(hybridPlan.RequiresGlobalStatistics);
+
                 if (metadata == null || metadata == "null")
                 {
                     Assert.IsNull(hybridPlan.FullTextSearchTerms);
@@ -144,6 +148,7 @@
                 new MetadataTestCase("Distance overflow", @"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":2147483648}]}]", null),
                 new MetadataTestCase("Non-numeric distance", @"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":""not-a-number""}]}]", null),
             };
+
             for (int index = 0; index < testCases.Count; index++)
             {
                 MetadataTestCase testCase = testCases[index];

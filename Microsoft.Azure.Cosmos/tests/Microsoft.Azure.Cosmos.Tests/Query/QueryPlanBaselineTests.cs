@@ -2054,10 +2054,12 @@
             if (hybridsearchQueryInfo.FullTextSearchTerms != null)
             {
                 writer.WriteStartElement(nameof(hybridsearchQueryInfo.FullTextSearchTerms));
+
                 foreach (FullTextSearchTerms requirement in hybridsearchQueryInfo.FullTextSearchTerms)
                 {
                     writer.WriteStartElement("Entry");
                     writer.WriteStartElement("Path");
+
                     foreach (string segment in requirement.Path)
                     {
                         writer.WriteElementString("Segment", segment);
@@ -2065,10 +2067,12 @@
 
                     writer.WriteEndElement();
                     writer.WriteStartElement("Terms");
+
                     foreach (FullTextSearchTerm term in requirement.Terms)
                     {
                         writer.WriteStartElement("Term");
                         writer.WriteElementString("Text", term.Term);
+
                         if (term.Distance.HasValue)
                         {
                             writer.WriteElementString("Distance", XmlConvert.ToString(term.Distance.Value));

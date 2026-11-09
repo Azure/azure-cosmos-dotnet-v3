@@ -492,17 +492,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             using StatisticsCacheClient uncached = new StatisticsCacheClient(null);
             using StatisticsCacheClient cached = new StatisticsCacheClient(TimeSpan.FromMinutes(10));
             using StatisticsCacheClient otherCached = new StatisticsCacheClient(TimeSpan.FromMinutes(10));
-            using StatisticsCacheClient alwaysExpired = new StatisticsCacheClient(TimeSpan.FromTicks(1));
 
             // Warm up: a cold cache collects statistics like an uncached client.
             StatisticsCacheRun warmUpExpected = await uncached.RunAsync(container, rankQuery, FullTextScoreScope.Global);
             Assert.IsTrue(warmUpExpected.StatisticsRequestCount > 0, "An uncached Global query must collect statistics.");
-            foreach (StatisticsCacheClient client in new[] { cached, alwaysExpired })
-            {
-                StatisticsCacheRun warmUp = await client.RunAsync(container, rankQuery, FullTextScoreScope.Global);
-                Assert.AreEqual(warmUpExpected.StatisticsRequestCount, warmUp.StatisticsRequestCount, "Warm-up");
-                CollectionAssert.AreEqual(warmUpExpected.Indices, warmUp.Indices, "Warm-up");
-            }
+
+            StatisticsCacheRun warmUp = await cached.RunAsync(container, rankQuery, FullTextScoreScope.Global);
+            Assert.AreEqual(warmUpExpected.StatisticsRequestCount, warmUp.StatisticsRequestCount, "Warm-up");
+            CollectionAssert.AreEqual(warmUpExpected.Indices, warmUp.Indices, "Warm-up");
 
             // Every run uses a new container handle, so hits also show that handles of one client share its cache.
             List<StatisticsCacheCase> cases = new List<StatisticsCacheCase>
@@ -512,7 +509,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 new StatisticsCacheCase("Subset of paths and terms", cached, subsetQuery, FullTextScoreScope.Global, expectHit: true),
                 new StatisticsCacheCase("Local after Global warm-up", cached, rankQuery, FullTextScoreScope.Local, expectHit: false),
                 new StatisticsCacheCase("Separate client", otherCached, rankQuery, FullTextScoreScope.Global, expectHit: false),
-                new StatisticsCacheCase("Expired before admission", alwaysExpired, rankQuery, FullTextScoreScope.Global, expectHit: false),
             };
 
             for (int index = 0; index < cases.Count; index++)

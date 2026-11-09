@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Tracing;
     using CacheKey = Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch.HybridSearchStatisticsCacheKey;
@@ -18,6 +17,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
     internal abstract class HybridSearchStatisticsCache
     {
         private const string TraceDatumKey = "Hybrid Search Statistics Cache";
+        private const string TraceDatumHit = "Hit";
+        private const string TraceDatumMiss = "Miss";
 
         private HybridSearchStatisticsCache()
         {
@@ -47,30 +48,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         public abstract bool TryGet(
             string containerResourceId,
             string containerETag,
-            HybridSearchQueryInfo hybridSearchQueryInfo,
+            HybridSearchQueryInfo queryInfo,
             ITrace trace,
             out GlobalFullTextSearchStatistics statistics);
 
-        public abstract void Add(
+        // Returns true if the statistics were stored.
+        public abstract bool TryAdd(
             string containerResourceId,
             string containerETag,
-            HybridSearchQueryInfo hybridSearchQueryInfo,
+            HybridSearchQueryInfo queryInfo,
             GlobalFullTextSearchStatistics statistics,
             TimeSpan collectionStartedAt);
 
-        internal static bool IsQuerySupported(HybridSearchQueryInfo hybridSearchQueryInfo)
+        internal static bool IsQuerySupported(HybridSearchQueryInfo queryInfo)
         {
-            if (hybridSearchQueryInfo == null || !hybridSearchQueryInfo.RequiresGlobalStatistics)
+            if (queryInfo == null)
             {
-                return false;
+                throw new ArgumentNullException(nameof(queryInfo));
             }
 
-            List<FullTextSearchTerms> fullTextSearchTerms = hybridSearchQueryInfo.FullTextSearchTerms;
-            return fullTextSearchTerms != null && fullTextSearchTerms.Count > 0 &&
-                !fullTextSearchTerms.Any(pathSearchTerms =>
-                    pathSearchTerms?.Path == null || pathSearchTerms.Path.Count == 0 || pathSearchTerms.Path.Any(segment => segment == null) ||
-                    pathSearchTerms.Terms == null || pathSearchTerms.Terms.Count == 0 ||
-                    pathSearchTerms.Terms.Any(term => term?.Term == null || term.Distance < 0));
+            return queryInfo.RequiresGlobalStatistics && queryInfo.FullTextSearchTerms != null && queryInfo.FullTextSearchTerms.Count > 0;
         }
 
         // Each count is read and written independently; a lookup may combine counts from different collections.
@@ -104,25 +101,33 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             public override bool TryGet(
                 string containerResourceId,
                 string containerETag,
-                HybridSearchQueryInfo hybridSearchQueryInfo,
+                HybridSearchQueryInfo queryInfo,
                 ITrace trace,
                 out GlobalFullTextSearchStatistics statistics)
             {
-                bool found = this.TryGetCore(containerResourceId, containerETag, hybridSearchQueryInfo, out statistics);
-                trace.AddOrUpdateDatum(TraceDatumKey, found ? "Hit" : "Miss");
+                bool found = this.TryGetCore(containerResourceId, containerETag, queryInfo, out statistics);
+                trace.AddOrUpdateDatum(TraceDatumKey, found ? TraceDatumHit : TraceDatumMiss);
                 return found;
             }
 
             private bool TryGetCore(
                 string containerResourceId,
                 string containerETag,
-                HybridSearchQueryInfo hybridSearchQueryInfo,
+                HybridSearchQueryInfo queryInfo,
                 out GlobalFullTextSearchStatistics statistics)
             {
                 statistics = null;
-                if (containerResourceId == null ||
-                    containerETag == null ||
-                    !IsQuerySupported(hybridSearchQueryInfo))
+                if (containerResourceId == null)
+                {
+                    throw new ArgumentNullException(nameof(containerResourceId));
+                }
+
+                if (containerETag == null)
+                {
+                    throw new ArgumentNullException(nameof(containerETag));
+                }
+
+                if (!IsQuerySupported(queryInfo))
                 {
                     return false;
                 }
@@ -133,15 +138,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     return false;
                 }
 
-                List<FullTextSearchTerms> fullTextSearchTerms = hybridSearchQueryInfo.FullTextSearchTerms;
+                List<FullTextSearchTerms> fullTextSearchTerms = queryInfo.FullTextSearchTerms;
                 FullTextStatistics[] fullTextStatistics = new FullTextStatistics[fullTextSearchTerms.Count];
                 for (int pathIndex = 0; pathIndex < fullTextStatistics.Length; pathIndex++)
                 {
                     FullTextSearchTerms pathSearchTerms = fullTextSearchTerms[pathIndex];
 
-                    // Counts may come from different collections; reject combinations that are numerically impossible.
-                    if (!this.TryGetLiveCount(CacheKey.CreateDocumentPathWordCount(containerResourceId, containerETag, pathSearchTerms.Path), now, out long wordCount) ||
-                        (documentCount == 0 && wordCount != 0))
+                    if (!this.TryGetLiveCount(CacheKey.CreateDocumentPathWordCount(containerResourceId, containerETag, pathSearchTerms.Path), now, out long wordCount))
                     {
                         return false;
                     }
@@ -150,10 +153,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     for (int termIndex = 0; termIndex < hitCounts.Length; termIndex++)
                     {
                         FullTextSearchTerm term = pathSearchTerms.Terms[termIndex];
-                        CacheKey hitCountKey = CacheKey.CreateDocumentPathTermHitCount(
-                            containerResourceId, containerETag, pathSearchTerms.Path, term.Term, term.Distance);
-                        if (!this.TryGetLiveCount(hitCountKey, now, out hitCounts[termIndex]) ||
-                            hitCounts[termIndex] > documentCount)
+                        CacheKey hitCountKey = CacheKey.CreateDocumentPathTermHitCount(containerResourceId, containerETag, pathSearchTerms.Path, term.Term, term.Distance);
+                        if (!this.TryGetLiveCount(hitCountKey, now, out hitCounts[termIndex]))
                         {
                             return false;
                         }
@@ -166,48 +167,53 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 return true;
             }
 
-            public override void Add(
+            public override bool TryAdd(
                 string containerResourceId,
                 string containerETag,
-                HybridSearchQueryInfo hybridSearchQueryInfo,
+                HybridSearchQueryInfo queryInfo,
                 GlobalFullTextSearchStatistics statistics,
                 TimeSpan collectionStartedAt)
             {
-                TimeSpan now = this.getElapsedTime();
-                if (containerResourceId == null ||
-                    containerETag == null ||
-                    statistics == null ||
-                    !IsQuerySupported(hybridSearchQueryInfo) ||
-                    !this.IsFresh(collectionStartedAt, now))
+                if (containerResourceId == null)
                 {
-                    return;
+                    throw new ArgumentNullException(nameof(containerResourceId));
                 }
 
-                List<FullTextSearchTerms> fullTextSearchTerms = hybridSearchQueryInfo.FullTextSearchTerms;
-                if (statistics.FullTextStatistics.Count != fullTextSearchTerms.Count)
+                if (containerETag == null)
                 {
-                    return;
+                    throw new ArgumentNullException(nameof(containerETag));
                 }
+
+                if (statistics == null)
+                {
+                    throw new ArgumentNullException(nameof(statistics));
+                }
+
+                TimeSpan now = this.getElapsedTime();
+                if (!IsQuerySupported(queryInfo) || !this.IsFresh(collectionStartedAt, now))
+                {
+                    return false;
+                }
+
+                List<FullTextSearchTerms> fullTextSearchTerms = queryInfo.FullTextSearchTerms;
+                Debug.Assert(statistics.FullTextStatistics.Count == fullTextSearchTerms.Count, "Statistics must have one entry per full-text path.");
 
                 int entryCount = 1;
                 for (int pathIndex = 0; pathIndex < fullTextSearchTerms.Count; pathIndex++)
                 {
                     FullTextStatistics pathStatistics = statistics.FullTextStatistics[pathIndex];
-                    if (pathStatistics == null || pathStatistics.HitCounts.Length != fullTextSearchTerms[pathIndex].Terms.Count)
-                    {
-                        return;
-                    }
-
+                    Debug.Assert(pathStatistics.HitCounts.Length == fullTextSearchTerms[pathIndex].Terms.Count, "Statistics must have one hit count per term.");
                     entryCount += 1 + pathStatistics.HitCounts.Length;
                 }
 
                 // A response that cannot fit would only evict other entries and then itself.
                 if (entryCount > this.maxEntries)
                 {
-                    return;
+                    return false;
                 }
 
                 this.Set(CacheKey.CreateTotalDocumentCount(containerResourceId, containerETag), statistics.DocumentCount, collectionStartedAt);
+
                 for (int pathIndex = 0; pathIndex < fullTextSearchTerms.Count; pathIndex++)
                 {
                     FullTextSearchTerms pathSearchTerms = fullTextSearchTerms[pathIndex];
@@ -229,6 +235,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 }
 
                 this.EvictIfOverCapacity(now);
+                return true;
             }
 
             private void Set(CacheKey key, long value, TimeSpan collectionStartedAt)
@@ -267,11 +274,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     return;
                 }
 
-                // ToArray takes one consistent snapshot; LINQ over the live dictionary can throw during concurrent writes.
+                // ToArray takes one consistent snapshot of the live dictionary.
                 // Expired entries sort first, so one oldest-first pass removes them all and then only the remaining excess.
                 KeyValuePair<CacheKey, CachedCount>[] entries = this.counts.ToArray();
+                Array.Sort(entries, (left, right) => left.Value.CollectionStartedAt.CompareTo(right.Value.CollectionStartedAt));
                 int excess = entries.Length - this.maxEntries;
-                foreach (KeyValuePair<CacheKey, CachedCount> entry in entries.OrderBy(entry => entry.Value.CollectionStartedAt))
+                foreach (KeyValuePair<CacheKey, CachedCount> entry in entries)
                 {
                     if (excess <= 0 && this.IsFresh(entry.Value.CollectionStartedAt, now))
                     {
@@ -310,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             public override bool TryGet(
                 string containerResourceId,
                 string containerETag,
-                HybridSearchQueryInfo hybridSearchQueryInfo,
+                HybridSearchQueryInfo queryInfo,
                 ITrace trace,
                 out GlobalFullTextSearchStatistics statistics)
             {
@@ -318,13 +326,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 return false;
             }
 
-            public override void Add(
+            public override bool TryAdd(
                 string containerResourceId,
                 string containerETag,
-                HybridSearchQueryInfo hybridSearchQueryInfo,
+                HybridSearchQueryInfo queryInfo,
                 GlobalFullTextSearchStatistics statistics,
                 TimeSpan collectionStartedAt)
             {
+                return false;
             }
         }
     }

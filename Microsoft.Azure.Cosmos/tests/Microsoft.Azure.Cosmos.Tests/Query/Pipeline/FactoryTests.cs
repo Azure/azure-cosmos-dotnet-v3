@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 new ScopeTestCase(FullTextScoreScope.Global),
                 new ScopeTestCase(FullTextScoreScope.Local),
             };
+
             for (int index = 0; index < testCases.Count; index++)
             {
                 ScopeTestCase testCase = testCases[index];
@@ -182,6 +183,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 new ContainerMetadataTestCase("Missing ETag", null),
                 new ContainerMetadataTestCase("Present ETag", "etag"),
             };
+
             for (int index = 0; index < testCases.Count; index++)
             {
                 ContainerMetadataTestCase testCase = testCases[index];
@@ -231,10 +233,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 new CacheBindingTestCase { Name = "Disabled", CacheEnabled = false },
                 new CacheBindingTestCase { Name = "Statistics not required", RequiresStatistics = false },
                 new CacheBindingTestCase { Name = "Missing metadata", MetadataPresent = false },
-                new CacheBindingTestCase { Name = "Incomplete metadata", MetadataComplete = false },
                 new CacheBindingTestCase { Name = "Missing RID", ResourceId = null, ExpectedCache = true },
                 new CacheBindingTestCase { Name = "Missing ETag", ETag = null, ExpectedCache = true },
             };
+
             for (int index = 0; index < testCases.Count; index++)
             {
                 CacheBindingTestCase testCase = testCases[index];
@@ -248,13 +250,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             HybridSearchStatisticsCache cache = HybridSearchStatisticsCache.Create(TimeSpan.FromMinutes(1), 4);
             HybridSearchQueryInfo plan = CreateHybridPlan();
             plan.RequiresGlobalStatistics = testCase.RequiresStatistics;
+
             if (!testCase.MetadataPresent)
             {
                 plan.FullTextSearchTerms = null;
-            }
-            else if (!testCase.MetadataComplete)
-            {
-                plan.FullTextSearchTerms[0].Terms.Clear();
             }
 
             ContainerQueryProperties properties = CreateContainerProperties(testCase.ResourceId, testCase.ETag);
@@ -331,8 +330,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             public bool MetadataPresent { get; set; } = true;
 
-            public bool MetadataComplete { get; set; } = true;
-
             public bool NarrowTargetRange { get; set; }
 
             public bool ExpectedCache { get; set; }
@@ -340,7 +337,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             public override string ToString() =>
                 $"{this.Name}: Scope={this.Scope}, RID={this.ResourceId ?? "<null>"}, ETag={this.ETag ?? "<null>"}, " +
                 $"Enabled={this.CacheEnabled}, Required={this.RequiresStatistics}, Metadata={this.MetadataPresent}, " +
-                $"Complete={this.MetadataComplete}, NarrowRange={this.NarrowTargetRange}, ExpectedCache={this.ExpectedCache}";
+                $"NarrowRange={this.NarrowTargetRange}, ExpectedCache={this.ExpectedCache}";
         }
 
         private static HybridSearchQueryInfo CreateHybridPlan()

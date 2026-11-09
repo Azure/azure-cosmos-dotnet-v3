@@ -25,8 +25,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<CachePolicyTestCase> testCases = new List<CachePolicyTestCase>
             {
                 new CachePolicyTestCase("Null age disables caching", null),
-                new CachePolicyTestCase("Zero age disables caching", TimeSpan.Zero),
             };
+
             for (int index = 0; index < testCases.Count; index++)
             {
                 CachePolicyTestCase testCase = testCases[index];
@@ -38,8 +38,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 using CosmosClient client = CreateClient(options);
                 CosmosClientContext context = client.ClientContext;
                 CosmosQueryClient queryClient = new CosmosQueryClientCore(context, null);
-                options.FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(1);
-                client.ClientOptions.FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(2);
+                options.FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(2);
+                client.ClientOptions.FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(3);
 
                 Assert.AreSame(HybridSearchStatisticsCache.GetNoOpImpl(), context.HybridSearchStatisticsCache);
                 Assert.AreSame(HybridSearchStatisticsCache.GetNoOpImpl(), queryClient.HybridSearchStatisticsCache);
@@ -50,21 +50,27 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ContainerHandlesAndQueryClientsShareTheClientCache()
         {
-            using CosmosClient client = CreateClient(new CosmosClientOptions { FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(1) });
+            using CosmosClient client = CreateClient(new CosmosClientOptions { FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(2) });
+
             ContainerInternal first = (ContainerInternal)client.GetContainer("database", "container");
             ContainerInternal second = (ContainerInternal)client.GetContainer("database", "container");
             ContainerInternal other = (ContainerInternal)client.GetContainer("database", "other-container");
+
             CosmosQueryClient firstQueryClient = new CosmosQueryClientCore(first.ClientContext, first);
             CosmosQueryClient secondQueryClient = new CosmosQueryClientCore(second.ClientContext, second);
             CosmosQueryClient otherQueryClient = new CosmosQueryClientCore(other.ClientContext, other);
+            
             Assert.AreNotSame(first, second);
+            
             HybridSearchStatisticsCache cache = firstQueryClient.HybridSearchStatisticsCache;
+            
             Assert.AreNotSame(HybridSearchStatisticsCache.GetNoOpImpl(), cache);
             Assert.AreSame(cache, GetInjectedCache(client.ClientContext));
             Assert.AreSame(cache, secondQueryClient.HybridSearchStatisticsCache);
             Assert.AreSame(cache, otherQueryClient.HybridSearchStatisticsCache);
             Assert.AreSame(cache, client.ClientContext.HybridSearchStatisticsCache);
-            cache.Add("rid", "etag", CreatePlan("run"), CreateStatistics(10), cache.GetElapsedTime());
+            
+            Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("run"), CreateStatistics(10), cache.GetElapsedTime()));
             Assert.IsTrue(secondQueryClient.HybridSearchStatisticsCache.TryGet(
                 "rid", "etag", CreatePlan("run"), NoOpTrace.Singleton, out GlobalFullTextSearchStatistics result));
             Assert.AreEqual(10L, result.DocumentCount);
@@ -73,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void InjectedCachePolicyIsIndependentOfLaterOptionsMutation()
         {
-            TimeSpan originalAge = TimeSpan.FromMinutes(1);
+            TimeSpan originalAge = TimeSpan.FromMinutes(2);
             CosmosClientOptions options = new CosmosClientOptions
             {
                 FullTextStatisticsCacheMaxAge = originalAge,
@@ -85,15 +91,16 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             options.FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(3);
             options.FullTextStatisticsCacheMaxEntries = 8;
-            client.ClientOptions.FullTextStatisticsCacheMaxAge = TimeSpan.Zero;
+            client.ClientOptions.FullTextStatisticsCacheMaxAge = null;
             client.ClientOptions.FullTextStatisticsCacheMaxEntries = 16;
 
             HybridSearchStatisticsCache cache = client.ClientContext.HybridSearchStatisticsCache;
             Assert.AreSame(originalCache, cache);
             Assert.AreEqual(originalAge, GetPrivateField<TimeSpan>(cache, "maxAge"));
+
             for (int index = 0; index < 3; index++)
             {
-                cache.Add("rid", "etag", CreatePlan(index.ToString()), CreateStatistics(10), cache.GetElapsedTime());
+                cache.TryAdd("rid", "etag", CreatePlan(index.ToString()), CreateStatistics(10), cache.GetElapsedTime());
             }
 
             Assert.AreEqual(4, StoredCount(cache));
@@ -104,23 +111,29 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             using CosmosClient first = CreateClient(new CosmosClientOptions
             {
-                FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(1),
+                FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(2),
                 FullTextStatisticsCacheMaxEntries = 3,
             });
+
             using CosmosClient second = CreateClient(new CosmosClientOptions
             {
-                FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(2),
+                FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(3),
                 FullTextStatisticsCacheMaxEntries = 4,
             });
+
             HybridSearchStatisticsCache firstCache = first.ClientContext.HybridSearchStatisticsCache;
             HybridSearchStatisticsCache secondCache = second.ClientContext.HybridSearchStatisticsCache;
+            
             Assert.AreNotSame(firstCache, secondCache);
-            Assert.AreEqual(TimeSpan.FromMinutes(1), GetPrivateField<TimeSpan>(firstCache, "maxAge"));
-            Assert.AreEqual(TimeSpan.FromMinutes(2), GetPrivateField<TimeSpan>(secondCache, "maxAge"));
-            firstCache.Add("rid", "etag", CreatePlan("run"), CreateStatistics(10), firstCache.GetElapsedTime());
+            Assert.AreEqual(TimeSpan.FromMinutes(2), GetPrivateField<TimeSpan>(firstCache, "maxAge"));
+            Assert.AreEqual(TimeSpan.FromMinutes(3), GetPrivateField<TimeSpan>(secondCache, "maxAge"));
+            
+            firstCache.TryAdd("rid", "etag", CreatePlan("run"), CreateStatistics(10), firstCache.GetElapsedTime());
             Assert.IsFalse(secondCache.TryGet("rid", "etag", CreatePlan("run"), NoOpTrace.Singleton, out _));
-            secondCache.Add("rid", "etag", CreatePlan("run"), CreateStatistics(20), secondCache.GetElapsedTime());
-            secondCache.Add("rid", "etag", CreatePlan("swim"), CreateStatistics(20), secondCache.GetElapsedTime());
+            
+            secondCache.TryAdd("rid", "etag", CreatePlan("run"), CreateStatistics(20), secondCache.GetElapsedTime());
+            secondCache.TryAdd("rid", "etag", CreatePlan("swim"), CreateStatistics(20), secondCache.GetElapsedTime());
+            
             Assert.AreEqual(3, StoredCount(firstCache));
             Assert.AreEqual(4, StoredCount(secondCache));
             Assert.IsTrue(secondCache.TryGet("rid", "etag", CreatePlan("run"), NoOpTrace.Singleton, out GlobalFullTextSearchStatistics result));

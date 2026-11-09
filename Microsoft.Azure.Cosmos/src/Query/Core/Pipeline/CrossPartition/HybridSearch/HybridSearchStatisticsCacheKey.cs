@@ -18,47 +18,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         private readonly int? distance;
         private readonly int hashCode;
 
-        private HybridSearchStatisticsCacheKey(
-            string containerResourceId,
-            string containerETag,
-            KeyKind kind,
-            IReadOnlyList<string> path,
-            string term,
-            int? distance)
-        {
-            HashCode hash = new HashCode();
-            hash.Add(containerResourceId);
-            hash.Add(containerETag);
-            hash.Add(kind);
-
-            // The path is not copied: query plans are not mutated after they are created.
-            if (path != null)
-            {
-                for (int index = 0; index < path.Count; index++)
-                {
-                    hash.Add(path[index]);
-                }
-            }
-
-            hash.Add(term);
-            hash.Add(distance);
-
-            this.containerResourceId = containerResourceId;
-            this.containerETag = containerETag;
-            this.kind = kind;
-            this.path = path;
-            this.term = term;
-            this.distance = distance;
-            this.hashCode = hash.ToHashCode();
-        }
-
-        private enum KeyKind
-        {
-            TotalDocumentCount,
-            DocumentPathWordCount,
-            DocumentPathTermHitCount,
-        }
-
         public static HybridSearchStatisticsCacheKey CreateTotalDocumentCount(string containerResourceId, string containerETag)
         {
             return new HybridSearchStatisticsCacheKey(
@@ -100,6 +59,40 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 distance);
         }
 
+        private HybridSearchStatisticsCacheKey(
+            string containerResourceId,
+            string containerETag,
+            KeyKind kind,
+            IReadOnlyList<string> path,
+            string term,
+            int? distance)
+        {
+            HashCode hash = new HashCode();
+            hash.Add(containerResourceId);
+            hash.Add(containerETag);
+            hash.Add(kind);
+
+            // The path is not copied: query plans are not mutated after they are created.
+            if (path != null)
+            {
+                for (int index = 0; index < path.Count; index++)
+                {
+                    hash.Add(path[index]);
+                }
+            }
+
+            hash.Add(term);
+            hash.Add(distance);
+
+            this.containerResourceId = containerResourceId;
+            this.containerETag = containerETag;
+            this.kind = kind;
+            this.path = path;
+            this.term = term;
+            this.distance = distance;
+            this.hashCode = hash.ToHashCode();
+        }
+
         public bool Equals(HybridSearchStatisticsCacheKey other)
         {
             if (other == null ||
@@ -136,5 +129,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         public override bool Equals(object obj) => obj is HybridSearchStatisticsCacheKey other && this.Equals(other);
 
         public override int GetHashCode() => this.hashCode;
+
+        private enum KeyKind
+        {
+            TotalDocumentCount,
+            DocumentPathWordCount,
+            DocumentPathTermHitCount,
+        }
     }
 }

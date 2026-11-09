@@ -290,6 +290,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 new StatisticsCacheScenario { Name = "Expired counts", AdvanceToExpiry = true, ExpectedTraceDatum = "Miss" },
                 new StatisticsCacheScenario { Name = "Different container revision", MeasuredETag = "other-etag", ExpectedTraceDatum = "Miss" },
             };
+
             for (int index = 0; index < scenarios.Count; index++)
             {
                 StatisticsCacheScenario scenario = scenarios[index];

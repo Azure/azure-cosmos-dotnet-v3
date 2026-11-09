@@ -56,6 +56,8 @@ namespace Microsoft.Azure.Cosmos
 
         private const ApiType DefaultApiType = ApiType.None;
 
+        private static readonly TimeSpan MinimumFullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(2);
+
         /// <summary>
         /// Default request timeout
         /// </summary>
@@ -640,7 +642,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the maximum age of cached full-text statistics that hybrid search queries using this client can reuse.
         /// </summary>
         /// <value>
-        /// The default is <see langword="null"/>. A null or zero value disables the statistics cache.
+        /// The default is <see langword="null"/>, which disables the statistics cache. Other values must be at least two minutes.
         /// </value>
         /// <remarks>
         /// <para>
@@ -653,15 +655,15 @@ namespace Microsoft.Azure.Cosmos
         /// which can affect FullTextScore values and ranking.
         /// </para>
         /// </remarks>
-        /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The value is less than two minutes.</exception>
         public TimeSpan? FullTextStatisticsCacheMaxAge
         {
             get => this.fullTextStatisticsCacheMaxAge;
             set
             {
-                if (value.HasValue && value.Value < TimeSpan.Zero)
+                if (value.HasValue && value.Value < MinimumFullTextStatisticsCacheMaxAge)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(this.FullTextStatisticsCacheMaxAge), value, "The maximum statistics cache age cannot be negative.");
+                    throw new ArgumentOutOfRangeException(nameof(this.FullTextStatisticsCacheMaxAge), value, "The maximum statistics cache age must be at least two minutes.");
                 }
 
                 this.fullTextStatisticsCacheMaxAge = value;
@@ -669,10 +671,17 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets the target maximum number of full-text scalar statistics retained across all kinds and containers per client.
+        /// Gets or sets the maximum number of cached full-text statistics per client when <see cref="FullTextStatisticsCacheMaxAge"/> is set.
         /// </summary>
-        /// <remarks>Concurrent publications can temporarily exceed this target; eviction is best effort.</remarks>
-        internal int FullTextStatisticsCacheMaxEntries
+        /// <value>
+        /// The default is 256. Each query path uses one entry for its word count and one for each search term,
+        /// and each container revision uses one entry for its document count.
+        /// </value>
+        /// <remarks>
+        /// When the limit is exceeded, the oldest statistics are evicted first. Concurrent queries can briefly exceed the limit.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>
+        public int FullTextStatisticsCacheMaxEntries
         {
             get => this.fullTextStatisticsCacheMaxEntries;
             set

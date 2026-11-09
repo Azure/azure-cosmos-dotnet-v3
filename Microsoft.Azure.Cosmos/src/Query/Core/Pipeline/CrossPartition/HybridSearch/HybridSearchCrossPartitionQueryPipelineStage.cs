@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             }
 
             (GlobalFullTextSearchStatistics statistics, QueryPage queryPage) = tryGatherStatistics.Result;
-            this.statisticsCache.Add(this.containerResourceId, this.containerETag, this.hybridSearchQueryInfo, statistics, collectionStartedAt);
+            this.statisticsCache.TryAdd(this.containerResourceId, this.containerETag, this.hybridSearchQueryInfo, statistics, collectionStartedAt);
 
             if (!this.TryCreateComponentPipelines(statistics))
             {
