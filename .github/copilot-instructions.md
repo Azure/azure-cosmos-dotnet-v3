@@ -16,6 +16,17 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
   - Run unit/integration tests: `dotnet test --no-build` in the solution or specific test project folders under `**/tests/`.
   - CI uses the YAML files in the repository root and `templates/` — see `templates/emulator-setup.yml` for the Windows emulator script used in CI.
 
+- **Local HTTP/2 fixture tests (no account or emulator)**:
+  - Use the core unit project on Windows with TLS/ALPN support and both `Microsoft.NETCore.App` 6.x and `Microsoft.AspNetCore.App` 6.x. Installing SDK 6 supplies both frameworks; SDK 8/9 alone does not. Existing ordinary and MSData/direct unit templates acquire SDK 6 before SDK 8.
+  - Run the focused GA and preview cohorts from the repository root:
+    ```text
+    dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Microsoft.Azure.Cosmos.Tests.csproj --framework net6.0 --configuration Debug /p:OS=Windows --filter "TestCategory=LocalHttp2Fixture"
+    dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Microsoft.Azure.Cosmos.Tests.csproj --framework net6.0 --configuration Release /p:IsPreview=true /p:OS=Windows --filter "TestCategory=LocalHttp2Fixture"
+    ```
+  - Kestrel TLS HTTP/2 is unsupported on macOS under net6.0. For non-network observer checks there, replace the filter with `FullyQualifiedName~LocalHttp2DisposalFixtureTests.Observer_`; report transport cases as unexecuted rather than skipping, retargeting or substituting plaintext.
+  - On Windows, Schannel requires the fixture certificate to use a temporary user key container. The fixture imports PKCS12 only from zeroed-after-use memory, writes no PFX or trust-store entry, and omits `PersistKeySet` so certificate disposal deletes the native key. Abnormal process termination can leave that temporary key.
+  - These tests use synthetic loopback traffic, not the Cosmos public-path pair. Retain the TRX and test output showing the actual runtime, negotiated protocol and cleanup results; requested HTTP/2 or test discovery alone is not an execution pass.
+
 - **Local emulator and integration testing**:
   - The codebase expects the Windows Cosmos DB Emulator in many integration tests. CI installs/starts it via `templates/emulator-setup.yml` (PowerShell scripts that download and launch the MSI and call `Start-Process CosmosDB.Emulator.exe`).
   - If running tests locally on Windows, install the emulator and ensure exclusions and local state paths match what's in `templates/emulator-setup.yml`.
