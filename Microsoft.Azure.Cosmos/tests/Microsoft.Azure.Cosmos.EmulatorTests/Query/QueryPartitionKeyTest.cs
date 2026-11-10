@@ -8,9 +8,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Handlers;
+    using RequestHandlerHelper = Microsoft.Azure.Cosmos.SDK.EmulatorTests.RequestHandlerHelper;
+    using TestCommon = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -126,15 +130,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private async Task ExecuteTest(PartitionKeyDefinition partitionKeyDefinition, ConnectionModes connectionMode, CollectionTypes collectionType)
         {
-            CosmosClient queryClient = connectionMode == ConnectionModes.Gateway ? this.GatewayClient : this.Client;
             await this.CreateIngestQueryDeleteAsync(
                 connectionMode,
                 collectionType,
                 SampleDocuments,
                 (container, documents) => this.ExecuteAllQueries(
-                    queryClient.GetContainer(this.database.Id, container.Id),
+                    container,
                     partitionKeyDefinition,
-                    documents),
+                    documents,
+                    connectionMode),
                 partitionKeyDefinition,
                 IndexingPolicy);
         }
@@ -156,8 +160,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         private async Task ExecuteAllQueries(
             Container container,
             PartitionKeyDefinition partitionKeyDefinition,
-            IReadOnlyList<CosmosElements.CosmosObject> documents)
+            IReadOnlyList<CosmosElements.CosmosObject> documents,
+            ConnectionModes connectionMode)
         {
+            RequestHandlerHelper queryRequestHandler = new RequestHandlerHelper();
+            using CosmosClient queryClient = TestCommon.CreateCosmosClient(
+                connectionMode == ConnectionModes.Gateway,
+                builder => builder.AddCustomHandlers(queryRequestHandler));
+            container = queryClient.GetContainer(this.database.Id, container.Id);
+
             Console.WriteLine("\n=== Executing All Query Tests with Partition Keys ===\n");
 
             // Queries must project full partition key values from the documents hit by the query.
@@ -234,6 +245,21 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         MaxItemCount = 2
                     };
 
+                    string expectedPartialPartitionKey = partitionKeyDefinition.Kind == PartitionKind.MultiHash
+                        && pkValues.Length > 0
+                        && pkValues.Length < partitionKeyDefinition.Paths.Count
+                        ? partitionKey.ToJsonString()
+                        : null;
+                    int observedQueryRequests = 0;
+                    // This observes SDK requests before transport serialization in either connection mode.
+                    queryRequestHandler.UpdateRequestMessage = request =>
+                    {
+                        if (ValidatePartialPartitionKeyHeader(request, expectedPartialPartitionKey))
+                        {
+                            Interlocked.Increment(ref observedQueryRequests);
+                        }
+                    };
+
                     using FeedIterator<CosmosElement> iterator = container.GetItemQueryIterator<CosmosElement>(
                         new QueryDefinition(query),
                         requestOptions: queryRequestOptions);
@@ -244,6 +270,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         FeedResponse<CosmosElement> response = await iterator.ReadNextAsync();
                         results.AddRange(response);
                     }
+
+                    Assert.IsTrue(
+                        Volatile.Read(ref observedQueryRequests) > 0,
+                        $"No outgoing document query was observed for query {k + 1} with key {partitionKey.ToJsonString()}.");
 
                     Console.WriteLine($"Results: {results.Count} documents:");
                     foreach (CosmosElement result in results)
@@ -263,6 +293,20 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             }
 
             Console.WriteLine("\n=== All Queries Completed ===\n");
+        }
+
+        private static bool ValidatePartialPartitionKeyHeader(RequestMessage request, string expectedPartialPartitionKey)
+        {
+            if (request.ResourceType != ResourceType.Document || request.OperationType != OperationType.Query)
+            {
+                return false;
+            }
+
+            Assert.AreEqual(
+                expectedPartialPartitionKey,
+                request.Headers[RequestInvokerHandler.PartialPartitionKeyHeader],
+                "Unexpected partial partition key header on outgoing SDK query request.");
+            return true;
         }
 
         private static List<string[]> GetDistinctPartitionKeyValues(

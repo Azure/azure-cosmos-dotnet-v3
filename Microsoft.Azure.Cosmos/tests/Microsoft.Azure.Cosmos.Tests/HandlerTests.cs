@@ -208,6 +208,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     builder.WithConnectionModeDirect();
                 }
             });
+
             IReadOnlyList<PartitionKeyRange> overlappingRanges = new[]
             {
                 new PartitionKeyRange
@@ -217,6 +218,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     MaxExclusive = exactRange ? "20" : "FF"
                 }
             };
+
             Mock.Get(await client.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton))
                 .Setup(cache => cache.TryGetOverlappingRangesAsync(
                     It.IsAny<string>(), It.IsAny<Documents.Routing.Range<string>>(), It.IsAny<ITrace>(), It.IsAny<bool>()))
