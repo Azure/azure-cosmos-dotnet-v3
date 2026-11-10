@@ -306,6 +306,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 return ex.ToCosmosResponseMessage(request);
                             }
 
+                            if (requestOptions is QueryRequestOptions queryRequestOptions)
+                            {
+                                queryRequestOptions.PopulatePartialPartitionKeyHeader(
+                                    request,
+                                    collectionFromCache.PartitionKey,
+                                    this.client.ClientOptions.ConnectionMode);
+                            }
+
                             PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
                             IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                                 collectionFromCache.ResourceId,

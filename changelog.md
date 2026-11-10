@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- Query: Adds a default-off Gateway experiment for hierarchical partition-key prefix queries using `AZURE_COSMOS_PARTIAL_PARTITION_KEY_ENABLED=true`. Compatible backend and Proxy support is required; opted-in Direct prefix queries are rejected until transport support is available.
+
 #### Breaking Changes
 
 #### Bugs Fixed

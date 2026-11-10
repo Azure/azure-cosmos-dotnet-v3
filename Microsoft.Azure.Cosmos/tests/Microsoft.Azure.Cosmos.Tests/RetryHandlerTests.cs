@@ -52,6 +52,73 @@ namespace Microsoft.Azure.Cosmos.Tests
                 shouldThrowGoneException: true);
         }
 
+        [DataTestMethod]
+        [DataRow(true, true)]
+        [DataRow(true, false)]
+        [DataRow(false, true)]
+        [DataRow(false, false)]
+        public async Task PrefixHeaderPreservesPhysicalPartitionRouting(bool enabled, bool exactRange)
+        {
+            TestPartitionKeyRangeCache cache = new TestPartitionKeyRangeCache(new[]
+            {
+                new PartitionKeyRange
+                {
+                    Id = "1",
+                    MinInclusive = exactRange ? "10" : "00",
+                    MaxExclusive = exactRange ? "20" : "FF"
+                }
+            });
+            using CosmosClient client = new CosmosClient(
+                "https://localhost:8081",
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                new CosmosClientOptions { ConnectionMode = ConnectionMode.Gateway },
+                new CustomMockDocumentClient(cache));
+            Mock<ContainerInternal> container = MockCosmosUtil.CreateMockContainer("testDb", "testColl");
+            ContainerProperties properties = ContainerProperties.CreateWithResourceId("testCollRid");
+            properties.Id = "testColl";
+            properties.PartitionKeyPaths = new[] { "/tenant", "/user", "/session" };
+            container.Setup(c => c.GetCachedContainerPropertiesAsync(
+                It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(properties);
+            Mock<Cosmos.Database> database = new Mock<Cosmos.Database>();
+            database.Setup(d => d.Id).Returns("testDb");
+            container.Setup(c => c.Database).Returns(database.Object);
+
+            bool sent = false;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, null, null, null, null)
+            {
+                InnerHandler = new TestHandler((request, token) =>
+                {
+                    sent = true;
+                    Assert.AreEqual("1", request.PartitionKeyRangeId.PartitionKeyRangeId);
+                    Assert.IsNull(request.Headers.PartitionKey);
+                    Assert.AreEqual(enabled ? "[\"tenant\"]" : null, request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
+                    Assert.AreEqual(exactRange ? null : "10", request.Headers.StartEpk);
+                    Assert.AreEqual(exactRange ? null : "20", request.Headers.EndEpk);
+                    return TestHandler.ReturnSuccess();
+                })
+            };
+
+            using ResponseMessage response = await invoker.SendAsync(
+                "dbs/testDb/colls/testColl",
+                ResourceType.Document,
+                OperationType.Query,
+                new QueryRequestOptions
+                {
+                    PartitionKey = new Cosmos.PartitionKey("tenant"),
+                    EnablePartialPartitionKey = enabled
+                },
+                container.Object,
+                new FeedRangeEpk(new Documents.Routing.Range<string>("10", "20", true, false)),
+                streamPayload: null,
+                requestEnricher: null,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            Assert.IsTrue(sent);
+            container.Verify(c => c.GetCachedContainerPropertiesAsync(
+                false, It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
         private async Task ValidateOverlappingRangesBehaviorAsync(
             OperationType operationType,
             bool shouldThrowGoneException)
