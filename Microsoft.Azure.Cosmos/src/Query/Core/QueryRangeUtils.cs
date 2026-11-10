@@ -51,45 +51,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                         {
                             if (!feedRangeEpk.Range.Equals(epkForPartitionKey))
                             {
-                                String overlappingMin;
-                                bool minInclusive;
-                                String overlappingMax;
-                                bool maxInclusive;
-
-                                (IComparer<Range<string>> minComparer, IComparer<Range<string>> maxComparer) = RangeComparerProvider.GetComparers(containerQueryProperties.UseLengthAwareRangeComparer);
-
-                                if (minComparer.Compare(
-                                        epkForPartitionKey,
-                                        feedRangeEpk.Range) < 0)
-                                {
-                                    overlappingMin = feedRangeEpk.Range.Min;
-                                    minInclusive = feedRangeEpk.Range.IsMinInclusive;
-                                }
-                                else
-                                {
-                                    overlappingMin = epkForPartitionKey.Min;
-                                    minInclusive = epkForPartitionKey.IsMinInclusive;
-                                }
-
-                                if (maxComparer.Compare(
-                                        epkForPartitionKey,
-                                        feedRangeEpk.Range) > 0)
-                                {
-                                    overlappingMax = feedRangeEpk.Range.Max;
-                                    maxInclusive = feedRangeEpk.Range.IsMaxInclusive;
-                                }
-                                else
-                                {
-                                    overlappingMax = epkForPartitionKey.Max;
-                                    maxInclusive = epkForPartitionKey.IsMaxInclusive;
-                                }
-
                                 feedRange = new FeedRangeEpk(
-                                    new Documents.Routing.Range<String>(
-                                        overlappingMin,
-                                        overlappingMax,
-                                        minInclusive,
-                                        maxInclusive));
+                                    RangeComparerProvider.GetIntersection(
+                                        feedRangeEpk.Range,
+                                        epkForPartitionKey,
+                                        containerQueryProperties.UseLengthAwareRangeComparer));
                             }
 
                             break;
