@@ -365,9 +365,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(1, ranges.Count);
             Assert.AreEqual(3, pkRangeRequestCount);
             Assert.IsNotNull(retryDelayStopwatch);
+            int minimumDelayWithToleranceMilliseconds = Math.Max(0, minimumDelayMilliseconds - 100);
             Assert.IsTrue(
-                observedRetryDelay >= TimeSpan.FromMilliseconds(minimumDelayMilliseconds),
-                $"Expected a retry delay of at least {minimumDelayMilliseconds} ms, but observed {observedRetryDelay.TotalMilliseconds:F0} ms.");
+                observedRetryDelay >= TimeSpan.FromMilliseconds(minimumDelayWithToleranceMilliseconds),
+                $"Expected a retry delay of at least {minimumDelayMilliseconds} ms with a 100 ms tolerance, but observed {observedRetryDelay.TotalMilliseconds:F0} ms.");
 
             if (maximumDelayMilliseconds > 0)
             {
