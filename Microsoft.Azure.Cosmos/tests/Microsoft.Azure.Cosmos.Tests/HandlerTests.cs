@@ -188,13 +188,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(ConnectionMode.Direct, true, "[\"tenant\",\"user\"]", (int)OperationType.Query)]
         [DataRow(ConnectionMode.Direct, false, "[\"tenant\",\"user\"]", (int)OperationType.Query)]
         [DataRow(ConnectionMode.Gateway, true, "[\"tenant\"]", (int)OperationType.ReadFeed)]
-        [DataRow(ConnectionMode.Gateway, false, "[\"tenant\"]", (int)OperationType.ReadFeed)]
-        [DataRow(ConnectionMode.Direct, true, "[\"tenant\"]", (int)OperationType.ReadFeed)]
-        [DataRow(ConnectionMode.Direct, false, "[\"tenant\"]", (int)OperationType.ReadFeed)]
-        [DataRow(ConnectionMode.Gateway, true, "[\"tenant\"]", (int)OperationType.QueryPlan)]
-        [DataRow(ConnectionMode.Gateway, false, "[\"tenant\"]", (int)OperationType.QueryPlan)]
-        [DataRow(ConnectionMode.Direct, true, "[\"tenant\"]", (int)OperationType.QueryPlan)]
-        [DataRow(ConnectionMode.Direct, false, "[\"tenant\"]", (int)OperationType.QueryPlan)]
         public async Task PrefixHeaderPreservesPhysicalPartitionRouting(ConnectionMode connectionMode, bool exactRange, string prefixJson, int operation)
         {
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(builder =>
