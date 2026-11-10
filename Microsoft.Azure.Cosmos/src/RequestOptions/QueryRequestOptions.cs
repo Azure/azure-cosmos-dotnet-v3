@@ -369,12 +369,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal void PopulatePartialPartitionKeyHeader(
             RequestMessage request,
-            PartitionKeyDefinition partitionKeyDefinition,
-            ConnectionMode connectionMode)
+            PartitionKeyDefinition partitionKeyDefinition)
         {
-            // Published Direct packages do not yet serialize the partial key RNTBD token.
-            if (connectionMode == ConnectionMode.Gateway
-                && request.OperationType == OperationType.Query
+            if (request.OperationType == OperationType.Query
                 && request.ResourceType == ResourceType.Document
                 && string.IsNullOrEmpty(request.Headers.PartitionKey)
                 && this.PartitionKey.HasValue

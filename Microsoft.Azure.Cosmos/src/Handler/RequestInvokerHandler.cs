@@ -310,8 +310,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             {
                                 queryRequestOptions.PopulatePartialPartitionKeyHeader(
                                     request,
-                                    collectionFromCache.PartitionKey,
-                                    this.client.ClientOptions.ConnectionMode);
+                                    collectionFromCache.PartitionKey);
                             }
 
                             PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
