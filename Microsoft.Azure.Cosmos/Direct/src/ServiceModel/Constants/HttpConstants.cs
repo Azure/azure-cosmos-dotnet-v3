@@ -427,6 +427,7 @@ namespace Microsoft.Azure.Documents
             public const string PartitionId = "x-ms-cosmos-internal-partition-id";
 
             public const string PartitionKey = "x-ms-documentdb-partitionkey";
+            public const string PartialPartitionKey = "x-ms-documentdb-partialpartitionkey";
             public const string PartitionKeyRangeId = "x-ms-documentdb-partitionkeyrangeid";
             public const string InsertSystemPartitionKey = "x-ms-cosmos-insert-systempartitionkey";
 

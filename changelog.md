@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- Direct: Prepares the local transport source to preserve partial hierarchical partition-key prefixes over HTTPS and TCP. The SDK still uses the existing Direct package; this does not enable partial-key request generation or change runtime behavior.
+
 ### <a name="3.65.0-preview.0"/> [3.65.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.65.0-preview.0) - 2026-11-06
 
 #### Bugs Fixed

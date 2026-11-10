@@ -140,6 +140,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string OriginalAuthTokenType { get; set; }
         public string PageSize { get; set; }
         public string ParallelizeCrossPartitionQuery { get; set; }
+        public string PartialPartitionKey { get; set; }
         public string PartitionCount { get; set; }
         public string PartitionKey { get; set; }
         public string PartitionKeyRangeId { get; set; }
@@ -341,6 +342,7 @@ namespace Microsoft.Azure.Documents.Collections
                 requestNameValueCollection.CanCharge = nameValueCollection[HttpConstants.HttpHeaders.CanCharge];
                 requestNameValueCollection.CanThrottle = nameValueCollection[HttpConstants.HttpHeaders.CanThrottle];
                 requestNameValueCollection.PartitionKey = nameValueCollection[HttpConstants.HttpHeaders.PartitionKey];
+                requestNameValueCollection.PartialPartitionKey = nameValueCollection[HttpConstants.HttpHeaders.PartialPartitionKey];
                 requestNameValueCollection.PartitionKeyRangeId = nameValueCollection[HttpConstants.HttpHeaders.PartitionKeyRangeId];
                 requestNameValueCollection.MigrateCollectionDirective = nameValueCollection[HttpConstants.HttpHeaders.MigrateCollectionDirective];
                 requestNameValueCollection.SupportSpatialLegacyCoordinates = nameValueCollection[HttpConstants.HttpHeaders.SupportSpatialLegacyCoordinates];
@@ -671,6 +673,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.OriginalAuthTokenType = null;
             this.PageSize = null;
             this.ParallelizeCrossPartitionQuery = null;
+            this.PartialPartitionKey = null;
             this.PartitionCount = null;
             this.PartitionKey = null;
             this.PartitionKeyRangeId = null;
@@ -897,6 +900,7 @@ namespace Microsoft.Azure.Documents.Collections
                 OriginalAuthTokenType = this.OriginalAuthTokenType,
                 PageSize = this.PageSize,
                 ParallelizeCrossPartitionQuery = this.ParallelizeCrossPartitionQuery,
+                PartialPartitionKey = this.PartialPartitionKey,
                 PartitionCount = this.PartitionCount,
                 PartitionKey = this.PartitionKey,
                 PartitionKeyRangeId = this.PartitionKeyRangeId,
@@ -1172,6 +1176,10 @@ namespace Microsoft.Azure.Documents.Collections
             if (this.PartitionKey != null)
             {
                 yield return HttpConstants.HttpHeaders.PartitionKey;
+            }
+            if (this.PartialPartitionKey != null)
+            {
+                yield return HttpConstants.HttpHeaders.PartialPartitionKey;
             }
             if (this.PartitionKeyRangeId != null)
             {
@@ -2070,6 +2078,10 @@ namespace Microsoft.Azure.Documents.Collections
                         if (this.PartitionKey != null)
                         {
                             this.nameValueCollection.Add(HttpConstants.HttpHeaders.PartitionKey, this.PartitionKey);
+                        }
+                        if (this.PartialPartitionKey != null)
+                        {
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.PartialPartitionKey, this.PartialPartitionKey);
                         }
                         if (this.PartitionKeyRangeId != null)
                         {
@@ -3848,6 +3860,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.PartitionKeyRangeId;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PartialPartitionKey, key))
+                    {
+                        return this.PartialPartitionKey;
+                    }
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.FilterBySchemaResourceId, key))
                     {
                         return this.FilterBySchemaResourceId;
@@ -3885,6 +3901,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(HttpConstants.HttpHeaders.PartitionKeyRangeId, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.PartitionKeyRangeId;
+                    }
+
+                    if (string.Equals(HttpConstants.HttpHeaders.PartialPartitionKey, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.PartialPartitionKey;
                     }
 
                     if (string.Equals(HttpConstants.HttpHeaders.FilterBySchemaResourceId, key, StringComparison.OrdinalIgnoreCase))
@@ -7095,6 +7116,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.PartitionKeyRangeId = value;
                         return;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PartialPartitionKey, key))
+                    {
+                        if (throwIfAlreadyExists && this.PartialPartitionKey != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.PartialPartitionKey = value;
+                        return;
+                    }
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.FilterBySchemaResourceId, key))
                     {
                         if (throwIfAlreadyExists && this.FilterBySchemaResourceId != null)
@@ -7183,6 +7214,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.PartitionKeyRangeId = value;
+                        return;
+                    }
+                    if (string.Equals(HttpConstants.HttpHeaders.PartialPartitionKey, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.PartialPartitionKey != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.PartialPartitionKey = value;
                         return;
                     }
                     if (string.Equals(HttpConstants.HttpHeaders.FilterBySchemaResourceId, key, StringComparison.OrdinalIgnoreCase))
