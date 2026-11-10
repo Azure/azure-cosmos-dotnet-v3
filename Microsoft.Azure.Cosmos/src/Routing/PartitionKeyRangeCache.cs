@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
@@ -27,11 +26,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         private const string PageSizeString = "-1";
 
         private readonly AsyncCacheNonBlocking<string, CollectionRoutingMap> routingMapCache;
-        // AsyncCacheNonBlocking serializes initialization and refresh callbacks per collection RID.
-        // This sibling cache therefore only holds the uncommitted pages belonging to that single
-        // callback generation; ownership-aware removal prevents an older generation from clearing
-        // a newer one if the async-cache implementation ever replaces an entry between callbacks.
-        private readonly ConcurrentDictionary<string, PartitionKeyRangeChangeFeedState> inProgressChangeFeedStates;
 
         private readonly ICosmosAuthorizationTokenProvider authorizationTokenProvider;
         private readonly IStoreModel storeModel;
@@ -52,7 +46,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
                     keyEqualityComparer: StringComparer.Ordinal,
                     enableAsyncCacheExceptionNoSharing: enableAsyncCacheExceptionNoSharing);
-            this.inProgressChangeFeedStates = new ConcurrentDictionary<string, PartitionKeyRangeChangeFeedState>(StringComparer.Ordinal);
             this.authorizationTokenProvider = authorizationTokenProvider;
             this.storeModel = storeModel;
             this.collectionCache = collectionCache;
@@ -235,44 +228,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             ITrace trace,
             IClientSideRequestStatistics clientSideRequestStatistics)
         {
-            string initialChangeFeedContinuation = previousRoutingMap?.ChangeFeedNextIfNoneMatch;
-            PartitionKeyRangeChangeFeedState changeFeedState = this.GetChangeFeedState(
-                collectionRid,
-                initialChangeFeedContinuation);
-
-            try
-            {
-                return await this.DrainChangeFeedAndCreateRoutingMapAsync(
-                    collectionRid,
-                    previousRoutingMap,
-                    changeFeedState,
-                    trace,
-                    clientSideRequestStatistics);
-            }
-            catch (Exception exception)
-            {
-                // A 429 leaves the server-issued continuation valid and is the scenario for which
-                // partial progress is retained. Other failures can indicate an invalid continuation,
-                // deleted resource, authorization failure, cancellation, or malformed response; do
-                // not allow those failures to leave stale partial state behind.
-                if (!PartitionKeyRangeCache.IsThrottlingException(exception))
-                {
-                    this.TryRemoveChangeFeedState(collectionRid, changeFeedState);
-                }
-
-                throw;
-            }
-        }
-
-        private async Task<CollectionRoutingMap> DrainChangeFeedAndCreateRoutingMapAsync(
-            string collectionRid,
-            CollectionRoutingMap previousRoutingMap,
-            PartitionKeyRangeChangeFeedState changeFeedState,
-            ITrace trace,
-            IClientSideRequestStatistics clientSideRequestStatistics)
-        {
-            List<PartitionKeyRange> ranges = changeFeedState.Ranges;
-            string changeFeedNextIfNoneMatch = changeFeedState.NextIfNoneMatch;
+            List<PartitionKeyRange> ranges = new List<PartitionKeyRange>();
+            string changeFeedNextIfNoneMatch = previousRoutingMap?.ChangeFeedNextIfNoneMatch;
 
             HttpStatusCode lastStatusCode = HttpStatusCode.OK;
 
@@ -285,8 +242,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             // Only the first change-feed page is hedged. If a hedge wins on the first page,
             // subsequent pages are pinned to the winning region so the continuation ETag chain
             // stays consistent (a continuation token is meaningful only to the region that issued it).
-            bool isFirstReadFeedPage = changeFeedState.IsFirstReadFeedPage;
-            Uri pinnedEndpoint = changeFeedState.PinnedEndpoint;
+            bool isFirstReadFeedPage = true;
+            Uri pinnedEndpoint = null;
             do
             {
                 INameValueCollection headers = new RequestNameValueCollection();
@@ -330,14 +287,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                     {
                         ranges.AddRange(feedResource);
                     }
-
-                    isFirstReadFeedPage = false;
-                    changeFeedState.Update(
-                        nextIfNoneMatch: changeFeedNextIfNoneMatch,
-                        isFirstReadFeedPage: isFirstReadFeedPage,
-                        pinnedEndpoint: pinnedEndpoint);
-                    this.inProgressChangeFeedStates.TryAdd(collectionRid, changeFeedState);
                 }
+
+                isFirstReadFeedPage = false;
             }
             while (lastStatusCode != HttpStatusCode.NotModified);
 
@@ -365,49 +317,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetRoutingMapForCollectionAsync(collectionRid: {collectionRid}), Range information either doesn't exist or is not complete.");
             }
 
-            this.TryRemoveChangeFeedState(collectionRid, changeFeedState);
-
             trace.AddDatum($"PKRangeCache Info({previousRoutingMap?.ChangeFeedNextIfNoneMatch}#{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)})",
                                           new PartitionKeyRangeCacheTraceDatum(
                                               previousContinuationToken: previousRoutingMap?.ChangeFeedNextIfNoneMatch,
                                               continuationToken: routingMap.ChangeFeedNextIfNoneMatch));
             return routingMap;
-        }
-
-        private PartitionKeyRangeChangeFeedState GetChangeFeedState(
-            string collectionRid,
-            string initialChangeFeedContinuation)
-        {
-            if (this.inProgressChangeFeedStates.TryGetValue(
-                    collectionRid,
-                    out PartitionKeyRangeChangeFeedState existingState))
-            {
-                if (existingState.CanResumeFrom(initialChangeFeedContinuation))
-                {
-                    return existingState;
-                }
-
-                this.TryRemoveChangeFeedState(collectionRid, existingState);
-            }
-
-            return new PartitionKeyRangeChangeFeedState(initialChangeFeedContinuation);
-        }
-
-        private bool TryRemoveChangeFeedState(
-            string collectionRid,
-            PartitionKeyRangeChangeFeedState expectedState)
-        {
-            return ((ICollection<KeyValuePair<string, PartitionKeyRangeChangeFeedState>>)this.inProgressChangeFeedStates).Remove(
-                new KeyValuePair<string, PartitionKeyRangeChangeFeedState>(collectionRid, expectedState));
-        }
-
-        private static bool IsThrottlingException(Exception exception)
-        {
-            return (exception is DocumentClientException documentClientException
-                    && documentClientException.StatusCode.HasValue
-                    && (int)documentClientException.StatusCode.Value == (int)StatusCodes.TooManyRequests)
-                || (exception is CosmosException cosmosException
-                    && (int)cosmosException.StatusCode == (int)StatusCodes.TooManyRequests);
         }
 
         private async Task<DocumentServiceResponse> ExecutePartitionKeyRangeReadChangeFeedAsync(string collectionRid, 
@@ -524,45 +438,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                         }
                     }
                 }
-            }
-        }
-
-        private sealed class PartitionKeyRangeChangeFeedState
-        {
-            private readonly string initialChangeFeedContinuation;
-
-            public PartitionKeyRangeChangeFeedState(string initialChangeFeedContinuation)
-            {
-                this.initialChangeFeedContinuation = initialChangeFeedContinuation;
-                this.NextIfNoneMatch = initialChangeFeedContinuation;
-                this.Ranges = new List<PartitionKeyRange>();
-                this.IsFirstReadFeedPage = true;
-            }
-
-            public List<PartitionKeyRange> Ranges { get; }
-
-            public string NextIfNoneMatch { get; private set; }
-
-            public bool IsFirstReadFeedPage { get; private set; }
-
-            public Uri PinnedEndpoint { get; private set; }
-
-            public bool CanResumeFrom(string changeFeedContinuation)
-            {
-                return string.Equals(
-                    this.initialChangeFeedContinuation,
-                    changeFeedContinuation,
-                    StringComparison.Ordinal);
-            }
-
-            public void Update(
-                string nextIfNoneMatch,
-                bool isFirstReadFeedPage,
-                Uri pinnedEndpoint)
-            {
-                this.NextIfNoneMatch = nextIfNoneMatch;
-                this.IsFirstReadFeedPage = isFirstReadFeedPage;
-                this.PinnedEndpoint = pinnedEndpoint;
             }
         }
     }

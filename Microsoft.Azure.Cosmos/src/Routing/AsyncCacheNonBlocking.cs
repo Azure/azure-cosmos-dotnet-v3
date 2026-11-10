@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
                     // called but never awaited.
                     if (initialLazyValue.ShouldRemoveFromCacheThreadSafe())
                     {
-                        bool removed = this.TryRemove(key, initialLazyValue);
+                        bool removed = this.TryRemove(key);
 
                         if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Error))
                         {
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
 
                     if (this.enableAsyncCacheExceptionNoSharing)
                     {
-                        // Creates a shallow copy of specific exception types to prevent stack trace proliferation
+                        // Creates a shallow copy of specific exception types to prevent stack trace proliferation 
                         // and rethrows them, doesn't process other exceptions.
                         if (ExceptionHandlingUtility.TryCloneException(e, out Exception clone))
                         {
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // Remove the failed task from the dictionary so future requests can send other calls..
-                this.TryRemove(key, result);
+                this.values.TryRemove(key, out _);
 
                 if (this.enableAsyncCacheExceptionNoSharing)
                 {
@@ -205,14 +205,6 @@ namespace Microsoft.Azure.Cosmos
         public bool TryRemove(TKey key)
         {
             return this.values.TryRemove(key, out _);
-        }
-
-        private bool TryRemove(
-            TKey key,
-            AsyncLazyWithRefreshTask<TValue> expectedValue)
-        {
-            return ((ICollection<KeyValuePair<TKey, AsyncLazyWithRefreshTask<TValue>>>)this.values).Remove(
-                new KeyValuePair<TKey, AsyncLazyWithRefreshTask<TValue>>(key, expectedValue));
         }
 
         /// <summary>
@@ -286,7 +278,7 @@ namespace Microsoft.Azure.Cosmos
                 if (this.removeFromCacheOnBackgroundRefreshException(ex)
                     && initialValue.ShouldRemoveFromCacheThreadSafe())
                 {
-                    bool removed = this.TryRemove(key, initialValue);
+                    bool removed = this.TryRemove(key);
 
                     if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Error))
                     {
@@ -400,9 +392,11 @@ namespace Microsoft.Azure.Cosmos
                 Task<T> refresh = this.refreshInProgress;
                 if (AsyncLazyWithRefreshTask<T>.IsTaskRunning(refresh))
                 {
-                    return await refresh;
+                    T result = await refresh;
+                    return result;
                 }
 
+                bool createdTask = false;
                 lock (this.valueLock)
                 {
                     if (AsyncLazyWithRefreshTask<T>.IsTaskRunning(this.refreshInProgress))
@@ -411,25 +405,24 @@ namespace Microsoft.Azure.Cosmos
                     }
                     else
                     {
-                        // Keep refreshInProgress incomplete until the refreshed value is published.
-                        // Otherwise another caller can observe the callback as complete, start a
-                        // second refresh from the old value, and race the first caller's update.
-                        this.refreshInProgress = this.CreateRefreshTaskAndUpdateValueAsync(
-                            createRefreshTask,
-                            originalValue);
+                        createdTask = true;
+                        this.refreshInProgress = createRefreshTask(originalValue);
                         refresh = this.refreshInProgress;
                     }
                 }
 
-                return await refresh;
-            }
+                // Await outside the lock to prevent lock contention
+                if (!createdTask)
+                {
+                    T result = await refresh;
+                    return result;
+                }
 
-            private async Task<T> CreateRefreshTaskAndUpdateValueAsync(
-                Func<T, Task<T>> createRefreshTask,
-                T originalValue)
-            {
-                T itemResult = await createRefreshTask(originalValue);
-                lock (this.valueLock)
+                // It's possible multiple callers entered the method at the same time. The lock above ensures
+                // only a single one will create the refresh task. If this caller created the task await for the
+                // result and update the value.
+                T itemResult = await refresh;
+                lock (this)
                 {
                     this.value = Task.FromResult(itemResult);
                 }
