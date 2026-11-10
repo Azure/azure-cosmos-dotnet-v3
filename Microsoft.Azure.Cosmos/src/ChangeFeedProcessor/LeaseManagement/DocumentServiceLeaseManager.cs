@@ -23,11 +23,33 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public abstract Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(PartitionKeyRange partitionKeyRange, string continuationToken);
 
         /// <summary>
+        /// Checks whether the lease exists and creates it if it does not exist for a physical partition.
+        /// </summary>
+        /// <param name="partitionKeyRange">Partition for the lease.</param>
+        /// <param name="continuationToken">Continuation token if it exists.</param>
+        /// <param name="startTime">Persisted start time inherited from the parent lease.</param>
+        public virtual Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
+            PartitionKeyRange partitionKeyRange,
+            string continuationToken,
+            DateTime? startTime) => this.CreateLeaseIfNotExistAsync(partitionKeyRange, continuationToken);
+
+        /// <summary>
         /// Checks whether the lease exists and creates it if it does not exist for a range.
         /// </summary>
         /// <param name="feedRange">Feed range for the lease.</param>
         /// <param name="continuationToken">Continuation token if it exists.</param>
         public abstract Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(FeedRangeEpk feedRange, string continuationToken);
+
+        /// <summary>
+        /// Checks whether the lease exists and creates it if it does not exist for a range.
+        /// </summary>
+        /// <param name="feedRange">Feed range for the lease.</param>
+        /// <param name="continuationToken">Continuation token if it exists.</param>
+        /// <param name="startTime">Persisted start time inherited from the parent lease.</param>
+        public virtual Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
+            FeedRangeEpk feedRange,
+            string continuationToken,
+            DateTime? startTime) => this.CreateLeaseIfNotExistAsync(feedRange, continuationToken);
 
         /// <summary>
         /// Delete the lease.

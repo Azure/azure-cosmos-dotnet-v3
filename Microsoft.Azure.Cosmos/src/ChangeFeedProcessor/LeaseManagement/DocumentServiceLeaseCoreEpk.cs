@@ -69,6 +69,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         [JsonProperty("Mode", NullValueHandling = NullValueHandling.Ignore)]
         public override string Mode { get; set; }
 
+        [JsonProperty("StartTime", NullValueHandling = NullValueHandling.Ignore)]
+        public override DateTime? StartTime { get; set; }
+
         [JsonProperty("timestamp")]
         private DateTime? ExplicitTimestamp { get; set; }
 
