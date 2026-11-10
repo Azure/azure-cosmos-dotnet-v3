@@ -41,6 +41,43 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         }
 
         [TestMethod]
+        public async Task FailedInitialization_DoesNotRemoveNewerReplacement()
+        {
+            AsyncCacheNonBlocking<string, string> asyncCache = new(enableAsyncCacheExceptionNoSharing: false);
+            TaskCompletionSource<bool> initializationStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> allowInitializationToFail = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            Task<string> failedInitialization = asyncCache.GetAsync(
+                key: "test",
+                singleValueInitFunc: async (_) =>
+                {
+                    initializationStarted.SetResult(true);
+                    await allowInitializationToFail.Task;
+                    throw new BadRequestException("Expected initialization failure.");
+                },
+                forceRefresh: (_) => false);
+
+            await initializationStarted.Task;
+            asyncCache.Set("test", "replacement");
+            allowInitializationToFail.SetResult(true);
+
+            await Assert.ThrowsExceptionAsync<BadRequestException>(() => failedInitialization);
+
+            int replacementInitializerCalls = 0;
+            string value = await asyncCache.GetAsync(
+                key: "test",
+                singleValueInitFunc: (_) =>
+                {
+                    Interlocked.Increment(ref replacementInitializerCalls);
+                    return Task.FromResult("unexpected");
+                },
+                forceRefresh: (_) => false);
+
+            Assert.AreEqual("replacement", value);
+            Assert.AreEqual(0, replacementInitializerCalls, "The failed older initialization must not evict the newer cache entry.");
+        }
+
+        [TestMethod]
         public async Task ValidateMultipleBackgroundRefreshesScenario()
         {
             AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
