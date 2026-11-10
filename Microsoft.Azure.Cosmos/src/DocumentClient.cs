@@ -213,6 +213,7 @@ namespace Microsoft.Azure.Cosmos
         internal TelemetryToServiceHelper telemetryToServiceHelper { get; set; }
 
         private ClientCollectionCache collectionCache;
+        private Action<string> collectionRefreshCallback;
 
         private PartitionKeyRangeCache partitionKeyRangeCache;
 
@@ -690,6 +691,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        internal void RegisterCollectionCacheRefreshCallback(Action<string> callback)
+        {
+            this.collectionRefreshCallback = callback;
+            this.collectionCache?.SetCollectionRefreshCallback(callback);
+        }
+
         internal virtual async Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync(ITrace trace)
         {
             using (ITrace childTrace = trace.StartChild("Get Partition Key Range Cache", TraceComponent.Routing, Tracing.TraceLevel.Info))
@@ -772,7 +779,8 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
-                    metadataHedgingStrategy: this.metadataHedgingStrategy);
+                    metadataHedgingStrategy: this.metadataHedgingStrategy,
+                    collectionRefreshCallback: this.collectionRefreshCallback);
                 this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing, this.metadataHedgingStrategy);
 
                 DefaultTrace.TraceWarning("Exception occurred while OpenAsync. Exception Message: {0}", ex.Message);
@@ -1258,7 +1266,8 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
-                    metadataHedgingStrategy: this.metadataHedgingStrategy);
+                    metadataHedgingStrategy: this.metadataHedgingStrategy,
+                    collectionRefreshCallback: this.collectionRefreshCallback);
             this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing, this.metadataHedgingStrategy);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 

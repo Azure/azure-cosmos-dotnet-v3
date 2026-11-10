@@ -16,7 +16,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
     {
         /// <summary>
         /// Gets secondary index metadata cached by the source resource identifier or discovers it using
-        /// the supplied source container properties when no cached snapshot exists or a refresh is requested.
+        /// the supplied source container properties when no cached snapshot exists, the source membership
+        /// changes, the three-minute snapshot lifetime expires, or a refresh is requested.
+        /// Expiration is evaluated lazily when the snapshot is read.
         /// </summary>
         /// <returns>The cached or newly discovered secondary index metadata.</returns>
         Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(

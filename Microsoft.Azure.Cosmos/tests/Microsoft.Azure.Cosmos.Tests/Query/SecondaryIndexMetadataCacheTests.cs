@@ -6,19 +6,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System.Linq;
+    using HttpConstants = Microsoft.Azure.Documents.HttpConstants;
+    using IClientSideRequestStatistics = Microsoft.Azure.Documents.IClientSideRequestStatistics;
     using PartitionKeyDefinition = Microsoft.Azure.Documents.PartitionKeyDefinition;
+    using ResourceId = Microsoft.Azure.Documents.ResourceId;
+    using ServerStoreModel = Microsoft.Azure.Documents.ServerStoreModel;
 
     [TestClass]
     public class SecondaryIndexMetadataCacheTests
     {
-        [TestMethod]
-        public async Task CacheCoalescesConcurrentPopulationAndReusesEmptySnapshot()
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task CacheCoalescesConcurrentPopulationAndReusesSnapshotBeforeExpiration(bool hasIndexes)
         {
             ContainerProperties source = CreateSource();
             TaskCompletionSource<bool> releaseProvider = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -26,20 +34,197 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             {
                 Assert.AreSame(source, container);
                 await releaseProvider.Task;
-                return Array.Empty<ISecondaryIndexMetadata>();
+                return hasIndexes
+                    ? new[] { CreateMetadata("gsi") }
+                    : Array.Empty<ISecondaryIndexMetadata>();
             });
-            SecondaryIndexMetadataCache cache = new SecondaryIndexMetadataCache(provider);
+            TestClock clock = new TestClock();
+            SecondaryIndexMetadataCache cache = new SecondaryIndexMetadataCache(provider, utcNowProvider: clock.GetUtcNow);
 
             Task<IEnumerable<ISecondaryIndexMetadata>> first = cache.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, CancellationToken.None);
             Task<IEnumerable<ISecondaryIndexMetadata>> second = cache.GetSecondaryIndexMetadataAsync(CreateSource(), NoOpTrace.Singleton, CancellationToken.None);
 
             releaseProvider.SetResult(true);
             await Task.WhenAll(first, second);
+            clock.Advance(SecondaryIndexMetadataCache.SnapshotTimeToLive - TimeSpan.FromTicks(1));
             IEnumerable<ISecondaryIndexMetadata> third = await cache.GetSecondaryIndexMetadataAsync(CreateSource(), NoOpTrace.Singleton, CancellationToken.None);
 
             Assert.AreEqual(1, provider.CallCount);
             Assert.AreSame(first.Result, second.Result);
             Assert.AreSame(first.Result, third);
+            Assert.AreEqual(hasIndexes ? 1 : 0, third.Count());
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task SnapshotRefreshesAtExpiration(bool hasIndexes)
+        {
+            TestProvider provider = new TestProvider((_, _, _) =>
+                Task.FromResult<IReadOnlyList<ISecondaryIndexMetadata>>(
+                    hasIndexes
+                        ? new[] { CreateMetadata($"gsi{providerCallSequence++}") }
+                        : Array.Empty<ISecondaryIndexMetadata>()));
+            TestClock clock = new TestClock();
+            SecondaryIndexMetadataCache cache = new SecondaryIndexMetadataCache(provider, utcNowProvider: clock.GetUtcNow);
+
+            IEnumerable<ISecondaryIndexMetadata> first = await cache.GetSecondaryIndexMetadataAsync(
+                CreateSource(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+            clock.Advance(SecondaryIndexMetadataCache.SnapshotTimeToLive);
+            IEnumerable<ISecondaryIndexMetadata> refreshed = await cache.GetSecondaryIndexMetadataAsync(
+                CreateSource(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(2, provider.CallCount);
+            if (hasIndexes)
+            {
+                Assert.AreNotSame(first, refreshed);
+            }
+        }
+
+        [TestMethod]
+        public async Task ConcurrentExpiredReadsCoalesceIntoSingleRefresh()
+        {
+            TaskCompletionSource<bool> refreshStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> releaseRefresh = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TestProvider provider = new TestProvider(async (_, _, _, forceRefresh) =>
+            {
+                if (forceRefresh)
+                {
+                    refreshStarted.SetResult(true);
+                    await releaseRefresh.Task;
+                }
+
+                return new[] { CreateMetadata($"gsi{providerCallSequence++}") };
+            });
+            TestClock clock = new TestClock();
+            SecondaryIndexMetadataCache cache = new SecondaryIndexMetadataCache(provider, utcNowProvider: clock.GetUtcNow);
+
+            await cache.GetSecondaryIndexMetadataAsync(CreateSource(), NoOpTrace.Singleton, CancellationToken.None);
+            clock.Advance(SecondaryIndexMetadataCache.SnapshotTimeToLive);
+
+            Task<IEnumerable<ISecondaryIndexMetadata>> firstRefresh = cache.GetSecondaryIndexMetadataAsync(
+                CreateSource(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+            await refreshStarted.Task;
+            Task<IEnumerable<ISecondaryIndexMetadata>> secondRefresh = cache.GetSecondaryIndexMetadataAsync(
+                CreateSource(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(2, provider.CallCount);
+            releaseRefresh.SetResult(true);
+            await Task.WhenAll(firstRefresh, secondRefresh);
+
+            Assert.AreSame(firstRefresh.Result, secondRefresh.Result);
+            Assert.AreEqual(2, provider.CallCount);
+        }
+
+        [TestMethod]
+        public async Task SourceMembershipChangeRefreshesBeforeExpiration()
+        {
+            ContainerProperties initialSource = CreateSource();
+            ContainerProperties updatedSource = CreateSource();
+            updatedSource.MaterializedViews = new[]
+            {
+                new MaterializedViewProperties { ResourceId = "gsiRid" },
+            };
+            TestProvider provider = new TestProvider((_, _, _) =>
+                Task.FromResult<IReadOnlyList<ISecondaryIndexMetadata>>(new[] { CreateMetadata($"gsi{providerCallSequence++}") }));
+            TestClock clock = new TestClock();
+            SecondaryIndexMetadataCache cache = new SecondaryIndexMetadataCache(provider, utcNowProvider: clock.GetUtcNow);
+
+            IEnumerable<ISecondaryIndexMetadata> first = await cache.GetSecondaryIndexMetadataAsync(
+                initialSource,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+            IEnumerable<ISecondaryIndexMetadata> refreshed = await cache.GetSecondaryIndexMetadataAsync(
+                updatedSource,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(2, provider.CallCount);
+            Assert.AreEqual("gsi0", first.Single().Rid);
+            Assert.AreEqual("gsi1", refreshed.Single().Rid);
+        }
+
+        [TestMethod]
+        public async Task ExpiredRefreshFailureEvictsStaleSnapshotAndIsNotCached()
+        {
+            List<bool> forceRefreshes = new List<bool>();
+            TestProvider provider = new TestProvider((_, _, _, forceRefresh) =>
+            {
+                forceRefreshes.Add(forceRefresh);
+                if (forceRefresh && providerCallSequence++ == 0)
+                {
+                    throw new InvalidOperationException("refresh failed");
+                }
+
+                return Task.FromResult<IReadOnlyList<ISecondaryIndexMetadata>>(new[] { CreateMetadata($"gsi{providerCallSequence}") });
+            });
+            TestClock clock = new TestClock();
+            SecondaryIndexMetadataCache cache = new SecondaryIndexMetadataCache(provider, utcNowProvider: clock.GetUtcNow);
+
+            IEnumerable<ISecondaryIndexMetadata> initial = await cache.GetSecondaryIndexMetadataAsync(
+                CreateSource(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+            clock.Advance(SecondaryIndexMetadataCache.SnapshotTimeToLive);
+
+            SecondaryIndexMetadataRefreshException exception =
+                await Assert.ThrowsExceptionAsync<SecondaryIndexMetadataRefreshException>(() =>
+                    cache.GetSecondaryIndexMetadataAsync(CreateSource(), NoOpTrace.Singleton, CancellationToken.None));
+            IEnumerable<ISecondaryIndexMetadata> recovered = await cache.GetSecondaryIndexMetadataAsync(
+                CreateSource(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsInstanceOfType(exception.InnerException, typeof(InvalidOperationException));
+            Assert.AreEqual(3, provider.CallCount);
+            Assert.AreNotSame(initial, recovered);
+            CollectionAssert.AreEqual(new[] { false, true, true }, forceRefreshes);
+        }
+
+        [TestMethod]
+        public async Task ConcurrentReadDuringFailedRefreshDoesNotReuseStaleSnapshot()
+        {
+            TaskCompletionSource<bool> refreshStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> releaseRefresh = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TestProvider provider = new TestProvider(async (_, _, _, forceRefresh) =>
+            {
+                if (forceRefresh)
+                {
+                    refreshStarted.SetResult(true);
+                    await releaseRefresh.Task;
+                    throw new InvalidOperationException("refresh failed");
+                }
+
+                return new[] { CreateMetadata("gsi") };
+            });
+            TestClock clock = new TestClock();
+            SecondaryIndexMetadataCache cache = new SecondaryIndexMetadataCache(provider, utcNowProvider: clock.GetUtcNow);
+
+            await cache.GetSecondaryIndexMetadataAsync(CreateSource(), NoOpTrace.Singleton, CancellationToken.None);
+            clock.Advance(SecondaryIndexMetadataCache.SnapshotTimeToLive);
+
+            Task<IEnumerable<ISecondaryIndexMetadata>> firstRefresh = cache.GetSecondaryIndexMetadataAsync(
+                CreateSource(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+            await refreshStarted.Task;
+            Task<IEnumerable<ISecondaryIndexMetadata>> concurrentRead = cache.GetSecondaryIndexMetadataAsync(
+                CreateSource(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+            releaseRefresh.SetResult(true);
+
+            await Assert.ThrowsExceptionAsync<SecondaryIndexMetadataRefreshException>(async () => await firstRefresh);
+            await Assert.ThrowsExceptionAsync<SecondaryIndexMetadataRefreshException>(async () => await concurrentRead);
+            Assert.AreEqual(2, provider.CallCount);
         }
 
         [TestMethod]
@@ -168,6 +353,45 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         }
 
         [TestMethod]
+        public async Task ForcedCollectionRefreshInvalidatesSecondaryIndexMetadata()
+        {
+            string sourceRid = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            ContainerProperties source = CreateSource(sourceRid);
+            TestProvider provider = new TestProvider((_, _, _) =>
+                Task.FromResult<IReadOnlyList<ISecondaryIndexMetadata>>(new[] { CreateMetadata($"gsi{providerCallSequence++}") }));
+            SecondaryIndexMetadataCache cache = new SecondaryIndexMetadataCache(provider);
+            TestClientCollectionCache collectionCache = new TestClientCollectionCache(source, cache.Invalidate);
+
+            IEnumerable<ISecondaryIndexMetadata> initial = await cache.GetSecondaryIndexMetadataAsync(
+                source,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+            await collectionCache.ResolveByNameAsync(
+                HttpConstants.Versions.CurrentVersion,
+                "dbs/database/colls/source",
+                forceRefesh: false,
+                NoOpTrace.Singleton,
+                clientSideRequestStatistics: null,
+                CancellationToken.None);
+            await collectionCache.ResolveByNameAsync(
+                HttpConstants.Versions.CurrentVersion,
+                "dbs/database/colls/source",
+                forceRefesh: true,
+                NoOpTrace.Singleton,
+                clientSideRequestStatistics: null,
+                CancellationToken.None);
+            IEnumerable<ISecondaryIndexMetadata> refreshed = await cache.GetSecondaryIndexMetadataAsync(
+                source,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(2, provider.CallCount);
+            Assert.AreEqual("gsi0", initial.Single().Rid);
+            Assert.AreEqual("gsi1", refreshed.Single().Rid);
+            Assert.AreEqual(2, collectionCache.ResolveByNameCount);
+        }
+
+        [TestMethod]
         public async Task NullProviderResultIsReturnedAndNotReused()
         {
             TestProvider provider = new TestProvider((_, _, _) => Task.FromResult<IReadOnlyList<ISecondaryIndexMetadata>>(null));
@@ -230,22 +454,82 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
         private sealed class TestProvider : ISecondaryIndexMetadataProvider
         {
-            private readonly Func<ContainerProperties, ITrace, CancellationToken, Task<IReadOnlyList<ISecondaryIndexMetadata>>> callback;
+            private readonly Func<ContainerProperties, ITrace, CancellationToken, bool, Task<IReadOnlyList<ISecondaryIndexMetadata>>> callback;
 
             public TestProvider(Func<ContainerProperties, ITrace, CancellationToken, Task<IReadOnlyList<ISecondaryIndexMetadata>>> callback)
+                : this((source, trace, cancellationToken, _) => callback(source, trace, cancellationToken))
+            {
+            }
+
+            public TestProvider(Func<ContainerProperties, ITrace, CancellationToken, bool, Task<IReadOnlyList<ISecondaryIndexMetadata>>> callback)
             {
                 this.callback = callback;
             }
 
             public int CallCount { get; private set; }
 
-            public Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
+            public async Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
                 ContainerProperties source,
                 ITrace trace,
-                CancellationToken cancellationToken)
+                CancellationToken cancellationToken,
+                bool forceRefresh = false)
             {
                 this.CallCount++;
-                return this.callback(source, trace, cancellationToken).ContinueWith(t => (IEnumerable<ISecondaryIndexMetadata>)t.Result, cancellationToken);
+                return await this.callback(source, trace, cancellationToken, forceRefresh);
+            }
+        }
+
+        private sealed class TestClock
+        {
+            public TestClock()
+            {
+                this.UtcNow = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            }
+
+            private DateTime UtcNow { get; set; }
+
+            public DateTime GetUtcNow()
+            {
+                return this.UtcNow;
+            }
+
+            public void Advance(TimeSpan duration)
+            {
+                this.UtcNow += duration;
+            }
+        }
+
+        private sealed class TestClientCollectionCache : ClientCollectionCache
+        {
+            private readonly ContainerProperties source;
+
+            public TestClientCollectionCache(
+                ContainerProperties source,
+                Action<string> collectionRefreshCallback)
+                : base(
+                    new SessionContainer("testhost"),
+                    new ServerStoreModel(null),
+                    tokenProvider: null,
+                    retryPolicy: null,
+                    telemetryToServiceHelper: null,
+                    enableAsyncCacheExceptionNoSharing: true,
+                    metadataHedgingStrategy: null,
+                    collectionRefreshCallback: collectionRefreshCallback)
+            {
+                this.source = source;
+            }
+
+            public int ResolveByNameCount { get; private set; }
+
+            protected override Task<ContainerProperties> GetByNameAsync(
+                string apiVersion,
+                string resourceAddress,
+                ITrace trace,
+                IClientSideRequestStatistics clientSideRequestStatistics,
+                CancellationToken cancellationToken)
+            {
+                this.ResolveByNameCount++;
+                return Task.FromResult(this.source);
             }
         }
     }
