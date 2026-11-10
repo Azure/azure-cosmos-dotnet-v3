@@ -35,6 +35,49 @@ namespace Microsoft.Azure.Cosmos
 
         public Documents.Routing.Range<string> Range { get; }
 
+        internal static bool TryCreateFromPartialPartitionKey(
+            FeedRangePartitionKey feedRangePartitionKey,
+            Documents.PartitionKeyDefinition partitionKeyDefinition,
+            out FeedRangeEpk feedRangeEpk)
+        {
+            feedRangeEpk = null;
+            if (feedRangePartitionKey == null ||
+                partitionKeyDefinition?.Kind != Documents.PartitionKind.MultiHash)
+            {
+                return false;
+            }
+
+            int? componentCount =
+                feedRangePartitionKey.PartitionKey.InternalKey?.Components?.Count;
+            int? pathCount = partitionKeyDefinition.Paths?.Count;
+            if (!componentCount.HasValue ||
+                !pathCount.HasValue ||
+                componentCount.Value >= pathCount.Value)
+            {
+                return false;
+            }
+
+            feedRangeEpk = new FeedRangeEpk(
+                feedRangePartitionKey.PartitionKey.InternalKey
+                    .GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
+            return true;
+        }
+
+        internal FeedRangeEpk GetClippedRange(
+            Documents.Routing.Range<string> range,
+            bool useLengthAwareRangeComparer)
+        {
+            if (range == null)
+            {
+                throw new ArgumentNullException(nameof(range));
+            }
+
+            return new FeedRangeEpk(RangeComparerProvider.GetIntersection(
+                this.Range,
+                range,
+                useLengthAwareRangeComparer));
+        }
+
         internal override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
