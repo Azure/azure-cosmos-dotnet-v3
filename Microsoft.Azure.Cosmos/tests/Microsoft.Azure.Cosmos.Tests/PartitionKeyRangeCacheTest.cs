@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Reflection;
     using System.Text;
@@ -258,6 +259,286 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Assert.AreEqual(SubStatusCodes.TransportGenerated503, cosmosException.Headers.SubStatusCode);
                 }
             }
+        }
+
+        /// <summary>
+        /// A cold-start PK-range change-feed drain must retain its last successful page when a later page
+        /// exhausts the metadata throttling retry policy. The next initialization attempt must continue with
+        /// page 2's request ETag instead of rereading page 1 from the beginning.
+        /// </summary>
+        [TestMethod]
+        public async Task TryGetOverlappingRangesAsync_ColdStartPage2ThrottleExhaustion_ResumesFromLastSuccessfulPage()
+        {
+            const string page1ETag = "page-1-etag";
+            const string page2ETag = "page-2-etag";
+            const string authToken = "token!";
+            const string containerRid = "kjhsAA==";
+            const string page1Content = "{\"_rid\":\"kjhsAA==\",\"PartitionKeyRanges\":[{\"id\":\"0\",\"minInclusive\":\"\",\"maxExclusive\":\"80\",\"parents\":[]}],\"_count\":1}";
+            const string page2Content = "{\"_rid\":\"kjhsAA==\",\"PartitionKeyRanges\":[{\"id\":\"1\",\"minInclusive\":\"80\",\"maxExclusive\":\"FF\",\"parents\":[]}],\"_count\":1}";
+
+            int pkRangeRequestCount = 0;
+            int throttledRequestCount = RetryOptions.DefaultMaxRetryAttemptsOnThrottledRequests + 1;
+            List<string> requestContinuations = new();
+            Mock<IStoreModel> mockStoreModel = new();
+            Mock<CollectionCache> mockCollectionCache = new(false);
+            Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider = new();
+
+            mockStoreModel
+                .Setup(storeModel => storeModel.ProcessMessageAsync(
+                    It.IsAny<DocumentServiceRequest>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<DocumentServiceRequest, CancellationToken>((request, cancellationToken) =>
+                {
+                    pkRangeRequestCount++;
+                    string requestContinuation = request.Headers[HttpConstants.HttpHeaders.IfNoneMatch];
+                    requestContinuations.Add(requestContinuation);
+
+                    if (pkRangeRequestCount == 1)
+                    {
+                        Assert.IsNull(requestContinuation, "The first cold-start request must begin without a continuation.");
+                        return Task.FromResult(new DocumentServiceResponse(
+                            new MemoryStream(Encoding.UTF8.GetBytes(page1Content)),
+                            new StoreResponseNameValueCollection { ETag = page1ETag },
+                            HttpStatusCode.OK));
+                    }
+
+                    if (pkRangeRequestCount <= throttledRequestCount + 1)
+                    {
+                        Assert.AreEqual(page1ETag, requestContinuation, "Every retry of page 2 must use page 1's ETag.");
+                        DictionaryNameValueCollection responseHeaders = new()
+                        {
+                            [HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = "1",
+                        };
+
+                        return Task.FromException<DocumentServiceResponse>(new DocumentClientException(
+                            message: "Simulated page 2 throttling.",
+                            innerException: null,
+                            statusCode: HttpStatusCode.TooManyRequests,
+                            substatusCode: SubStatusCodes.Unknown,
+                            requestUri: new Uri("https://foo"),
+                            responseHeaders: responseHeaders));
+                    }
+
+                    if (pkRangeRequestCount == throttledRequestCount + 2)
+                    {
+                        Assert.AreEqual(
+                            page1ETag,
+                            requestContinuation,
+                            "After page 2 exhausts its 429 retries, the next initialization attempt must resume from page 1's ETag instead of restarting from the beginning.");
+                        return Task.FromResult(new DocumentServiceResponse(
+                            new MemoryStream(Encoding.UTF8.GetBytes(page2Content)),
+                            new StoreResponseNameValueCollection { ETag = page2ETag },
+                            HttpStatusCode.OK));
+                    }
+
+                    Assert.AreEqual(page2ETag, requestContinuation, "The terminal change-feed request must use page 2's ETag.");
+                    return Task.FromResult(new DocumentServiceResponse(
+                        null,
+                        new StoreResponseNameValueCollection { ETag = page2ETag },
+                        HttpStatusCode.NotModified,
+                        null));
+                });
+
+            mockTokenProvider
+                .Setup(tokenProvider => tokenProvider.GetUserAuthorizationTokenAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<INameValueCollection>(),
+                    It.IsAny<AuthorizationTokenType>(),
+                    It.IsAny<ITrace>()))
+                .Returns(new ValueTask<string>(authToken));
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
+            PartitionKeyRangeCache partitionKeyRangeCache = new(
+                mockTokenProvider.Object,
+                mockStoreModel.Object,
+                mockCollectionCache.Object,
+                endpointManager,
+                useLengthAwareRangeComparer: false,
+                enableAsyncCacheExceptionNoSharing: false);
+
+            using ITrace trace = Trace.GetRootTrace(this.TestContext.TestName, TraceComponent.Unknown, TraceLevel.Info);
+
+            DocumentClientException throttlingException = await Assert.ThrowsExceptionAsync<DocumentClientException>(() =>
+                partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                    containerRid,
+                    FeedRangeEpk.FullRange.Range,
+                    trace,
+                    forceRefresh: false));
+
+            Assert.AreEqual(HttpStatusCode.TooManyRequests, throttlingException.StatusCode);
+            Assert.AreEqual(throttledRequestCount + 1, pkRangeRequestCount);
+
+            IReadOnlyList<PartitionKeyRange> ranges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                containerRid,
+                FeedRangeEpk.FullRange.Range,
+                trace,
+                forceRefresh: false);
+
+            Assert.AreEqual(2, ranges.Count, "The completed routing map must include ranges accumulated from both pages.");
+            Assert.AreEqual(1, requestContinuations.FindAll(string.IsNullOrEmpty).Count, "Page 1 must be read exactly once across both initialization attempts.");
+        }
+
+        /// <summary>
+        /// A warm PK-range cache refresh must retain partial change-feed progress independently of the
+        /// committed routing map. If page 3 succeeds and page 4 exhausts its 429 retries, the next refresh
+        /// must resume from page 3's ETag instead of restarting from the committed page 2 ETag.
+        /// </summary>
+        [TestMethod]
+        public async Task TryGetOverlappingRangesAsync_WarmRefreshPage4ThrottleExhaustion_ResumesFromPage3()
+        {
+            const string page1ETag = "page-1-etag";
+            const string page2ETag = "page-2-etag";
+            const string page3ETag = "page-3-etag";
+            const string page4ETag = "page-4-etag";
+            const string page5ETag = "page-5-etag";
+            const string authToken = "token!";
+            const string containerRid = "kjhsAA==";
+            const string page1Content = "{\"_rid\":\"kjhsAA==\",\"PartitionKeyRanges\":[{\"id\":\"0\",\"minInclusive\":\"\",\"maxExclusive\":\"80\",\"parents\":[]}],\"_count\":1}";
+            const string page2Content = "{\"_rid\":\"kjhsAA==\",\"PartitionKeyRanges\":[{\"id\":\"1\",\"minInclusive\":\"80\",\"maxExclusive\":\"FF\",\"parents\":[]}],\"_count\":1}";
+            const string page3Content = "{\"_rid\":\"kjhsAA==\",\"PartitionKeyRanges\":[{\"id\":\"2\",\"minInclusive\":\"\",\"maxExclusive\":\"40\",\"parents\":[\"0\"]}],\"_count\":1}";
+            const string page4Content = "{\"_rid\":\"kjhsAA==\",\"PartitionKeyRanges\":[{\"id\":\"3\",\"minInclusive\":\"40\",\"maxExclusive\":\"80\",\"parents\":[\"0\"]}],\"_count\":1}";
+            const string page5Content = "{\"_rid\":\"kjhsAA==\",\"PartitionKeyRanges\":[{\"id\":\"4\",\"minInclusive\":\"80\",\"maxExclusive\":\"FF\",\"parents\":[\"1\"]}],\"_count\":1}";
+
+            int pkRangeRequestCount = 0;
+            int throttledRequestCount = RetryOptions.DefaultMaxRetryAttemptsOnThrottledRequests + 1;
+            int firstRequestAfterThrottleExhaustion = 4 + throttledRequestCount + 1;
+            List<string> requestContinuations = new();
+            Mock<IStoreModel> mockStoreModel = new();
+            Mock<CollectionCache> mockCollectionCache = new(false);
+            Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider = new();
+
+            mockStoreModel
+                .Setup(storeModel => storeModel.ProcessMessageAsync(
+                    It.IsAny<DocumentServiceRequest>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<DocumentServiceRequest, CancellationToken>((request, cancellationToken) =>
+                {
+                    pkRangeRequestCount++;
+                    string requestContinuation = request.Headers[HttpConstants.HttpHeaders.IfNoneMatch];
+                    requestContinuations.Add(requestContinuation);
+
+                    switch (pkRangeRequestCount)
+                    {
+                        case 1:
+                            Assert.IsNull(requestContinuation);
+                            return Task.FromResult(CreatePkRangeFeedResponse(page1Content, page1ETag));
+                        case 2:
+                            Assert.AreEqual(page1ETag, requestContinuation);
+                            return Task.FromResult(CreatePkRangeFeedResponse(page2Content, page2ETag));
+                        case 3:
+                            Assert.AreEqual(page2ETag, requestContinuation);
+                            return Task.FromResult(CreatePkRangeNotModifiedResponse(page2ETag));
+                        case 4:
+                            Assert.AreEqual(page2ETag, requestContinuation, "The first warm refresh must start from the committed page 2 ETag.");
+                            return Task.FromResult(CreatePkRangeFeedResponse(page3Content, page3ETag));
+                    }
+
+                    if (pkRangeRequestCount < firstRequestAfterThrottleExhaustion)
+                    {
+                        Assert.AreEqual(page3ETag, requestContinuation, "Every retry of page 4 must use page 3's ETag.");
+                        DictionaryNameValueCollection responseHeaders = new()
+                        {
+                            [HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = "1",
+                        };
+
+                        return Task.FromException<DocumentServiceResponse>(new DocumentClientException(
+                            message: "Simulated page 4 throttling.",
+                            innerException: null,
+                            statusCode: HttpStatusCode.TooManyRequests,
+                            substatusCode: SubStatusCodes.Unknown,
+                            requestUri: new Uri("https://foo"),
+                            responseHeaders: responseHeaders));
+                    }
+
+                    if (pkRangeRequestCount == firstRequestAfterThrottleExhaustion)
+                    {
+                        Assert.AreEqual(
+                            page3ETag,
+                            requestContinuation,
+                            "After page 4 exhausts its 429 retries, the next warm refresh must resume from page 3 instead of the committed page 2 continuation.");
+                        return Task.FromResult(CreatePkRangeFeedResponse(page4Content, page4ETag));
+                    }
+
+                    if (pkRangeRequestCount == firstRequestAfterThrottleExhaustion + 1)
+                    {
+                        Assert.AreEqual(page4ETag, requestContinuation);
+                        return Task.FromResult(CreatePkRangeFeedResponse(page5Content, page5ETag));
+                    }
+
+                    Assert.AreEqual(page5ETag, requestContinuation);
+                    return Task.FromResult(CreatePkRangeNotModifiedResponse(page5ETag));
+                });
+
+            mockTokenProvider
+                .Setup(tokenProvider => tokenProvider.GetUserAuthorizationTokenAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<INameValueCollection>(),
+                    It.IsAny<AuthorizationTokenType>(),
+                    It.IsAny<ITrace>()))
+                .Returns(new ValueTask<string>(authToken));
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
+            PartitionKeyRangeCache partitionKeyRangeCache = new(
+                mockTokenProvider.Object,
+                mockStoreModel.Object,
+                mockCollectionCache.Object,
+                endpointManager,
+                useLengthAwareRangeComparer: false,
+                enableAsyncCacheExceptionNoSharing: false);
+
+            using ITrace trace = Trace.GetRootTrace(this.TestContext.TestName, TraceComponent.Unknown, TraceLevel.Info);
+
+            IReadOnlyList<PartitionKeyRange> initialRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                containerRid,
+                FeedRangeEpk.FullRange.Range,
+                trace,
+                forceRefresh: false);
+            CollectionAssert.AreEqual(new[] { "0", "1" }, new List<string>(initialRanges.Select(range => range.Id)));
+
+            DocumentClientException throttlingException = await Assert.ThrowsExceptionAsync<DocumentClientException>(() =>
+                partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                    containerRid,
+                    FeedRangeEpk.FullRange.Range,
+                    trace,
+                    forceRefresh: true));
+            Assert.AreEqual(HttpStatusCode.TooManyRequests, throttlingException.StatusCode);
+
+            IReadOnlyList<PartitionKeyRange> refreshedRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                containerRid,
+                FeedRangeEpk.FullRange.Range,
+                trace,
+                forceRefresh: true);
+
+            CollectionAssert.AreEqual(new[] { "2", "3", "4" }, new List<string>(refreshedRanges.Select(range => range.Id)));
+            Assert.AreEqual(2, requestContinuations.FindAll(continuation => continuation == page2ETag).Count, "Page 2's continuation must be used only by the initial terminal read and the first refresh attempt.");
+            Assert.AreEqual(throttledRequestCount + 1, requestContinuations.FindAll(continuation => continuation == page3ETag).Count, "Page 4 retries and the resumed request must all continue from page 3.");
+        }
+
+        private static DocumentServiceResponse CreatePkRangeFeedResponse(string content, string eTag)
+        {
+            return new DocumentServiceResponse(
+                new MemoryStream(Encoding.UTF8.GetBytes(content)),
+                new StoreResponseNameValueCollection { ETag = eTag },
+                HttpStatusCode.OK);
+        }
+
+        private static DocumentServiceResponse CreatePkRangeNotModifiedResponse(string eTag)
+        {
+            return new DocumentServiceResponse(
+                null,
+                new StoreResponseNameValueCollection { ETag = eTag },
+                HttpStatusCode.NotModified,
+                null);
         }
 
         /// <summary>
