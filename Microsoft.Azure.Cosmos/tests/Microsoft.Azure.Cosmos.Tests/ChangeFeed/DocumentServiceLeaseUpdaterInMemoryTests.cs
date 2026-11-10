@@ -60,5 +60,59 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Assert.AreEqual("newHost", updatedLease.Owner);
         }
+
+        [TestMethod]
+        public async Task UpdatesUseLatestStoredLease()
+        {
+            DocumentServiceLease cached = new DocumentServiceLeaseCore
+            {
+                LeaseId = "1",
+                LeaseToken = "1",
+                QueryFilterHash = "cached",
+                ContinuationToken = "old-progress"
+            };
+            DocumentServiceLease current = new DocumentServiceLeaseCore
+            {
+                LeaseId = "1",
+                LeaseToken = "1",
+                QueryFilterHash = "persisted",
+                ContinuationToken = "current-progress"
+            };
+            ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
+            container.TryAdd(current.Id, current);
+            DocumentServiceLeaseUpdaterInMemory updater = new DocumentServiceLeaseUpdaterInMemory(container);
+
+            DocumentServiceLease updated = await updater.UpdateLeaseAsync(cached, cached.Id, PartitionKey.Null, lease => lease);
+
+            Assert.AreSame(current, updated);
+            Assert.AreEqual("persisted", container[current.Id].QueryFilterHash);
+            Assert.AreEqual("current-progress", container[current.Id].ContinuationToken);
+        }
+
+        [TestMethod]
+        public async Task RetriesUseLatestStoredLease()
+        {
+            DocumentServiceLease original = new DocumentServiceLeaseCore { LeaseId = "1", LeaseToken = "1", QueryFilterHash = "original" };
+            DocumentServiceLease replacement = new DocumentServiceLeaseCore { LeaseId = "1", LeaseToken = "1", QueryFilterHash = "replacement" };
+            ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>();
+            container.TryAdd(original.Id, original);
+            DocumentServiceLeaseUpdaterInMemory updater = new DocumentServiceLeaseUpdaterInMemory(container);
+            List<DocumentServiceLease> observed = new List<DocumentServiceLease>();
+
+            DocumentServiceLease updated = await updater.UpdateLeaseAsync(original, original.Id, PartitionKey.Null, lease =>
+            {
+                observed.Add(lease);
+                if (observed.Count == 1)
+                {
+                    container[original.Id] = replacement;
+                }
+
+                return lease;
+            });
+
+            CollectionAssert.AreEqual(new[] { original, replacement }, observed);
+            Assert.AreSame(replacement, updated);
+            Assert.AreSame(replacement, container[original.Id]);
+        }
     }
 }

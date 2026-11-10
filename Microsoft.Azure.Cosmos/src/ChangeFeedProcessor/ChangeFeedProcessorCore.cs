@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
@@ -106,6 +107,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 await this.InitializeAsync().ConfigureAwait(false);
             }
 
+            this.documentServiceLeaseStoreManager.LeaseManager.ConfigureQueryFilter(
+                ChangeFeedHelper.GetQueryFilterHash(this.changeFeedProcessorOptions.QuerySpec));
+
             DefaultTrace.TraceInformation("Starting processor...");
             await this.partitionManager.StartAsync().ConfigureAwait(false);
             DefaultTrace.TraceInformation("Processor started.");
@@ -147,19 +151,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     .ConfigureAwait(false);
             }
 
-            this.documentServiceLeaseStoreManager
-                .LeaseManager
-                .ChangeFeedModeSwitchingCheck(
-                    documentServiceLeases: await this.documentServiceLeaseStoreManager
-                        .LeaseContainer
-                            .GetAllLeasesAsync()
-                            .ConfigureAwait(false),
-                    changeFeedLeaseOptionsMode: this.changeFeedLeaseOptions.Mode);
+            this.documentServiceLeaseStoreManager.LeaseManager.ChangeFeedModeSwitchingCheck(
+                await this.documentServiceLeaseStoreManager.LeaseContainer.GetAllLeasesAsync().ConfigureAwait(false),
+                this.changeFeedLeaseOptions.Mode);
 
             this.partitionManager = this.BuildPartitionManager(
                 containerRid,
                 partitionKeyRangeCache);
             this.initialized = true;
+        }
+
+        private async Task ValidateLeaseQueryCompatibilityAsync()
+        {
+            IReadOnlyList<DocumentServiceLease> leases = await this.documentServiceLeaseStoreManager.LeaseContainer
+                .GetAllLeasesAsync().ConfigureAwait(false);
+            DocumentServiceLeaseManager leaseManager = this.documentServiceLeaseStoreManager.LeaseManager;
+            foreach (DocumentServiceLease lease in leases)
+            {
+                leaseManager.VerifyQueryFilter(lease);
+            }
         }
 
         private PartitionManager BuildPartitionManager(
@@ -173,7 +183,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 PartitionSynchronizerCore.DefaultDegreeOfParallelism,
                 partitionKeyRangeCache,
                 containerRid);
-            BootstrapperCore bootstrapper = new BootstrapperCore(synchronizer, this.documentServiceLeaseStoreManager.LeaseStore, BootstrapperCore.DefaultLockTime, BootstrapperCore.DefaultSleepTime);
+            BootstrapperCore bootstrapper = new BootstrapperCore(
+                synchronizer,
+                this.documentServiceLeaseStoreManager.LeaseStore,
+                BootstrapperCore.DefaultLockTime,
+                BootstrapperCore.DefaultSleepTime,
+                this.ValidateLeaseQueryCompatibilityAsync);
             PartitionSupervisorFactoryCore partitionSuperviserFactory = new PartitionSupervisorFactoryCore(
                 this.observerFactory,
                 this.documentServiceLeaseStoreManager.LeaseManager,

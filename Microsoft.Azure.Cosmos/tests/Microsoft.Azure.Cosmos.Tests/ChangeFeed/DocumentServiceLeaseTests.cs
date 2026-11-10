@@ -7,15 +7,60 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Reflection;
     using System.Runtime.Serialization.Formatters.Binary;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
+    using Newtonsoft.Json.Serialization;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
     public class DocumentServiceLeaseTests
     {
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void PreFeatureLeaseSchemaDropsQueryIdentityOnReplacement(bool epk)
+        {
+            DocumentServiceLease original = epk
+                ? new DocumentServiceLeaseCoreEpk { LeaseId = "lease" }
+                : new DocumentServiceLeaseCore { LeaseId = "lease", LeaseToken = "0" };
+            original.QueryFilterHash = ChangeFeedHelper.GetQueryFilterHash(new ChangeFeedQuerySpec("SELECT * FROM c"));
+            original.ContinuationToken = "saved-progress";
+            JsonSerializerSettings preFeatureSchema = new JsonSerializerSettings
+            {
+                ContractResolver = new PreFeatureLeaseContractResolver()
+            };
+            DocumentServiceLease oldHostLease = JsonConvert.DeserializeObject<DocumentServiceLease>(
+                JsonConvert.SerializeObject(original), preFeatureSchema);
+            Assert.IsNull(oldHostLease.QueryFilterHash);
+            oldHostLease.Owner = "old-host";
+            string replacement = JsonConvert.SerializeObject(oldHostLease, preFeatureSchema);
+            Assert.IsNull(JObject.Parse(replacement).Property("QueryFilterHash"));
+            DocumentServiceLease reread = JsonConvert.DeserializeObject<DocumentServiceLease>(replacement);
+            Assert.AreEqual("saved-progress", reread.ContinuationToken);
+            Assert.AreEqual("old-host", reread.Owner);
+            Assert.IsNull(reread.QueryFilterHash);
+        }
+
+        private sealed class PreFeatureLeaseContractResolver : DefaultContractResolver
+        {
+            protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+            {
+                JsonProperty property = base.CreateProperty(member, memberSerialization);
+                // Baseline 3a0655e lease types have no query field or extension-data preservation.
+                // Model that serializer contract without deleting fields from the input JSON.
+                if (member.Name == nameof(DocumentServiceLease.QueryFilterHash))
+                {
+                    property.Ignored = true;
+                }
+
+                return property;
+            }
+        }
+
         [TestMethod]
         public void ValidateProperties()
         {
@@ -93,6 +138,52 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.IsNull(lease.PartitionKey);
             Assert.AreEqual(new DocumentServiceLeaseCore().Timestamp, lease.Timestamp);
             Assert.IsTrue(lease.Properties.Count == 0);
+        }
+
+        [DataTestMethod]
+        [DataRow(false, null)]
+        [DataRow(true, null)]
+        [DataRow(false, "")]
+        [DataRow(true, "")]
+        [DataRow(false, "fingerprint")]
+        [DataRow(true, "fingerprint")]
+        public void QueryFingerprintRoundTripsThroughLeaseConverter(bool epkLease, string hash)
+        {
+            DocumentServiceLease original = epkLease
+                ? new DocumentServiceLeaseCoreEpk()
+                : new DocumentServiceLeaseCore();
+            original.QueryFilterHash = hash;
+
+            string serialized = JsonConvert.SerializeObject(original);
+            JObject document = JObject.Parse(serialized);
+            if (hash == null)
+            {
+                Assert.IsNull(document.Property("QueryFilterHash"));
+            }
+            else
+            {
+                Assert.AreEqual(hash, (string)document["QueryFilterHash"]);
+            }
+
+            DocumentServiceLease restored = JsonConvert.DeserializeObject<DocumentServiceLease>(serialized);
+            Assert.AreEqual(original.GetType(), restored.GetType());
+            Assert.AreEqual(hash, restored.QueryFilterHash);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void ExplicitNullFingerprintRemainsUnfiltered(bool epkLease)
+        {
+            DocumentServiceLease original = epkLease
+                ? new DocumentServiceLeaseCoreEpk()
+                : new DocumentServiceLeaseCore();
+            JObject document = JObject.FromObject(original);
+            document["QueryFilterHash"] = JValue.CreateNull();
+
+            DocumentServiceLease restored = JsonConvert.DeserializeObject<DocumentServiceLease>(document.ToString());
+            Assert.AreEqual(original.GetType(), restored.GetType());
+            Assert.IsNull(restored.QueryFilterHash);
         }
 
         [TestMethod]

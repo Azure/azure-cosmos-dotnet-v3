@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
+    using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -501,8 +502,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         /// <summary>
         /// Verifies that if the renewed read a different Owner from the captured in memory, throws a LeaseLost
         /// </summary>
-        [TestMethod]
-        public async Task IfOwnerChangedThrowOnRenew()
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task IfOwnerChangedThrowOnRenew(bool changedQuery)
         {
             DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions
             {
@@ -525,6 +528,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 {
                     LeaseToken = "0",
                     Owner = Guid.NewGuid().ToString(),
+                    QueryFilterHash = changedQuery ? "other-query" : null,
                     FeedRange = new FeedRangePartitionKeyRange("0")
                 };
                 DocumentServiceLease afterUpdateLease = updater(serverLease);
@@ -559,8 +563,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             LeaseLostException leaseLost = await Assert.ThrowsExceptionAsync<LeaseLostException>(() => documentServiceLeaseManagerCosmos.RenewAsync(lease));
 
-            Assert.IsTrue(leaseLost.InnerException is CosmosException innerCosmosException
-                && innerCosmosException.StatusCode == HttpStatusCode.PreconditionFailed);
+            if (changedQuery)
+            {
+                Assert.IsInstanceOfType(leaseLost.InnerException, typeof(ArgumentException));
+            }
+            else
+            {
+                Assert.IsTrue(leaseLost.InnerException is CosmosException innerCosmosException
+                    && innerCosmosException.StatusCode == HttpStatusCode.PreconditionFailed);
+            }
         }
 
         /// <summary>
@@ -914,6 +925,289 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
         }
 
+        [DataTestMethod]
+        [DataRow("PKRange", null)]
+        [DataRow("EPK", null)]
+        [DataRow("PKRange", "fingerprint")]
+        [DataRow("EPK", "fingerprint")]
+        public async Task NewLeasesUseConfiguredQueryIdentity(string kind, string hash)
+        {
+            Mock<ContainerInternal> container = CreateDedupSimulatingMockContainer();
+            DocumentServiceLeaseManagerCosmos manager = CreateLeaseManager(
+                container.Object, new PartitionedByIdCollectionRequestOptionsFactory());
+            manager.ConfigureQueryFilter(hash);
+
+            DocumentServiceLease lease = await CreateLeaseAsync(manager, kind, "progress");
+
+            Assert.AreEqual(hash, lease.QueryFilterHash);
+            Assert.AreEqual("progress", lease.ContinuationToken);
+        }
+
+        [DataTestMethod]
+        [DataRow("PKRange", null, null, true)]
+        [DataRow("EPK", null, null, true)]
+        [DataRow("PKRange", "fingerprint", "fingerprint", true)]
+        [DataRow("EPK", "fingerprint", "fingerprint", true)]
+        [DataRow("PKRange", "fingerprint", null, false)]
+        [DataRow("EPK", "fingerprint", null, false)]
+        [DataRow("PKRange", null, "fingerprint", false)]
+        [DataRow("EPK", null, "fingerprint", false)]
+        [DataRow("PKRange", "fingerprint", "other", false)]
+        [DataRow("EPK", "fingerprint", "other", false)]
+        [DataRow("PKRange", null, "", false)]
+        [DataRow("EPK", null, "", false)]
+        public async Task CreateConflictChecksStoredQueryIdentity(string kind, string configuredHash, string storedHash, bool compatible)
+        {
+            Mock<ContainerInternal> container = CreateDedupSimulatingMockContainer();
+            DocumentServiceLeaseManagerCosmos original = CreateLeaseManager(
+                container.Object, new PartitionedByIdCollectionRequestOptionsFactory());
+            original.ConfigureQueryFilter(storedHash);
+            DocumentServiceLease existing = await CreateLeaseAsync(original, kind, "original-progress");
+            DocumentServiceLeaseManagerCosmos contender = CreateLeaseManager(
+                container.Object, new PartitionedByIdCollectionRequestOptionsFactory());
+            contender.ConfigureQueryFilter(configuredHash);
+
+            if (compatible)
+            {
+                Assert.IsNull(await CreateLeaseAsync(contender, kind, "replacement-progress"));
+            }
+            else
+            {
+                await Assert.ThrowsExceptionAsync<ArgumentException>(() => CreateLeaseAsync(contender, kind, "replacement-progress"));
+            }
+
+            Assert.AreEqual(storedHash, existing.QueryFilterHash);
+            Assert.AreEqual("original-progress", existing.ContinuationToken);
+            container.Verify(c => c.ReadItemStreamAsync(
+                existing.Id, It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [DataTestMethod]
+        [DataRow("Acquire")]
+        [DataRow("Release")]
+        [DataRow("Renew")]
+        [DataRow("Properties")]
+        public async Task CachedQueryMismatchIsRejectedBeforeStoreAccess(string operation)
+        {
+            Mock<ContainerInternal> container = new Mock<ContainerInternal>(MockBehavior.Strict);
+            Mock<DocumentServiceLeaseUpdater> updater = new Mock<DocumentServiceLeaseUpdater>(MockBehavior.Strict);
+            DocumentServiceLeaseManagerCosmos manager = CreateLeaseManager(
+                container.Object, new PartitionedByIdCollectionRequestOptionsFactory(), updater.Object);
+            manager.ConfigureQueryFilter("configured");
+            DocumentServiceLease lease = new DocumentServiceLeaseCore { QueryFilterHash = "other" };
+
+            await AssertQueryMismatchAsync(manager, operation, lease);
+
+            container.VerifyNoOtherCalls();
+            updater.VerifyNoOtherCalls();
+            Assert.IsNull(lease.FeedRange);
+        }
+
+        [DataTestMethod]
+        [DataRow("Acquire", null, null, true)]
+        [DataRow("Release", null, null, true)]
+        [DataRow("Renew", null, null, true)]
+        [DataRow("Properties", null, null, true)]
+        [DataRow("Acquire", "fingerprint", "fingerprint", true)]
+        [DataRow("Release", "fingerprint", "fingerprint", true)]
+        [DataRow("Renew", "fingerprint", "fingerprint", true)]
+        [DataRow("Properties", "fingerprint", "fingerprint", true)]
+        [DataRow("Acquire", "fingerprint", "other", false)]
+        [DataRow("Release", "fingerprint", "other", false)]
+        [DataRow("Renew", "fingerprint", "other", false)]
+        [DataRow("Properties", "fingerprint", "other", false)]
+        public async Task UpdateCallbacksCheckIdentityAndPreserveProgress(string operation, string configuredHash, string storedHash, bool compatible)
+        {
+            DocumentServiceLease lease = new DocumentServiceLeaseCore
+            {
+                LeaseId = "0", LeaseToken = "0", Owner = "host", QueryFilterHash = configuredHash,
+                FeedRange = new FeedRangePartitionKeyRange("0")
+            };
+            DocumentServiceLease server = new DocumentServiceLeaseCore
+            {
+                LeaseId = "0", LeaseToken = "0", Owner = "host", QueryFilterHash = storedHash,
+                ContinuationToken = "server-progress"
+            };
+            Mock<ContainerInternal> container = new Mock<ContainerInternal>();
+            container.Setup(c => c.ReadItemStreamAsync(
+                It.IsAny<string>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() => new ResponseMessage(HttpStatusCode.OK) { Content = new CosmosJsonDotNetSerializer().ToStream(lease) });
+            Mock<DocumentServiceLeaseUpdater> updater = new Mock<DocumentServiceLeaseUpdater>();
+            updater.Setup(c => c.UpdateLeaseAsync(
+                It.IsAny<DocumentServiceLease>(), It.IsAny<string>(), It.IsAny<PartitionKey>(), It.IsAny<Func<DocumentServiceLease, DocumentServiceLease>>()))
+                .Returns((DocumentServiceLease cached, string id, PartitionKey pk, Func<DocumentServiceLease, DocumentServiceLease> update) =>
+                    Task.FromResult(update(server)));
+            DocumentServiceLeaseManagerCosmos manager = new DocumentServiceLeaseManagerCosmos(
+                Mock.Of<ContainerInternal>(), container.Object, updater.Object,
+                new DocumentServiceLeaseStoreManagerOptions { HostName = "host" }, new PartitionedByIdCollectionRequestOptionsFactory());
+            manager.ConfigureQueryFilter(configuredHash);
+
+            if (compatible)
+            {
+                await RunLeaseOperationAsync(manager, operation, lease);
+            }
+            else
+            {
+                await AssertQueryMismatchAsync(manager, operation, lease);
+            }
+
+            Assert.AreEqual(storedHash, server.QueryFilterHash);
+            Assert.AreEqual("server-progress", server.ContinuationToken);
+            Assert.AreEqual(compatible && operation == "Release" ? null : "host", server.Owner);
+        }
+
+        [DataTestMethod]
+        [DataRow("Acquire")]
+        [DataRow("Release")]
+        [DataRow("Renew")]
+        [DataRow("Properties")]
+        public async Task EtagRetryRejectsNewlyIncompatibleLease(string operation)
+        {
+            DocumentServiceLease lease = new DocumentServiceLeaseCore
+            {
+                LeaseId = "0", LeaseToken = "0", Owner = "host", QueryFilterHash = "fingerprint",
+                FeedRange = new FeedRangePartitionKeyRange("0")
+            };
+            DocumentServiceLease incompatible = new DocumentServiceLeaseCore
+            {
+                LeaseId = "0", LeaseToken = "0", Owner = "host", QueryFilterHash = "other", ContinuationToken = "server-progress"
+            };
+            int replacements = 0;
+            Mock<ContainerInternal> container = new Mock<ContainerInternal>();
+            container.Setup(c => c.ReadItemStreamAsync(
+                It.IsAny<string>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() => new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new CosmosJsonDotNetSerializer().ToStream(replacements == 0 ? lease : incompatible)
+                });
+            container.Setup(c => c.ReplaceItemStreamAsync(
+                It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() =>
+                {
+                    replacements++;
+                    return new ResponseMessage(HttpStatusCode.PreconditionFailed);
+                });
+            DocumentServiceLeaseManagerCosmos manager = new DocumentServiceLeaseManagerCosmos(
+                Mock.Of<ContainerInternal>(), container.Object, new DocumentServiceLeaseUpdaterCosmos(container.Object),
+                new DocumentServiceLeaseStoreManagerOptions { HostName = "host" }, new PartitionedByIdCollectionRequestOptionsFactory());
+            manager.ConfigureQueryFilter("fingerprint");
+
+            await AssertQueryMismatchAsync(manager, operation, lease);
+
+            Assert.AreEqual(1, replacements);
+            Assert.AreEqual("other", incompatible.QueryFilterHash);
+            Assert.AreEqual("host", incompatible.Owner);
+            Assert.AreEqual("server-progress", incompatible.ContinuationToken);
+        }
+
+        [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task RejectedAcquisitionCleanupDoesNotReleaseOriginalOwner(bool inMemory)
+        {
+            DocumentServiceLease lease = new DocumentServiceLeaseCore
+            {
+                LeaseId = "0", LeaseToken = "0", Owner = "original-owner", QueryFilterHash = "other",
+                ContinuationToken = "original-progress", FeedRange = new FeedRangePartitionKeyRange("0")
+            };
+            ConcurrentDictionary<string, DocumentServiceLease> state = new ConcurrentDictionary<string, DocumentServiceLease>();
+            state.TryAdd(lease.Id, lease);
+            int updates = 0;
+            Mock<DocumentServiceLeaseUpdater> updater = new Mock<DocumentServiceLeaseUpdater>();
+            updater.Setup(c => c.UpdateLeaseAsync(
+                It.IsAny<DocumentServiceLease>(), It.IsAny<string>(), It.IsAny<PartitionKey>(), It.IsAny<Func<DocumentServiceLease, DocumentServiceLease>>()))
+                .Returns((DocumentServiceLease cached, string id, PartitionKey pk, Func<DocumentServiceLease, DocumentServiceLease> update) =>
+                {
+                    if (++updates == 1)
+                    {
+                        throw new ArgumentException("Simulated acquisition rejection.");
+                    }
+
+                    return Task.FromResult(update(lease));
+                });
+            Mock<ContainerInternal> container = new Mock<ContainerInternal>();
+            container.Setup(c => c.ReadItemStreamAsync(
+                It.IsAny<string>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() => new ResponseMessage(HttpStatusCode.OK) { Content = new CosmosJsonDotNetSerializer().ToStream(lease) });
+            DocumentServiceLeaseManager manager = inMemory
+                ? new DocumentServiceLeaseManagerInMemory(updater.Object, state)
+                : CreateLeaseManager(container.Object, new PartitionedByIdCollectionRequestOptionsFactory(), updater.Object);
+            manager.ConfigureQueryFilter("configured");
+            Mock<ChangeFeedProcessorHealthMonitor> monitor = new Mock<ChangeFeedProcessorHealthMonitor>();
+            monitor.Setup(m => m.NotifyErrorAsync(It.IsAny<string>(), It.IsAny<Exception>())).Returns(Task.CompletedTask);
+            monitor.Setup(m => m.NotifyLeaseReleaseAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            Mock<PartitionSupervisorFactory> supervisors = new Mock<PartitionSupervisorFactory>(MockBehavior.Strict);
+            PartitionControllerCore controller = new PartitionControllerCore(
+                Mock.Of<DocumentServiceLeaseContainer>(), manager, supervisors.Object, Mock.Of<PartitionSynchronizer>(), monitor.Object);
+
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() => controller.AddOrUpdateLeaseAsync(lease));
+
+            Assert.AreEqual("original-owner", lease.Owner);
+            Assert.AreEqual("original-progress", lease.ContinuationToken);
+            Assert.AreEqual("other", lease.QueryFilterHash);
+            supervisors.VerifyNoOtherCalls();
+        }
+
+        [DataTestMethod]
+        [DataRow(HttpStatusCode.NotFound, (int)Documents.SubStatusCodes.Unknown)]
+        [DataRow(HttpStatusCode.NotFound, (int)Documents.SubStatusCodes.ReadSessionNotAvailable)]
+        [DataRow(HttpStatusCode.TooManyRequests, (int)Documents.SubStatusCodes.Unknown)]
+        public async Task CreateConflictOnlyIgnoresDeletedLease(HttpStatusCode status, int substatus)
+        {
+            Mock<ContainerInternal> container = new Mock<ContainerInternal>();
+            container.Setup(c => c.CreateItemStreamAsync(
+                It.IsAny<Stream>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() => new ResponseMessage(HttpStatusCode.Conflict));
+            container.Setup(c => c.ReadItemStreamAsync(
+                It.IsAny<string>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() =>
+                {
+                    ResponseMessage response = new ResponseMessage(status);
+                    response.Headers.SubStatusCode = (Documents.SubStatusCodes)substatus;
+                    return response;
+                });
+            DocumentServiceLeaseManagerCosmos manager = CreateLeaseManager(
+                container.Object, new PartitionedByIdCollectionRequestOptionsFactory());
+
+            if (status == HttpStatusCode.NotFound && substatus == 0)
+            {
+                Assert.IsNull(await CreateLeaseAsync(manager, "PKRange", "progress"));
+            }
+            else
+            {
+                CosmosException error = await Assert.ThrowsExceptionAsync<CosmosException>(() => CreateLeaseAsync(manager, "PKRange", "progress"));
+                Assert.AreEqual(status, error.StatusCode);
+                Assert.AreEqual(substatus, error.SubStatusCode);
+            }
+        }
+
+        private static async Task AssertQueryMismatchAsync(DocumentServiceLeaseManager manager, string operation, DocumentServiceLease lease)
+        {
+            if (operation == "Renew")
+            {
+                LeaseLostException exception = await Assert.ThrowsExceptionAsync<LeaseLostException>(
+                    () => RunLeaseOperationAsync(manager, operation, lease));
+                Assert.IsInstanceOfType(exception.InnerException, typeof(ArgumentException));
+                Assert.IsFalse(exception.IsGone);
+            }
+            else
+            {
+                await Assert.ThrowsExceptionAsync<ArgumentException>(() => RunLeaseOperationAsync(manager, operation, lease));
+            }
+        }
+
+        private static Task RunLeaseOperationAsync(DocumentServiceLeaseManager manager, string operation, DocumentServiceLease lease)
+        {
+            return operation switch
+            {
+                "Acquire" => manager.AcquireAsync(lease),
+                "Release" => manager.ReleaseAsync(lease),
+                "Renew" => manager.RenewAsync(lease),
+                "Properties" => manager.UpdatePropertiesAsync(lease),
+                _ => throw new ArgumentOutOfRangeException(nameof(operation))
+            };
+        }
+
         private static RequestOptionsFactory GetRequestOptionsFactory(int factoryType)
         {
             return factoryType switch
@@ -941,7 +1235,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         private static Mock<ContainerInternal> CreateDedupSimulatingMockContainer()
         {
-            ConcurrentDictionary<string, byte> createdPkIdPairs = new ConcurrentDictionary<string, byte>();
+            ConcurrentDictionary<string, string> createdPkIdPairs = new ConcurrentDictionary<string, string>();
             Mock<ContainerInternal> mockedContainer = new Mock<ContainerInternal>();
             mockedContainer.Setup(c => c.CreateItemStreamAsync(
                 It.IsAny<Stream>(),
@@ -957,10 +1251,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     string leaseId = Newtonsoft.Json.Linq.JObject.Parse(json)["id"].ToString();
 
                     string compositeKey = $"{partitionKey}:{leaseId}";
-                    return createdPkIdPairs.TryAdd(compositeKey, 0)
+                    return createdPkIdPairs.TryAdd(compositeKey, json)
                         ? new ResponseMessage(HttpStatusCode.OK) { Content = stream }
                         : new ResponseMessage(HttpStatusCode.Conflict);
                 });
+            mockedContainer.Setup(c => c.ReadItemStreamAsync(
+                It.IsAny<string>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((string id, PartitionKey partitionKey, ItemRequestOptions opts, CancellationToken token) =>
+                    createdPkIdPairs.TryGetValue($"{partitionKey}:{id}", out string json)
+                        ? new ResponseMessage(HttpStatusCode.OK) { Content = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)) }
+                        : new ResponseMessage(HttpStatusCode.NotFound));
             return mockedContainer;
         }
 

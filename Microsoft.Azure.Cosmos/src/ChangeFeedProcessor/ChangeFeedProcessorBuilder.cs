@@ -71,6 +71,36 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Filters change feed entries using a service-evaluated SQL predicate.
+        /// </summary>
+        /// <param name="queryText">The SQL query, for example, SELECT * FROM c WHERE c.enabled = true.</param>
+        /// <returns>The current builder.</returns>
+        /// <remarks>
+        /// All hosts sharing a lease namespace must support query filtering and use exactly the same SQL text.
+        /// Use a separate namespace when changing the query. Existing leases without query metadata are unfiltered.
+        /// The query cannot be changed after <see cref="Build"/>.
+        /// Service validation errors are reported through <see cref="WithErrorNotification"/> and retain existing retry behavior.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="queryText"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="queryText"/> is empty or whitespace.</exception>
+        /// <exception cref="InvalidOperationException">The processor has already been built.</exception>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ChangeFeedProcessorBuilder WithQuery(string queryText)
+        {
+            if (this.isBuilt)
+            {
+                throw new InvalidOperationException("The query cannot be changed after the processor has been built.");
+            }
+
+            this.changeFeedProcessorOptions.QuerySpec = ChangeFeedHelper.CreateQuerySpec(queryText);
+            return this;
+        }
+
+        /// <summary>
         /// Sets the mode for the change feed processor.
         /// </summary>
         /// <param name="changeFeedMode"></param>

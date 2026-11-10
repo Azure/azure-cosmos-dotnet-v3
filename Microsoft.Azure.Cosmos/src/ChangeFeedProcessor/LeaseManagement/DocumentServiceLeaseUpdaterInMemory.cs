@@ -32,15 +32,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             DocumentServiceLease lease = cachedLease;
             for (int retryCount = RetryCountOnConflict; retryCount >= 0; retryCount--)
             {
-                lease = updateLease(lease);
-                if (lease == null)
-                {
-                    return null;
-                }
-
                 if (!this.container.TryGetValue(itemId, out DocumentServiceLease currentLease))
                 {
                     throw new LeaseLostException(lease);
+                }
+
+                lease = updateLease(currentLease);
+                if (lease == null)
+                {
+                    return null;
                 }
 
                 if (this.container.TryUpdate(itemId, lease, currentLease))
