@@ -53,15 +53,23 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [DataTestMethod]
-        [DataRow(ConnectionMode.Gateway, true, "[\"tenant\"]")]
-        [DataRow(ConnectionMode.Gateway, false, "[\"tenant\"]")]
-        [DataRow(ConnectionMode.Direct, true, "[\"tenant\"]")]
-        [DataRow(ConnectionMode.Direct, false, "[\"tenant\"]")]
-        [DataRow(ConnectionMode.Gateway, true, "[\"tenant\",\"user\"]")]
-        [DataRow(ConnectionMode.Gateway, false, "[\"tenant\",\"user\"]")]
-        [DataRow(ConnectionMode.Direct, true, "[\"tenant\",\"user\"]")]
-        [DataRow(ConnectionMode.Direct, false, "[\"tenant\",\"user\"]")]
-        public async Task PrefixHeaderPreservesPhysicalPartitionRouting(ConnectionMode connectionMode, bool exactRange, string prefixJson)
+        [DataRow(ConnectionMode.Gateway, true, "[\"tenant\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Gateway, false, "[\"tenant\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Direct, true, "[\"tenant\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Direct, false, "[\"tenant\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Gateway, true, "[\"tenant\",\"user\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Gateway, false, "[\"tenant\",\"user\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Direct, true, "[\"tenant\",\"user\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Direct, false, "[\"tenant\",\"user\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Gateway, true, "[\"tenant\"]", (int)OperationType.ReadFeed)]
+        [DataRow(ConnectionMode.Gateway, false, "[\"tenant\"]", (int)OperationType.ReadFeed)]
+        [DataRow(ConnectionMode.Direct, true, "[\"tenant\"]", (int)OperationType.ReadFeed)]
+        [DataRow(ConnectionMode.Direct, false, "[\"tenant\"]", (int)OperationType.ReadFeed)]
+        [DataRow(ConnectionMode.Gateway, true, "[\"tenant\"]", (int)OperationType.QueryPlan)]
+        [DataRow(ConnectionMode.Gateway, false, "[\"tenant\"]", (int)OperationType.QueryPlan)]
+        [DataRow(ConnectionMode.Direct, true, "[\"tenant\"]", (int)OperationType.QueryPlan)]
+        [DataRow(ConnectionMode.Direct, false, "[\"tenant\"]", (int)OperationType.QueryPlan)]
+        public async Task PrefixHeaderPreservesPhysicalPartitionRouting(ConnectionMode connectionMode, bool exactRange, string prefixJson, int operation)
         {
             TestPartitionKeyRangeCache cache = new TestPartitionKeyRangeCache(new[]
             {
@@ -95,8 +103,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     sent = true;
                     Assert.AreEqual("1", request.PartitionKeyRangeId.PartitionKeyRangeId);
                     Assert.IsNull(request.Headers.PartitionKey);
-                    Assert.AreEqual(prefixJson, request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
-                    Assert.AreEqual(prefixJson, request.ToDocumentServiceRequest().Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
+                    string expectedHeader = (OperationType)operation == OperationType.Query ? prefixJson : null;
+                    Assert.AreEqual(expectedHeader, request.Headers[RequestInvokerHandler.PartialPartitionKeyHeader]);
+                    Assert.AreEqual(expectedHeader, request.ToDocumentServiceRequest().Headers[RequestInvokerHandler.PartialPartitionKeyHeader]);
                     Assert.AreEqual(exactRange ? null : "10", request.Headers.StartEpk);
                     Assert.AreEqual(exactRange ? null : "20", request.Headers.EndEpk);
                     return TestHandler.ReturnSuccess();
@@ -107,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             using ResponseMessage response = await invoker.SendAsync(
                 "dbs/testDb/colls/testColl",
                 ResourceType.Document,
-                OperationType.Query,
+                (OperationType)operation,
                 new QueryRequestOptions
                 {
                     PartitionKey = partitionKey

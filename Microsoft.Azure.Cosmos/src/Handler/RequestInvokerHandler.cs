@@ -23,6 +23,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class RequestInvokerHandler : RequestHandler
     {
+        // TODO: Move to HttpConstants when the Direct package includes partial partition key interop.
+        internal const string PartialPartitionKeyHeader = "x-ms-documentdb-partialpartitionkey";
+
         private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
         private static readonly string BinarySerializationFormat = SupportedSerializationFormats.CosmosBinary.ToString();
         private static (bool, ResponseMessage) clientIsValid = (false, null);
@@ -306,12 +309,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 return ex.ToCosmosResponseMessage(request);
                             }
 
-                            if (requestOptions is QueryRequestOptions queryRequestOptions)
-                            {
-                                queryRequestOptions.PopulatePartialPartitionKeyHeader(
-                                    request,
-                                    collectionFromCache.PartitionKey);
-                            }
+                            RequestInvokerHandler.PopulatePartialPartitionKeyHeader(
+                                request,
+                                (requestOptions as QueryRequestOptions)?.PartitionKey,
+                                collectionFromCache.PartitionKey);
 
                             PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
                             IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
@@ -705,6 +706,28 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return clientOptions != null
                 && clientOptions.EnableContentResponseOnWrite.HasValue
                 && RequestInvokerHandler.IsItemNoRepsonseSet(clientOptions.EnableContentResponseOnWrite.Value, operationType);
+        }
+
+        internal static void PopulatePartialPartitionKeyHeader(
+            RequestMessage request,
+            Cosmos.PartitionKey? partitionKey,
+            PartitionKeyDefinition partitionKeyDefinition)
+        {
+            // Only queries are enabled today; future ReadFeed support can reuse the prefix logic below.
+            if (request.ResourceType != ResourceType.Document || request.OperationType != OperationType.Query)
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(request.Headers.PartitionKey)
+                && partitionKey.HasValue
+                && !partitionKey.Value.IsNone
+                && partitionKeyDefinition.Kind == PartitionKind.MultiHash
+                && partitionKey.Value.InternalKey.Components.Count > 0
+                && partitionKey.Value.InternalKey.Components.Count < partitionKeyDefinition.Paths.Count)
+            {
+                request.Headers[PartialPartitionKeyHeader] = partitionKey.Value.ToJsonString();
+            }
         }
 
         internal static async Task<FeedRange> ResolveFeedRangeBasedOnPrefixContainerAsync(

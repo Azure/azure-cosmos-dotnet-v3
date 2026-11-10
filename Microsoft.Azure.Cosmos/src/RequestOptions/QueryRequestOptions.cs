@@ -16,9 +16,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class QueryRequestOptions : RequestOptions
     {
-        // Move to HttpConstants when the Direct package includes partial partition key interop.
-        internal const string PartialPartitionKeyHeader = "x-ms-documentdb-partialpartitionkey";
-
         /// <summary>
         ///  Gets or sets the <see cref="ResponseContinuationTokenLimitInKb"/> request option for document query requests in the Azure Cosmos DB service.
         /// </summary>
@@ -365,23 +362,6 @@ namespace Microsoft.Azure.Cosmos
             request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
 
             base.PopulateRequestOptions(request);
-        }
-
-        internal void PopulatePartialPartitionKeyHeader(
-            RequestMessage request,
-            PartitionKeyDefinition partitionKeyDefinition)
-        {
-            if (request.OperationType == OperationType.Query
-                && request.ResourceType == ResourceType.Document
-                && string.IsNullOrEmpty(request.Headers.PartitionKey)
-                && this.PartitionKey.HasValue
-                && !this.PartitionKey.Value.IsNone
-                && partitionKeyDefinition.Kind == PartitionKind.MultiHash
-                && this.PartitionKey.Value.InternalKey.Components.Count > 0
-                && this.PartitionKey.Value.InternalKey.Components.Count < partitionKeyDefinition.Paths.Count)
-            {
-                request.Headers[PartialPartitionKeyHeader] = this.PartitionKey.Value.ToJsonString();
-            }
         }
 
         internal static void FillContinuationToken(

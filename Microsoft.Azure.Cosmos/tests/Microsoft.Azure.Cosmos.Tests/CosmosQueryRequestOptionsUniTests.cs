@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.ObjectModel;
     using System.Net.Http;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -38,16 +39,16 @@ namespace Microsoft.Azure.Cosmos
             request.Headers.StartEpk = "01";
             request.Headers.EndEpk = "02";
 
-            options.PopulatePartialPartitionKeyHeader(request, CreateDefinition());
+            RequestInvokerHandler.PopulatePartialPartitionKeyHeader(request, options.PartitionKey, CreateDefinition());
             options.PopulateRequestOptions(request);
 
-            Assert.AreEqual(json, request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
+            Assert.AreEqual(json, request.Headers[RequestInvokerHandler.PartialPartitionKeyHeader]);
             Assert.IsNull(request.Headers.PartitionKey);
             Assert.AreEqual("0", request.Headers.PartitionKeyRangeId);
             Assert.AreEqual("01", request.Headers.StartEpk);
             Assert.AreEqual("02", request.Headers.EndEpk);
             using RequestMessage clone = request.Clone(NoOpTrace.Singleton, cloneContent: null);
-            Assert.AreEqual(json, clone.ToDocumentServiceRequest().Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
+            Assert.AreEqual(json, clone.ToDocumentServiceRequest().Headers[RequestInvokerHandler.PartialPartitionKeyHeader]);
         }
 
         [DataTestMethod]
@@ -59,10 +60,10 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions options = CreateOptions(json);
             using RequestMessage request = CreateRequest();
             request.Headers.PartitionKey = json;
-            options.PopulatePartialPartitionKeyHeader(request, CreateDefinition((PartitionKind)kind, pathCount));
+            RequestInvokerHandler.PopulatePartialPartitionKeyHeader(request, options.PartitionKey, CreateDefinition((PartitionKind)kind, pathCount));
             options.PopulateRequestOptions(request);
             Assert.AreEqual(json, request.Headers.PartitionKey);
-            Assert.IsNull(request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
+            Assert.IsNull(request.Headers[RequestInvokerHandler.PartialPartitionKeyHeader]);
         }
 
         [DataTestMethod]
@@ -74,8 +75,8 @@ namespace Microsoft.Azure.Cosmos
         {
             QueryRequestOptions options = CreateOptions(json);
             using RequestMessage request = CreateRequest();
-            options.PopulatePartialPartitionKeyHeader(request, CreateDefinition((PartitionKind)kind, pathCount));
-            Assert.IsNull(request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
+            RequestInvokerHandler.PopulatePartialPartitionKeyHeader(request, options.PartitionKey, CreateDefinition((PartitionKind)kind, pathCount));
+            Assert.IsNull(request.Headers[RequestInvokerHandler.PartialPartitionKeyHeader]);
         }
 
         [DataTestMethod]
@@ -87,8 +88,8 @@ namespace Microsoft.Azure.Cosmos
         {
             QueryRequestOptions options = CreateOptions("[\"tenant\"]");
             using RequestMessage request = CreateRequest((OperationType)operation);
-            options.PopulatePartialPartitionKeyHeader(request, CreateDefinition());
-            Assert.IsNull(request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
+            RequestInvokerHandler.PopulatePartialPartitionKeyHeader(request, options.PartitionKey, CreateDefinition());
+            Assert.IsNull(request.Headers[RequestInvokerHandler.PartialPartitionKeyHeader]);
             Assert.IsNull(request.Headers.PartitionKey);
         }
 
@@ -98,8 +99,8 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions options = CreateOptions("[\"tenant\"]");
             using RequestMessage request = CreateRequest();
             request.ResourceType = ResourceType.Database;
-            options.PopulatePartialPartitionKeyHeader(request, CreateDefinition());
-            Assert.IsNull(request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
+            RequestInvokerHandler.PopulatePartialPartitionKeyHeader(request, options.PartitionKey, CreateDefinition());
+            Assert.IsNull(request.Headers[RequestInvokerHandler.PartialPartitionKeyHeader]);
         }
 
         [TestMethod]
@@ -112,9 +113,9 @@ namespace Microsoft.Azure.Cosmos
                     PartitionKey = partitionKey
                 };
                 using RequestMessage request = CreateRequest();
-                options.PopulatePartialPartitionKeyHeader(request, CreateDefinition());
+                RequestInvokerHandler.PopulatePartialPartitionKeyHeader(request, options.PartitionKey, CreateDefinition());
                 options.PopulateRequestOptions(request);
-                Assert.IsNull(request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
+                Assert.IsNull(request.Headers[RequestInvokerHandler.PartialPartitionKeyHeader]);
                 Assert.IsNull(request.Headers.PartitionKey);
             }
         }
@@ -125,9 +126,9 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions options = CreateOptions("[\"tenant\"]");
             using RequestMessage request = CreateRequest();
             request.Headers.PartitionKey = "[\"tenant\",\"user\",\"session\"]";
-            options.PopulatePartialPartitionKeyHeader(request, CreateDefinition());
+            RequestInvokerHandler.PopulatePartialPartitionKeyHeader(request, options.PartitionKey, CreateDefinition());
             Assert.AreEqual("[\"tenant\",\"user\",\"session\"]", request.Headers.PartitionKey);
-            Assert.IsNull(request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
+            Assert.IsNull(request.Headers[RequestInvokerHandler.PartialPartitionKeyHeader]);
         }
 
         private static QueryRequestOptions CreateOptions(string json)
