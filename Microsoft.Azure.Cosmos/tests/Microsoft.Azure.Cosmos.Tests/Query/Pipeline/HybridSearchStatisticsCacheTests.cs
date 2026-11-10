@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         {
             List<SettingsTestCase> testCases = new List<SettingsTestCase>
             {
-                new SettingsTestCase("Zero capacity", 1, 0),
                 new SettingsTestCase("Negative capacity", 1, -1),
             };
 
@@ -47,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
-        public void CreateReturnsNoOpUnlessMaxAgeIsPositive()
+        public void CreateReturnsNoOpUnlessMaxAgeAndMaxEntriesArePositive()
         {
             List<TimeSpan?> disabledAges = new List<TimeSpan?> { null, TimeSpan.Zero, TimeSpan.FromTicks(-1) };
 
@@ -65,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 Assert.IsFalse(trace.Data.ContainsKey("Hybrid Search Statistics Cache"));
             }
 
+            Assert.AreSame(HybridSearchStatisticsCache.GetNoOpImpl(), HybridSearchStatisticsCache.Create(TimeSpan.FromMinutes(1), 0));
             HybridSearchStatisticsCache enabled = HybridSearchStatisticsCache.Create(TimeSpan.FromMinutes(1), 3);
             Assert.AreNotSame(HybridSearchStatisticsCache.GetNoOpImpl(), enabled);
             using Cosmos.Tracing.Trace missTrace = Cosmos.Tracing.Trace.GetRootTrace("Enabled cache miss");

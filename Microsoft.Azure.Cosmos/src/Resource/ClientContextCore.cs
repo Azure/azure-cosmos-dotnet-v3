@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly RequestInvokerHandler requestHandler;
         private readonly CosmosClientOptions clientOptions;
-        private readonly HybridSearchStatisticsCache hybridSearchStatisticsCache;
+        private readonly HybridSearchStatisticsCacheFactory hybridSearchStatisticsCacheFactory;
 
         private readonly string userAgent;
         private bool isDisposed = false;
@@ -50,11 +50,11 @@ namespace Microsoft.Azure.Cosmos
             DocumentClient documentClient,
             string userAgent,
             BatchAsyncContainerExecutorCache batchExecutorCache,
-            HybridSearchStatisticsCache hybridSearchStatisticsCache)
+            HybridSearchStatisticsCacheFactory hybridSearchStatisticsCacheFactory)
         {
             this.client = client;
             this.clientOptions = clientOptions;
-            this.hybridSearchStatisticsCache = hybridSearchStatisticsCache;
+            this.hybridSearchStatisticsCacheFactory = hybridSearchStatisticsCacheFactory;
             this.serializerCore = serializerCore;
             this.responseFactory = cosmosResponseFactory;
             this.requestHandler = requestHandler;
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos
             clientOptions.SetSerializerIfNotConfigured(serializerCore.GetCustomOrDefaultSerializer());
 
             CosmosResponseFactoryInternal responseFactory = new CosmosResponseFactoryCore(serializerCore);
-            HybridSearchStatisticsCache hybridSearchStatisticsCache = HybridSearchStatisticsCache.Create(
+            HybridSearchStatisticsCacheFactory hybridSearchStatisticsCacheFactory = HybridSearchStatisticsCacheFactory.Create(
                 clientOptions.FullTextStatisticsCacheMaxAge,
                 clientOptions.FullTextStatisticsCacheMaxEntries);
 
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
                 batchExecutorCache: new BatchAsyncContainerExecutorCache(),
-                hybridSearchStatisticsCache: hybridSearchStatisticsCache);
+                hybridSearchStatisticsCacheFactory: hybridSearchStatisticsCacheFactory);
         }
 
         /// <summary>
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override string UserAgent => this.ThrowIfDisposed(this.userAgent);
 
-        internal override HybridSearchStatisticsCache HybridSearchStatisticsCache => this.ThrowIfDisposed(this.hybridSearchStatisticsCache);
+        internal override HybridSearchStatisticsCacheFactory HybridSearchStatisticsCacheFactory => this.ThrowIfDisposed(this.hybridSearchStatisticsCacheFactory);
 
         /// <summary>
         /// Generates the URI link for the resource

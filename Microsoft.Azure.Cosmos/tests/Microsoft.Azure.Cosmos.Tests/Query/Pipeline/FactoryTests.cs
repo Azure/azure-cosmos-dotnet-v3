@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 maxConcurrency: 10,
                 fullTextScoreScope: FullTextScoreScope.Global,
                 requestContinuationToken: default,
-                statisticsCache: HybridSearchStatisticsCache.GetNoOpImpl());
+                statisticsCacheFactory: HybridSearchStatisticsCacheFactory.Create(null, 0));
             Assert.IsTrue(monadicCreatePipeline.Succeeded);
         }
 
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 },
             };
             Mock<CosmosQueryClient> queryClient = new Mock<CosmosQueryClient>(MockBehavior.Strict);
-            queryClient.SetupGet(client => client.HybridSearchStatisticsCache).Returns(HybridSearchStatisticsCache.GetNoOpImpl());
+            queryClient.SetupGet(client => client.HybridSearchStatisticsCacheFactory).Returns(HybridSearchStatisticsCacheFactory.Create(null, 0));
             queryClient.Setup(client => client.GetClientDisableOptimisticDirectExecutionAsync()).ReturnsAsync(false);
             queryClient.Setup(client => client.GetCachedContainerQueryPropertiesAsync(
                 It.IsAny<string>(), It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 expected.Select(range => range.ToRange()).ToArray(),
                 requestedRanges.Select(range => range.Range).ToArray());
             Assert.AreEqual((double)expected.Count, pipeline.Current.Result.RequestCharge);
-            queryClient.VerifyGet(client => client.HybridSearchStatisticsCache, Times.Once);
+            queryClient.VerifyGet(client => client.HybridSearchStatisticsCacheFactory, Times.Once);
             queryClient.Verify(client => client.GetTargetPartitionKeyRangesAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<Range<string>>>(), false, It.IsAny<ITrace>()),
                 Times.Exactly(2));
@@ -247,7 +247,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static async Task VerifyCacheBindingAsync(CacheBindingTestCase testCase)
         {
-            HybridSearchStatisticsCache cache = HybridSearchStatisticsCache.Create(TimeSpan.FromMinutes(1), 4);
+            HybridSearchStatisticsCacheFactory cacheFactory = HybridSearchStatisticsCacheFactory.Create(TimeSpan.FromMinutes(1), 4);
+            HybridSearchStatisticsCache cache = cacheFactory.GetCache(FullTextScoreScope.Global, CreateHybridPlan());
             HybridSearchQueryInfo plan = CreateHybridPlan();
             plan.RequiresGlobalStatistics = testCase.RequiresStatistics;
 
@@ -275,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 maxConcurrency: 1,
                 fullTextScoreScope: testCase.Scope,
                 requestContinuationToken: null,
-                statisticsCache: testCase.CacheEnabled ? cache : HybridSearchStatisticsCache.GetNoOpImpl());
+                statisticsCacheFactory: testCase.CacheEnabled ? cacheFactory : HybridSearchStatisticsCacheFactory.Create(null, 0));
             created.ThrowIfFailed();
             await using IQueryPipelineStage pipeline = created.Result;
             HybridSearchCrossPartitionQueryPipelineStage stage = (HybridSearchCrossPartitionQueryPipelineStage)pipeline;

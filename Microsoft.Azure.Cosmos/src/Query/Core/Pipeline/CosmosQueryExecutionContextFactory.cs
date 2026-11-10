@@ -569,7 +569,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 maxConcurrency: inputParameters.MaxConcurrency,
                 fullTextScoreScope: inputParameters.FullTextScoreScope,
                 requestContinuationToken: inputParameters.InitialUserContinuationToken,
-                statisticsCache: cosmosQueryContext.QueryClient.HybridSearchStatisticsCache);
+                statisticsCacheFactory: cosmosQueryContext.QueryClient.HybridSearchStatisticsCacheFactory);
         }
 
         private static async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(

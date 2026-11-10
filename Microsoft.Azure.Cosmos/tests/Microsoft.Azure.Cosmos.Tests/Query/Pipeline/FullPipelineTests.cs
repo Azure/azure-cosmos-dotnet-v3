@@ -624,7 +624,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 maxConcurrency: 10,
                 fullTextScoreScope: FullTextScoreScope.Global,
                 requestContinuationToken: state,
-                statisticsCache: HybridSearchStatisticsCache.GetNoOpImpl());
+                statisticsCacheFactory: HybridSearchStatisticsCacheFactory.Create(null, 0));
 
             tryCreatePipeline.ThrowIfFailed();
 

@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             bool isContinuationExpected,
             int maxConcurrency,
             Cosmos.FullTextScoreScope fullTextScoreScope,
-            HybridSearchStatisticsCache statisticsCache)
+            HybridSearchStatisticsCacheFactory statisticsCacheFactory)
         {
             TryCatch<IQueryPipelineStage> ComponentPipelineFactory(QueryInfo rewrittenQueryInfo)
             {
@@ -184,15 +184,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     Math.Min(MaximumPageSize, maxItemCount) :
                     MaximumPageSize;
 
-            statisticsCache = fullTextScoreScope == Cosmos.FullTextScoreScope.Global && HybridSearchStatisticsCache.IsQuerySupported(queryInfo)
-                ? statisticsCache
-                : HybridSearchStatisticsCache.GetNoOpImpl();
-
             return TryCatch<IQueryPipelineStage>.FromResult(
                 new HybridSearchCrossPartitionQueryPipelineStage(
                     containerQueryProperties.ResourceId,
                     containerQueryProperties.ETag,
-                    statisticsCache,
+                    statisticsCacheFactory.GetCache(fullTextScoreScope, queryInfo),
                     queryInfo,
                     ComponentPipelineFactory,
                     pageSize,

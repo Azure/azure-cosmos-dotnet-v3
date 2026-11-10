@@ -41,8 +41,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 options.FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(2);
                 client.ClientOptions.FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(3);
 
-                Assert.AreSame(HybridSearchStatisticsCache.GetNoOpImpl(), context.HybridSearchStatisticsCache);
-                Assert.AreSame(HybridSearchStatisticsCache.GetNoOpImpl(), queryClient.HybridSearchStatisticsCache);
+                Assert.AreSame(HybridSearchStatisticsCache.GetNoOpImpl(), GetCache(context.HybridSearchStatisticsCacheFactory));
+                Assert.AreSame(HybridSearchStatisticsCache.GetNoOpImpl(), GetCache(queryClient.HybridSearchStatisticsCacheFactory));
                 Assert.AreSame(HybridSearchStatisticsCache.GetNoOpImpl(), GetInjectedCache(context));
             }
         }
@@ -62,16 +62,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             
             Assert.AreNotSame(first, second);
             
-            HybridSearchStatisticsCache cache = firstQueryClient.HybridSearchStatisticsCache;
+            HybridSearchStatisticsCache cache = GetCache(firstQueryClient.HybridSearchStatisticsCacheFactory);
             
             Assert.AreNotSame(HybridSearchStatisticsCache.GetNoOpImpl(), cache);
             Assert.AreSame(cache, GetInjectedCache(client.ClientContext));
-            Assert.AreSame(cache, secondQueryClient.HybridSearchStatisticsCache);
-            Assert.AreSame(cache, otherQueryClient.HybridSearchStatisticsCache);
-            Assert.AreSame(cache, client.ClientContext.HybridSearchStatisticsCache);
+            Assert.AreSame(cache, GetCache(secondQueryClient.HybridSearchStatisticsCacheFactory));
+            Assert.AreSame(cache, GetCache(otherQueryClient.HybridSearchStatisticsCacheFactory));
+            Assert.AreSame(cache, GetCache(client.ClientContext.HybridSearchStatisticsCacheFactory));
             
             Assert.IsTrue(cache.TryAdd("rid", "etag", CreatePlan("run"), CreateStatistics(10), cache.GetElapsedTime()));
-            Assert.IsTrue(secondQueryClient.HybridSearchStatisticsCache.TryGet(
+            Assert.IsTrue(GetCache(secondQueryClient.HybridSearchStatisticsCacheFactory).TryGet(
                 "rid", "etag", CreatePlan("run"), NoOpTrace.Singleton, out GlobalFullTextSearchStatistics result));
             Assert.AreEqual(10L, result.DocumentCount);
         }
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             client.ClientOptions.FullTextStatisticsCacheMaxAge = null;
             client.ClientOptions.FullTextStatisticsCacheMaxEntries = 16;
 
-            HybridSearchStatisticsCache cache = client.ClientContext.HybridSearchStatisticsCache;
+            HybridSearchStatisticsCache cache = GetCache(client.ClientContext.HybridSearchStatisticsCacheFactory);
             Assert.AreSame(originalCache, cache);
             Assert.AreEqual(originalAge, GetPrivateField<TimeSpan>(cache, "maxAge"));
 
@@ -121,8 +121,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 FullTextStatisticsCacheMaxEntries = 4,
             });
 
-            HybridSearchStatisticsCache firstCache = first.ClientContext.HybridSearchStatisticsCache;
-            HybridSearchStatisticsCache secondCache = second.ClientContext.HybridSearchStatisticsCache;
+            HybridSearchStatisticsCache firstCache = GetCache(first.ClientContext.HybridSearchStatisticsCacheFactory);
+            HybridSearchStatisticsCache secondCache = GetCache(second.ClientContext.HybridSearchStatisticsCacheFactory);
             
             Assert.AreNotSame(firstCache, secondCache);
             Assert.AreEqual(TimeSpan.FromMinutes(2), GetPrivateField<TimeSpan>(firstCache, "maxAge"));
@@ -166,7 +166,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static HybridSearchStatisticsCache GetInjectedCache(CosmosClientContext context)
         {
-            return GetPrivateField<HybridSearchStatisticsCache>(context, "hybridSearchStatisticsCache");
+            return GetCache(GetPrivateField<HybridSearchStatisticsCacheFactory>(context, "hybridSearchStatisticsCacheFactory"));
+        }
+
+        private static HybridSearchStatisticsCache GetCache(HybridSearchStatisticsCacheFactory cacheFactory)
+        {
+            return cacheFactory.GetCache(FullTextScoreScope.Global, CreatePlan("run"));
         }
 
         private static T GetPrivateField<T>(object instance, string name)

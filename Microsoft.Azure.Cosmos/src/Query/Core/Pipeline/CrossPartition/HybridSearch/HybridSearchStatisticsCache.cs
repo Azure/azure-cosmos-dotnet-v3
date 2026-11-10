@@ -12,8 +12,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
     using Microsoft.Azure.Cosmos.Tracing;
     using CacheKey = Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch.HybridSearchStatisticsCacheKey;
 
-    // Caches independently aged full-text statistics for Global scoring. Use Create to obtain an instance;
-    // disabled clients and queries that cannot use the cache get NoOpImpl instead of null.
     internal abstract class HybridSearchStatisticsCache
     {
         private const string TraceDatumKey = "Hybrid Search Statistics Cache";
@@ -32,8 +30,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         // A null getElapsedTime uses a monotonic stopwatch.
         public static HybridSearchStatisticsCache Create(TimeSpan? maxAge, int maxEntries, Func<TimeSpan> getElapsedTime)
         {
-            return maxAge is TimeSpan age && age > TimeSpan.Zero
-                ? new Impl(age, maxEntries, getElapsedTime)
+            if (maxEntries < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxEntries));
+            }
+
+            return maxAge.HasValue && maxAge.Value > TimeSpan.Zero && maxEntries > 0
+                ? new Impl(maxAge.Value, maxEntries, getElapsedTime)
                 : NoOpImpl.Instance;
         }
 
@@ -44,7 +47,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         public abstract TimeSpan GetElapsedTime();
 
-        // Records a Hit or Miss trace datum when caching is enabled.
         public abstract bool TryGet(
             string containerResourceId,
             string containerETag,
@@ -80,11 +82,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             public Impl(TimeSpan maxAge, int maxEntries, Func<TimeSpan> getElapsedTime)
             {
-                if (maxEntries <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(maxEntries));
-                }
-
                 if (getElapsedTime == null)
                 {
                     Stopwatch stopwatch = Stopwatch.StartNew();

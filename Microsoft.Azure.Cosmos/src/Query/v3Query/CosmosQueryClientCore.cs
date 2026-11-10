@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Action<IQueryable> OnExecuteScalarQueryCallback => this.documentClient.OnExecuteScalarQueryCallback;
 
-        public override HybridSearchStatisticsCache HybridSearchStatisticsCache => this.clientContext.HybridSearchStatisticsCache;
+        public override HybridSearchStatisticsCacheFactory HybridSearchStatisticsCacheFactory => this.clientContext.HybridSearchStatisticsCacheFactory;
 
         public override async Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(
             string containerLink,

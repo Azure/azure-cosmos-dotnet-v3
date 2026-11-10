@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             int maxConcurrency,
             FullTextScoreScope fullTextScoreScope,
             CosmosElement requestContinuationToken,
-            HybridSearchStatisticsCache statisticsCache)
+            HybridSearchStatisticsCacheFactory statisticsCacheFactory)
         {
             if (documentContainer == null)
             {
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     isContinuationExpected: isContinuationExpected,
                     maxConcurrency: maxConcurrency,
                     fullTextScoreScope: fullTextScoreScope,
-                    statisticsCache: statisticsCache);
+                    statisticsCacheFactory: statisticsCacheFactory);
 
                 if (hybridSearchQueryInfo.Skip != null)
                 {

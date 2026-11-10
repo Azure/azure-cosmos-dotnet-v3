@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract string UserAgent { get; }
 
-        internal abstract HybridSearchStatisticsCache HybridSearchStatisticsCache { get; }
+        internal abstract HybridSearchStatisticsCacheFactory HybridSearchStatisticsCacheFactory { get; }
 
         internal abstract BatchAsyncContainerExecutor GetExecutorForContainer(
             ContainerInternal container);

@@ -303,25 +303,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public async Task HybridSearchStatisticsCacheFailuresAreNotCachedOrRecovered()
         {
             TimeSpan maxAge = TimeSpan.FromMinutes(1);
-            HybridSearchStatisticsCache cache = HybridSearchStatisticsCache.Create(maxAge, 256);
+            HybridSearchStatisticsCacheFactory cacheFactory = HybridSearchStatisticsCacheFactory.Create(maxAge, 256);
             StatisticsCacheScenario scenario = new StatisticsCacheScenario { Name = "Failures" };
 
             // A failed statistics collection fails the query and caches nothing.
             CachedHybridSearchRun failedStatistics = await RunCachedHybridSearchAsync(
-                scenario, CreateInterceptingContainer(scenario, spec => Task.FromResult(IsGlobalStatisticsQuery(spec))), cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag", CancellationToken.None);
+                scenario, CreateInterceptingContainer(scenario, spec => Task.FromResult(IsGlobalStatisticsQuery(spec))), cacheFactory, StatisticsCacheRanges, FullTextScoreScope.Global, "etag", CancellationToken.None);
             Assert.IsNotNull(failedStatistics.Failure, "A statistics failure must fail the query.");
             Assert.AreEqual("Miss", failedStatistics.TraceDatum);
 
-            CachedHybridSearchRun cold = await RunCachedHybridSearchAsync(scenario, cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
+            CachedHybridSearchRun cold = await RunCachedHybridSearchAsync(scenario, cacheFactory, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
             Assert.AreEqual(StatisticsCacheRanges.Count, cold.StatisticsRequestCount, "A failed collection must not populate the cache.");
 
             // A component failure after a hit propagates and does not evict or bypass the cached statistics.
             CachedHybridSearchRun failedComponents = await RunCachedHybridSearchAsync(
-                scenario, CreateInterceptingContainer(scenario, spec => Task.FromResult(!IsGlobalStatisticsQuery(spec))), cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag", CancellationToken.None);
+                scenario, CreateInterceptingContainer(scenario, spec => Task.FromResult(!IsGlobalStatisticsQuery(spec))), cacheFactory, StatisticsCacheRanges, FullTextScoreScope.Global, "etag", CancellationToken.None);
             Assert.IsNotNull(failedComponents.Failure, "A component failure must propagate on a hit.");
             Assert.AreEqual("Hit", failedComponents.TraceDatum);
 
-            CachedHybridSearchRun warm = await RunCachedHybridSearchAsync(scenario, cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
+            CachedHybridSearchRun warm = await RunCachedHybridSearchAsync(scenario, cacheFactory, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
             Assert.AreEqual(0, warm.StatisticsRequestCount);
             CollectionAssert.AreEqual(cold.Documents.ToList(), warm.Documents.ToList());
         }
@@ -329,22 +329,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public async Task HybridSearchStatisticsCacheCancelledCollectionIsNotCached()
         {
-            HybridSearchStatisticsCache cache = HybridSearchStatisticsCache.Create(TimeSpan.FromMinutes(1), 256);
+            HybridSearchStatisticsCacheFactory cacheFactory = HybridSearchStatisticsCacheFactory.Create(TimeSpan.FromMinutes(1), 256);
             StatisticsCacheScenario scenario = new StatisticsCacheScenario { Name = "Cancellation" };
             using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.Cancel();
 
             CachedHybridSearchRun cancelled = await RunCachedHybridSearchAsync(
-                scenario, CreateStatisticsCacheContainer(scenario), cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag", cancellationTokenSource.Token);
+                scenario, CreateStatisticsCacheContainer(scenario), cacheFactory, StatisticsCacheRanges, FullTextScoreScope.Global, "etag", cancellationTokenSource.Token);
             Assert.IsInstanceOfType(cancelled.Failure, typeof(OperationCanceledException), "A cancelled query must not complete.");
-            CachedHybridSearchRun next = await RunCachedHybridSearchAsync(scenario, cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
+            CachedHybridSearchRun next = await RunCachedHybridSearchAsync(scenario, cacheFactory, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
             Assert.AreEqual(StatisticsCacheRanges.Count, next.StatisticsRequestCount, "A cancelled collection must not populate the cache.");
         }
 
         [TestMethod]
         public async Task HybridSearchStatisticsCacheConcurrentColdMissesRunIndependently()
         {
-            HybridSearchStatisticsCache cache = HybridSearchStatisticsCache.Create(TimeSpan.FromMinutes(1), 256);
+            HybridSearchStatisticsCacheFactory cacheFactory = HybridSearchStatisticsCacheFactory.Create(TimeSpan.FromMinutes(1), 256);
             StatisticsCacheScenario scenario = new StatisticsCacheScenario { Name = "Concurrent misses" };
             TaskCompletionSource<bool> release = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource<bool> firstArrived = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -367,8 +367,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             StatisticsCacheTestContainer firstContainer = CreateInterceptingContainer(scenario, HoldStatistics(firstArrived, release.Task));
             StatisticsCacheTestContainer secondContainer = CreateInterceptingContainer(scenario, HoldStatistics(secondArrived, release.Task));
-            Task<CachedHybridSearchRun> first = RunCachedHybridSearchAsync(scenario, firstContainer, cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag", CancellationToken.None);
-            Task<CachedHybridSearchRun> second = RunCachedHybridSearchAsync(scenario, secondContainer, cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag", CancellationToken.None);
+            Task<CachedHybridSearchRun> first = RunCachedHybridSearchAsync(scenario, firstContainer, cacheFactory, StatisticsCacheRanges, FullTextScoreScope.Global, "etag", CancellationToken.None);
+            Task<CachedHybridSearchRun> second = RunCachedHybridSearchAsync(scenario, secondContainer, cacheFactory, StatisticsCacheRanges, FullTextScoreScope.Global, "etag", CancellationToken.None);
             await Task.WhenAll(firstArrived.Task, secondArrived.Task).WaitAsync(TimeSpan.FromSeconds(30));
             release.SetResult(true);
             CachedHybridSearchRun[] runs = await Task.WhenAll(first, second).WaitAsync(TimeSpan.FromSeconds(30));
@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
 
             CollectionAssert.AreEqual(runs[0].Documents.ToList(), runs[1].Documents.ToList());
-            CachedHybridSearchRun warm = await RunCachedHybridSearchAsync(scenario, cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
+            CachedHybridSearchRun warm = await RunCachedHybridSearchAsync(scenario, cacheFactory, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
             Assert.AreEqual(0, warm.StatisticsRequestCount);
         }
 
@@ -395,10 +395,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         {
             TimeSpan maxAge = TimeSpan.FromMinutes(1);
             TimeSpan now = TimeSpan.Zero;
-            HybridSearchStatisticsCache cache = scenario.CacheEnabled ? HybridSearchStatisticsCache.Create(maxAge, 256, () => now) : HybridSearchStatisticsCache.GetNoOpImpl();
+            HybridSearchStatisticsCacheFactory cacheFactory = HybridSearchStatisticsCacheFactory.Create(scenario.CacheEnabled ? maxAge : null, 256, () => now);
 
             // Every scenario first runs a Global query over all ranges to warm the cache.
-            CachedHybridSearchRun warmUp = await RunCachedHybridSearchAsync(scenario, cache, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
+            CachedHybridSearchRun warmUp = await RunCachedHybridSearchAsync(scenario, cacheFactory, StatisticsCacheRanges, FullTextScoreScope.Global, "etag");
             Assert.AreEqual(StatisticsCacheRanges.Count, warmUp.StatisticsRequestCount, scenario.ToString());
 
             if (scenario.AdvanceToExpiry)
@@ -407,8 +407,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
 
             IReadOnlyList<FeedRangeEpk> targetRanges = StatisticsCacheRanges.Take(scenario.MeasuredTargetRangeCount ?? StatisticsCacheRanges.Count).ToList();
-            CachedHybridSearchRun uncached = await RunCachedHybridSearchAsync(scenario, HybridSearchStatisticsCache.GetNoOpImpl(), targetRanges, scenario.MeasuredScope, scenario.MeasuredETag);
-            CachedHybridSearchRun measured = await RunCachedHybridSearchAsync(scenario, cache, targetRanges, scenario.MeasuredScope, scenario.MeasuredETag);
+            CachedHybridSearchRun uncached = await RunCachedHybridSearchAsync(scenario, HybridSearchStatisticsCacheFactory.Create(null, 0), targetRanges, scenario.MeasuredScope, scenario.MeasuredETag);
+            CachedHybridSearchRun measured = await RunCachedHybridSearchAsync(scenario, cacheFactory, targetRanges, scenario.MeasuredScope, scenario.MeasuredETag);
 
             bool expectHit = scenario.ExpectedTraceDatum == "Hit";
             int statisticsRangeCount = scenario.MeasuredScope == FullTextScoreScope.Global ? StatisticsCacheRanges.Count : targetRanges.Count;
@@ -424,7 +424,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static Task<CachedHybridSearchRun> RunCachedHybridSearchAsync(
             StatisticsCacheScenario scenario,
-            HybridSearchStatisticsCache cache,
+            HybridSearchStatisticsCacheFactory cacheFactory,
             IReadOnlyList<FeedRangeEpk> targetRanges,
             FullTextScoreScope fullTextScoreScope,
             string etag)
@@ -432,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             return RunCachedHybridSearchAsync(
                 scenario,
                 CreateStatisticsCacheContainer(scenario),
-                cache,
+                cacheFactory,
                 targetRanges,
                 fullTextScoreScope,
                 etag,
@@ -442,7 +442,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         private static async Task<CachedHybridSearchRun> RunCachedHybridSearchAsync(
             StatisticsCacheScenario scenario,
             StatisticsCacheTestContainer container,
-            HybridSearchStatisticsCache cache,
+            HybridSearchStatisticsCacheFactory cacheFactory,
             IReadOnlyList<FeedRangeEpk> targetRanges,
             FullTextScoreScope fullTextScoreScope,
             string etag,
@@ -462,7 +462,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 maxConcurrency: MaxConcurrency,
                 fullTextScoreScope: fullTextScoreScope,
                 requestContinuationToken: null,
-                statisticsCache: cache);
+                statisticsCacheFactory: cacheFactory);
             Assert.IsTrue(tryCreatePipeline.Succeeded, scenario.ToString());
 
             List<CosmosElement> documents = new List<CosmosElement>();
@@ -1498,7 +1498,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 maxConcurrency: MaxConcurrency,
                 fullTextScoreScope: fullTextScoreScope,
                 requestContinuationToken: null,
-                statisticsCache: HybridSearchStatisticsCache.GetNoOpImpl());
+                statisticsCacheFactory: HybridSearchStatisticsCacheFactory.Create(null, 0));
 
             Assert.IsTrue(tryCreatePipeline.Succeeded);
             return RunPipelineStage(tryCreatePipeline.Result, pageSize);

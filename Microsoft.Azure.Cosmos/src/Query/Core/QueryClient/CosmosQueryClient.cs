@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     {
         public abstract Action<IQueryable> OnExecuteScalarQueryCallback { get; }
 
-        public abstract HybridSearchStatisticsCache HybridSearchStatisticsCache { get; }
+        public abstract HybridSearchStatisticsCacheFactory HybridSearchStatisticsCacheFactory { get; }
 
         public abstract Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(
             string containerLink,
