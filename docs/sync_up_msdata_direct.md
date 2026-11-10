@@ -11,38 +11,6 @@
 
 ## Background
 
-### Local Direct partial-partition-key interop
-
-The staged source in `Microsoft.Azure.Cosmos/Direct` preserves
-`x-ms-documentdb-partialpartitionkey` in the known-header collection, forwards it
-over Direct HTTPS, and serializes it as the optional RNTBD String token `0x0108`
-(264). An absent or empty header does not emit a token. This is transport support
-only: the SDK still references the published Direct package, and request
-producers are not enabled by this port.
-
-The upstream change is CosmosDB PR 2221053 (merge commit
-`c9fa48995c44e36235777fd0da45ecb5aeadfc73`). The local source import does not
-include the upstream `RequestNameValueCollection.tt` or `RntbdConstants.tt`
-templates. When syncing generated sources, preserve the header's collection
-operations and the token's identifier, String type, and indexed token-table
-slot together. IDs `0x0102` through `0x0107` remain unassigned in this local
-schema; do not renumber other tokens to close the gap.
-
-Run the isolated tests against the local Direct project, without switching the
-SDK dependency:
-
-```powershell
-dotnet test Microsoft.Azure.Cosmos\Direct\tests\Microsoft.Azure.Cosmos.Direct.Tests.csproj -c Release
-```
-
-Producer enablement must wait for the SDK dependency switch and compatible
-managed Direct, native backend, and Proxy deployments. Unknown-token skipping
-does not make the feature safe for older deployments: older Proxy builds used
-264 for the Byte-valued `NoRetryOn449StatusCode`, and older backends can ignore
-the prefix semantics. Do not roll back to those builds while producers are
-sending partial-key tokens. These unit tests do not constitute Direct
-live-service validation.
-
 As a developer on the Cosmos SDK team, we often engage in a task, that requires code changes in both cosmos dotnet sdk v3 repository, as well as in the `msdata` cosmosdb direct codebase (aka `Microsoft.Azure.Cosmos.Direct` namespace). Therefore, sometimes it's utterly challenging to visualize the code changes as a whole, and analyze the impacts. To overcome this, we have created a branch called `msdata/direct` within our cosmos dotnet sdk v3 codebase, that basically mimics the code present in `msdata` repository mentioned above. This simplifies the code changes required to be done in both, provides much better understanding on the overall impacts of the code changes and gives transparency to users in terms of what is the source code for the `Microsoft.Azure.Cosmos.Direct` package.
 
 ## Prerequisites

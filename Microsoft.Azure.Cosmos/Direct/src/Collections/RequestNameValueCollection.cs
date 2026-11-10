@@ -3856,13 +3856,13 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.PreTriggerExclude;
                     }
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PartitionKeyRangeId, key))
-                    {
-                        return this.PartitionKeyRangeId;
-                    }
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.PartialPartitionKey, key))
                     {
                         return this.PartialPartitionKey;
+                    }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PartitionKeyRangeId, key))
+                    {
+                        return this.PartitionKeyRangeId;
                     }
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.FilterBySchemaResourceId, key))
                     {
@@ -3898,14 +3898,14 @@ namespace Microsoft.Azure.Documents.Collections
                         return this.PreTriggerExclude;
                     }
 
-                    if (string.Equals(HttpConstants.HttpHeaders.PartitionKeyRangeId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return this.PartitionKeyRangeId;
-                    }
-
                     if (string.Equals(HttpConstants.HttpHeaders.PartialPartitionKey, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.PartialPartitionKey;
+                    }
+
+                    if (string.Equals(HttpConstants.HttpHeaders.PartitionKeyRangeId, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.PartitionKeyRangeId;
                     }
 
                     if (string.Equals(HttpConstants.HttpHeaders.FilterBySchemaResourceId, key, StringComparison.OrdinalIgnoreCase))
@@ -7106,16 +7106,6 @@ namespace Microsoft.Azure.Documents.Collections
                         this.PreTriggerExclude = value;
                         return;
                     }
-                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PartitionKeyRangeId, key))
-                    {
-                        if (throwIfAlreadyExists && this.PartitionKeyRangeId != null)
-                        {
-                            throw new ArgumentException($"The {key} already exists in the collection");
-                        }
-
-                        this.PartitionKeyRangeId = value;
-                        return;
-                    }
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.PartialPartitionKey, key))
                     {
                         if (throwIfAlreadyExists && this.PartialPartitionKey != null)
@@ -7124,6 +7114,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.PartialPartitionKey = value;
+                        return;
+                    }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PartitionKeyRangeId, key))
+                    {
+                        if (throwIfAlreadyExists && this.PartitionKeyRangeId != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.PartitionKeyRangeId = value;
                         return;
                     }
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.FilterBySchemaResourceId, key))
@@ -7206,16 +7206,6 @@ namespace Microsoft.Azure.Documents.Collections
                         this.PreTriggerExclude = value;
                         return;
                     }
-                    if (string.Equals(HttpConstants.HttpHeaders.PartitionKeyRangeId, key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (throwIfAlreadyExists && this.PartitionKeyRangeId != null)
-                        {
-                            throw new ArgumentException($"The {key} already exists in the collection");
-                        }
-
-                        this.PartitionKeyRangeId = value;
-                        return;
-                    }
                     if (string.Equals(HttpConstants.HttpHeaders.PartialPartitionKey, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.PartialPartitionKey != null)
@@ -7224,6 +7214,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.PartialPartitionKey = value;
+                        return;
+                    }
+                    if (string.Equals(HttpConstants.HttpHeaders.PartitionKeyRangeId, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.PartitionKeyRangeId != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.PartitionKeyRangeId = value;
                         return;
                     }
                     if (string.Equals(HttpConstants.HttpHeaders.FilterBySchemaResourceId, key, StringComparison.OrdinalIgnoreCase))
