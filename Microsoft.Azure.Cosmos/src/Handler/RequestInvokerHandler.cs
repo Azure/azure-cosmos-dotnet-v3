@@ -713,13 +713,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Cosmos.PartitionKey? partitionKey,
             PartitionKeyDefinition partitionKeyDefinition)
         {
-            // Only queries are enabled today; future ReadFeed support can reuse the prefix logic below.
-            if (request.ResourceType != ResourceType.Document || request.OperationType != OperationType.Query)
-            {
-                return;
-            }
-
-            if (string.IsNullOrEmpty(request.Headers.PartitionKey)
+            if (request.ResourceType == ResourceType.Document
+                && request.OperationType == OperationType.Query
+                && string.IsNullOrEmpty(request.Headers.PartitionKey)
                 && partitionKey.HasValue
                 && !partitionKey.Value.IsNone
                 && partitionKeyDefinition.Kind == PartitionKind.MultiHash
