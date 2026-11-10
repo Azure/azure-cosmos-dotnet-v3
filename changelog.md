@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [6210](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6210) Partition routing: Resumes partition-key range cache initialization from the last successfully read change-feed page after throttling retries are exhausted, avoiding redundant rereads from the beginning.
+
 #### Other Changes
 
 ### <a name="3.65.0-preview.0"/> [3.65.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.65.0-preview.0) - 2026-11-06
