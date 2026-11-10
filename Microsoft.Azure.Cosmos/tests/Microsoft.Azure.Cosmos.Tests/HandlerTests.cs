@@ -19,8 +19,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
 
     [TestClass]
@@ -174,6 +176,97 @@ namespace Microsoft.Azure.Cosmos.Tests
             requestMessage.RequestOptions = options;
 
             await invoker.SendAsync(requestMessage, new CancellationToken());
+        }
+
+        [DataTestMethod]
+        [DataRow(ConnectionMode.Gateway, true, "[\"tenant\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Gateway, false, "[\"tenant\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Direct, true, "[\"tenant\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Direct, false, "[\"tenant\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Gateway, true, "[\"tenant\",\"user\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Gateway, false, "[\"tenant\",\"user\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Direct, true, "[\"tenant\",\"user\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Direct, false, "[\"tenant\",\"user\"]", (int)OperationType.Query)]
+        [DataRow(ConnectionMode.Gateway, true, "[\"tenant\"]", (int)OperationType.ReadFeed)]
+        [DataRow(ConnectionMode.Gateway, false, "[\"tenant\"]", (int)OperationType.ReadFeed)]
+        [DataRow(ConnectionMode.Direct, true, "[\"tenant\"]", (int)OperationType.ReadFeed)]
+        [DataRow(ConnectionMode.Direct, false, "[\"tenant\"]", (int)OperationType.ReadFeed)]
+        [DataRow(ConnectionMode.Gateway, true, "[\"tenant\"]", (int)OperationType.QueryPlan)]
+        [DataRow(ConnectionMode.Gateway, false, "[\"tenant\"]", (int)OperationType.QueryPlan)]
+        [DataRow(ConnectionMode.Direct, true, "[\"tenant\"]", (int)OperationType.QueryPlan)]
+        [DataRow(ConnectionMode.Direct, false, "[\"tenant\"]", (int)OperationType.QueryPlan)]
+        public async Task PrefixHeaderPreservesPhysicalPartitionRouting(ConnectionMode connectionMode, bool exactRange, string prefixJson, int operation)
+        {
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(builder =>
+            {
+                if (connectionMode == ConnectionMode.Gateway)
+                {
+                    builder.WithConnectionModeGateway();
+                }
+                else
+                {
+                    builder.WithConnectionModeDirect();
+                }
+            });
+            IReadOnlyList<PartitionKeyRange> overlappingRanges = new[]
+            {
+                new PartitionKeyRange
+                {
+                    Id = "1",
+                    MinInclusive = exactRange ? "10" : "00",
+                    MaxExclusive = exactRange ? "20" : "FF"
+                }
+            };
+            Mock.Get(await client.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton))
+                .Setup(cache => cache.TryGetOverlappingRangesAsync(
+                    It.IsAny<string>(), It.IsAny<Documents.Routing.Range<string>>(), It.IsAny<ITrace>(), It.IsAny<bool>()))
+                .ReturnsAsync(overlappingRanges);
+            Mock<ContainerInternal> container = MockCosmosUtil.CreateMockContainer("testDb", "testColl");
+            ContainerProperties properties = ContainerProperties.CreateWithResourceId("testCollRid");
+            properties.Id = "testColl";
+            properties.PartitionKeyPaths = new[] { "/tenant", "/user", "/session" };
+            container.Setup(c => c.GetCachedContainerPropertiesAsync(
+                It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(properties);
+            Mock<Cosmos.Database> database = new Mock<Cosmos.Database>();
+            database.Setup(d => d.Id).Returns("testDb");
+            container.Setup(c => c.Database).Returns(database.Object);
+
+            bool sent = false;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, null, null, null, null)
+            {
+                InnerHandler = new TestHandler((request, token) =>
+                {
+                    sent = true;
+                    Assert.AreEqual("1", request.PartitionKeyRangeId.PartitionKeyRangeId);
+                    Assert.IsNull(request.Headers.PartitionKey);
+                    string expectedHeader = (OperationType)operation == OperationType.Query ? prefixJson : null;
+                    Assert.AreEqual(expectedHeader, request.Headers[RequestInvokerHandler.PartialPartitionKeyHeader]);
+                    Assert.AreEqual(expectedHeader, request.ToDocumentServiceRequest().Headers[RequestInvokerHandler.PartialPartitionKeyHeader]);
+                    Assert.AreEqual(exactRange ? null : "10", request.Headers.StartEpk);
+                    Assert.AreEqual(exactRange ? null : "20", request.Headers.EndEpk);
+                    return TestHandler.ReturnSuccess();
+                })
+            };
+
+            Assert.IsTrue(Cosmos.PartitionKey.TryParseJsonString(prefixJson, out Cosmos.PartitionKey partitionKey));
+            using ResponseMessage response = await invoker.SendAsync(
+                "dbs/testDb/colls/testColl",
+                ResourceType.Document,
+                (OperationType)operation,
+                new QueryRequestOptions
+                {
+                    PartitionKey = partitionKey
+                },
+                container.Object,
+                new FeedRangeEpk(new Documents.Routing.Range<string>("10", "20", true, false)),
+                streamPayload: null,
+                requestEnricher: null,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+            Assert.IsTrue(response.IsSuccessStatusCode);
+            Assert.IsTrue(sent);
+            container.Verify(c => c.GetCachedContainerPropertiesAsync(
+                false, It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
