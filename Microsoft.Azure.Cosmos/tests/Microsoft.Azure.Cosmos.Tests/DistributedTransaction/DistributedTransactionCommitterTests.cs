@@ -16,10 +16,12 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -41,12 +43,20 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         private const string TestCollectionResourceId = "ccZ1ANCszwk=";
 
         [DataTestMethod]
-        [DataRow(false, ConnectionMode.Gateway)]
-        [DataRow(true, ConnectionMode.Gateway)]
-        [DataRow(false, ConnectionMode.Direct)]
-        [DataRow(true, ConnectionMode.Direct)]
+        [DataRow(false, ConnectionMode.Gateway, 200)]
+        [DataRow(true, ConnectionMode.Gateway, 200)]
+        [DataRow(false, ConnectionMode.Direct, 200)]
+        [DataRow(true, ConnectionMode.Direct, 200)]
+        [DataRow(false, ConnectionMode.Gateway, 429)]
+        [DataRow(true, ConnectionMode.Gateway, 429)]
+        [DataRow(false, ConnectionMode.Direct, 429)]
+        [DataRow(true, ConnectionMode.Direct, 429)]
+        [DataRow(false, ConnectionMode.Gateway, 404)]
+        [DataRow(true, ConnectionMode.Gateway, 404)]
+        [DataRow(false, ConnectionMode.Direct, 404)]
+        [DataRow(true, ConnectionMode.Direct, 404)]
         public async Task ExecuteTransactionAsync_RecreatedContainer_RealPipelineRefreshesMetadataAndSessions(
-            bool readOnly, ConnectionMode connectionMode)
+            bool readOnly, ConnectionMode connectionMode, int metadataStatusCode)
         {
             const string unchangedContainerName = "unchanged";
             const string sessionToken = "0:1#9#4=8#5=7";
@@ -127,7 +137,30 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             Assert.AreEqual(sessionToken, sessions.GetSessionToken(containerPath));
             Assert.AreEqual(sessionToken, sessions.GetSessionToken(unchangedPath));
             currentRid = replacementRid;
-            MockSetupsHelper.SetupContainerProperties(http, regionEndpoint, DatabaseName, ContainerName, replacementRid);
+            Uri recreatedMetadataUri = new Uri($"{regionEndpoint}/dbs/{DatabaseName}/colls/{ContainerName}");
+            ContainerProperties replacementProperties = ContainerProperties.CreateWithResourceId(replacementRid);
+            replacementProperties.Id = ContainerName;
+            replacementProperties.PartitionKeyPath = "/pk";
+            int metadataRequests = 0;
+            http.Setup(h => h.SendAsync(
+                    It.Is<HttpRequestMessage>(request => request.RequestUri == recreatedMetadataUri),
+                    It.IsAny<CancellationToken>()))
+                .Returns(() =>
+                {
+                    metadataRequests++;
+                    if (metadataRequests == 1 && metadataStatusCode != 200)
+                    {
+                        HttpResponseMessage failure = CreateHttpResponse((HttpStatusCode)metadataStatusCode,
+                            SubStatusCodes.Unknown);
+                        failure.Headers.Add(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, "1");
+                        return Task.FromResult(failure);
+                    }
+
+                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(replacementProperties))
+                    });
+                });
             using (DistributedTransactionResponse stale = await ExecuteAsync())
             {
                 Assert.AreEqual(HttpStatusCode.Gone, stale.StatusCode);
@@ -137,9 +170,32 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 Assert.AreEqual(2, payloads.Count, "A changed-RID transaction must not be resubmitted.");
                 Assert.AreEqual(tokens[1], stale.IdempotencyToken);
                 Assert.IsNotNull(stale.Diagnostics);
+                CosmosTraceDiagnostics diagnostics = (CosmosTraceDiagnostics)stale.Diagnostics;
+                diagnostics.ToString();
+                ITrace refreshTrace = diagnostics.Value.Children.Single(
+                    child => child.Name == "Refresh Distributed Transaction Metadata");
+                ITrace[] metadataReads = refreshTrace.Children.Where(child => child.Name == "Read Collection").ToArray();
+                int recreatedMetadataAttempts = metadataStatusCode == 429 ? 2 : 1;
+                Assert.AreEqual(recreatedMetadataAttempts + (metadataStatusCode == 404 ? 0 : 1), metadataReads.Length);
+                foreach (ITrace metadataRead in metadataReads)
+                {
+                    Assert.IsInstanceOfType(metadataRead.Data["Client Side Request Stats"],
+                        typeof(ClientSideRequestStatisticsTraceDatum));
+                    ClientSideRequestStatisticsTraceDatum statistics =
+                        (ClientSideRequestStatisticsTraceDatum)metadataRead.Data["Client Side Request Stats"];
+                    Assert.IsTrue(statistics.HttpResponseStatisticsList.Count > 0);
+                }
+
+                CollectionAssert.AreEqual(
+                    metadataStatusCode == 429 ? new[] { HttpStatusCode.TooManyRequests, HttpStatusCode.OK }
+                        : new[] { (HttpStatusCode)metadataStatusCode },
+                    metadataReads.Take(recreatedMetadataAttempts)
+                        .SelectMany(metadataRead => ((ClientSideRequestStatisticsTraceDatum)
+                            metadataRead.Data["Client Side Request Stats"]).HttpResponseStatisticsList)
+                        .Select(statistics => statistics.HttpResponseMessage.StatusCode).ToArray());
             }
 
-            Assert.AreEqual(string.Empty, sessions.GetSessionToken(containerPath));
+            Assert.AreEqual(metadataStatusCode == 404 ? sessionToken : string.Empty, sessions.GetSessionToken(containerPath));
             Assert.AreEqual(sessionToken, sessions.GetSessionToken(unchangedPath));
             using (DistributedTransactionResponse subsequent = await ExecuteAsync())
             {
@@ -158,8 +214,11 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             foreach (string name in new[] { ContainerName, unchangedContainerName })
             {
                 Uri metadataUri = new Uri($"{regionEndpoint}/dbs/{DatabaseName}/colls/{name}");
+                int expectedMetadataRequests = name == ContainerName
+                    ? metadataStatusCode == 200 ? 2 : 3
+                    : metadataStatusCode == 404 ? 1 : 2;
                 http.Verify(h => h.SendAsync(It.Is<HttpRequestMessage>(request => request.RequestUri == metadataUri),
-                    It.IsAny<CancellationToken>()), Times.Exactly(2));
+                    It.IsAny<CancellationToken>()), Times.Exactly(expectedMetadataRequests));
             }
         }
 
@@ -661,15 +720,24 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
         }
 
         [DataTestMethod]
-        [DataRow(false, 0)]
-        [DataRow(true, 0)]
-        [DataRow(false, 1)]
-        [DataRow(true, 1)]
-        [DataRow(false, 2)]
-        [DataRow(true, 2)]
-        [DataRow(false, 3)]
-        [DataRow(true, 3)]
-        public async Task ExecuteTransactionAsync_MetadataRefreshFailure_DoesNotResubmit(bool readOnly, int failureKind)
+        [DataRow(false, 0, false)]
+        [DataRow(true, 0, false)]
+        [DataRow(false, 1, false)]
+        [DataRow(true, 1, false)]
+        [DataRow(false, 2, false)]
+        [DataRow(true, 2, false)]
+        [DataRow(false, 3, false)]
+        [DataRow(true, 3, false)]
+        [DataRow(false, 4, false)]
+        [DataRow(true, 4, false)]
+        [DataRow(false, 0, true)]
+        [DataRow(true, 0, true)]
+        [DataRow(false, 1, true)]
+        [DataRow(true, 1, true)]
+        [DataRow(false, 4, true)]
+        [DataRow(true, 4, true)]
+        public async Task ExecuteTransactionAsync_MetadataRefreshFailure_DoesNotResubmit(
+            bool readOnly, int failureKind, bool cancelDuringFailure)
         {
             Mock<CosmosClientContext> context = this.CreateMockClientContext();
             using MockDocumentClient documentClient = CreateCollectionCacheDocumentClient();
@@ -693,11 +761,23 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                         "Container deleted", innerException: null,
                         statusCode: HttpStatusCode.NotFound, substatusCode: SubStatusCodes.OwnerResourceNotFound,
                         requestUri: null, responseHeaders: new DictionaryNameValueCollection()),
+                    4 => new HttpRequestException("Metadata connection failed."),
                     _ => unexpected
                 };
+                if (cancelDuringFailure)
+                {
+                    cancellation.Cancel();
+                }
+
                 return Task.FromException<ContainerProperties>(failure);
             });
-            this.SetupProcessResourceOperation(context, () =>
+            Guid submittedToken = Guid.Empty;
+            this.SetupProcessResourceOperationWithStreamAndEnricherCapture(context, (_, enrich) =>
+            {
+                using RequestMessage request = new RequestMessage(HttpMethod.Post, new Uri("https://localhost/operations/dtc"));
+                enrich(request);
+                submittedToken = Guid.Parse(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
+            }, () =>
             {
                 ResponseMessage response = new ResponseMessage(HttpStatusCode.Gone);
                 response.Headers.SubStatusCode = SubStatusCodes.NameCacheIsStale;
@@ -721,31 +801,43 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             System.Diagnostics.SourceLevels previousLevel = DefaultTrace.TraceSource.Switch.Level;
             DefaultTrace.TraceSource.Switch.Level = System.Diagnostics.SourceLevels.All;
             DefaultTrace.TraceSource.Listeners.Add(listener);
+            using ITrace trace = Trace.GetRootTrace("CommitDistributedTransaction", TraceComponent.Batch, TraceLevel.Info);
             try
             {
                 if (failureKind == 2)
                 {
                     await Assert.ThrowsExceptionAsync<TaskCanceledException>(() =>
-                        committer.ExecuteTransactionAsync(NoOpTrace.Singleton, cancellation.Token));
+                        committer.ExecuteTransactionAsync(trace, cancellation.Token));
+                }
+                else if (cancelDuringFailure)
+                {
+                    await Assert.ThrowsExceptionAsync<OperationCanceledException>(() =>
+                        committer.ExecuteTransactionAsync(trace, cancellation.Token));
                 }
                 else if (failureKind == 3)
                 {
                     InvalidOperationException thrown = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() =>
-                        committer.ExecuteTransactionAsync(NoOpTrace.Singleton, cancellation.Token));
+                        committer.ExecuteTransactionAsync(trace, cancellation.Token));
                     Assert.AreSame(unexpected, thrown);
                 }
                 else
                 {
                     using DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(
-                        NoOpTrace.Singleton, cancellation.Token);
+                        trace, cancellation.Token);
                     Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
                     Assert.AreEqual(SubStatusCodes.NameCacheIsStale, response.SubStatusCode);
                     Assert.AreEqual("original transaction failure", response.DiagnosticString);
                     Assert.IsTrue(response.IsRetriable);
+                    Assert.AreEqual(submittedToken, response.IdempotencyToken);
                     Assert.IsNotNull(response.Diagnostics);
+                    StringAssert.Contains(response.Diagnostics.ToString(), "Refresh Distributed Transaction Metadata");
+                    ITrace refreshTrace = ((CosmosTraceDiagnostics)response.Diagnostics).Value.Children.Single(
+                        child => child.Name == "Refresh Distributed Transaction Metadata");
+                    StringAssert.Contains((string)refreshTrace.Data["Exception Message"],
+                        failureKind == 4 ? "Metadata connection failed." : "Container deleted");
                     Assert.IsTrue(warnings.Any(message =>
                         message.Contains("metadata refresh failed") &&
-                        message.Contains("SubStatusCode=1003") &&
+                        message.Contains(failureKind == 4 ? "ExceptionType=HttpRequestException" : "SubStatusCode=1003") &&
                         message.Contains("Returning the original transaction failure")));
                 }
             }
@@ -755,6 +847,107 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                 DefaultTrace.TraceSource.Switch.Level = previousLevel;
             }
 
+            this.VerifyProcessResourceOperationCallCount(context, Times.Once());
+        }
+
+        [DataTestMethod]
+        [DataRow(false, "participants", false)]
+        [DataRow(true, "participants", false)]
+        [DataRow(false, "participants", true)]
+        [DataRow(true, "participants", true)]
+        [DataRow(false, "envelope", false)]
+        [DataRow(true, "envelope", false)]
+        [DataRow(false, "envelope", true)]
+        [DataRow(true, "envelope", true)]
+        [DataRow(false, "invalidIndices", false)]
+        [DataRow(true, "invalidIndices", false)]
+        [DataRow(false, "invalidIndices", true)]
+        [DataRow(true, "invalidIndices", true)]
+        public async Task ExecuteTransactionAsync_MetadataRefresh_PrioritizesIdentifiedStaleContainers(
+            bool readOnly, string responseKind, bool unrelatedRefreshFails)
+        {
+            Mock<CosmosClientContext> context = this.CreateMockClientContext();
+            using MockDocumentClient documentClient = CreateCollectionCacheDocumentClient();
+            context.Setup(c => c.DocumentClient).Returns(documentClient);
+            Mock<ClientCollectionCache> cache = Mock.Get(await documentClient.GetCollectionCacheAsync(NoOpTrace.Singleton));
+            string[] containers = { "unrelated", "staleFirst", "unrelatedSecond", "staleSecond", "staleFirst" };
+            List<DistributedTransactionOperation> operations = CreateTestOperations(containers.Length).ToList();
+            for (int i = 0; i < operations.Count; i++)
+            {
+                operations[i].Container = containers[i];
+                if (readOnly)
+                {
+                    operations[i].OperationType = OperationType.Read;
+                }
+            }
+
+            List<string> refreshOrder = new List<string>();
+            string replacementRid = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
+            SetupCollectionRefresh(cache, (path, _) =>
+            {
+                refreshOrder.Add(path);
+                return unrelatedRefreshFails && path.EndsWith("/unrelated", StringComparison.Ordinal)
+                    ? Task.FromException<ContainerProperties>(new HttpRequestException("Unrelated metadata unavailable."))
+                    : Task.FromResult(ContainerProperties.CreateWithResourceId(replacementRid));
+            });
+            this.SetupProcessResourceOperation(context, () =>
+            {
+                ResponseMessage message = new ResponseMessage(responseKind == "participants"
+                    ? HttpStatusCode.BadRequest : HttpStatusCode.Gone);
+                if (responseKind != "participants")
+                {
+                    message.Headers.SubStatusCode = SubStatusCodes.NameCacheIsStale;
+                }
+
+                JObject body = JObject.Parse(BuildDtcResponseJson(new[]
+                {
+                    (424, (int?)null, (string)null),
+                    (410, (int?)1000, (string)null),
+                    (424, (int?)null, (string)null),
+                    (410, (int?)1000, (string)null),
+                    (410, (int?)1000, (string)null)
+                }));
+                body["isRetriable"] = true;
+                JArray results = (JArray)body["operationResponses"];
+                if (responseKind == "envelope")
+                {
+                    body.Remove("operationResponses");
+                }
+                else
+                {
+                    if (responseKind == "invalidIndices")
+                    {
+                        results[1]["index"] = 0;
+                    }
+
+                    body["operationResponses"] = new JArray(results.Reverse());
+                }
+
+                message.Content = new MemoryStream(Encoding.UTF8.GetBytes(body.ToString()));
+                return Task.FromResult(message);
+            });
+
+            DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
+                operations, context.Object, readOnly ? OperationType.Read : OperationType.CommitDistributedTransaction,
+                TimeSpan.Zero);
+            using DistributedTransactionResponse response = await committer.ExecuteTransactionAsync(
+                NoOpTrace.Singleton, CancellationToken.None);
+
+            string[] expectedContainers = responseKind == "participants"
+                ? new[] { "staleFirst", "staleSecond", "unrelated", "unrelatedSecond" }
+                : new[] { "unrelated", "staleFirst", "unrelatedSecond", "staleSecond" };
+            if (unrelatedRefreshFails)
+            {
+                expectedContainers = expectedContainers.Take(Array.IndexOf(expectedContainers, "unrelated") + 1).ToArray();
+            }
+
+            CollectionAssert.AreEqual(
+                expectedContainers.Select(container => DistributedTransactionConstants.GetCollectionFullName("testDb", container)).ToArray(),
+                refreshOrder.ToArray());
+            CollectionAssert.AreEqual(containers, operations.Select(operation => operation.Container).ToArray());
+            Assert.IsTrue(operations.All(operation => operation.CollectionResourceId == TestCollectionResourceId));
+            Assert.AreEqual(responseKind == "participants" ? HttpStatusCode.BadRequest : HttpStatusCode.Gone,
+                response.StatusCode);
             this.VerifyProcessResourceOperationCallCount(context, Times.Once());
         }
 

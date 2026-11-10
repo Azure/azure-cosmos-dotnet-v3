@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
-- [6197](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6197) Distributed Transactions (preview): Refreshes stale metadata when a transaction reports `410/1000` after a container is deleted and recreated with the same name. When container IDs change, clears only the old container's session tokens, preserving session tokens recorded for the recreated container, and returns the current transaction's failure without resubmission (the caller must submit a new transaction), allowing a new transaction on the same client to use the recreated container. Metadata is refreshed at most once per commit. Existing retry behavior is preserved when the IDs are unchanged.
+- [6197](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6197) Distributed Transactions (preview): Refreshes stale metadata when a transaction reports `410/1000` after a container is deleted and recreated with the same name. When container IDs change, clears only the old container's session tokens, preserving session tokens recorded for the recreated container, and returns the current transaction's failure without resubmission (the caller must submit a new transaction), allowing a new transaction on the same client to use the recreated container. Metadata is refreshed at most once per commit, and metadata service or network failures preserve the original transaction failure. Existing retry behavior is preserved when the IDs are unchanged.
 
 #### Other Changes
 
