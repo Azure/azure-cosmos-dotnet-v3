@@ -6,17 +6,22 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Concurrent;
+    using System.ComponentModel;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
     using System.Runtime.InteropServices;
+    using System.Security.Authentication;
+    using System.Security.Cryptography;
+    using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.AspNetCore.Server.Kestrel.Core;
+    using Microsoft.Extensions.Logging;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Exchange = Microsoft.Azure.Cosmos.Tests.LocalHttp2DisposalFixture.Exchange;
     using ObservedResponse = Microsoft.Azure.Cosmos.Tests.LocalHttp2DisposalFixture.ObservedResponse;
@@ -431,6 +436,44 @@ namespace Microsoft.Azure.Cosmos.Tests
             restored.Dispose();
             restoredWitness.RequireCompleted();
             CollectionAssert.AreEqual(new[] { "Disposed:restored" }, journal.ToArray());
+        }
+
+        [TestMethod]
+        public void Observer_CertificateRetainsUsablePrivateKey()
+        {
+            using X509Certificate2 certificate = LocalHttp2DisposalFixture.CreateCertificate();
+            Assert.IsTrue(certificate.HasPrivateKey);
+            Assert.AreEqual("CN=localhost", certificate.Subject);
+            using RSA privateKey = certificate.GetRSAPrivateKey();
+            using RSA publicKey = certificate.GetRSAPublicKey();
+            byte[] data = Encoding.ASCII.GetBytes("synthetic-certificate-control");
+            byte[] signature = privateKey.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            Assert.IsTrue(publicKey.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
+            data[0] ^= 1;
+            Assert.IsFalse(publicKey.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
+        }
+
+        [TestMethod]
+        public void Observer_ServerErrorsRetainOnlyExceptionTypesAndCodes()
+        {
+            ConcurrentQueue<string> journal = new ConcurrentQueue<string>();
+            using LocalHttp2DisposalFixture.KestrelErrorJournal provider =
+                new LocalHttp2DisposalFixture.KestrelErrorJournal(journal);
+            Exception native = new Win32Exception(unchecked((int)0x8009030E), "Do not retain exception messages.");
+            Exception authentication = new AuthenticationException("Do not retain certificate details.", native);
+            ILogger logger = provider.CreateLogger("Microsoft.AspNetCore.Server.Kestrel.Https");
+            logger.LogDebug(authentication, "Do not retain arbitrary state: {Payload}", "synthetic-secret");
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    $"ServerError:AuthenticationException:0x{authentication.HResult:X8}",
+                    $"ServerError:Win32Exception:0x{native.HResult:X8}:Native=0x8009030E",
+                },
+                journal.ToArray());
+            logger.LogDebug("No exception.");
+            provider.CreateLogger("Unrelated.Category").LogError(authentication, "Do not retain this.");
+            Assert.AreEqual(2, journal.Count);
+            Assert.IsFalse(string.Join(",", journal).Contains("synthetic-secret", StringComparison.Ordinal));
         }
 
         private static bool IsClientEvent(string entry)

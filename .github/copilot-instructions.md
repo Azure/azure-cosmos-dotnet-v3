@@ -24,6 +24,7 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
     dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Microsoft.Azure.Cosmos.Tests.csproj --framework net6.0 --configuration Release /p:IsPreview=true /p:OS=Windows --filter "TestCategory=LocalHttp2Fixture"
     ```
   - Kestrel TLS HTTP/2 is unsupported on macOS under net6.0. For non-network observer checks there, replace the filter with `FullyQualifiedName~LocalHttp2DisposalFixtureTests.Observer_`; report transport cases as unexecuted rather than skipping, retargeting or substituting plaintext.
+  - On Windows, Schannel requires the fixture certificate to use a temporary user key container. The fixture imports PKCS12 only from zeroed-after-use memory, writes no PFX or trust-store entry, and omits `PersistKeySet` so certificate disposal deletes the native key. Abnormal process termination can leave that temporary key.
   - These tests use synthetic loopback traffic, not the Cosmos public-path pair. Retain the TRX and test output showing the actual runtime, negotiated protocol and cleanup results; requested HTTP/2 or test discovery alone is not an execution pass.
 
 - **Local emulator and integration testing**:

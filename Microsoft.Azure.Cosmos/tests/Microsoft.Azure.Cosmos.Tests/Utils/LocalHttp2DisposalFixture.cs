@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -14,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using System.Net.Security;
     using System.Net.Sockets;
+    using System.Runtime.InteropServices;
     using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
@@ -66,7 +68,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                             listen.Protocols = protocols;
                             listen.UseHttps(this.certificate);
                         }))
-                    .ConfigureLogging(logging => logging.ClearProviders())
+                    .ConfigureLogging(logging =>
+                    {
+                        logging.ClearProviders();
+                        logging.AddFilter("Microsoft.AspNetCore.Server.Kestrel", LogLevel.Debug);
+                        logging.AddProvider(new KestrelErrorJournal(this.Journal));
+                    })
                     .Configure(app => app.Run(context =>
                     {
                         Task handler = this.HandleAsync(context);
@@ -206,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             return new ValueTask(this.cleanup);
         }
 
-        private static X509Certificate2 CreateCertificate()
+        internal static X509Certificate2 CreateCertificate()
         {
             using RSA key = RSA.Create(2048);
             CertificateRequest request = new CertificateRequest(
@@ -220,8 +227,26 @@ namespace Microsoft.Azure.Cosmos.Tests
                 X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment, true));
             request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(
                 new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") }, true));
-            return request.CreateSelfSigned(
+            X509Certificate2 certificate = request.CreateSelfSigned(
                 DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow.AddHours(1));
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return certificate;
+            }
+
+            // Schannel needs a named key; without PersistKeySet, certificate disposal deletes it.
+            using (certificate)
+            {
+                byte[] pkcs12 = certificate.Export(X509ContentType.Pkcs12);
+                try
+                {
+                    return new X509Certificate2(pkcs12, (string)null, X509KeyStorageFlags.UserKeySet);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(pkcs12);
+                }
+            }
         }
 
         private async Task StartAsync()
@@ -455,6 +480,69 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             this.CleanupCompleted = true;
             this.Journal.Enqueue("Cleanup:complete");
+        }
+
+        internal sealed class KestrelErrorJournal : ILoggerProvider
+        {
+            private readonly ConcurrentQueue<string> journal;
+
+            public KestrelErrorJournal(ConcurrentQueue<string> journal)
+            {
+                this.journal = journal;
+            }
+
+            public ILogger CreateLogger(string categoryName)
+            {
+                return new ErrorLogger(this.journal, categoryName);
+            }
+
+            public void Dispose()
+            {
+            }
+
+            private sealed class ErrorLogger : ILogger
+            {
+                private readonly ConcurrentQueue<string> journal;
+                private readonly string category;
+
+                public ErrorLogger(ConcurrentQueue<string> journal, string category)
+                {
+                    this.journal = journal;
+                    this.category = category;
+                }
+
+                public IDisposable BeginScope<TState>(TState state)
+                {
+                    return null;
+                }
+
+                public bool IsEnabled(LogLevel logLevel)
+                {
+                    return logLevel >= LogLevel.Debug &&
+                        this.category.StartsWith("Microsoft.AspNetCore.Server.Kestrel", StringComparison.Ordinal);
+                }
+
+                public void Log<TState>(
+                    LogLevel logLevel,
+                    EventId eventId,
+                    TState state,
+                    Exception exception,
+                    Func<TState, Exception, string> formatter)
+                {
+                    if (!this.IsEnabled(logLevel))
+                    {
+                        return;
+                    }
+
+                    for (Exception current = exception; current != null; current = current.InnerException)
+                    {
+                        string native = current is Win32Exception error
+                            ? $":Native=0x{error.NativeErrorCode:X8}"
+                            : string.Empty;
+                        this.journal.Enqueue($"ServerError:{current.GetType().Name}:0x{current.HResult:X8}{native}");
+                    }
+                }
+            }
         }
 
         internal sealed class ObservedResponse : IDisposable
