@@ -57,38 +57,6 @@ Any failure response from the Transport that matches the [conditions for cross-r
 * HTTP 404 with Substatus 1002 - Session consistency request where the region did not yet receive the requested Session Token, the request is retried on the primary (write) region for accounts with a single write region or on the next preferred region for accounts with multiple write regions.
 * HTTP 503 - The request could not succeed on the region due to repeated TCP connectivity issues, the request is retried on the next preferred region.
 
-## Experimental partial partition key query header
-
-`AZURE_COSMOS_PARTIAL_PARTITION_KEY_ENABLED=true` opts in to sending
-`x-ms-documentdb-partialpartitionkey` for item queries whose
-`QueryRequestOptions.PartitionKey` is a proper prefix of a hierarchical
-(`MultiHash`) partition key. The option is read when query request options are
-created and defaults to false. Enable it only after the target account's backend
-and Proxy support the header.
-
-This experiment supports **Gateway mode only**. Published Direct transport
-packages do not yet serialize the partial partition key token; opting in to a
-prefix query in Direct mode throws `NotSupportedException` rather than silently
-dropping the header. Disabling the opt-in restores the existing EPK query path.
-
-The request invoker uses cached container metadata to distinguish prefixes from
-full keys. It preserves the physical partition routing and EPK range bounds and
-adds the prefix as JSON in the new header, not `x-ms-documentdb-partitionkey`.
-Full keys, queries without a partition key, query-plan requests, and read-feed
-requests keep their existing behavior.
-
-This applies to the standard query pipeline's `FeedRangeEpk` request-invoker
-path. Distributed Query Gateway can bypass this hook and is not covered by this
-experiment. Native/backend and Proxy compatibility remain prerequisites; this
-opt-in does not guarantee lower RU charges for every query shape.
-
-`QueryPartitionKeyTest` exercises both transports with the existing emulator
-setup in `templates/emulator-setup.yml`. Its Gateway cases explicitly enable
-the option and require an emulator with compatible Native/backend and Proxy
-support; Direct cases leave it disabled. No additional environment variable is
-needed for the fixture. Run it only against a disposable emulator, not a
-production account.
-
 ## Transport
 
 Once a RequestMessage reaches the [TransportHandler](../Microsoft.Azure.Cosmos/src/Handler/TransportHandler.cs) it will be sent through either the [GatewayStoreModel](../Microsoft.Azure.Cosmos/src/GatewayStoreModel.cs) for HTTP requests and Gateway mode clients or through the ServerStoreModel for clients configured with Direct mode.

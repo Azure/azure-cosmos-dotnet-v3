@@ -276,10 +276,6 @@ namespace Microsoft.Azure.Cosmos
         // that we are talking to a distributed query gateway.
         internal bool EnableDistributedQueryGatewayMode { get; set; } = ConfigurationManager.IsDistributedQueryGatewayModeEnabled(defaultValue: false);
 
-        internal bool EnablePartialPartitionKey { get; set; } = ConfigurationManager.GetEnvironmentVariable(
-            ConfigurationManager.PartialPartitionKeyEnabled,
-            defaultValue: false);
-
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
@@ -376,7 +372,8 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyDefinition partitionKeyDefinition,
             ConnectionMode connectionMode)
         {
-            if (this.EnablePartialPartitionKey
+            // Published Direct packages do not yet serialize the partial key RNTBD token.
+            if (connectionMode == ConnectionMode.Gateway
                 && request.OperationType == OperationType.Query
                 && request.ResourceType == ResourceType.Document
                 && string.IsNullOrEmpty(request.Headers.PartitionKey)
@@ -386,14 +383,6 @@ namespace Microsoft.Azure.Cosmos
                 && this.PartitionKey.Value.InternalKey.Components.Count > 0
                 && this.PartitionKey.Value.InternalKey.Components.Count < partitionKeyDefinition.Paths.Count)
             {
-                // Published Direct packages do not yet serialize the partial key RNTBD token.
-                if (connectionMode != ConnectionMode.Gateway)
-                {
-                    throw new NotSupportedException(
-                        "Partial partition key headers require Gateway mode until the Direct transport package supports them. " +
-                        "Disable AZURE_COSMOS_PARTIAL_PARTITION_KEY_ENABLED to use existing EPK routing in Direct mode.");
-                }
-
                 request.Headers[PartialPartitionKeyHeader] = this.PartitionKey.Value.ToJsonString();
             }
         }

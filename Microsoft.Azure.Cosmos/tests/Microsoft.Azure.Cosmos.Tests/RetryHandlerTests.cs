@@ -53,11 +53,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [DataTestMethod]
-        [DataRow(true, true)]
-        [DataRow(true, false)]
-        [DataRow(false, true)]
-        [DataRow(false, false)]
-        public async Task PrefixHeaderPreservesPhysicalPartitionRouting(bool enabled, bool exactRange)
+        [DataRow(ConnectionMode.Gateway, true)]
+        [DataRow(ConnectionMode.Gateway, false)]
+        [DataRow(ConnectionMode.Direct, true)]
+        [DataRow(ConnectionMode.Direct, false)]
+        public async Task PrefixHeaderPreservesPhysicalPartitionRouting(ConnectionMode connectionMode, bool exactRange)
         {
             TestPartitionKeyRangeCache cache = new TestPartitionKeyRangeCache(new[]
             {
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             using CosmosClient client = new CosmosClient(
                 "https://localhost:8081",
                 MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
-                new CosmosClientOptions { ConnectionMode = ConnectionMode.Gateway },
+                new CosmosClientOptions { ConnectionMode = connectionMode },
                 new CustomMockDocumentClient(cache));
             Mock<ContainerInternal> container = MockCosmosUtil.CreateMockContainer("testDb", "testColl");
             ContainerProperties properties = ContainerProperties.CreateWithResourceId("testCollRid");
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     sent = true;
                     Assert.AreEqual("1", request.PartitionKeyRangeId.PartitionKeyRangeId);
                     Assert.IsNull(request.Headers.PartitionKey);
-                    Assert.AreEqual(enabled ? "[\"tenant\"]" : null, request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
+                    Assert.AreEqual(connectionMode == ConnectionMode.Gateway ? "[\"tenant\"]" : null, request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
                     Assert.AreEqual(exactRange ? null : "10", request.Headers.StartEpk);
                     Assert.AreEqual(exactRange ? null : "20", request.Headers.EndEpk);
                     return TestHandler.ReturnSuccess();
@@ -104,8 +104,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 OperationType.Query,
                 new QueryRequestOptions
                 {
-                    PartitionKey = new Cosmos.PartitionKey("tenant"),
-                    EnablePartialPartitionKey = enabled
+                    PartitionKey = new Cosmos.PartitionKey("tenant")
                 },
                 container.Object,
                 new FeedRangeEpk(new Documents.Routing.Range<string>("10", "20", true, false)),

@@ -103,11 +103,6 @@ namespace Microsoft.Azure.Cosmos
         public static readonly string DistributedQueryGatewayModeEnabled = "AZURE_COSMOS_DISTRIBUTED_QUERY_GATEWAY_ENABLED";
 
         /// <summary>
-        /// Opt in to partial partition key query headers after backend and Proxy rollout.
-        /// </summary>
-        internal static readonly string PartialPartitionKeyEnabled = "AZURE_COSMOS_PARTIAL_PARTITION_KEY_ENABLED";
-
-        /// <summary>
         /// intent is If a client specify a value, we will force it to be atleast 100ms, otherwise default is going to be 500ms
         /// </summary>
         public static readonly string MinInRegionRetryTimeForWritesInMs = "AZURE_COSMOS_SESSION_TOKEN_MISMATCH_IN_REGION_RETRY_TIME_IN_MILLISECONDS";

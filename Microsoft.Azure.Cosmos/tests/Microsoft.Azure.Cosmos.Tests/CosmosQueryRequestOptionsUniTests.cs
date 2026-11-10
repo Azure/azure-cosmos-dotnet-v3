@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         [DataRow("[{}]")]
         [DataRow("[42.0,true]")]
         [DataRow("[\"escaped\\\"value\",\"back\\\\slash\"]")]
-        public void PartialPartitionKeyHeaderTest(string json)
+        public void GatewayPartialPartitionKeyHeaderIsAutomatic(string json)
         {
             QueryRequestOptions options = CreateOptions(json);
             using RequestMessage request = CreateRequest();
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions options = CreateOptions(json);
             using RequestMessage request = CreateRequest();
             request.Headers.PartitionKey = json;
-            options.PopulatePartialPartitionKeyHeader(request, CreateDefinition((PartitionKind)kind, pathCount), ConnectionMode.Direct);
+            options.PopulatePartialPartitionKeyHeader(request, CreateDefinition((PartitionKind)kind, pathCount), ConnectionMode.Gateway);
             options.PopulateRequestOptions(request);
             Assert.AreEqual(json, request.Headers.PartitionKey);
             Assert.IsNull(request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
         {
             QueryRequestOptions options = CreateOptions(json);
             using RequestMessage request = CreateRequest();
-            options.PopulatePartialPartitionKeyHeader(request, CreateDefinition((PartitionKind)kind, pathCount), ConnectionMode.Direct);
+            options.PopulatePartialPartitionKeyHeader(request, CreateDefinition((PartitionKind)kind, pathCount), ConnectionMode.Gateway);
             Assert.IsNull(request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
         }
 
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
         {
             QueryRequestOptions options = CreateOptions("[\"tenant\"]");
             using RequestMessage request = CreateRequest((OperationType)operation);
-            options.PopulatePartialPartitionKeyHeader(request, CreateDefinition(), ConnectionMode.Direct);
+            options.PopulatePartialPartitionKeyHeader(request, CreateDefinition(), ConnectionMode.Gateway);
             Assert.IsNull(request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
             Assert.IsNull(request.Headers.PartitionKey);
         }
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions options = CreateOptions("[\"tenant\"]");
             using RequestMessage request = CreateRequest();
             request.ResourceType = ResourceType.Database;
-            options.PopulatePartialPartitionKeyHeader(request, CreateDefinition(), ConnectionMode.Direct);
+            options.PopulatePartialPartitionKeyHeader(request, CreateDefinition(), ConnectionMode.Gateway);
             Assert.IsNull(request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
         }
 
@@ -109,37 +109,36 @@ namespace Microsoft.Azure.Cosmos
             {
                 QueryRequestOptions options = new QueryRequestOptions
                 {
-                    PartitionKey = partitionKey,
-                    EnablePartialPartitionKey = true
+                    PartitionKey = partitionKey
                 };
                 using RequestMessage request = CreateRequest();
-                options.PopulatePartialPartitionKeyHeader(request, CreateDefinition(), ConnectionMode.Direct);
+                options.PopulatePartialPartitionKeyHeader(request, CreateDefinition(), ConnectionMode.Gateway);
                 options.PopulateRequestOptions(request);
                 Assert.IsNull(request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
                 Assert.IsNull(request.Headers.PartitionKey);
             }
         }
 
-        [TestMethod]
-        public void DisabledPartialPartitionKeyPreservesEpkRouting()
+        [DataTestMethod]
+        [DataRow("[\"tenant\"]")]
+        [DataRow("[\"tenant\",\"user\"]")]
+        [DataRow("[null]")]
+        [DataRow("[{}]")]
+        [DataRow("[42.0,true]")]
+        public void DirectPartialPartitionKeyPreservesEpkRouting(string json)
         {
-            QueryRequestOptions options = CreateOptions("[\"tenant\"]");
-            options.EnablePartialPartitionKey = false;
+            QueryRequestOptions options = CreateOptions(json);
             using RequestMessage request = CreateRequest();
+            request.Headers.PartitionKeyRangeId = "0";
+            request.Headers.StartEpk = "01";
+            request.Headers.EndEpk = "02";
             options.PopulatePartialPartitionKeyHeader(request, CreateDefinition(), ConnectionMode.Direct);
             options.PopulateRequestOptions(request);
             Assert.IsNull(request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
             Assert.IsNull(request.Headers.PartitionKey);
-        }
-
-        [TestMethod]
-        public void DirectPartialPartitionKeyOptInFailsExplicitly()
-        {
-            QueryRequestOptions options = CreateOptions("[\"tenant\"]");
-            using RequestMessage request = CreateRequest();
-            Assert.ThrowsException<NotSupportedException>(() =>
-                options.PopulatePartialPartitionKeyHeader(request, CreateDefinition(), ConnectionMode.Direct));
-            Assert.IsNull(request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
+            Assert.AreEqual("0", request.Headers.PartitionKeyRangeId);
+            Assert.AreEqual("01", request.Headers.StartEpk);
+            Assert.AreEqual("02", request.Headers.EndEpk);
         }
 
         [TestMethod]
@@ -153,34 +152,10 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNull(request.Headers[QueryRequestOptions.PartialPartitionKeyHeader]);
         }
 
-        [DataTestMethod]
-        [DataRow(null, false)]
-        [DataRow("false", false)]
-        [DataRow("true", true)]
-        [DoNotParallelize]
-        public void PartialPartitionKeyRequiresEnvironmentOptIn(string value, bool expected)
-        {
-            string original = Environment.GetEnvironmentVariable(ConfigurationManager.PartialPartitionKeyEnabled);
-            try
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartialPartitionKeyEnabled, value);
-                QueryRequestOptions options = new QueryRequestOptions();
-                Assert.AreEqual(expected, options.EnablePartialPartitionKey);
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartialPartitionKeyEnabled, (!expected).ToString());
-                Assert.AreEqual(expected, options.EnablePartialPartitionKey);
-                Assert.AreEqual(expected, ((QueryRequestOptions)options.ShallowCopy()).EnablePartialPartitionKey);
-                Assert.AreEqual(!expected, new QueryRequestOptions().EnablePartialPartitionKey);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartialPartitionKeyEnabled, original);
-            }
-        }
-
         private static QueryRequestOptions CreateOptions(string json)
         {
             Assert.IsTrue(PartitionKey.TryParseJsonString(json, out PartitionKey partitionKey));
-            return new QueryRequestOptions { PartitionKey = partitionKey, EnablePartialPartitionKey = true };
+            return new QueryRequestOptions { PartitionKey = partitionKey };
         }
 
         private static PartitionKeyDefinition CreateDefinition(PartitionKind kind = PartitionKind.MultiHash, int pathCount = 3)

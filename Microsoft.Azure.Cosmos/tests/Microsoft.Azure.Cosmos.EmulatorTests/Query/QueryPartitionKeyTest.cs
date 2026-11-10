@@ -134,8 +134,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 (container, documents) => this.ExecuteAllQueries(
                     queryClient.GetContainer(this.database.Id, container.Id),
                     partitionKeyDefinition,
-                    documents,
-                    enablePartialPartitionKey: connectionMode == ConnectionModes.Gateway),
+                    documents),
                 partitionKeyDefinition,
                 IndexingPolicy);
         }
@@ -157,8 +156,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         private async Task ExecuteAllQueries(
             Container container,
             PartitionKeyDefinition partitionKeyDefinition,
-            IReadOnlyList<CosmosElements.CosmosObject> documents,
-            bool enablePartialPartitionKey)
+            IReadOnlyList<CosmosElements.CosmosObject> documents)
         {
             Console.WriteLine("\n=== Executing All Query Tests with Partition Keys ===\n");
 
@@ -233,8 +231,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     QueryRequestOptions queryRequestOptions = new QueryRequestOptions
                     {
                         PartitionKey = partitionKey,
-                        MaxItemCount = 2,
-                        EnablePartialPartitionKey = enablePartialPartitionKey
+                        MaxItemCount = 2
                     };
 
                     using FeedIterator<CosmosElement> iterator = container.GetItemQueryIterator<CosmosElement>(
