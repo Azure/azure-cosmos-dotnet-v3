@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using Stopwatch = System.Diagnostics.Stopwatch;
     using TraceLevel = Cosmos.Tracing.TraceLevel;
 
     /// <summary>
@@ -258,6 +259,121 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Assert.AreEqual(HttpStatusCode.ServiceUnavailable, cosmosException.StatusCode);
                     Assert.AreEqual(SubStatusCodes.TransportGenerated503, cosmosException.Headers.SubStatusCode);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Verifies the complete PK-range metadata retry path waits for the default five-second interval
+        /// when a 429 omits Retry-After, and honors an explicit service-provided Retry-After value.
+        /// </summary>
+        [DataTestMethod]
+        [DataRow(-1, 5000, 0, DisplayName = "Missing Retry-After uses the five-second fallback")]
+        [DataRow(500, 500, 2000, DisplayName = "Explicit 500 ms Retry-After is honored")]
+        [Timeout(60000)]
+        public async Task TryGetOverlappingRangesAsync_Page2Single429_ObservesExpectedRetryDelay(
+            int retryAfterMilliseconds,
+            int minimumDelayMilliseconds,
+            int maximumDelayMilliseconds)
+        {
+            const string page1ETag = "page-1-etag";
+            const string authToken = "token!";
+            const string containerRid = "kjhsAA==";
+            const string page1Content = "{\"_rid\":\"kjhsAA==\",\"PartitionKeyRanges\":[{\"id\":\"0\",\"minInclusive\":\"\",\"maxExclusive\":\"FF\",\"parents\":[]}],\"_count\":1}";
+
+            int pkRangeRequestCount = 0;
+            Stopwatch retryDelayStopwatch = null;
+            TimeSpan observedRetryDelay = TimeSpan.Zero;
+            Mock<IStoreModel> mockStoreModel = new();
+            Mock<CollectionCache> mockCollectionCache = new(false);
+            Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider = new();
+
+            mockStoreModel
+                .Setup(storeModel => storeModel.ProcessMessageAsync(
+                    It.IsAny<DocumentServiceRequest>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns<DocumentServiceRequest, CancellationToken>((request, cancellationToken) =>
+                {
+                    pkRangeRequestCount++;
+                    string requestContinuation = request.Headers[HttpConstants.HttpHeaders.IfNoneMatch];
+
+                    if (pkRangeRequestCount == 1)
+                    {
+                        Assert.IsNull(requestContinuation, "The cold-start request must begin without a continuation.");
+                        return Task.FromResult(CreatePkRangeFeedResponse(page1Content, page1ETag));
+                    }
+
+                    Assert.AreEqual(page1ETag, requestContinuation, "Both page 2 attempts must use page 1's ETag.");
+
+                    if (pkRangeRequestCount == 2)
+                    {
+                        DictionaryNameValueCollection responseHeaders = new();
+                        if (retryAfterMilliseconds >= 0)
+                        {
+                            responseHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds] =
+                                retryAfterMilliseconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                        }
+
+                        retryDelayStopwatch = Stopwatch.StartNew();
+                        return Task.FromException<DocumentServiceResponse>(new DocumentClientException(
+                            message: "Simulated single page 2 throttling.",
+                            innerException: null,
+                            statusCode: HttpStatusCode.TooManyRequests,
+                            substatusCode: SubStatusCodes.Unknown,
+                            requestUri: new Uri("https://foo"),
+                            responseHeaders: responseHeaders));
+                    }
+
+                    if (pkRangeRequestCount == 3)
+                    {
+                        observedRetryDelay = retryDelayStopwatch.Elapsed;
+                        return Task.FromResult(CreatePkRangeNotModifiedResponse(page1ETag));
+                    }
+
+                    Assert.Fail($"Unexpected PK-range request #{pkRangeRequestCount}.");
+                    return null;
+                });
+
+            mockTokenProvider
+                .Setup(tokenProvider => tokenProvider.GetUserAuthorizationTokenAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<INameValueCollection>(),
+                    It.IsAny<AuthorizationTokenType>(),
+                    It.IsAny<ITrace>()))
+                .Returns(new ValueTask<string>(authToken));
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
+            PartitionKeyRangeCache partitionKeyRangeCache = new(
+                mockTokenProvider.Object,
+                mockStoreModel.Object,
+                mockCollectionCache.Object,
+                endpointManager,
+                useLengthAwareRangeComparer: false,
+                enableAsyncCacheExceptionNoSharing: false);
+
+            using ITrace trace = Trace.GetRootTrace(this.TestContext.TestName, TraceComponent.Unknown, TraceLevel.Info);
+            IReadOnlyList<PartitionKeyRange> ranges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                containerRid,
+                FeedRangeEpk.FullRange.Range,
+                trace,
+                forceRefresh: false);
+
+            Assert.AreEqual(1, ranges.Count);
+            Assert.AreEqual(3, pkRangeRequestCount);
+            Assert.IsNotNull(retryDelayStopwatch);
+            Assert.IsTrue(
+                observedRetryDelay >= TimeSpan.FromMilliseconds(minimumDelayMilliseconds),
+                $"Expected a retry delay of at least {minimumDelayMilliseconds} ms, but observed {observedRetryDelay.TotalMilliseconds:F0} ms.");
+
+            if (maximumDelayMilliseconds > 0)
+            {
+                Assert.IsTrue(
+                    observedRetryDelay <= TimeSpan.FromMilliseconds(maximumDelayMilliseconds),
+                    $"Expected a retry delay no greater than {maximumDelayMilliseconds} ms, but observed {observedRetryDelay.TotalMilliseconds:F0} ms.");
             }
         }
 
