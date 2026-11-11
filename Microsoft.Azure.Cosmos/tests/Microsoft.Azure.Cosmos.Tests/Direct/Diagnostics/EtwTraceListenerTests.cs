@@ -5,13 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Core.Trace.Tests.Unit
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Diagnostics;
-    using System.Linq;
-    using System.Reflection;
+    using System.IO;
     using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.Diagnostics.Tracing;
     using Microsoft.Diagnostics.Tracing.Session;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -66,110 +62,46 @@ namespace Microsoft.Azure.Cosmos.Core.Trace.Tests.Unit
 
         [TestMethod]
         [Owner("soham")]
-        public async Task TestMaxLengthAsync()
+        public void TestMaxLength()
         {
-            using (TraceEventSession session = new TraceEventSession($"etwTestSession{Guid.NewGuid()}"))
-            {
-                string eventData = null;
-                session.Source.AllEvents += EtwHandler;
-
-                session.EnableProvider(EtwTraceListenerTests.EventWriteStringGuid);
-
-                void EtwHandler(TraceEvent data)
-                {
-                    Console.WriteLine(data);
-
-                    eventData = data.FormattedMessage;
-
-                    session.Stop();
-                }
-
-                EtwTraceListenerTests.Source.TraceEvent(
+            TraceAndValidate(
+                () => EtwTraceListenerTests.Source.TraceEvent(
                     TraceEventType.Critical,
                     0,
-                    new string('a', EtwTraceListener.MaxEtwEventLength * 5));
-
-                Assert.AreEqual(0u, EtwTraceListenerTests.Listener.LastReturnCode);
-
-                using (CancellationTokenSource cts = new CancellationTokenSource(5000))
-                {
-                    cts.Token.Register(() => session.Stop());
-
-                    await Task.Run(() => session.Source.Process(), cts.Token);
-
-                    Assert.IsFalse(cts.IsCancellationRequested, "Expected traces were not received before timeout.");
-                }
-
-                Assert.AreEqual(new string('a', EtwTraceListener.MaxEtwEventLength), eventData);
-            }
+                    new string('a', EtwTraceListener.MaxEtwEventLength * 5)),
+                data => Assert.AreEqual(new string('a', EtwTraceListener.MaxEtwEventLength), data.FormattedMessage));
         }
 
         [TestMethod]
         [Owner("soham")]
-        [TestCategory("Integration")] // Bug 3692802: Need to move test(TestMaxLengthFormatAsync()) to Integration to fix managed gated pipeline
-        public async Task TestMaxLengthFormatAsync()
+        [TestCategory("Integration")]
+        public void TestMaxLengthFormat()
         {
-            using (TraceEventSession session = new TraceEventSession($"etwTestSession{Guid.NewGuid()}"))
-            {
-                string eventData = null;
-                session.Source.AllEvents += EtwHandler;
-
-                session.EnableProvider(EtwTraceListenerTests.EventWriteStringGuid);
-
-                void EtwHandler(TraceEvent data)
-                {
-                    Console.WriteLine(data);
-
-                    eventData = data.FormattedMessage;
-
-                    session.Stop();
-                }
-
-                EtwTraceListenerTests.Source.TraceEvent(
+            TraceAndValidate(
+                () => EtwTraceListenerTests.Source.TraceEvent(
                     TraceEventType.Critical,
                     0,
                     "{0},{1}",
                     new string('b', EtwTraceListener.MaxEtwEventLength * 2),
-                    new string('a', EtwTraceListener.MaxEtwEventLength * 2));
-
-                Assert.AreEqual(0u, EtwTraceListenerTests.Listener.LastReturnCode);
-
-                using (CancellationTokenSource cts = new CancellationTokenSource(5000))
-                {
-                    cts.Token.Register(() => session.Stop());
-
-                    await Task.Run(() => session.Source.Process(), cts.Token);
-
-                    Assert.IsFalse(cts.IsCancellationRequested, "Expected traces were not received before timeout.");
-                }
-
-                Assert.AreEqual(new string('b', EtwTraceListener.MaxEtwEventLength), eventData);
-            }
+                    new string('a', EtwTraceListener.MaxEtwEventLength * 2)),
+                data => Assert.AreEqual(new string('b', EtwTraceListener.MaxEtwEventLength), data.FormattedMessage));
         }
 
         [TestMethod]
         [Owner("soham")]
-        public async Task TestFormatAsync()
+        public void TestFormat()
         {
-            using (TraceEventSession session = new TraceEventSession($"etwTestSession{Guid.NewGuid()}"))
-            {
-                string eventContents = null;
-                session.Source.AllEvents += EtwHandler;
+            StackFrame stackFrame = new StackFrame();
+            string expectedResult = string.Format(
+                "I'm formatted {0} {1} {2} {3} {4}",
+                1,
+                1.15f,
+                SourceLevels.Critical,
+                "Hi formatted I'm dad",
+                stackFrame);
 
-                session.EnableProvider(EtwTraceListenerTests.EventWriteStringGuid);
-
-                void EtwHandler(TraceEvent data)
-                {
-                    // Remove \0.
-                    eventContents = Encoding.Unicode.GetString(data.EventData(), 0, data.EventDataLength - sizeof(char));
-                    Assert.AreEqual(data.Level, TraceEventLevel.Error);
-
-                    session.Stop();
-                }
-
-                StackFrame stackFrame = new StackFrame();
-
-                EtwTraceListenerTests.Source.TraceEvent(
+            TraceAndValidate(
+                () => EtwTraceListenerTests.Source.TraceEvent(
                     TraceEventType.Error,
                     0,
                     "I'm formatted {0} {1} {2} {3} {4}",
@@ -177,28 +109,54 @@ namespace Microsoft.Azure.Cosmos.Core.Trace.Tests.Unit
                     1.15f,
                     SourceLevels.Critical,
                     "Hi formatted I'm dad",
-                    stackFrame);
-
-                Assert.AreEqual(0u, EtwTraceListenerTests.Listener.LastReturnCode);
-
-                using (CancellationTokenSource cts = new CancellationTokenSource(5000))
+                    stackFrame),
+                data =>
                 {
-                    cts.Token.Register(() => session.Stop());
+                    // Remove \0.
+                    string eventContents = Encoding.Unicode.GetString(data.EventData(), 0, data.EventDataLength - sizeof(char));
+                    Assert.AreEqual(TraceEventLevel.Error, data.Level);
+                    Assert.AreEqual(expectedResult, eventContents);
+                });
+        }
 
-                    await Task.Run(() => session.Source.Process(), cts.Token);
+        private static void TraceAndValidate(Action trace, Action<TraceEvent> validate)
+        {
+            string sessionName = $"etwTestSession{Guid.NewGuid():N}";
+            string traceFile = Path.Combine(Path.GetTempPath(), $"{sessionName}.etl");
 
-                    Assert.IsFalse(cts.IsCancellationRequested, "Expected traces were not received before timeout.");
+            try
+            {
+                using (TraceEventSession session = new TraceEventSession(sessionName, traceFile))
+                {
+                    session.EnableProvider(EtwTraceListenerTests.EventWriteStringGuid);
+
+                    trace();
+                    Assert.AreEqual(0u, EtwTraceListenerTests.Listener.LastReturnCode);
+
+                    // Stopping flushes the capture before it is read, without a real-time delivery deadline.
+                    session.Stop();
                 }
 
-                string expectedResult = string.Format(
-                    "I'm formatted {0} {1} {2} {3} {4}",
-                    1,
-                    1.15f,
-                    SourceLevels.Critical,
-                    "Hi formatted I'm dad",
-                    stackFrame);
+                int eventCount = 0;
+                using (ETWTraceEventSource source = new ETWTraceEventSource(traceFile))
+                {
+                    source.AllEvents += data =>
+                    {
+                        if (data.ProviderGuid == EtwTraceListenerTests.EventWriteStringGuid)
+                        {
+                            validate(data);
+                            eventCount++;
+                        }
+                    };
 
-                Assert.AreEqual(expectedResult, eventContents);
+                    source.Process();
+                }
+
+                Assert.AreEqual(1, eventCount, "Expected exactly one trace from the test provider.");
+            }
+            finally
+            {
+                File.Delete(traceFile);
             }
         }
     }
