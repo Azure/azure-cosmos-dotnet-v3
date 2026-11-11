@@ -9,7 +9,7 @@ instead.
 - [How it plugs into the SDK](#how-it-plugs-into-the-sdk)
 - [Building](#building)
 - [Running the tests](#running-the-tests)
-- [Verifying a Direct version bump](#verifying-a-direct-version-bump)
+- [Verifying Direct source or version changes](#verifying-direct-source-or-version-changes)
 - [Working on / maintaining the project](#working-on--maintaining-the-project)
 - [Adding a new fault type](#adding-a-new-fault-type)
 - [Changelog rules](#changelog-rules)
@@ -151,18 +151,22 @@ If a required variable is missing, the affected tests fail fast with
 
 The **same template** runs on every PR from `azure-pipelines.yml` with
 `IncludeIntegration: false` — it builds `src` + `tests`, runs the account-free
-unit tests, and validates `dotnet pack`. That PR gate exists specifically so a
-`$(DirectVersion)` bump cannot break this package unnoticed (see below).
+unit tests, and validates `dotnet pack`. That PR gate exists specifically so
+Direct source or version changes cannot break this package unnoticed (see below).
 
-## Verifying a Direct version bump
+## Verifying Direct source or version changes
 
-`FaultInjection.csproj` and `FaultInjectionTests.csproj` both pin
-`Microsoft.Azure.Cosmos.Direct` to `[$(DirectVersion)]` and the implementation
+`FaultInjection.csproj` and `FaultInjectionTests.csproj` both reference the local
+`Microsoft.Azure.Cosmos/Direct/src/Microsoft.Azure.Cosmos.Direct.csproj` project
+with `PrivateAssets="All"`, not the original Direct NuGet package. The local
+assembly's version comes from `DirectVersion` in the root `Directory.Build.props`.
+The FaultInjection implementation
 binds to `Microsoft.Azure.Documents` internals (`IChaosInterceptor`,
 `Rntbd.Channel`, `Rntbd.Dispatcher`, `StoreResponse`, `TransportException`, …).
-A PR that changes `DirectVersion` in the root `Directory.Build.props` can break
-this package while the main SDK still builds cleanly, so run the ladder below on
-the PR branch before signing off.
+A PR that changes those internals or `DirectVersion` can break this package while
+the main SDK still builds cleanly, so run the ladder below on the PR branch before
+signing off. Internal OSS builds (`ProjectRef=True`) retain their original
+internal Direct provider.
 
 | # | Gate | Command | Catches |
 | - | ---- | ------- | ------- |
@@ -170,12 +174,12 @@ the PR branch before signing off.
 | 2 | tests compile | `dotnet build Microsoft.Azure.Cosmos/FaultInjection/tests/FaultInjectionTests.csproj -c Release` | test-only Direct API usage |
 | 3 | unit tests | `dotnet test ...FaultInjectionTests.csproj -c Release --no-build --filter "FullyQualifiedName~FaultInjectionUnitTests\|FullyQualifiedName~FaultInjectionBuilderValidationTests"` | builder/validation regressions, no account needed |
 | 4 | packaging | `dotnet pack ...FaultInjection.csproj -c Release --no-build -o <out>` | delay-signing / nuspec regressions |
-| 5 | binding | inspect `Microsoft.Azure.Cosmos.Direct.dll` in `tests/bin/Release/net6.0` | confirms the *new* Direct is what actually got bound |
+| 5 | binding | compare `Microsoft.Azure.Cosmos.Direct.dll` in `tests/bin/Release/net6.0` with the local Direct project's build output | confirms the locally built Direct is what actually got bound |
 | 6 | integration **diffed against a baseline** | see below | behavior changes in retry/failover paths |
 | 7 | downlevel compat | see below | the shipped package meeting an *older* Direct at customer runtime |
 
 Gates 1–4 are what the PR pipeline automates. Gates 5–7 are manual and matter
-most when the Direct bump is the point of the PR.
+most when Direct implementation changes are the point of the PR.
 
 ### Gate 6 — always diff, never read the raw number
 
@@ -215,18 +219,19 @@ This is the failure mode a plain build cannot catch. The shipped
 `Microsoft.Azure.Cosmos.FaultInjection` nupkg takes a dependency on
 `Microsoft.Azure.Cosmos` `$(ClientOfficialVersion)` but does **not** ship Direct
 itself (`PrivateAssets="All"`). At customer runtime it therefore binds to the
-`Microsoft.Azure.Cosmos.Direct.dll` embedded in that *already-released* SDK —
-which was built against the **previous** `DirectVersion`.
+`Microsoft.Azure.Cosmos.Direct.dll` embedded in that *already-released* SDK,
+which may contain an older Direct implementation.
 
-So when a PR moves `DirectVersion` from `X` to `Y`, `FaultInjection.dll` is
-compiled against `Y` but will meet `X` at runtime until the SDK itself ships
-again. If the implementation picks up a type or member that only exists in `Y`,
-consumers get a `TypeLoadException` / `MissingMethodException` at runtime.
+FaultInjection is compiled against the local Direct source, but its consumers
+use the Direct assembly bundled in the released SDK dependency. This distinction
+matters even when a source change does not bump `DirectVersion`. If FaultInjection
+uses a type or member absent from that released assembly, consumers get a
+`TypeLoadException` / `MissingMethodException` at runtime.
 
 To check, diff the `Microsoft.Azure.Documents` types and members that
 `Microsoft.Azure.Cosmos.FaultInjection.dll` references against the *old* Direct
-assembly in the NuGet cache
-(`<globalPackagesFolder>/microsoft.azure.cosmos.direct/<oldVersion>/lib/netstandard2.0/`).
+assembly bundled in the released SDK's NuGet cache entry
+(`<globalPackagesFolder>/microsoft.azure.cosmos/<releasedSdkVersion>/lib/netstandard2.0/Microsoft.Azure.Cosmos.Direct.dll`).
 Every referenced type and member must still exist there. If one does not, either
 hold the FaultInjection release until the SDK ships with the new Direct, or avoid
 the new API.

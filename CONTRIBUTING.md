@@ -55,10 +55,20 @@ For more details visit [here][https://docs.microsoft.com/azure/cosmos-db/databas
 
 ## Dependencies
 
-The SDK currently depends on:
+The SDK builds its managed Direct transport from the local
+`Microsoft.Azure.Cosmos/Direct/src/Microsoft.Azure.Cosmos.Direct.csproj` project
+and bundles the resulting assembly in the SDK package. It does not restore a
+separate `Microsoft.Azure.Cosmos.Direct` NuGet package.
 
-- `Microsoft.Azure.Cosmos.Direct` - This package contains the Direct transport protocol and ServiceInterop DLLs.
+The native query-planning and serialization dependencies are:
+
+- `Microsoft.Azure.Cosmos.ServiceInterop` - Supplies the Windows native query-planning and supporting runtime DLLs.
+- `Microsoft.Azure.Cosmos.QueryPlanInterop.Linux` - Supplies the Linux native query-planning libraries.
 - `Microsoft.HybridRow` - This package contains the HybridRow protocol used to transmit data for Batch requests.
+
+These implementation dependencies are bundled in the SDK package. Internal OSS
+builds (`ProjectRef=True`) retain the original internal Direct provider rather
+than using the public local Direct project and its native package references.
 
 ## Folder structure
 
@@ -67,6 +77,7 @@ The SDK currently depends on:
   - `Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests` contains the **Emulator/Integration tests** project.
   - `Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests` contains the **micro benchmark tests** project.
   - `Microsoft.Azure.Cosmos/src` contains the SDK source code and the `Microsoft.Azure.Cosmos.csproj` project.
+  - `Microsoft.Azure.Cosmos/Direct/src` contains the managed Direct transport source and its project.
 - `Microsoft.Azure.Cosmos.Samples` contains samples and tools:
   - `Microsoft.Azure.Cosmos.Samples/Usage` contains sample applications for multiple scenarios. Here is where we keep our public samples for users to consume.
   - `Microsoft.Azure.Cosmos.Samples/Tools` contains tools such as the CTL runner and Benchmark runner.

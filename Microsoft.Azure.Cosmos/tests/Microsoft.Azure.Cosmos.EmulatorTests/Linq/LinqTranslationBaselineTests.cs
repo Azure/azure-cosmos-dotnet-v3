@@ -826,6 +826,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     .Take(1)
                     .Select(doc => doc.Pk)),
 
+                new LinqTestInput("Order By Rank + Take maximum", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .Take(int.MaxValue)
+                    .Select(doc => doc.Pk)),
+
                 // GroupBy
                 new LinqTestInput("GroupBy + Order By Rank", b => getQuery(b)
                     .GroupBy(doc => doc.StringField, (key, values) => values.Count())

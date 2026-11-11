@@ -9,7 +9,7 @@
 - GlobalPartitionEndpointManager: Per partition override state. Every request will flow through
     -   Today GlobalEndpointManager is at region scope only and doesn't look at the partition
     -   Ideal abstraction is to fold it into GlobalEndpointManager --> extra hash computation
-        - Posible to refactor direct code and flow HashedValue down stream (more contract work with direct package)
+        - Posible to refactor direct code and flow HashedValue down stream (more contract work with the local Direct assembly)
 - AddressResolver: It does use IAddressCache (Above diagram missing it)
 
 

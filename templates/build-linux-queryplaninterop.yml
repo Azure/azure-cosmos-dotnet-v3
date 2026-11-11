@@ -183,9 +183,8 @@ jobs:
         probe="$AGENT_TEMPDIRECTORY/qpi-runtime-probe"
         rm -rf "$probe"
         mkdir -p "$probe"
-        # Direct, HybridRow and QueryPlanInterop.Linux require explicit references in the probe project.
+        # Direct is built locally; private SDK dependencies require explicit references in this probe.
         props="$BUILD_SOURCESDIRECTORY/Directory.Build.props"
-        direct_version=$(sed -n 's:.*<DirectVersion>\(.*\)</DirectVersion>.*:\1:p' "$props")
         hybridrow_version=$(sed -n 's:.*<HybridRowVersion>\(.*\)</HybridRowVersion>.*:\1:p' "$props")
         qpi_version=$(sed -n 's:.*<QueryPlanInteropLinuxVersion>\(.*\)</QueryPlanInteropLinuxVersion>.*:\1:p' "$props")
         cat > "$probe/QpiRuntimeProbe.csproj" <<EOF
@@ -197,7 +196,7 @@ jobs:
           </PropertyGroup>
           <ItemGroup>
             <ProjectReference Include="$BUILD_SOURCESDIRECTORY/Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj" />
-            <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$direct_version]" />
+            <ProjectReference Include="$BUILD_SOURCESDIRECTORY/Microsoft.Azure.Cosmos/Direct/src/Microsoft.Azure.Cosmos.Direct.csproj" />
             <PackageReference Include="Microsoft.HybridRow" Version="[$hybridrow_version]" />
             <PackageReference Include="Microsoft.Azure.Cosmos.QueryPlanInterop.Linux" Version="[$qpi_version]" />
           </ItemGroup>

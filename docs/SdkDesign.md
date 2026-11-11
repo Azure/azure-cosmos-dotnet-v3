@@ -136,11 +136,11 @@ flowchart
 
 ## Direct mode retry layer
 
-Direct connectivity is obtained from the `Microsoft.Azure.Cosmos.Direct` package reference.
+Direct connectivity is built from the local [Microsoft.Azure.Cosmos.Direct project](../Microsoft.Azure.Cosmos/Direct/src/Microsoft.Azure.Cosmos.Direct.csproj). The SDK bundles this managed assembly instead of restoring the original Direct NuGet package.
 
-> The below code links are to an example branch in this repository that contains the `Microsoft.Azure.Cosmos.Direct` source code, but that branch might not be updated with the latest source code.
+Native query planning is supplied separately by `Microsoft.Azure.Cosmos.ServiceInterop` on Windows and `Microsoft.Azure.Cosmos.QueryPlanInterop.Linux` on Linux. The SDK bundles their native payloads.
 
-The [ServerStoreModel](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ServerStoreModel.cs) uses the [StoreClient](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/StoreClient.cs) to execute Direct operations. The `StoreClient` is used to capture session token updates (in case of Session consistency) and calls the [ReplicatedResourceClient](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ReplicatedResourceClient.cs) which wraps the request into the [GoneAndRetryWithRequestRetryPolicy](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/GoneAndRetryWithRequestRetryPolicy.cs) which retries for up to 30 seconds (or up to the user CancellationToken). 
+The [ServerStoreModel](../Microsoft.Azure.Cosmos/Direct/src/Store/ServerStoreModel.cs) uses the [StoreClient](../Microsoft.Azure.Cosmos/Direct/src/Store/StoreClient.cs) to execute Direct operations. The `StoreClient` is used to capture session token updates (in case of Session consistency) and calls the [ReplicatedResourceClient](../Microsoft.Azure.Cosmos/Direct/src/Store/ReplicatedResourceClient.cs) which wraps the request into the [GoneAndRetryWithRequestRetryPolicy](../Microsoft.Azure.Cosmos/Direct/src/Retry/GoneAndRetryWithRequestRetryPolicy.cs) which retries for up to 30 seconds (or up to the user CancellationToken).
 
 `CancellationToken` passed down as input to the Public API can stop these retries.
 
@@ -179,7 +179,7 @@ For details on the caches, please see the [cache design documentation](caches.md
 
 ## Consistency (direct mode)
 
-When performing operations through Direct mode, the SDK is involved in checking consistency for Bounded Staleness and Strong accounts. Read requests are handled by the [ConsistencyReader](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ConsistencyReader.cs) and write requests are handled by the [ConsistencyWriter](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ConsistencyWriter.cs). The `ConsistencyReader` uses the [QuorumReader](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/QuorumReader.cs) when the consistency is Bounded Staleness or Strong to verify quorum after performing two requests and comparing the LSNs. If quorum cannot be achieved, the SDK starts what is defined as "barrier requests" to the container and waits for it to achieve quorum. The `ConsistencyWriter` also performs a similar LSN check after receiving the response from the write, the `GlobalCommittedLSN` and the item `LSN`. If they don't match, barrier requests are also performed.
+When performing operations through Direct mode, the SDK is involved in checking consistency for Bounded Staleness and Strong accounts. Read requests are handled by the [ConsistencyReader](../Microsoft.Azure.Cosmos/Direct/src/Store/ConsistencyReader.cs) and write requests are handled by the [ConsistencyWriter](../Microsoft.Azure.Cosmos/Direct/src/Store/ConsistencyWriter.cs). The `ConsistencyReader` uses the [QuorumReader](../Microsoft.Azure.Cosmos/Direct/src/Store/QuorumReader.cs) when the consistency is Bounded Staleness or Strong to verify quorum after performing two requests and comparing the LSNs. If quorum cannot be achieved, the SDK starts what is defined as "barrier requests" to the container and waits for it to achieve quorum. The `ConsistencyWriter` also performs a similar LSN check after receiving the response from the write, the `GlobalCommittedLSN` and the item `LSN`. If they don't match, barrier requests are also performed.
 
 ```mermaid
 flowchart LR

@@ -41,7 +41,7 @@ ORDER BY RANK RRF(FullTextScore(root["StringField"], "test1"), FullTextScore(roo
 SELECT VALUE root["Pk"] 
 FROM root 
 ORDER BY RANK RRF(FullTextScore(root["StringField"], "test1"))]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":34,"end":96},"code":"SC2221","message":"The ORDER BY RANK clause must be followed by a VectorDistance and/or a FullTextScore function call."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":34,"end":96},"code":"SC2233","message":"A score fusion function requires at least two component score functions."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

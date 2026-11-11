@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
             private ClientTakeQueryPipelineStage(
                 IQueryPipelineStage source,
-                int takeCount,
+                long takeCount,
                 TakeEnum takeEnum)
                 : base(source, takeCount)
             {
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             }
 
             public static new TryCatch<IQueryPipelineStage> MonadicCreateLimitStage(
-                int limitCount,
+                long limitCount,
                 CosmosElement requestContinuationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             }
 
             public static new TryCatch<IQueryPipelineStage> MonadicCreateTopStage(
-                int topCount,
+                long topCount,
                 CosmosElement requestContinuationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
@@ -196,7 +196,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
                 QueryPage sourcePage = tryGetSourcePage.Result;
 
-                List<CosmosElement> takedDocuments = sourcePage.Documents.Take(this.takeCount).ToList();
+                int countForThisPage = (int)Math.Min(this.takeCount, sourcePage.Documents.Count);
+                List<CosmosElement> takedDocuments = sourcePage.Documents.Take(countForThisPage).ToList();
                 this.takeCount -= takedDocuments.Count;
 
                 QueryState state;
@@ -255,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// </summary>
                 /// <param name="limit">The limit to the number of document drained for the remainder of the query.</param>
                 /// <param name="sourceToken">The continuation token for the source component of the query.</param>
-                public LimitContinuationToken(int limit, string sourceToken)
+                public LimitContinuationToken(long limit, string sourceToken)
                 {
                     if (limit < 0)
                     {
@@ -270,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// Gets the limit to the number of document drained for the remainder of the query.
                 /// </summary>
                 [JsonProperty("limit")]
-                public int Limit
+                public long Limit
                 {
                     get;
                 }
@@ -329,7 +330,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// </summary>
                 /// <param name="top">The limit to the number of document drained for the remainder of the query.</param>
                 /// <param name="sourceToken">The continuation token for the source component of the query.</param>
-                public TopContinuationToken(int top, string sourceToken)
+                public TopContinuationToken(long top, string sourceToken)
                 {
                     this.Top = top;
                     this.SourceToken = sourceToken;
@@ -339,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// Gets the limit to the number of document drained for the remainder of the query.
                 /// </summary>
                 [JsonProperty("top")]
-                public int Top
+                public long Top
                 {
                     get;
                 }
