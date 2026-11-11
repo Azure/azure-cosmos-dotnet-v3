@@ -2311,6 +2311,110 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task ReadItem_WithExplicitCompoundSessionToken_Succeeds()
+        {
+            ConcurrentQueue<HttpRequestMessage> sentRequests = new ConcurrentQueue<HttpRequestMessage>();
+            using CosmosClient capturingClient = new CosmosClient(
+                this.connectionString,
+                new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    ApplicationPreferredRegions = PreferredRegions,
+                    Serializer = this.cosmosSystemTextJsonSerializer,
+                    SendingRequestEventArgs = (sender, e) => sentRequests.Enqueue(e.HttpRequest),
+                });
+
+            // 12,000 RU/s provisions two physical partitions, so writes return session tokens for distinct ranges.
+            ContainerResponse containerResponse = await capturingClient.GetDatabase(this.database.Id).CreateContainerAsync(
+                new ContainerProperties("CompoundSession_" + Guid.NewGuid(), "/pk"),
+                ThroughputProperties.CreateManualThroughput(12000));
+            Container container = containerResponse.Container;
+            await WarmUpThinClientProbeAsync(container, new TestObject { Id = Guid.NewGuid().ToString(), Pk = "warmup", Other = "warmup" });
+
+            Dictionary<string, string> tokenByRangeId = new Dictionary<string, string>();
+            List<TestObject> items = new List<TestObject>();
+            TestObject item = null;
+            for (int i = 0; i < 50 && tokenByRangeId.Count < 2; i++)
+            {
+                item = new TestObject { Id = Guid.NewGuid().ToString(), Pk = "pk_" + i, Other = "compound" };
+                ItemResponse<TestObject> write = await container.CreateItemAsync(item, new PartitionKey(item.Pk));
+                items.Add(item);
+                tokenByRangeId[write.Headers.Session.Substring(0, write.Headers.Session.IndexOf(':'))] = write.Headers.Session;
+            }
+
+            if (tokenByRangeId.Count < 2)
+            {
+                Assert.Inconclusive("The container did not span two partition key ranges.");
+            }
+
+            // Before the fix the proxy forwarded the compound token and the backend returned 400; the SDK now
+            // scopes it to the target range.
+            string compoundToken = string.Join(",", tokenByRangeId.Values);
+            sentRequests.Clear();
+            ItemResponse<TestObject> scopedRead = await container.ReadItemAsync<TestObject>(
+                item.Id,
+                new PartitionKey(item.Pk),
+                new ItemRequestOptions { SessionToken = compoundToken });
+
+            Assert.AreEqual(HttpStatusCode.OK, scopedRead.StatusCode);
+            Assert.IsTrue(
+                sentRequests.Any(r => r.RequestUri.Port == ThinClientProxyPort),
+                "A compound session token must be served by the thin-client proxy.");
+            Assert.IsFalse(
+                sentRequests.Any(IsGatewayV1DocumentRequest),
+                "A compound session token must not be routed to Gateway V1.");
+
+            // A range the container doesn't know triggers one routing map refresh; the token is then omitted with a
+            // warning rather than rejected, and the read stays on the proxy.
+            string tokenWithUnknownRange = compoundToken + ",999:-1#1";
+            sentRequests.Clear();
+            ItemResponse<TestObject> unknownRangeRead = await container.ReadItemAsync<TestObject>(
+                item.Id,
+                new PartitionKey(item.Pk),
+                new ItemRequestOptions { SessionToken = tokenWithUnknownRange });
+
+            Assert.AreEqual(HttpStatusCode.OK, unknownRangeRead.StatusCode);
+            Assert.IsTrue(sentRequests.Any(r => r.RequestUri.Port == ThinClientProxyPort));
+            Assert.IsFalse(sentRequests.Any(IsGatewayV1DocumentRequest));
+
+            // A cross-partition query sends the caller's token to every partition, so each one must be scoped to its range.
+            sentRequests.Clear();
+            List<TestObject> queried = new List<TestObject>();
+            using (FeedIterator<TestObject> iterator = container.GetItemQueryIterator<TestObject>(
+                "SELECT * FROM c WHERE c.other = 'compound'",
+                requestOptions: new QueryRequestOptions { SessionToken = compoundToken }))
+            {
+                while (iterator.HasMoreResults)
+                {
+                    queried.AddRange(await iterator.ReadNextAsync());
+                }
+            }
+
+            Assert.AreEqual(items.Count, queried.Count, "Every partition must answer the query carrying the compound token.");
+            Assert.IsTrue(sentRequests.Any(r => r.RequestUri.Port == ThinClientProxyPort));
+            Assert.IsFalse(sentRequests.Any(IsGatewayV1DocumentRequest));
+
+            // Writes carry the session token on multi-write accounts and are dropped on single-write ones; both must succeed.
+            sentRequests.Clear();
+            item.Other = "compound-updated";
+            ItemResponse<TestObject> upsert = await container.UpsertItemAsync(
+                item,
+                new PartitionKey(item.Pk),
+                new ItemRequestOptions { SessionToken = compoundToken });
+
+            Assert.AreEqual(HttpStatusCode.OK, upsert.StatusCode);
+            Assert.IsTrue(sentRequests.Any(r => r.RequestUri.Port == ThinClientProxyPort));
+            Assert.IsFalse(sentRequests.Any(IsGatewayV1DocumentRequest));
+        }
+
+        private static bool IsGatewayV1DocumentRequest(HttpRequestMessage request)
+        {
+            return request.RequestUri.Port != ThinClientProxyPort
+                && request.RequestUri.AbsolutePath.Contains("/docs/");
+        }
+
         private static string RegionHostFragment(string region)
         {
             return region.Replace(" ", string.Empty).ToLowerInvariant();

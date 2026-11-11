@@ -502,6 +502,314 @@ namespace Microsoft.Azure.Cosmos
         }
 
 
+        [DataTestMethod]
+        [Owner("aavasthy")]
+        [DataRow("0:1#52,1:1#40", "1:1#52", false, DisplayName = "Compound token is scoped to the target range, merged with its parent")]
+        [DataRow("0:1#52,1:1#40", "1:1#52", true, DisplayName = "Caller's token is restored after a failed attempt")]
+        [DataRow("0:1#52", "0:1#52", false, DisplayName = "Single-segment token is sent unchanged")]
+        public async Task ProcessMessageAsync_SessionToken_SendsTargetRangeTokenAndRestoresCallerToken(
+            string callerToken,
+            string expectedProxyToken,
+            bool proxyFails)
+        {
+            ThinClientStoreModel storeModel = this.BuildSessionScopingStoreModel(out Uri thinClientEndpoint);
+            MockThinClientStoreClient thinClientStoreClient = new(
+                (req, _, uri, _, _, _, _) => proxyFails
+                    ? throw new DocumentClientException(
+                        message: "Service Unavailable",
+                        innerException: null,
+                        responseHeaders: new StoreResponseNameValueCollection(),
+                        statusCode: HttpStatusCode.ServiceUnavailable,
+                        requestUri: uri)
+                    : Task.FromResult(new DocumentServiceResponse(Stream.Null, new StoreResponseNameValueCollection(), HttpStatusCode.OK)));
+            ReplaceThinClientStoreClientField(storeModel, thinClientStoreClient);
+
+            DocumentServiceRequest request = CreatePartitionedDocumentRequest();
+            request.Headers[HttpConstants.HttpHeaders.SessionToken] = callerToken;
+            // ClientRetryPolicy pins the proxy endpoint before dispatch.
+            request.RequestContext.RouteToLocation(thinClientEndpoint);
+
+            if (proxyFails)
+            {
+                await Assert.ThrowsExceptionAsync<DocumentClientException>(() => storeModel.ProcessMessageAsync(request));
+            }
+            else
+            {
+                await storeModel.ProcessMessageAsync(request);
+            }
+
+            Assert.AreEqual(expectedProxyToken, thinClientStoreClient.LastAttemptSessionToken);
+            Assert.AreEqual(
+                callerToken,
+                request.Headers[HttpConstants.HttpHeaders.SessionToken],
+                "The caller's token must stay intact so a retry can rescope it against the range it resolves.");
+        }
+
+        [DataTestMethod]
+        [Owner("aavasthy")]
+        [DataRow("0:1#30,2:1#50", 0, DisplayName = "Known ranges without target progress: no refresh")]
+        [DataRow("5:1#12,9:1#40", 1, DisplayName = "Ranges unknown even after one refresh")]
+        public async Task ProcessMessageAsync_CompoundSessionTokenWithoutTargetProgress_SendsNoTokenToProxy(
+            string compoundToken,
+            int expectedRoutingMapRefreshes)
+        {
+            // "0" is the retired parent of "2"; the request targets "1".
+            ThinClientStoreModel storeModel = this.BuildSessionScopingStoreModel(
+                out Uri thinClientEndpoint,
+                out Mock<PartitionKeyRangeCache> partitionKeyRangeCache,
+                CreateRoutingMap(CreateRange("1", "", "80"), CreateRange("2", "80", "FF", "0")));
+            MockThinClientStoreClient thinClientStoreClient = CreateSuccessfulThinClientStoreClient(storeModel);
+
+            DocumentServiceRequest request = CreateRangeTargetedDocumentRequest("1");
+            request.Headers[HttpConstants.HttpHeaders.SessionToken] = compoundToken;
+            request.RequestContext.RouteToLocation(thinClientEndpoint);
+
+            await storeModel.ProcessMessageAsync(request);
+
+            VerifyRoutingMapRefreshes(partitionKeyRangeCache, Times.Exactly(expectedRoutingMapRefreshes));
+            Assert.AreEqual(1, thinClientStoreClient.InvocationCount, "The request must stay on the thin-client proxy; there is no Gateway V1 fallback.");
+            Assert.IsNull(thinClientStoreClient.LastAttemptSessionToken);
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ProcessMessageAsync_CompoundSessionTokenAheadOfStaleRoutingMap_RefreshesAndScopesToChildRange()
+        {
+            // The client's map still has parent "0"; the token already carries progress for its children "1" and "2".
+            const string compoundToken = "1:1#40,2:1#50";
+            ThinClientStoreModel storeModel = this.BuildSessionScopingStoreModel(
+                out Uri thinClientEndpoint,
+                out Mock<PartitionKeyRangeCache> partitionKeyRangeCache,
+                cachedRoutingMap: CreateRoutingMap(CreateRange("0", "", "FF")),
+                refreshedRoutingMap: CreateRoutingMap(CreateRange("1", "", "80", "0"), CreateRange("2", "80", "FF", "0")));
+            MockThinClientStoreClient thinClientStoreClient = CreateSuccessfulThinClientStoreClient(storeModel);
+
+            DocumentServiceRequest request = CreatePartitionedDocumentRequest();
+            request.Headers[HttpConstants.HttpHeaders.SessionToken] = compoundToken;
+            request.RequestContext.RouteToLocation(thinClientEndpoint);
+
+            await storeModel.ProcessMessageAsync(request);
+
+            VerifyRoutingMapRefreshes(partitionKeyRangeCache, Times.Once());
+            string childRangeId = thinClientStoreClient.LastAttemptPartitionKeyRangeId;
+            Assert.IsTrue(childRangeId == "1" || childRangeId == "2", "The proxy request must target the child range from the refreshed map.");
+            Assert.AreEqual(
+                childRangeId == "1" ? "1:1#40" : "2:1#50",
+                thinClientStoreClient.LastAttemptSessionToken,
+                "The child's progress must be enforced instead of being dropped against the stale parent range.");
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ProcessMessageAsync_CompoundSessionTokenForSplitTargetRange_ThrowsPartitionKeyRangeGone()
+        {
+            ThinClientStoreModel storeModel = this.BuildSessionScopingStoreModel(
+                out Uri thinClientEndpoint,
+                out _,
+                cachedRoutingMap: CreateRoutingMap(CreateRange("0", "", "FF")),
+                refreshedRoutingMap: CreateRoutingMap(CreateRange("1", "", "80", "0"), CreateRange("2", "80", "FF", "0")));
+            MockThinClientStoreClient thinClientStoreClient = CreateSuccessfulThinClientStoreClient(storeModel);
+
+            DocumentServiceRequest request = CreateRangeTargetedDocumentRequest("0");
+            request.Headers[HttpConstants.HttpHeaders.SessionToken] = "1:1#40,2:1#50";
+            request.RequestContext.RouteToLocation(thinClientEndpoint);
+
+            DocumentClientException exception = await Assert.ThrowsExceptionAsync<Documents.Routing.PartitionKeyRangeGoneException>(
+                () => storeModel.ProcessMessageAsync(request));
+
+            Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, exception.GetSubStatus(), "The split must surface as 410/1002 so the query pipeline retargets the children.");
+            Assert.AreEqual(0, thinClientStoreClient.InvocationCount);
+        }
+
+        [DataTestMethod]
+        [Owner("aavasthy")]
+        [DataRow((int)OperationType.Create, null, ConsistencyLevel.Session, DisplayName = "Write on a single-write account")]
+        [DataRow((int)OperationType.Read, "Eventual", ConsistencyLevel.Session, DisplayName = "Read relaxed to eventual by the request")]
+        [DataRow((int)OperationType.Read, null, ConsistencyLevel.Eventual, DisplayName = "Read on an eventual-consistency account")]
+        public async Task ProcessMessageAsync_CompoundSessionTokenWhereSessionDoesNotApply_SendsNoToken(
+            int operationType,
+            string requestConsistencyLevel,
+            ConsistencyLevel defaultConsistencyLevel)
+        {
+            ThinClientStoreModel storeModel = this.BuildSessionScopingStoreModel(
+                out Uri thinClientEndpoint,
+                out Mock<PartitionKeyRangeCache> partitionKeyRangeCache,
+                CreateRoutingMap(CreateRange("1", "", "FF", "0")),
+                defaultConsistencyLevel: defaultConsistencyLevel);
+            MockThinClientStoreClient thinClientStoreClient = CreateSuccessfulThinClientStoreClient(storeModel);
+
+            OperationType operation = (OperationType)operationType;
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+                operation,
+                ResourceType.Document,
+                operation == OperationType.Create ? "/dbs/test/colls/test" : "/dbs/test/colls/test/docs/test",
+                AuthorizationTokenType.PrimaryMasterKey);
+            request.Headers[HttpConstants.HttpHeaders.PartitionKey] = "[\"test\"]";
+            request.RequestContext = new DocumentServiceRequestContext();
+            if (requestConsistencyLevel != null)
+            {
+                request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel] = requestConsistencyLevel;
+            }
+
+            request.Headers[HttpConstants.HttpHeaders.SessionToken] = "0:1#52,1:1#40";
+            request.RequestContext.RouteToLocation(thinClientEndpoint);
+
+            await storeModel.ProcessMessageAsync(request);
+
+            Assert.AreEqual(1, thinClientStoreClient.InvocationCount);
+            Assert.IsNull(thinClientStoreClient.LastAttemptSessionToken, "Session progress isn't enforced here, matching the gateway's own session token rules.");
+            VerifyRoutingMapRefreshes(partitionKeyRangeCache, Times.Never());
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ProcessMessageAsync_MalformedCompoundSessionToken_ThrowsBadRequestWithoutCallingProxy()
+        {
+            ThinClientStoreModel storeModel = this.BuildSessionScopingStoreModel(out Uri thinClientEndpoint);
+            MockThinClientStoreClient thinClientStoreClient = CreateSuccessfulThinClientStoreClient(storeModel);
+
+            DocumentServiceRequest request = CreatePartitionedDocumentRequest();
+            request.Headers[HttpConstants.HttpHeaders.SessionToken] = "1:1#52,garbage";
+            request.RequestContext.RouteToLocation(thinClientEndpoint);
+
+            await Assert.ThrowsExceptionAsync<BadRequestException>(() => storeModel.ProcessMessageAsync(request));
+
+            Assert.AreEqual(0, thinClientStoreClient.InvocationCount);
+        }
+
+        private static MockThinClientStoreClient CreateSuccessfulThinClientStoreClient(ThinClientStoreModel storeModel)
+        {
+            MockThinClientStoreClient thinClientStoreClient = new(
+                (req, _, _, _, _, _, _) => Task.FromResult(
+                    new DocumentServiceResponse(Stream.Null, new StoreResponseNameValueCollection(), HttpStatusCode.OK)));
+            ReplaceThinClientStoreClientField(storeModel, thinClientStoreClient);
+            return thinClientStoreClient;
+        }
+
+        /// <summary>
+        /// Thin-client store model whose requests resolve to range "1", which was split from "0".
+        /// </summary>
+        private ThinClientStoreModel BuildSessionScopingStoreModel(out Uri thinClientEndpoint)
+        {
+            // Range "1" covers the whole key space, so every partition-key request resolves to it.
+            return this.BuildSessionScopingStoreModel(
+                out thinClientEndpoint,
+                out _,
+                CreateRoutingMap(CreateRange("1", "", "FF", "0")));
+        }
+
+        /// <summary>
+        /// Thin-client store model whose partition key range cache serves <paramref name="cachedRoutingMap"/> until it
+        /// is force-refreshed, after which it serves <paramref name="refreshedRoutingMap"/> (or the cached map if none).
+        /// </summary>
+        private ThinClientStoreModel BuildSessionScopingStoreModel(
+            out Uri thinClientEndpoint,
+            out Mock<PartitionKeyRangeCache> partitionKeyRangeCache,
+            CollectionRoutingMap cachedRoutingMap,
+            CollectionRoutingMap refreshedRoutingMap = null,
+            ConsistencyLevel defaultConsistencyLevel = ConsistencyLevel.Session)
+        {
+            const string thinClientEndpointString = "https://mock.thinclient.com/";
+            thinClientEndpoint = new Uri(thinClientEndpointString);
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new();
+            mockDocumentClient.Setup(c => c.ServiceEndpoint).Returns(new Uri("https://mock.gateway.com/"));
+            mockDocumentClient
+                .Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccountProperties());
+
+            GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
+            TestUtils.EnableThinClientLocationsForTest(endpointManager, thinClientEndpointString);
+            TestUtils.MarkThinClientEndpointsHealthyForTest(endpointManager);
+
+            ThinClientStoreModel storeModel = new(
+                endpointManager,
+                new Mock<ISessionContainer>().Object,
+                defaultConsistencyLevel,
+                new Mock<DocumentClientEventSource>().Object,
+                new JsonSerializerSettings(),
+                new Mock<CosmosHttpClient>().Object,
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix"));
+
+            Mock<ClientCollectionCache> mockCollectionCache = new(
+                Mock.Of<ISessionContainer>(), storeModel, null, null, null, false, null);
+            ContainerProperties containerProperties = new("test", "/pk");
+            typeof(ContainerProperties)
+                .GetProperty("ResourceId", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
+                ?.SetValue(containerProperties, "testCollectionRid");
+            mockCollectionCache
+                .Setup(c => c.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>(), It.IsAny<ITrace>()))
+                .ReturnsAsync(containerProperties);
+
+            partitionKeyRangeCache = new(null, storeModel, mockCollectionCache.Object, endpointManager, false, false, null);
+            CollectionRoutingMap currentRoutingMap = cachedRoutingMap;
+            partitionKeyRangeCache
+                .Setup(c => c.TryLookupAsync(It.IsAny<string>(), It.IsAny<CollectionRoutingMap>(), It.IsAny<DocumentServiceRequest>(), It.IsAny<ITrace>()))
+                .ReturnsAsync((string _, CollectionRoutingMap previousValue, DocumentServiceRequest _, ITrace _) =>
+                {
+                    if (previousValue != null)
+                    {
+                        currentRoutingMap = refreshedRoutingMap ?? currentRoutingMap;
+                    }
+
+                    return currentRoutingMap;
+                });
+            partitionKeyRangeCache
+                .Setup(c => c.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ITrace>(), It.IsAny<bool>()))
+                .ReturnsAsync((string _, string partitionKeyRangeId, ITrace _, bool forceRefresh) =>
+                {
+                    if (forceRefresh)
+                    {
+                        currentRoutingMap = refreshedRoutingMap ?? currentRoutingMap;
+                    }
+
+                    return currentRoutingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId);
+                });
+
+            storeModel.SetCaches(partitionKeyRangeCache.Object, mockCollectionCache.Object);
+            return storeModel;
+        }
+
+        private static PartitionKeyRange CreateRange(string id, string minInclusive, string maxExclusive, params string[] parents)
+        {
+            return new PartitionKeyRange
+            {
+                Id = id,
+                MinInclusive = minInclusive,
+                MaxExclusive = maxExclusive,
+                Parents = new System.Collections.ObjectModel.Collection<string>(parents),
+            };
+        }
+
+        private static CollectionRoutingMap CreateRoutingMap(params PartitionKeyRange[] ranges)
+        {
+            return CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                ranges.Select(r => Tuple.Create(r, (ServiceIdentity)null)),
+                "testCollectionRid",
+                false);
+        }
+
+        private static DocumentServiceRequest CreateRangeTargetedDocumentRequest(string partitionKeyRangeId)
+        {
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Query,
+                ResourceType.Document,
+                "/dbs/test/colls/test/docs",
+                AuthorizationTokenType.PrimaryMasterKey);
+            request.RequestContext = new DocumentServiceRequestContext();
+            request.RouteTo(new PartitionKeyRangeIdentity("testCollectionRid", partitionKeyRangeId));
+            return request;
+        }
+
+        private static void VerifyRoutingMapRefreshes(Mock<PartitionKeyRangeCache> partitionKeyRangeCache, Times times)
+        {
+            partitionKeyRangeCache.Verify(
+                c => c.TryLookupAsync(It.IsAny<string>(), It.IsNotNull<CollectionRoutingMap>(), It.IsAny<DocumentServiceRequest>(), It.IsAny<ITrace>()),
+                times);
+        }
+
+
         [TestMethod]
         [Owner("aavasthy")]
         public void Dispose_DisposesThinClientStoreClient()
@@ -684,6 +992,12 @@ namespace Microsoft.Azure.Cosmos
                 this.onDispose = onDispose;
             }
 
+            public string LastAttemptSessionToken { get; private set; }
+
+            public string LastAttemptPartitionKeyRangeId { get; private set; }
+
+            public int InvocationCount { get; private set; }
+
             public override Task<DocumentServiceResponse> InvokeAsync(
                 DocumentServiceRequest request,
                 ResourceType resourceType,
@@ -693,6 +1007,9 @@ namespace Microsoft.Azure.Cosmos
                 ClientCollectionCache clientCollectionCache,
                 CancellationToken cancellationToken)
             {
+                this.LastAttemptSessionToken = request.Headers[HttpConstants.HttpHeaders.SessionToken];
+                this.LastAttemptPartitionKeyRangeId = request.RequestContext?.ResolvedPartitionKeyRange?.Id;
+                this.InvocationCount++;
                 return this.invokeAsyncFunc(
                     request,
                     resourceType,

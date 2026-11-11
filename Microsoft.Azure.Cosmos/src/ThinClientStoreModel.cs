@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
@@ -23,6 +24,8 @@ namespace Microsoft.Azure.Cosmos
     /// This dispatch decision is taken per request (see <see cref="IsThinClientRoutable"/>) so the
     /// model can switch direction in either way (thin-client → gateway, or gateway → thin-client)
     /// as soon as the next <see cref="LocationCache"/> refresh updates the availability signals.
+    /// A caller-supplied compound session token is scoped to the attempt's partition key range (and its parents)
+    /// before it is sent to the proxy, refreshing the routing map once if the token names ranges the cache doesn't know.
     /// </summary>
     internal class ThinClientStoreModel : GatewayStoreModel
     {
@@ -88,6 +91,183 @@ namespace Microsoft.Azure.Cosmos
                 return await base.DispatchAsync(request, physicalAddress, cancellationToken);
             }
 
+            string sessionToken = request.Headers[HttpConstants.HttpHeaders.SessionToken];
+            if (string.IsNullOrEmpty(sessionToken) || sessionToken.IndexOf(',') < 0)
+            {
+                return await this.InvokeThinClientAsync(request, physicalAddress, thinClientEndpoint, cancellationToken);
+            }
+
+            // The proxy accepts only the token of the partition it targets, so a caller-supplied compound token is
+            // scoped per attempt and the caller's token is restored afterwards, letting retries (449, split,
+            // cross-region) rescope it against the range they resolve.
+            try
+            {
+                await this.ScopeCompoundSessionTokenAsync(request, sessionToken, cancellationToken);
+                return await this.InvokeThinClientAsync(request, physicalAddress, thinClientEndpoint, cancellationToken);
+            }
+            finally
+            {
+                SessionTokenHelper.SetOriginalSessionToken(request, sessionToken);
+            }
+        }
+
+        /// <summary>
+        /// Replaces a compound session token with the progress of the request's target partition key range (merged
+        /// with its parents' progress), as the gateway does for the token it tracks. If the token names a range the
+        /// cached routing map doesn't know (e.g. a split the client hasn't seen), the map is refreshed once so child
+        /// progress isn't silently dropped in favour of a stale parent. A token that still can't be scoped is omitted
+        /// with a warning; a malformed token is rejected with <see cref="BadRequestException"/>.
+        /// </summary>
+        private async Task ScopeCompoundSessionTokenAsync(
+            DocumentServiceRequest request,
+            string compoundSessionToken,
+            CancellationToken cancellationToken)
+        {
+            if (!GatewayStoreModel.IsSessionTokenApplicable(request, this.defaultConsistencyLevel, this.endpointManager))
+            {
+                request.Headers.Remove(HttpConstants.HttpHeaders.SessionToken);
+                return;
+            }
+
+            ContainerProperties collection = await this.clientCollectionCache.ResolveCollectionAsync(
+                request,
+                cancellationToken,
+                NoOpTrace.Singleton);
+            CollectionRoutingMap routingMap = await this.partitionKeyRangeCache.TryLookupAsync(
+                collection.ResourceId,
+                previousValue: null,
+                request,
+                NoOpTrace.Singleton)
+                ?? throw new NotFoundException($"Routing map for collection {collection.ResourceId} could not be resolved.");
+            if (ThinClientStoreModel.TryApplyScopedSessionToken(request, compoundSessionToken, collection, routingMap, out _))
+            {
+                return;
+            }
+
+            // The token names a range the cached map doesn't know, so the map may predate a split the token has seen.
+            routingMap = await this.partitionKeyRangeCache.TryLookupAsync(
+                collection.ResourceId,
+                previousValue: routingMap,
+                request,
+                NoOpTrace.Singleton)
+                ?? throw new NotFoundException($"Routing map for collection {collection.ResourceId} could not be refreshed.");
+            if (ThinClientStoreModel.TryApplyScopedSessionToken(request, compoundSessionToken, collection, routingMap, out PartitionKeyRange targetRange))
+            {
+                return;
+            }
+
+            if (targetRange == null && request.PartitionKeyRangeIdentity != null)
+            {
+                throw new Documents.Routing.PartitionKeyRangeGoneException(
+                    $"Partition key range {request.PartitionKeyRangeIdentity.PartitionKeyRangeId} of collection {collection.ResourceId} no longer exists.");
+            }
+
+            request.Headers.Remove(HttpConstants.HttpHeaders.SessionToken);
+            DefaultTrace.TraceWarning(
+                "compound_session_token_scope_unresolved_after_refresh: the session token names partition key ranges that are unknown even after refreshing partition key range metadata; "
+                    + "the request is sent through the thin client proxy without a session token, so the supplied session progress is not enforced. "
+                    + "Verify that the token belongs to this container. Reason={0}; CollectionRid={1}; PartitionKeyRangeId={2}; ActivityId={3}",
+                targetRange == null ? "unresolved_target" : "unknown_range_or_ancestry",
+                collection.ResourceId,
+                targetRange?.Id ?? "unresolved",
+                System.Diagnostics.Trace.CorrelationManager.ActivityId);
+        }
+
+        /// <summary>
+        /// Sets the session token header to the target range's progress (merged with its parents') when the target
+        /// range resolves against <paramref name="routingMap"/> and every range the token names is known to it.
+        /// Every segment is validated, so a malformed token throws <see cref="BadRequestException"/>.
+        /// </summary>
+        private static bool TryApplyScopedSessionToken(
+            DocumentServiceRequest request,
+            string compoundSessionToken,
+            ContainerProperties collection,
+            CollectionRoutingMap routingMap,
+            out PartitionKeyRange targetRange)
+        {
+            targetRange = ThinClientStoreModel.ResolveTargetRange(request, collection, routingMap);
+            if (targetRange != null)
+            {
+                // Keeps the proxy's EPK routing on the range the token is scoped to; SessionTokenHelper also reads
+                // the range's parents from here.
+                request.RequestContext.ResolvedPartitionKeyRange = targetRange;
+            }
+
+            ISessionToken scopedToken = SessionTokenHelper.GetLocalSessionToken(request, compoundSessionToken, targetRange?.Id ?? string.Empty);
+            if (targetRange == null || !ThinClientStoreModel.AreSessionTokenRangesKnown(compoundSessionToken, routingMap))
+            {
+                return false;
+            }
+
+            if (scopedToken == null)
+            {
+                request.Headers.Remove(HttpConstants.HttpHeaders.SessionToken);
+            }
+            else
+            {
+                request.Headers[HttpConstants.HttpHeaders.SessionToken] = SessionTokenHelper.SerializeSessionToken(targetRange.Id, scopedToken);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Resolves the request's target range against <paramref name="routingMap"/>: the explicit range identity if
+        /// present, otherwise the already-resolved range if it is still current, otherwise the partition key's range.
+        /// </summary>
+        private static PartitionKeyRange ResolveTargetRange(
+            DocumentServiceRequest request,
+            ContainerProperties collection,
+            CollectionRoutingMap routingMap)
+        {
+            if (request.PartitionKeyRangeIdentity != null)
+            {
+                return routingMap.TryGetRangeByPartitionKeyRangeId(request.PartitionKeyRangeIdentity.PartitionKeyRangeId);
+            }
+
+            string resolvedRangeId = request.RequestContext.ResolvedPartitionKeyRange?.Id;
+            PartitionKeyRange currentRange = resolvedRangeId == null ? null : routingMap.TryGetRangeByPartitionKeyRangeId(resolvedRangeId);
+            if (currentRange != null)
+            {
+                return currentRange;
+            }
+
+            string partitionKeyString = request.Headers[HttpConstants.HttpHeaders.PartitionKey];
+            return partitionKeyString == null
+                ? null
+                : AddressResolver.TryResolveServerPartitionByPartitionKey(
+                    request,
+                    partitionKeyString,
+                    collectionCacheUptoDate: false,
+                    collection,
+                    routingMap);
+        }
+
+        /// <summary>
+        /// True when every segment of the compound token names a current range of <paramref name="routingMap"/> or one
+        /// the map knows has split. An unknown range means the cached map may be older than the token (or the token
+        /// belongs to another container).
+        /// </summary>
+        private static bool AreSessionTokenRangesKnown(string compoundSessionToken, CollectionRoutingMap routingMap)
+        {
+            foreach (string segment in compoundSessionToken.Split(SessionTokenHelper.CharArrayWithComma, StringSplitOptions.RemoveEmptyEntries))
+            {
+                string rangeId = segment.Split(SessionTokenHelper.CharArrayWithColon, StringSplitOptions.RemoveEmptyEntries)[0];
+                if (routingMap.TryGetRangeByPartitionKeyRangeId(rangeId) == null && !routingMap.IsGone(rangeId))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private async Task<DocumentServiceResponse> InvokeThinClientAsync(
+            DocumentServiceRequest request,
+            Uri physicalAddress,
+            Uri thinClientEndpoint,
+            CancellationToken cancellationToken)
+        {
             AccountProperties account = await this.GetDatabaseAccountPropertiesAsync();
 
             return await this.thinClientStoreClient.InvokeAsync(
