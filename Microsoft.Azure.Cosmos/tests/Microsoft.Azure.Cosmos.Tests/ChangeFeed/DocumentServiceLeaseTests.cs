@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
@@ -168,6 +169,115 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             else
             {
                 Assert.Fail();
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false, false, false)]
+        [DataRow(false, false, true)]
+        [DataRow(false, true, false)]
+        [DataRow(false, true, true)]
+        [DataRow(true, false, false)]
+        [DataRow(true, false, true)]
+        public void ClonePreservesPersistedSchema(bool useEpkLease, bool legacySchema, bool explicitTimestamp)
+        {
+            JObject document = JObject.Parse(@"{
+                'id': 'lease',
+                'partitionKey': 'pk',
+                '_etag': 'etag',
+                'LeaseToken': '0',
+                'Owner': 'host',
+                'ContinuationToken': 'continuation',
+                '_ts': 12345,
+                'Mode': 'Incremental feed',
+                'properties': { 'key': 'value' },
+                'FeedRange': { 'Range': { 'min': 'AA', 'max': 'BB', 'isMaxInclusive': true } }
+            }");
+            if (legacySchema)
+            {
+                document.Remove("LeaseToken");
+                document["PartitionId"] = "0";
+            }
+            else
+            {
+                document["version"] = (int)(useEpkLease
+                    ? DocumentServiceLeaseVersion.EPKRangeBasedLease
+                    : DocumentServiceLeaseVersion.PartitionKeyRangeBasedLease);
+            }
+
+            if (explicitTimestamp)
+            {
+                document["timestamp"] = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+            }
+
+            DocumentServiceLease lease = JsonConvert.DeserializeObject<DocumentServiceLease>(document.ToString());
+            DocumentServiceLease clone = lease.Clone();
+
+            Assert.AreEqual(lease.GetType(), clone.GetType());
+            Assert.AreNotSame(lease, clone);
+            Assert.AreEqual(lease.Timestamp, clone.Timestamp);
+            Assert.IsTrue(JToken.DeepEquals(JObject.FromObject(lease), JObject.FromObject(clone)));
+
+            clone.ConcurrencyToken = "new etag";
+            JObject serialized = JObject.FromObject(clone);
+            Assert.AreEqual("etag", lease.ConcurrencyToken);
+            Assert.AreEqual("new etag", (string)serialized["_etag"]);
+            Assert.IsNull(serialized["ConcurrencyToken"]);
+            Assert.AreEqual(legacySchema ? "0" : null, (string)serialized["PartitionId"]);
+            Assert.AreEqual(12345L, (long)serialized["_ts"]);
+            Assert.AreEqual("pk", (string)serialized["partitionKey"]);
+            Assert.AreEqual("Incremental feed", (string)serialized["Mode"]);
+            Assert.AreEqual("value", (string)serialized["properties"]["key"]);
+            Assert.IsTrue(((FeedRangeEpk)clone.FeedRange).Range.IsMaxInclusive);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void ClonePreservesNullFields(bool useEpkLease)
+        {
+            DocumentServiceLease lease = useEpkLease ? new DocumentServiceLeaseCoreEpk() : new DocumentServiceLeaseCore();
+            lease.Properties = null;
+            DocumentServiceLease clone = lease.Clone();
+
+            Assert.IsNull(clone.Properties);
+            Assert.IsNull(clone.FeedRange);
+            Assert.IsNull(clone.ConcurrencyToken);
+            Assert.IsTrue(JToken.DeepEquals(JObject.FromObject(lease), JObject.FromObject(clone)));
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void ClonePreservesPropertiesComparerAndFeedRangeValues(bool useEpkLease)
+        {
+            FeedRangeInternal[] feedRanges =
+            {
+                null,
+                new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false)),
+                new FeedRangePartitionKeyRange("0"),
+                new FeedRangePartitionKey(new PartitionKey("pk")),
+                new FeedRangePartitionKey(PartitionKey.None)
+            };
+
+            foreach (FeedRangeInternal feedRange in feedRanges)
+            {
+                DocumentServiceLease lease = useEpkLease ? new DocumentServiceLeaseCoreEpk() : new DocumentServiceLeaseCore();
+                lease.FeedRange = feedRange;
+                lease.Properties = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["key"] = "value" };
+                DocumentServiceLease clone = lease.Clone();
+
+                Assert.AreNotSame(lease.Properties, clone.Properties);
+                Assert.AreSame(lease.Properties.Comparer, clone.Properties.Comparer);
+                Assert.AreEqual("value", clone.Properties["KEY"]);
+                clone.Properties["KEY"] = "changed";
+                Assert.AreEqual("value", lease.Properties["key"]);
+                Assert.AreEqual(feedRange?.ToJsonString(), clone.FeedRange?.ToJsonString());
+                if (feedRange is FeedRangeEpk epk)
+                {
+                    Assert.AreNotSame(epk, clone.FeedRange);
+                    Assert.AreNotSame(epk.Range, ((FeedRangeEpk)clone.FeedRange).Range);
+                }
             }
         }
     }
