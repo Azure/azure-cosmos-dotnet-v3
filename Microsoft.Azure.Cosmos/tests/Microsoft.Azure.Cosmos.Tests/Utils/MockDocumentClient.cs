@@ -113,16 +113,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             return Task.FromResult(this.accountConsistencyLevel);
         }
 
-        /// <summary>
-        /// Set to simulate a multi-master account without standing up a real account-properties refresh.
-        /// </summary>
-        public bool IsMultiMasterEnabled { get; set; }
-
-        internal override bool CanUseMultipleWriteLocations()
-        {
-            return this.IsMultiMasterEnabled;
-        }
-
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(
             this.MockGlobalEndpointManager.Object,
             new ConnectionPolicy(),

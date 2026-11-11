@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -18,14 +19,13 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
-    /// Session token policy for distributed transactions: validating caller-supplied tokens, assigning a
-    /// partition-local token to each sub-operation, and recording the tokens the coordinator returns.
+    /// Session token policy for distributed transactions: validating caller-supplied tokens, resolving
+    /// cached tokens for eligible operations, and recording tokens from coordinator responses.
     /// </summary>
     internal static class DistributedTransactionSessionTokenHelper
     {
         /// <summary>
-        /// Resolves the account's default consistency level, which point operations pass to
-        /// <see cref="GatewayStoreModel.IsSessionTokenApplicable"/> as the default.
+        /// Resolves the account's default consistency level for automatic session-token resolution.
         /// </summary>
         public static async Task<ConsistencyLevel?> ResolveAccountConsistencyLevelAsync(CosmosClientContext clientContext)
         {
@@ -65,8 +65,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Resolves each operation's target partition key range and assigns the partition-local session
-        /// token to the operations that warrant one.
+        /// Resolves ranges and cached session tokens for operations without explicit tokens when the account
+        /// uses Session consistency.
         /// </summary>
         public static async Task<PartitionKeyRangeCache> ResolveOperationSessionTokensAsync(
             IReadOnlyList<DistributedTransactionOperation> operations,
@@ -78,24 +78,19 @@ namespace Microsoft.Azure.Cosmos
         {
             ITrace effectiveTrace = trace ?? NoOpTrace.Singleton;
             DocumentClient documentClient = clientContext.DocumentClient;
-            if (documentClient == null)
+            if (documentClient == null
+                || accountConsistencyLevel != ConsistencyLevel.Session
+                || operations.All(operation => !string.IsNullOrEmpty(operation.SessionToken)))
             {
                 return null;
             }
 
-            // Point operations carry the client override as a request header, which only reads may honor.
-            string clientConsistencyLevel = clientContext.ClientOptions?.ConsistencyLevel?.ToString();
-
-            // Matches GatewayStoreModel.TryResolveSessionTokenAsync, which also resolves against the
-            // concrete container only and simply assigns no token otherwise.
             SessionContainer sessionContainer = documentClient.sessionContainer as SessionContainer;
             PartitionKeyRangeCache partitionKeyRangeCache = await documentClient.GetPartitionKeyRangeCacheAsync(effectiveTrace);
             if (partitionKeyRangeCache == null)
             {
                 return null;
             }
-
-            bool isMultiMasterEnabled = documentClient.CanUseMultipleWriteLocations();
 
             IEnumerable<IGrouping<string, DistributedTransactionOperation>> groupedOperations = operations
                 .GroupBy(op => DistributedTransactionConstants.GetCollectionFullName(op.Database, op.Container));
@@ -107,9 +102,6 @@ namespace Microsoft.Azure.Cosmos
                 string collectionPath = group.Key;
                 ContainerProperties containerProperties = containerPropertiesByCollection[collectionPath];
 
-                // Read once per collection for operations that need automatic tokens.
-                string collectionSessionToken = sessionContainer?.GetSessionToken(collectionPath);
-
                 foreach (DistributedTransactionOperation operation in group)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -117,11 +109,8 @@ namespace Microsoft.Azure.Cosmos
                     await DistributedTransactionSessionTokenHelper.ResolveOperationSessionTokenAsync(
                         operation,
                         containerProperties,
-                        collectionSessionToken,
+                        sessionContainer,
                         partitionKeyRangeCache,
-                        accountConsistencyLevel,
-                        clientConsistencyLevel,
-                        isMultiMasterEnabled,
                         effectiveTrace);
                 }
             }
@@ -202,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
 
                     collectionFullName = DistributedTransactionConstants.GetCollectionFullName(operation.Database, operation.Container);
 
-                    if (DistributedTransactionSessionTokenHelper.TryValidateSessionTokenForCapture(result.SessionToken, out string validationFailure))
+                    if (DistributedTransactionSessionTokenHelper.TryValidateSessionToken(result.SessionToken, out string validationFailure))
                     {
                         tokensToMerge.Add((
                             result.Index,
@@ -290,8 +279,8 @@ namespace Microsoft.Azure.Cosmos
         /// Detects a split or move that happened between routing resolution and the server commit, which
         /// the transaction path could not previously see because it recorded no client-side range. Runs on
         /// each distinct collection and serving range the status filter admitted for operations with a
-        /// recorded range. That includes operations the send gate withheld a session token from, since the
-        /// recorded range alone can detect the move, but not caller-supplied tokens, which record no range.
+        /// recorded range. Operations without automatic-token routing, including caller-supplied tokens
+        /// and non-Session accounts, record no range and do not trigger this refresh.
         /// <para>
         /// Failures, including refresh cancellation, are traced and swallowed so optional cache maintenance
         /// cannot hide the coordinator response or prevent session-token capture. No caller cancellation
@@ -325,11 +314,8 @@ namespace Microsoft.Azure.Cosmos
         private static async Task ResolveOperationSessionTokenAsync(
             DistributedTransactionOperation operation,
             ContainerProperties containerProperties,
-            string collectionSessionToken,
+            SessionContainer sessionContainer,
             PartitionKeyRangeCache partitionKeyRangeCache,
-            ConsistencyLevel? accountConsistencyLevel,
-            string clientConsistencyLevel,
-            bool isMultiMasterEnabled,
             ITrace trace)
         {
             if (!string.IsNullOrEmpty(operation.SessionToken))
@@ -339,8 +325,6 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            // Automatic-token operations also record routing before the applicability gate so gated
-            // writes can detect a move. Explicit tokens need no per-operation routing lookup.
             PartitionKeyRange range = await DistributedTransactionSessionTokenHelper.TryResolvePartitionKeyRangeAsync(
                 operation,
                 containerProperties,
@@ -348,55 +332,8 @@ namespace Microsoft.Azure.Cosmos
                 trace);
             operation.ResolvedPartitionKeyRangeId = range?.Id;
 
-            // A write against a single-master account is served only by the write region, so it carries no
-            // session token; reads and multi-master writes still do. Same policy point operations apply.
-            if (accountConsistencyLevel == null
-                || !GatewayStoreModel.IsSessionTokenApplicable(
-                    defaultConsistencyLevel: accountConsistencyLevel.Value,
-                    requestConsistencyLevel: clientConsistencyLevel,
-                    isReadOrBatchRequest: OperationTypeExtensions.IsReadOperation(operation.OperationType),
-                    isMultiMasterEnabled: isMultiMasterEnabled))
-            {
-                return;
-            }
-
-            operation.ResolvedSessionToken = DistributedTransactionSessionTokenHelper.TryFindPartitionLocalSessionToken(
-                collectionSessionToken,
-                operation.ResolvedPartitionKeyRangeId);
-
-            if (operation.SessionToken == null && range?.Parents != null)
-            {
-                foreach (string parent in range.Parents)
-                {
-                    if (DistributedTransactionSessionTokenHelper.TryFindPartitionLocalSessionToken(collectionSessionToken, parent) != null)
-                    {
-                        throw new InvalidOperationException(
-                            $"Distributed transaction operation index {operation.OperationIndex} cannot preserve session progress " +
-                            $"from parent partition range '{parent}' for range '{range.Id}'. " +
-                            "No transaction request was sent. A session token for the current range is required.");
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Returns the <c>partitionKeyRangeId:token</c> segment recorded for the requested range, or null
-        /// when the token holds no segment for it.
-        /// </summary>
-        /// <remarks>
-        /// Deliberately an exact match. Parent-token inheritance requires a verified coordinator contract.
-        /// The caller rejects automatic resolution when only a known parent's progress is available,
-        /// rather than silently sending without that session guarantee.
-        /// </remarks>
-        internal static string TryFindPartitionLocalSessionToken(string collectionSessionToken, string partitionKeyRangeId)
-        {
-            if (string.IsNullOrEmpty(partitionKeyRangeId)
-                || !SessionTokenHelper.TryFindPartitionLocalSessionToken(collectionSessionToken, partitionKeyRangeId, out string sessionToken))
-            {
-                return null;
-            }
-
-            return partitionKeyRangeId + ":" + sessionToken;
+            operation.ResolvedSessionToken = sessionContainer?.ResolvePartitionLocalSessionTokenForGateway(
+                operation.CollectionResourceId, range);
         }
 
         private static async Task<PartitionKeyRange> TryResolvePartitionKeyRangeAsync(
@@ -405,53 +342,44 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRangeCache partitionKeyRangeCache,
             ITrace trace)
         {
-            if ((operation.PartitionKey.IsNone && containerProperties.PartitionKey?.Paths.Count > 0)
+            if ((operation.PartitionKey.IsNone
+                    && containerProperties.PartitionKey?.Paths.Count > 0
+                    && containerProperties.PartitionKey.IsSystemKey != true)
                 || operation.PartitionKey.InternalKey == null
                 || containerProperties.PartitionKey == null)
             {
                 return null;
             }
 
-            // Lookup failures propagate, as in GatewayStoreModel.TryResolveSessionTokenAsync: sending the
-            // transaction without the operation's cached token would weaken session consistency.
             PartitionKeyInternal partitionKey = operation.PartitionKey.IsNone
                 ? containerProperties.GetNoneValue()
                 : operation.PartitionKey.InternalKey;
             string effectivePartitionKey = partitionKey.GetEffectivePartitionKeyString(
                 containerProperties.PartitionKey);
 
-            return await partitionKeyRangeCache.TryGetRangeByEffectivePartitionKeyAsync(
-                containerProperties.ResourceId,
-                effectivePartitionKey,
-                trace);
-        }
-
-        private static bool TryValidateSessionTokenForCapture(string sessionToken, out string failureReason)
-        {
-            if (!DistributedTransactionSessionTokenHelper.TryValidateSessionToken(sessionToken, out failureReason))
-            {
-                return false;
-            }
-
+            PartitionKeyRange range;
             try
             {
-                Common.SessionContainer.ParseSessionToken(
-                    sessionToken,
-                    out string _,
-                    out ISessionToken _);
+                range = await partitionKeyRangeCache.TryGetRangeByEffectivePartitionKeyAsync(
+                    containerProperties.ResourceId,
+                    effectivePartitionKey,
+                    trace);
             }
-            catch (InternalServerErrorException)
+            catch (DocumentClientException ex)
             {
-                failureReason = "the token payload is not valid for the current protocol version.";
-                return false;
+                throw CosmosExceptionFactory.Create(ex, trace);
             }
 
-            return true;
+            // A failed required lookup must not silently discard the operation's cached session progress.
+            return range ?? throw CosmosExceptionFactory.CreateNotFoundException(
+                message: $"Could not resolve a partition key range for distributed transaction operation {operation.OperationIndex}.",
+                headers: null,
+                trace: trace);
         }
 
         /// <summary>
         /// Determines whether a session token is usable: it must have one numeric partition key range id
-        /// and a simple or vector token accepted by the shared session-token parser.
+        /// and a vector token accepted by the current protocol's shared session-token parser.
         /// </summary>
         /// <param name="sessionToken">The token reported for a single operation.</param>
         /// <param name="failureReason">The reason the token is unusable, or <c>null</c> when it is usable.</param>
@@ -485,9 +413,15 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            if (!SessionTokenHelper.TryParse(sessionToken, out ISessionToken _))
+            if (!SessionTokenHelper.TryParse(sessionToken, out ISessionToken parsedToken))
             {
                 failureReason = "the token could not be parsed.";
+                return false;
+            }
+
+            if (parsedToken is not VectorSessionToken)
+            {
+                failureReason = "the token payload is not valid for the current protocol version.";
                 return false;
             }
 

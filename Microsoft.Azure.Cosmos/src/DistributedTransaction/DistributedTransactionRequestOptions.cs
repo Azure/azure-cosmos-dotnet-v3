@@ -23,12 +23,17 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="DistributedTransactionOperationResult.SessionToken"/>); do not parse or construct manually.
         /// </value>
         /// <remarks>
-        /// Because a distributed transaction spans multiple partitions, each operation must supply its own session token
-        /// rather than a single commit-level token.  The token is serialized into the request body alongside the operation
-        /// and used by the server to enforce read-your-own-writes consistency for that specific partition.
+        /// A distributed transaction spans multiple partitions, so an explicit token applies to one operation
+        /// rather than the whole transaction. The token is serialized into the request body alongside the operation.
+        /// If no explicit token is supplied and the account's default consistency is Session, the SDK resolves
+        /// a cached partition-local token for both read and write operations. Client consistency overrides do not
+        /// affect automatic session-token resolution. A required partition-routing lookup failure prevents
+        /// the transaction from being sent.
         /// <para>
         /// Obtain the token from a prior <see cref="DistributedTransactionOperationResult.SessionToken"/> or from
         /// the session token surface of another SDK response that targeted the same partition.
+        /// Supply a single partition-local vector token; compound tokens and legacy LSN-only tokens are rejected
+        /// with an <see cref="System.ArgumentException"/> before the transaction is sent.
         /// </para>
         /// </remarks>
         public string SessionToken { get; set; }
