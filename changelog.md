@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [6208](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6208) CosmosException: Fixes an issue where reading `Message` threw `NullReferenceException` when the exception was created without running a constructor. `Message` now falls back to the base exception message. See [#6207](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/6207).
+
 #### Other Changes
 
 ### <a name="3.65.0-preview.0"/> [3.65.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.65.0-preview.0) - 2026-11-06
