@@ -14,10 +14,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Locates the <c>_ei</c> encryption-metadata subtree on a JSON stream and deserializes
-    /// it into an <see cref="EncryptionProperties"/> without parsing the rest of the
-    /// document. Reads in small pooled chunks via <see cref="Utf8JsonReader"/> with
-    /// <c>isFinalBlock: false</c>, growing the buffer only when a single value exceeds it.
+    /// Scans the complete root for its last top-level <c>_ei</c> value.
+    /// Retains the metadata in a pooled buffer until root validation completes.
     /// </summary>
     internal static class EncryptionPropertiesStreamReader
     {
@@ -36,17 +34,53 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         /// or <see langword="null"/> if the root object has no <c>_ei</c> property. Requires
         /// a seekable stream and leaves <see cref="Stream.Position"/> at 0 on return.
         /// </summary>
-        public static ValueTask<EncryptionProperties> ReadAsync(
+        public static async ValueTask<EncryptionProperties> ReadAsync(
             Stream input,
             JsonSerializerOptions serializerOptions,
             CancellationToken cancellationToken)
-            => ReadAsync(input, serializerOptions, cancellationToken, JsonFeedStreamHelper.MaximumBufferSize);
+        {
+            EncryptionMetadataReadResult result = await ReadResultAsync(
+                input,
+                serializerOptions,
+                cancellationToken,
+                JsonFeedStreamHelper.MaximumBufferSize,
+                materializeLegacyProperties: true).ConfigureAwait(false);
+            return result.Properties;
+        }
 
         internal static async ValueTask<EncryptionProperties> ReadAsync(
             Stream input,
             JsonSerializerOptions serializerOptions,
             CancellationToken cancellationToken,
             int maxBufferSize)
+        {
+            EncryptionMetadataReadResult result = await ReadResultAsync(
+                input,
+                serializerOptions,
+                cancellationToken,
+                maxBufferSize,
+                materializeLegacyProperties: true).ConfigureAwait(false);
+            return result.Properties;
+        }
+
+        // Only ReadAsync materializes Legacy properties for lazy diagnostics and raw inspection.
+        internal static ValueTask<EncryptionMetadataReadResult> ReadResultAsync(
+            Stream input,
+            JsonSerializerOptions serializerOptions,
+            CancellationToken cancellationToken)
+            => ReadResultAsync(
+                input,
+                serializerOptions,
+                cancellationToken,
+                JsonFeedStreamHelper.MaximumBufferSize,
+                materializeLegacyProperties: false);
+
+        private static async ValueTask<EncryptionMetadataReadResult> ReadResultAsync(
+            Stream input,
+            JsonSerializerOptions serializerOptions,
+            CancellationToken cancellationToken,
+            int maxBufferSize,
+            bool materializeLegacyProperties)
         {
             if (input == null)
             {
@@ -60,15 +94,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     nameof(input));
             }
 
-            input.Position = 0;
+            StreamPositionHelper.ResetToStart(input, nameof(input));
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(InitialBufferSize);
+            MetadataCandidate metadataCandidate = default;
             try
             {
                 int leftOver = 0;
                 bool isFinalBlock = false;
                 JsonReaderState readerState = new (JsonReaderOptions);
-                MetadataCandidate metadataCandidate = default;
+                bool rootObjectStarted = false;
+                bool rootObjectEnded = false;
 
                 while (!isFinalBlock)
                 {
@@ -77,13 +113,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     isFinalBlock = read == 0;
 
                     // ScanChunk holds a ref-struct Utf8JsonReader and cannot span an await.
-                    ChunkOutcome outcome = ScanChunk(buffer.AsSpan(0, dataSize), isFinalBlock, readerState, ref metadataCandidate);
+                    ChunkOutcome outcome = ScanChunk(
+                        buffer.AsSpan(0, dataSize),
+                        isFinalBlock,
+                        readerState,
+                        ref metadataCandidate,
+                        ref rootObjectStarted,
+                        ref rootObjectEnded);
                     readerState = outcome.NextState;
 
                     if (outcome.Status == ScanResult.RootEnded)
                     {
-                        input.Position = 0;
-                        return metadataCandidate.Deserialize(serializerOptions);
+                        StreamPositionHelper.ResetToStart(input, nameof(input));
+                        return metadataCandidate.Deserialize(serializerOptions, materializeLegacyProperties);
                     }
 
                     leftOver = dataSize - (int)outcome.BytesConsumed;
@@ -96,13 +138,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         maxBufferSize);
                 }
 
-                // Valid JSON whose root is not an object (array/number/string/literal)
-                // falls through here — the scanner only recognises _ei inside a root object.
-                input.Position = 0;
-                return null;
+                throw new InvalidOperationException(NewtonsoftJsonObjectReader.InvalidBodyMessage);
+            }
+            catch (JsonException exception)
+            {
+                StreamPositionHelper.TryResetToStart(input);
+                throw new InvalidOperationException(
+                    NewtonsoftJsonObjectReader.InvalidBodyMessage,
+                    exception);
+            }
+            catch
+            {
+                StreamPositionHelper.TryResetToStart(input);
+                throw;
             }
             finally
             {
+                metadataCandidate.Dispose();
                 ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
             }
         }
@@ -129,33 +181,82 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             public JsonReaderState NextState { get; }
         }
 
-        private struct MetadataCandidate
+        private struct MetadataCandidate : IDisposable
         {
             private byte[] json;
+            private int jsonLength;
             private bool seen;
+            private bool invalid;
 
             public void SetNull()
             {
-                this.json = null;
+                this.Dispose();
                 this.seen = true;
+                this.invalid = false;
             }
 
             public void SetJson(ReadOnlySpan<byte> value)
             {
-                this.json = value.ToArray();
+                this.Dispose();
+                this.json = ArrayPool<byte>.Shared.Rent(value.Length);
+                value.CopyTo(this.json);
+                this.jsonLength = value.Length;
+                this.seen = true;
+                this.invalid = false;
+            }
+
+            public void SetInvalid()
+            {
+                this.Dispose();
+                this.invalid = true;
                 this.seen = true;
             }
 
-            public EncryptionProperties Deserialize(JsonSerializerOptions serializerOptions)
+            public EncryptionMetadataReadResult Deserialize(
+                JsonSerializerOptions serializerOptions,
+                bool materializeLegacyProperties)
             {
                 if (!this.seen)
                 {
-                    return null;
+                    return new EncryptionMetadataReadResult(
+                        EncryptionMetadataDisposition.None,
+                        properties: null);
                 }
 
-                return this.json == null
-                    ? null
-                    : JsonSerializer.Deserialize<EncryptionProperties>(this.json, serializerOptions);
+                if (this.invalid)
+                {
+                    return new EncryptionMetadataReadResult(
+                        EncryptionMetadataDisposition.Invalid,
+                        properties: null);
+                }
+
+                if (this.json == null)
+                {
+                    return new EncryptionMetadataReadResult(
+                        EncryptionMetadataDisposition.Plaintext,
+                        properties: null);
+                }
+
+                using JsonDocument document = JsonDocument.Parse(this.json.AsMemory(0, this.jsonLength));
+                EncryptionMetadataDisposition disposition =
+                    EncryptionMetadataClassifier.Classify(document.RootElement);
+                EncryptionProperties properties =
+                    disposition == EncryptionMetadataDisposition.Mde ||
+                    (disposition == EncryptionMetadataDisposition.Legacy && materializeLegacyProperties) ||
+                    disposition == EncryptionMetadataDisposition.Unsupported
+                        ? JsonSerializer.Deserialize<EncryptionProperties>(this.json.AsSpan(0, this.jsonLength), serializerOptions)
+                        : null;
+                return new EncryptionMetadataReadResult(disposition, properties);
+            }
+
+            public void Dispose()
+            {
+                if (this.json != null)
+                {
+                    ArrayPool<byte>.Shared.Return(this.json, clearArray: true);
+                    this.json = null;
+                    this.jsonLength = 0;
+                }
             }
         }
 
@@ -163,7 +264,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             ReadOnlySpan<byte> buffer,
             bool isFinalBlock,
             JsonReaderState readerState,
-            ref MetadataCandidate metadataCandidate)
+            ref MetadataCandidate metadataCandidate,
+            ref bool rootObjectStarted,
+            ref bool rootObjectEnded)
         {
             Utf8JsonReader reader = new (buffer, isFinalBlock, readerState);
 
@@ -175,6 +278,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             while (reader.Read())
             {
+                if (!rootObjectStarted)
+                {
+                    if (reader.TokenType != JsonTokenType.StartObject)
+                    {
+                        throw new InvalidOperationException(
+                            NewtonsoftJsonObjectReader.InvalidBodyMessage);
+                    }
+
+                    rootObjectStarted = true;
+                }
+
                 if (reader.TokenType == JsonTokenType.PropertyName && reader.CurrentDepth == 1)
                 {
                     if (reader.ValueTextEquals(EncryptedInfoNameBytes))
@@ -206,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 return new ChunkOutcome(ScanResult.NeedMore, safeConsumed, safeState);
                             }
 
-                            metadataCandidate.SetNull();
+                            metadataCandidate.SetInvalid();
                         }
                     }
 
@@ -217,14 +331,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 }
                 else if (reader.TokenType == JsonTokenType.EndObject && reader.CurrentDepth == 0)
                 {
-                    return new ChunkOutcome(ScanResult.RootEnded, reader.BytesConsumed, reader.CurrentState);
+                    rootObjectEnded = true;
                 }
 
                 safeConsumed = reader.BytesConsumed;
                 safeState = reader.CurrentState;
             }
 
-            return new ChunkOutcome(ScanResult.NeedMore, safeConsumed, safeState);
+            return new ChunkOutcome(
+                isFinalBlock && rootObjectEnded ? ScanResult.RootEnded : ScanResult.NeedMore,
+                safeConsumed,
+                safeState);
+        }
+
+        internal readonly struct EncryptionMetadataReadResult
+        {
+            public EncryptionMetadataReadResult(
+                EncryptionMetadataDisposition disposition,
+                EncryptionProperties properties)
+            {
+                this.Disposition = disposition;
+                this.Properties = properties;
+            }
+
+            public EncryptionMetadataDisposition Disposition { get; }
+
+            public EncryptionProperties Properties { get; }
         }
     }
 }

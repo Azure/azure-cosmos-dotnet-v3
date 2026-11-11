@@ -22,9 +22,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
-            CancellationToken token)
+            CancellationToken token,
+            bool replacePlaintextEncryptionMetadata)
         {
-            JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
+            token.ThrowIfCancellationRequested();
+
+            JObject itemJObj = NewtonsoftJsonObjectReader.Read(input, resetBeforeRead: false);
+            if (replacePlaintextEncryptionMetadata)
+            {
+                JToken encryptionMetadata = itemJObj[Constants.EncryptedInfo];
+                EncryptionMetadataDisposition disposition = EncryptionMetadataClassifier.Classify(encryptionMetadata);
+                if (disposition == EncryptionMetadataDisposition.Invalid ||
+                    disposition == EncryptionMetadataDisposition.Unsupported ||
+                    disposition == EncryptionMetadataDisposition.Mde ||
+                    disposition == EncryptionMetadataDisposition.Legacy)
+                {
+                    throw new InvalidOperationException(EncryptionMetadataClassifier.InvalidMetadataMessage);
+                }
+
+                if (disposition == EncryptionMetadataDisposition.Plaintext)
+                {
+                    itemJObj.Remove(Constants.EncryptedInfo);
+                }
+            }
 
             Stream result = await this.EncryptAsync(itemJObj, encryptor, encryptionOptions, token);
 
@@ -44,10 +64,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             using ArrayPoolManager arrayPoolManager = new ();
 
-            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, token);
+            bool useDataEncryptionKeyDirectly = encryptor is IDataEncryptionKeyAccessor;
+            token.ThrowIfCancellationRequested();
+
+            DataEncryptionKey encryptionKey = useDataEncryptionKeyDirectly
+                ? await ((IDataEncryptionKeyAccessor)encryptor).GetEncryptionKeyAsync(
+                    encryptionOptions.DataEncryptionKeyId,
+                    encryptionOptions.EncryptionAlgorithm,
+                    token) ?? throw new InvalidOperationException($"{nameof(IDataEncryptionKeyAccessor)} returned null {nameof(DataEncryptionKey)}.")
+                : null;
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
+                token.ThrowIfCancellationRequested();
                 string propertyName = pathToEncrypt.Substring(1);
                 if (!input.TryGetValue(propertyName, out JToken propertyValue))
                 {
@@ -67,12 +96,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     continue;
                 }
 
-                byte[] encryptedBytes = this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength);
+                byte[] encryptedBytes = useDataEncryptionKeyDirectly
+                    ? this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength)
+                    : await MdeCryptoOperations.EncryptAsync(
+                        encryptor,
+                        encryptionOptions.DataEncryptionKeyId,
+                        encryptionOptions.EncryptionAlgorithm,
+                        typeMarker,
+                        processedBytes,
+                        processedBytesLength,
+                        token).ConfigureAwait(false);
 
                 input[propertyName] = encryptedBytes;
 
                 pathsEncrypted.Add(pathToEncrypt);
             }
+
+            token.ThrowIfCancellationRequested();
 
             EncryptionProperties encryptionProperties = new (
                 encryptionFormatVersion: EncryptionFormatVersion.Mde,
@@ -103,12 +143,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             using ArrayPoolManager arrayPoolManager = new ();
             using ArrayPoolManager<char> charPoolManager = new ();
 
-            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
+            bool useDataEncryptionKeyDirectly = encryptor is IDataEncryptionKeyAccessor;
+            cancellationToken.ThrowIfCancellationRequested();
+
+            DataEncryptionKey encryptionKey = useDataEncryptionKeyDirectly
+                ? await ((IDataEncryptionKeyAccessor)encryptor).GetEncryptionKeyAsync(
+                    encryptionProperties.DataEncryptionKeyId,
+                    encryptionProperties.EncryptionAlgorithm,
+                    cancellationToken) ?? throw new InvalidOperationException($"{nameof(IDataEncryptionKeyAccessor)} returned null {nameof(DataEncryptionKey)}.")
+                : null;
 
             List<string> pathsDecrypted = new (encryptionProperties.EncryptedPaths.Count());
 
             foreach (string path in encryptionProperties.EncryptedPaths)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 string propertyName = path.Substring(1);
 
                 if (!document.TryGetValue(propertyName, out JToken propertyValue))
@@ -123,7 +172,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     continue;
                 }
 
-                (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextWithTypeMarker.Length, arrayPoolManager);
+                byte[] bytes;
+                int processedBytes;
+                if (useDataEncryptionKeyDirectly)
+                {
+                    (bytes, processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextWithTypeMarker.Length, arrayPoolManager);
+                }
+                else
+                {
+                    bytes = await MdeCryptoOperations.DecryptAsync(
+                        encryptor,
+                        encryptionProperties.DataEncryptionKeyId,
+                        encryptionProperties.EncryptionAlgorithm,
+                        cipherTextWithTypeMarker,
+                        cipherTextWithTypeMarker.Length,
+                        cancellationToken).ConfigureAwait(false);
+                    processedBytes = bytes.Length;
+                }
 
                 this.Serializer.DeserializeAndAddProperty(
                     (TypeMarker)cipherTextWithTypeMarker[0],
@@ -134,6 +199,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 pathsDecrypted.Add(path);
             }
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             DecryptionContext decryptionContext = EncryptionProcessor.CreateDecryptionContext(
                 pathsDecrypted,

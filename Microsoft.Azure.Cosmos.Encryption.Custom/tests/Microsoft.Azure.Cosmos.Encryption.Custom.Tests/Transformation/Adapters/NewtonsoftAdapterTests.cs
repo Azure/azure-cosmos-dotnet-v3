@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Microsoft.Azure.Cosmos.Encryption.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -21,14 +20,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
     public class NewtonsoftAdapterTests
     {
         private const string DekId = "dek-id";
-        private static Mock<Encryptor> mockEncryptor = null!;
+        private static TestEncryptorFactory.MdeConcreteEncryptor mockEncryptor = null!;
         private static EncryptionOptions defaultOptions = null!;
 
         [ClassInitialize]
         public static void ClassInitialize(TestContext context)
         {
             _ = context;
-            mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out _);
+            mockEncryptor = TestEncryptorFactory.CreateMde(DekId);
             defaultOptions = new EncryptionOptions
             {
                 DataEncryptionKeyId = DekId,
@@ -83,21 +82,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         {
             NewtonsoftAdapter adapter = new (new MdeJObjectEncryptionProcessor());
 
-            #pragma warning disable CS0618
-            EncryptionProperties legacyProps = new (
-                encryptionFormatVersion: 2,
-                encryptionAlgorithm: CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                dataEncryptionKeyId: "legacy-dek",
-                encryptedData: null,
-                encryptedPaths: new[] { "/Sensitive" });
-            #pragma warning restore CS0618
-            JObject legacyDoc = new ()
-            {
-                ["id"] = "1",
-                [Constants.EncryptedInfo] = JObject.FromObject(legacyProps),
-            };
-
-            using MemoryStream input = new (Encoding.UTF8.GetBytes(legacyDoc.ToString(Formatting.None)));
+            using MemoryStream input = new (Convert.FromBase64String(EncryptionMetadataEnvelopeTests.Preview07LegacyFixtureBase64));
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
             (Stream result, DecryptionContext context) = await adapter.DecryptAsync(input, mockEncryptor.Object, diagnostics, CancellationToken.None);
@@ -141,6 +126,55 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             Assert.AreEqual("secret", roundTripped["Sensitive"].ToString());
             Assert.IsTrue(context.DecryptionInfoList[0].PathsDecrypted.Any(p => p == "/Sensitive"));
         }
+
+        [TestMethod]
+        [DynamicData(nameof(RequiredObjectBodies))]
+        public async Task DecryptAsync_NonObjectBody_UsesStableContractException(
+            string scenario,
+            string json,
+            bool parserFailure)
+        {
+            _ = scenario;
+            NewtonsoftAdapter adapter = new (new MdeJObjectEncryptionProcessor());
+            using MemoryStream input = new (Encoding.UTF8.GetBytes(json));
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await adapter.DecryptAsync(
+                    input,
+                    mockEncryptor.Object,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None));
+
+            Assert.AreEqual("The response body must contain a JSON object.", exception.Message);
+            Assert.AreEqual(parserFailure, exception.InnerException is JsonException);
+            Assert.IsTrue(input.CanRead);
+        }
+
+        [TestMethod]
+        public async Task DecryptAsync_ParseExceptionSurvivesResetFailure()
+        {
+            IOException resetFailure = new ("simulated reset failure");
+            using AdversarialReadStream input = new (
+                asynchronousContent: Array.Empty<byte>(),
+                synchronousContent: Encoding.UTF8.GetBytes("{\"id\":"),
+                resetFailure);
+            NewtonsoftAdapter adapter = new (new MdeJObjectEncryptionProcessor());
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () => await adapter.DecryptAsync(
+                    input,
+                    mockEncryptor.Object,
+                    new CosmosDiagnosticsContext(),
+                    CancellationToken.None));
+
+            Assert.AreEqual("The response body must contain a JSON object.", exception.Message);
+            Assert.IsInstanceOfType(exception.InnerException, typeof(JsonException));
+            Assert.AreNotSame(resetFailure, exception);
+            Assert.IsTrue(input.CanRead);
+        }
+
+        public static System.Collections.Generic.IEnumerable<object[]> RequiredObjectBodies =>
+            JsonBoundaryCases.RequiredObjectBodies;
 
         private static async Task<Stream> CreateEncryptedPayloadAsync(NewtonsoftAdapter adapter)
         {
