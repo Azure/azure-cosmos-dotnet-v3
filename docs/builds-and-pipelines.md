@@ -261,6 +261,43 @@ The template sets `COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true` and
 `COSMOSDB_AAD_STRICT=true`. Missing credentials, permissions or resources fail CI rather than
 silently skipping the tests; local non-strict runs may use `Assert.Inconclusive`.
 
+### Isolated CFP checkpoint validation
+
+`ChangeFeed/CosmosAadLiveLeaseTests.cs` runs 100 sequential checkpoints through the
+real CFP checkpointer and lease updater for each lease representation in both Gateway
+and Direct mode. It is included automatically in the `MultiRegionAad` CI job.
+It requires 100 successful lease Replaces, zero 412s, zero conflict-recovery reads,
+each request's If-Match matching the preceding response ETag, and bodyless write responses.
+Setup and final verification reads are excluded from these counts.
+
+The test reuses `AadLiveTestDb/AadLiveTestContainer` (`/pk`). Lease documents have no
+`pk` property, so it uses `PartitionKey.None` and the existing non-partitioned lease
+request-options factory. Unique lease IDs isolate runs; cleanup deletes only each
+test's lease. No databases or containers are created or deleted, no processor host
+or renewal loop is started, and no new service connection or fixture is required.
+This tests lease checkpoint persistence, not full processor startup or `/id` lease
+container provisioning. Do not redirect the ordinary emulator `ChangeFeed` tests
+to a live account: their base fixture deletes databases.
+
+To run only this regression locally, sign in with `az login --tenant <tenant-id>`,
+set `COSMOSDB_MULTI_REGION_AAD` to the test account's endpoint,
+`COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true`, and `COSMOSDB_AAD_STRICT=true`.
+The signed-in identity needs Cosmos DB data-plane permissions on the existing fixture.
+Remove stale service-principal credential variables if using Azure CLI authentication.
+Use .NET 8 SDK with the .NET 6 runtime, then run from the repository root:
+
+```bash
+dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/Microsoft.Azure.Cosmos.EmulatorTests.csproj \
+  -c Release --filter 'FullyQualifiedName~CosmosAadLiveLeaseTests' \
+  --logger 'trx;LogFileName=cfp-live.trx'
+```
+
+Require all four cases to pass with no skips. The TRX records request counts, RU
+charges, and elapsed time for each checkpoint loop; timing is diagnostic, not an
+allocation or latency benchmark. Run the same test against the unfixed updater to
+confirm it detects stale ETags; do not treat general live-suite success as a
+substitute for these specific results.
+
 ### Why an app registration (not the build-agent MI)
 
 Cosmos data-plane RBAC requires the **principal and the account to be in the same tenant**. The
