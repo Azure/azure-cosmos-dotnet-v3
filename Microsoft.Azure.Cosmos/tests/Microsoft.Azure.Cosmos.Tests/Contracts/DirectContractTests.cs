@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
             {
                 XElement nativeReference = nativeConsumer.Descendants("PackageReference")
                     .Single(reference => (string)reference.Attribute("Include") == "Microsoft.Azure.Cosmos.ServiceInterop");
-                Assert.AreEqual("1.0.5", (string)nativeReference.Attribute("Version"));
+                Assert.AreEqual("1.0.6", (string)nativeReference.Attribute("Version"));
                 Assert.AreEqual("All", (string)nativeReference.Attribute("PrivateAssets"));
                 Assert.AreEqual("All", (string)nativeReference.Attribute("ExcludeAssets"));
             }

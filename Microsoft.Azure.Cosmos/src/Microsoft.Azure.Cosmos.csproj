@@ -124,7 +124,7 @@
 		<ProjectReference Include="..\Direct\src\Microsoft.Azure.Cosmos.Direct.csproj" PrivateAssets="All" />
 	</ItemGroup>
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-		<PackageReference Include="Microsoft.Azure.Cosmos.ServiceInterop" Version="1.0.5"
+		<PackageReference Include="Microsoft.Azure.Cosmos.ServiceInterop" Version="1.0.6"
 		                  PrivateAssets="All" ExcludeAssets="All" GeneratePathProperty="true" />
 		<ServiceInteropNative Include="$(PkgMicrosoft_Azure_Cosmos_ServiceInterop)\runtimes\win-x64\native\Microsoft.Azure.Cosmos.ServiceInterop.dll" />
 		<ServiceInteropNative Include="$(PkgMicrosoft_Azure_Cosmos_ServiceInterop)\runtimes\win-x64\native\Cosmos.CRTCompat.dll" />
