@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -636,14 +635,22 @@ namespace Microsoft.Azure.Cosmos
                 return path;
             }
 
-            string trimmed = path.TrimEnd(' ');
-            StringBuilder escaped = new StringBuilder(trimmed, trimmed.Length + ((path.Length - trimmed.Length) * 3));
-            for (int i = trimmed.Length; i < path.Length; i++)
+            int end = path.Length - 1;
+            while (end > 0 && path[end - 1] == ' ')
             {
-                escaped.Append("%20");
+                end--;
             }
 
-            return escaped.ToString();
+            char[] escaped = new char[end + ((path.Length - end) * 3)];
+            path.CopyTo(0, escaped, 0, end);
+            for (int i = end; i < escaped.Length; i += 3)
+            {
+                escaped[i] = '%';
+                escaped[i + 1] = '2';
+                escaped[i + 2] = '0';
+            }
+
+            return new string(escaped);
         }
 
         internal Uri GetFeedUri(DocumentServiceRequest request)
