@@ -144,13 +144,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(true, DisplayName = "Gateway mode")]
         [DataRow(false, DisplayName = "Direct mode")]
-        public async Task PointOperationsWithTrailingWhitespaceInIdTest(bool useGateway)
+        public async Task PointOperationsWithSpecialCharactersInIdTest(bool useGateway)
         {
             using CosmosClient client = TestCommon.CreateCosmosClient(useGateway);
             Container container = client.GetContainer(this.database.Id, this.Container.Id);
             string baseId = Guid.NewGuid().ToString();
 
-            foreach (string id in new[] { baseId + " ", baseId + "  ", baseId + "\t", baseId + "\n", baseId + "\r", " " + baseId + " ", baseId + "\u00A0 ", baseId + ". ", " " + baseId })
+            foreach (string id in new[] { baseId + " ", baseId + "  ", baseId + "\t", baseId + "\n", baseId + "\r", " " + baseId + " ", baseId + "\u00A0 ", baseId + ". ", " " + baseId, baseId + "%20x", baseId + "100%", baseId + "%2520" })
             {
                 ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(id: id);
                 Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(item.pk);
@@ -190,6 +190,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual("spaced", (await container.ReadItemAsync<ToDoActivity>(spaced.id, new Cosmos.PartitionKey("twins"))).Resource.description);
             Assert.AreEqual("trimmed", (await container.ReadItemAsync<ToDoActivity>(trimmed.id, new Cosmos.PartitionKey("twins"))).Resource.description);
+
+            // A literal "%20" in an id must not be decoded into a space by the service.
+            ToDoActivity percent = ToDoActivity.CreateRandomToDoActivity(pk: "twins", id: baseId + "a%20b");
+            ToDoActivity space = ToDoActivity.CreateRandomToDoActivity(pk: "twins", id: baseId + "a b");
+            percent.description = "percent";
+            space.description = "space";
+            await container.CreateItemAsync(percent, new Cosmos.PartitionKey("twins"));
+            await container.CreateItemAsync(space, new Cosmos.PartitionKey("twins"));
+
+            Assert.AreEqual("percent", (await container.ReadItemAsync<ToDoActivity>(percent.id, new Cosmos.PartitionKey("twins"))).Resource.description);
+            Assert.AreEqual("space", (await container.ReadItemAsync<ToDoActivity>(space.id, new Cosmos.PartitionKey("twins"))).Resource.description);
         }
 
         [TestMethod]

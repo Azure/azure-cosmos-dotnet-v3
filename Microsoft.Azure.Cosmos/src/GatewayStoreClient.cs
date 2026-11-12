@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
         protected readonly JsonSerializerSettings SerializerSettings;
 
         private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
+        private static readonly bool[] LegalPathCharacters = GatewayStoreClient.CreateLegalPathCharacters();
 
         public GatewayStoreClient(
             CosmosHttpClient httpClient,
@@ -81,69 +82,119 @@ namespace Microsoft.Azure.Cosmos
 
         internal static Uri GetResourceUri(ResourceType resourceType, Uri baseAddress, DocumentServiceRequest request)
         {
-            if (GatewayStoreClient.IsFeedRequest(request.OperationType))
+            bool isFeed = GatewayStoreClient.IsFeedRequest(request.OperationType);
+            if (GatewayStoreClient.RequiresPathEscaping(request))
             {
-                return HttpTransportClient.GetResourceFeedUri(resourceType, baseAddress, request);
+                return GatewayStoreClient.CreateResourceUri(baseAddress, resourceType, request, isFeed);
             }
 
-            Uri entryUri = HttpTransportClient.GetResourceEntryUri(resourceType, baseAddress, request);
-            return GatewayStoreClient.PreserveTrailingCharacters(entryUri, request);
+            return isFeed
+                ? HttpTransportClient.GetResourceFeedUri(resourceType, baseAddress, request)
+                : HttpTransportClient.GetResourceEntryUri(resourceType, baseAddress, request);
         }
 
         /// <summary>
-        /// The entry URI is built from the unescaped resource address, and System.Uri drops trailing
-        /// space, tab, CR and LF from it (and trailing dots under the legacy .NET Framework URI quirks).
-        /// A name-based resource whose id ends in one of these would then be sent to a different path
-        /// than the one signed (401) or resolved by the service. Re-append the dropped characters
-        /// percent-encoded. Ids that don't end in one of these characters return immediately.
+        /// Builds the request URI from the (unescaped) name-based resource path, percent-encoding every
+        /// character that is not legal in a URI path, the same way the Java SDK's multi-argument
+        /// java.net.URI constructor does. Without this, System.Uri drops trailing whitespace and treats
+        /// '%', '?' and '#' as syntax, so the wire path would no longer match the signed resource link.
+        /// Paths that need no escaping are passed through unchanged.
         /// </summary>
-        internal static Uri PreserveTrailingCharacters(Uri entryUri, DocumentServiceRequest request)
+        internal static Uri CreateResourceUri(Uri baseAddress, ResourceType resourceType, DocumentServiceRequest request, bool isFeed)
         {
-            string resourceAddress = request.ResourceAddress;
-            if (!request.IsNameBased
-                || string.IsNullOrEmpty(resourceAddress)
-                || !GatewayStoreClient.IsDroppedByUri(resourceAddress[resourceAddress.Length - 1]))
+            string path = PathsHelper.GeneratePath(resourceType, request, isFeed);
+            if (request.IsNameBased && GatewayStoreClient.RequiresPathEscaping(path))
             {
-                return entryUri;
+                path = GatewayStoreClient.EscapePath(path);
             }
 
-            int segmentStart = resourceAddress.LastIndexOf('/') + 1;
-            int trailingStart = resourceAddress.Length;
-            while (trailingStart > segmentStart && GatewayStoreClient.IsDroppedByUri(resourceAddress[trailingStart - 1]))
+            return new Uri(baseAddress, path);
+        }
+
+        private static bool RequiresPathEscaping(DocumentServiceRequest request)
+        {
+            return request.IsNameBased && GatewayStoreClient.RequiresPathEscaping(request.ResourceAddress);
+        }
+
+        private static bool RequiresPathEscaping(string path)
+        {
+            if (string.IsNullOrEmpty(path))
             {
-                trailingStart--;
+                return false;
             }
 
-            string unescapedPath = Uri.UnescapeDataString(entryUri.AbsolutePath);
-            string segmentPrefix = "/" + resourceAddress.Substring(segmentStart, trailingStart - segmentStart);
-
-            // Find how much of the trailing run survived; the runtime may drop all of it or only part.
-            for (int kept = resourceAddress.Length - trailingStart; kept >= 0; kept--)
+            foreach (char c in path)
             {
-                if (unescapedPath.EndsWith(segmentPrefix + resourceAddress.Substring(trailingStart, kept), StringComparison.Ordinal))
+                // Non-ASCII characters are percent-encoded as UTF-8 by System.Uri itself.
+                if (c < 0x80 && !GatewayStoreClient.IsLegalPathCharacter(c))
                 {
-                    if (trailingStart + kept == resourceAddress.Length)
-                    {
-                        return entryUri;
-                    }
-
-                    StringBuilder escapedSuffix = new StringBuilder();
-                    for (int i = trailingStart + kept; i < resourceAddress.Length; i++)
-                    {
-                        escapedSuffix.Append('%').Append(((int)resourceAddress[i]).ToString("X2"));
-                    }
-
-                    return new Uri(entryUri.GetLeftPart(UriPartial.Path) + escapedSuffix.ToString() + entryUri.Query);
+                    return true;
                 }
             }
 
-            // Unexpected shape (for example a literal '%' in the id): leave the URI unchanged.
-            return entryUri;
+            // Legacy .NET Framework URI quirks strip trailing dots from the path.
+            return path[path.Length - 1] == '.';
         }
 
-        private static bool IsDroppedByUri(char c)
+        private static string EscapePath(string path)
         {
-            return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '.';
+            int trailingDots = 0;
+            while (trailingDots < path.Length && path[path.Length - 1 - trailingDots] == '.')
+            {
+                trailingDots++;
+            }
+
+            byte[] utf8 = Encoding.UTF8.GetBytes(path.Substring(0, path.Length - trailingDots));
+            StringBuilder escaped = new StringBuilder(path.Length + 16);
+            foreach (byte b in utf8)
+            {
+                if (b < 0x80 && GatewayStoreClient.IsLegalPathCharacter((char)b))
+                {
+                    escaped.Append((char)b);
+                }
+                else
+                {
+                    escaped.Append('%').Append(b.ToString("X2"));
+                }
+            }
+
+            for (int i = 0; i < trailingDots; i++)
+            {
+                escaped.Append("%2E");
+            }
+
+            return escaped.ToString();
+        }
+
+        /// <summary>
+        /// Characters java.net.URI leaves unquoted in a path (RFC 2396): alphanumerics, the
+        /// unreserved marks "-_.!~*'()", the path punctuation ";:@&amp;=+$," and the '/' separator.
+        /// </summary>
+        private static bool IsLegalPathCharacter(char c)
+        {
+            return c < 128 && GatewayStoreClient.LegalPathCharacters[c];
+        }
+
+        private static bool[] CreateLegalPathCharacters()
+        {
+            bool[] legal = new bool[128];
+            for (char c = 'a'; c <= 'z'; c++)
+            {
+                legal[c] = true;
+                legal[char.ToUpperInvariant(c)] = true;
+            }
+
+            for (char c = '0'; c <= '9'; c++)
+            {
+                legal[c] = true;
+            }
+
+            foreach (char c in "-_.!~*'();:@&=+$,/")
+            {
+                legal[c] = true;
+            }
+
+            return legal;
         }
 
         internal override async Task<StoreResponse> InvokeStoreAsync(Uri baseAddress, ResourceOperation resourceOperation, DocumentServiceRequest request)

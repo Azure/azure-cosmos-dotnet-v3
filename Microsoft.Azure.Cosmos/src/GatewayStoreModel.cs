@@ -618,13 +618,12 @@ namespace Microsoft.Azure.Cosmos
                 return new Uri(this.endpointManager.ResolveServiceEndpoint(entity), new Uri(contentLocation).AbsolutePath);
             }
 
-            Uri entityUri = new Uri(this.endpointManager.ResolveServiceEndpoint(entity), PathsHelper.GeneratePath(entity.ResourceType, entity, false));
-            return GatewayStoreClient.PreserveTrailingCharacters(entityUri, entity);
+            return GatewayStoreClient.CreateResourceUri(this.endpointManager.ResolveServiceEndpoint(entity), entity.ResourceType, entity, isFeed: false);
         }
 
         internal Uri GetFeedUri(DocumentServiceRequest request)
         {
-            return new Uri(this.endpointManager.ResolveServiceEndpoint(request), PathsHelper.GeneratePath(request.ResourceType, request, true));
+            return GatewayStoreClient.CreateResourceUri(this.endpointManager.ResolveServiceEndpoint(request), request.ResourceType, request, isFeed: true);
         }
 
         public Task OpenConnectionsToAllReplicasAsync(string databaseName, string containerLinkUri, CancellationToken cancellationToken = default)

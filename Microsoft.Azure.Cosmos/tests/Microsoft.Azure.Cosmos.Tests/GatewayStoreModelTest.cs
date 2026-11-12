@@ -48,9 +48,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// System.Uri drops trailing space/tab/CR/LF (and trailing dots under legacy .NET Framework quirks)
-        /// from the unescaped name-based resource address. The entry URI must keep them (escaped) so the
-        /// decoded wire path matches the signed resource link; everything else must be left untouched.
+        /// Name-based paths are percent-encoded like the Java SDK's java.net.URI (RFC 2396 path rules), so
+        /// the decoded wire path always equals the signed resource address: trailing whitespace is not
+        /// dropped by System.Uri and '%', '?', '#' etc. are sent as data rather than URI syntax.
         /// </summary>
         [TestMethod]
         [DataRow("abc%20")]
@@ -67,17 +67,91 @@ namespace Microsoft.Azure.Cosmos
         [DataRow("abc%20.")]
         [DataRow("abc%C2%A0")]
         [DataRow("abc%C2%A0%20")]
-        [DataRow("abc%20%C2%A0")]
         [DataRow("abc%E3%80%80")]
         [DataRow("a%20b")]
+        [DataRow("a%2520b")]
+        [DataRow("100%25")]
+        [DataRow("a%25b%20")]
+        [DataRow("a%3Fb")]
+        [DataRow("a%23b")]
+        [DataRow("a%22b%3C%3E%5E%60%7B%7C%7D%5B%5D")]
+        [DataRow("a+b=c;d:e@f&g$h,i!j~k*l'm(n)")]
+        [DataRow("%E7%AC%AC67%E5%B1%8A")]
         [DataRow("abc")]
         public void EntryUriRoundTripsResourceName(string escapedId)
+        {
+            using GatewayStoreModel storeModel = GatewayStoreModelTest.CreateStoreModelForUriTests(out GlobalEndpointManager endpointManager);
+            using (endpointManager)
+            {
+                foreach (OperationType operationType in new[] { OperationType.Read, OperationType.Replace, OperationType.Delete, OperationType.Patch })
+                {
+                    using DocumentServiceRequest request = DocumentServiceRequest.Create(
+                        operationType,
+                        ResourceType.Document,
+                        "dbs/db1/colls/coll1/docs/" + escapedId,
+                        AuthorizationTokenType.PrimaryMasterKey);
+
+                    string expectedAddress = "/dbs/db1/colls/coll1/docs/" + Uri.UnescapeDataString(escapedId);
+                    Assert.AreEqual(expectedAddress, "/" + request.ResourceAddress);
+
+                    Uri entityUri = storeModel.GetEntityUri(request);
+                    Uri resourceUri = GatewayStoreClient.GetResourceUri(ResourceType.Document, new Uri("https://foo"), request);
+                    Assert.AreEqual(expectedAddress, Uri.UnescapeDataString(entityUri.AbsolutePath), $"{operationType} {entityUri.AbsoluteUri}");
+                    Assert.AreEqual(expectedAddress, Uri.UnescapeDataString(resourceUri.AbsolutePath), $"{operationType} {resourceUri.AbsoluteUri}");
+                    Assert.AreEqual(string.Empty, entityUri.Query + entityUri.Fragment, entityUri.AbsoluteUri);
+                }
+            }
+        }
+
+        [TestMethod]
+        [DataRow("dbs/db1/colls/coll1/docs/7c9e6679-7425-40de-944b-e07fc1f90ae7", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/a+b=c:d@e", false)]
+        [DataRow("dbs/db1/colls/coll1", true)]
+        [DataRow("dbs/Bp5BAA==/colls/Bp5BAI4vQwA=/docs/Bp5BAI4vQwABAAAAAAAAAA==/", false)]
+        public void UriUnchangedWhenNoEscapingIsNeeded(string address, bool isFeed)
+        {
+            using GatewayStoreModel storeModel = GatewayStoreModelTest.CreateStoreModelForUriTests(out GlobalEndpointManager endpointManager);
+            using (endpointManager)
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                isFeed ? OperationType.Create : OperationType.Read,
+                ResourceType.Document,
+                address,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                Uri before = new Uri(new Uri("https://foo"), PathsHelper.GeneratePath(ResourceType.Document, request, isFeed));
+                Uri after = isFeed ? storeModel.GetFeedUri(request) : storeModel.GetEntityUri(request);
+                Assert.AreEqual(before.AbsoluteUri, after.AbsoluteUri);
+                Assert.AreEqual(
+                    before.AbsoluteUri,
+                    GatewayStoreClient.GetResourceUri(ResourceType.Document, new Uri("https://foo"), request).AbsoluteUri);
+            }
+        }
+
+        [TestMethod]
+        public void FeedUriRoundTripsContainerName()
+        {
+            using GatewayStoreModel storeModel = GatewayStoreModelTest.CreateStoreModelForUriTests(out GlobalEndpointManager endpointManager);
+            using (endpointManager)
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Create,
+                ResourceType.Document,
+                "dbs/db1/colls/a%25b%3Fc",
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                Assert.AreEqual("/dbs/db1/colls/a%b?c/docs", Uri.UnescapeDataString(storeModel.GetFeedUri(request).AbsolutePath).TrimEnd('/'));
+                Assert.AreEqual(
+                    "/dbs/db1/colls/a%b?c/docs",
+                    Uri.UnescapeDataString(GatewayStoreClient.GetResourceUri(ResourceType.Document, new Uri("https://foo"), request).AbsolutePath).TrimEnd('/'));
+            }
+        }
+
+        private static GatewayStoreModel CreateStoreModelForUriTests(out GlobalEndpointManager endpointManager)
         {
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
-            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
-            using GatewayStoreModel storeModel = new GatewayStoreModel(
+            endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            return new GatewayStoreModel(
                 endpointManager,
                 new SessionContainer(string.Empty),
                 ConsistencyLevel.Eventual,
@@ -85,44 +159,6 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient()),
                 GlobalPartitionEndpointManagerNoOp.Instance);
-
-            foreach (OperationType operationType in new[] { OperationType.Read, OperationType.Replace, OperationType.Delete, OperationType.Patch })
-            {
-                using DocumentServiceRequest request = DocumentServiceRequest.Create(
-                    operationType,
-                    ResourceType.Document,
-                    "dbs/db1/colls/coll1/docs/" + escapedId,
-                    AuthorizationTokenType.PrimaryMasterKey);
-
-                string expectedAddress = "/dbs/db1/colls/coll1/docs/" + Uri.UnescapeDataString(escapedId);
-                Assert.AreEqual(expectedAddress, "/" + request.ResourceAddress);
-
-                Uri entityUri = storeModel.GetEntityUri(request);
-                Uri resourceUri = GatewayStoreClient.GetResourceUri(ResourceType.Document, new Uri("https://foo"), request);
-                Assert.AreEqual(expectedAddress, Uri.UnescapeDataString(entityUri.AbsolutePath), $"{operationType} {entityUri.AbsoluteUri}");
-                Assert.AreEqual(expectedAddress, Uri.UnescapeDataString(resourceUri.AbsolutePath), $"{operationType} {resourceUri.AbsoluteUri}");
-            }
-        }
-
-        [TestMethod]
-        public void EntryUriUnchangedForRegularIdsAndFeeds()
-        {
-            using DocumentServiceRequest readRequest = DocumentServiceRequest.Create(
-                OperationType.Read,
-                ResourceType.Document,
-                "dbs/db1/colls/coll1/docs/abc",
-                AuthorizationTokenType.PrimaryMasterKey);
-            Uri entryUri = new Uri("https://foo/dbs/db1/colls/coll1/docs/abc");
-            Assert.AreSame(entryUri, GatewayStoreClient.PreserveTrailingCharacters(entryUri, readRequest));
-
-            using DocumentServiceRequest createRequest = DocumentServiceRequest.Create(
-                OperationType.Create,
-                ResourceType.Document,
-                "dbs/db1/colls/coll1",
-                AuthorizationTokenType.PrimaryMasterKey);
-            Assert.AreEqual(
-                "/dbs/db1/colls/coll1/docs",
-                GatewayStoreClient.GetResourceUri(ResourceType.Document, new Uri("https://foo"), createRequest).AbsolutePath.TrimEnd('/'));
         }
 
         /// <summary>
