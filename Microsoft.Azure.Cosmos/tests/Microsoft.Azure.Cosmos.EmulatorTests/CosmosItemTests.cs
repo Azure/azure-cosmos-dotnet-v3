@@ -148,61 +148,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             using CosmosClient client = TestCommon.CreateCosmosClient(useGateway);
             Container container = client.GetContainer(this.database.Id, this.Container.Id);
-            string baseId = Guid.NewGuid().ToString();
 
-            foreach (string id in new[] { baseId + " ", baseId + "  ", baseId + "\t", baseId + "\n", baseId + "\r", " " + baseId + " ", baseId + "\u00A0 ", baseId + ". ", " " + baseId, baseId + "%20x", baseId + "100%", baseId + "%2520" })
-            {
-                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(id: id);
-                Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(item.pk);
+            IReadOnlyList<SpecialCharacterIdScenarios.Result> results = await SpecialCharacterIdScenarios.RunAsync(container, "/pk");
 
-                ItemResponse<ToDoActivity> response = await container.CreateItemAsync(item, partitionKey);
-                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            List<SpecialCharacterIdScenarios.Result> failures = results.Where(r => !r.Succeeded).ToList();
+            Assert.AreEqual(0, failures.Count, SpecialCharacterIdScenarios.Describe(failures));
 
-                response = await container.ReadItemAsync<ToDoActivity>(id, partitionKey);
-                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-                Assert.AreEqual(id, response.Resource.id);
-
-                item.description = "replaced";
-                response = await container.ReplaceItemAsync(item, id, partitionKey);
-                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-
-                response = await container.PatchItemAsync<ToDoActivity>(id, partitionKey, new[] { PatchOperation.Set("/taskNum", 42) });
-                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-                Assert.AreEqual(id, response.Resource.id);
-                Assert.AreEqual("replaced", response.Resource.description);
-                Assert.AreEqual(42, response.Resource.taskNum);
-
-                response = await container.DeleteItemAsync<ToDoActivity>(id, partitionKey);
-                Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
-
-                CosmosException notFound = await Assert.ThrowsExceptionAsync<CosmosException>(
-                    () => container.ReadItemAsync<ToDoActivity>(id, partitionKey));
-                Assert.AreEqual(HttpStatusCode.NotFound, notFound.StatusCode);
-            }
-
-            // An id with a trailing space and its trimmed twin must resolve to different items.
-            ToDoActivity trimmed = ToDoActivity.CreateRandomToDoActivity(pk: "twins", id: baseId);
-            ToDoActivity spaced = ToDoActivity.CreateRandomToDoActivity(pk: "twins", id: baseId + " ");
-            trimmed.description = "trimmed";
-            spaced.description = "spaced";
-            await container.CreateItemAsync(trimmed, new Cosmos.PartitionKey("twins"));
-            await container.CreateItemAsync(spaced, new Cosmos.PartitionKey("twins"));
-
-            Assert.AreEqual("spaced", (await container.ReadItemAsync<ToDoActivity>(spaced.id, new Cosmos.PartitionKey("twins"))).Resource.description);
-            Assert.AreEqual("trimmed", (await container.ReadItemAsync<ToDoActivity>(trimmed.id, new Cosmos.PartitionKey("twins"))).Resource.description);
-
-            // A literal "%20" in an id must not be decoded into a space by the service.
-            ToDoActivity percent = ToDoActivity.CreateRandomToDoActivity(pk: "twins", id: baseId + "a%20b");
-            ToDoActivity space = ToDoActivity.CreateRandomToDoActivity(pk: "twins", id: baseId + "a b");
-            percent.description = "percent";
-            space.description = "space";
-            await container.CreateItemAsync(percent, new Cosmos.PartitionKey("twins"));
-            await container.CreateItemAsync(space, new Cosmos.PartitionKey("twins"));
-
-            Assert.AreEqual("percent", (await container.ReadItemAsync<ToDoActivity>(percent.id, new Cosmos.PartitionKey("twins"))).Resource.description);
-            Assert.AreEqual("space", (await container.ReadItemAsync<ToDoActivity>(space.id, new Cosmos.PartitionKey("twins"))).Resource.description);
+            string expectedTransport = useGateway ? SpecialCharacterIdScenarios.Gateway : SpecialCharacterIdScenarios.Direct;
+            CollectionAssert.AreEquivalent(new[] { expectedTransport }, results.SelectMany(r => r.Transports).Distinct().ToList());
         }
-
         [TestMethod]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]

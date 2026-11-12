@@ -1131,6 +1131,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
+        public async Task PointOperationsWithSpecialCharactersInIdTest()
+        {
+            await WarmUpThinClientProbeAsync(this.container, new TestObject { Id = Guid.NewGuid().ToString(), Pk = "warm-up", Other = "warm-up" });
+
+            IReadOnlyList<SpecialCharacterIdScenarios.Result> results = await SpecialCharacterIdScenarios.RunAsync(this.container, "/pk");
+
+            List<SpecialCharacterIdScenarios.Result> failures = results.Where(r => !r.Succeeded).ToList();
+            Assert.AreEqual(0, failures.Count, SpecialCharacterIdScenarios.Describe(failures));
+            Assert.IsTrue(
+                results.All(r => r.Transports.Contains(SpecialCharacterIdScenarios.ThinClient)),
+                "Every scenario should be served by the thin-client proxy.");
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
         public async Task ReadItem_WithHedgingAndExcludeRegions_OnThinClient_Succeeds()
         {
             CosmosClientOptions hedgingClientOptions = new CosmosClientOptions
