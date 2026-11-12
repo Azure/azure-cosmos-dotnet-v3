@@ -2479,45 +2479,41 @@ Based on area labels, assign to: @{reviewer}
 
 ---
 
-### 4.9 Compiled Dependencies (NuGet Transport Layer)
+### 4.9 Direct Transport Source and Native Dependencies
 
 ```yaml
-compiled_dependencies:
+direct_transport_dependencies:
   context: |
     The SDK's Direct mode transport layer (Connection.cs, StoreClientFactory.cs, etc.)
-    is compiled into a NuGet package (Microsoft.Azure.Cosmos.Direct). Source code for
-    these files is NOT in the repository — they exist only in a separate internal repo
-    and are consumed as binary references.
-    
-  identifying_compiled_code:
-    signs:
-      - "File referenced in code but not found with `find` or `glob`"
-      - "Class/method visible via IntelliSense but no .cs source file in repo"
-      - "grep finds usage sites but not the definition"
-    confirm: "Check .csproj for PackageReference to Microsoft.Azure.Cosmos.Direct"
-    
-  working_with_compiled_code:
+    is built from Microsoft.Azure.Cosmos/Direct/src/Microsoft.Azure.Cosmos.Direct.csproj.
+    The SDK bundles the locally built assembly; it does not restore the original
+    Microsoft.Azure.Cosmos.Direct NuGet package. DirectVersion in Directory.Build.props
+    still controls the local assembly version.
+
+  locating_managed_code:
+    source: "Microsoft.Azure.Cosmos/Direct/src"
+    tests: "Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Direct"
+    confirm: "Check the SDK and affected consumer projects for the local Direct ProjectReference."
+
+  working_with_managed_code:
     cannot_do:
-      - "Modify internal methods (e.g., Connection.ResolveHostAsync)"
-      - "Change constructor signatures"
-      - "Access private/internal members from the main SDK assembly"
+      - "Assume all private/internal Direct members are accessible across assembly boundaries"
+      - "Replace the local project with an old Direct NuGet reference"
     can_do:
-      - "Use public/internal API surface exposed by the package"
+      - "Investigate and modify managed Direct source when the fix belongs there"
+      - "Add focused tests alongside the imported Direct tests"
       - "Use injection points (e.g., dnsResolutionFunction parameter)"
-      - "Wrap compiled functionality with custom delegates/functions"
-      
-  strategy_when_plan_references_compiled_code: |
-    If your implementation plan references modifying compiled code:
-    1. STOP — verify the file exists in the repo first
-    2. If NOT in repo, find the public injection point (constructor parameter, interface, etc.)
-    3. Implement your logic in the main SDK assembly and inject via the public API
-    4. Update your plan to document the deviation
-    
-  example: |
-    Plan said: "Modify Connection.ResolveHostAsync() to add trailing dot"
-    Reality: Connection.cs is in compiled NuGet, not in repo
-    Fix: Use StoreClientFactory's dnsResolutionFunction parameter to inject
-         a custom resolver that wraps Dns.GetHostAddressesAsync() with dot-suffix logic
+    compatibility: |
+      Preserve assembly contracts and check dependent consumers such as FaultInjection.
+      Internal OSS builds (ProjectRef=True) use the original internal Direct provider,
+      not the public local project.
+
+  native_dependencies: |
+    Windows native query planning comes from Microsoft.Azure.Cosmos.ServiceInterop.
+    Linux native query planning comes from Microsoft.Azure.Cosmos.QueryPlanInterop.Linux.
+    Their native implementations are not part of the managed Direct source tree.
+    Verify the owning package and supported SDK integration points before planning
+    a native-code change; do not copy DLLs from the original Direct package.
 ```
 
 ### 4.10 Environment-Specific Issues

@@ -10,7 +10,7 @@
     * [Updated Sequence Diagram for `CosmosClient` initialization.](#updated-sequence-diagram-for-cosmosclient-initialization)
     * [Sequence Diagram when `StoreReader` invokes the `GatewayAddressCache` to resolve addresses and leverages `AddressEnumerator` to enumerate the transport addresses.](#sequence-diagram-when-storereader-invokes-the-gatewayaddresscache-to-resolve-addresses-and-leverages-addressenumerator-to-enumerate-the-transport-addresses)
     * [State Diagram to Understand the `TransportAddressUri` Health State Transformations.](#state-diagram-to-understand-the-transportaddressuri-health-state-transformations)
-    * [`Microsoft.Azure.Cosmos.Direct` package class diagrams.](#azurecosmosdirect-package-class-diagrams)
+    * [`Microsoft.Azure.Cosmos.Direct` assembly class diagrams.](#microsoftazurecosmosdirect-assembly-class-diagrams)
     * [`Microsoft.Azure.Cosmos` package class diagrams.](#microsoftazurecosmos-package-class-diagrams)
 * [Pull Request with Sample Code Changes.](#pull-request-with-sample-code-changes)
 * [References.](#references)
@@ -213,9 +213,9 @@ To better understand the design, it is critical to understand the `TransportAddr
     Connected --> [*]
 ```
 
-To accomplish the above changes in the replica validation flow, below are the class diagrams and the proposed code changes in both `Microsoft.Azure.Cosmos.Direct` and `Microsoft.Azure.Cosmos` packages.
+To accomplish the above changes in the replica validation flow, below are the class diagrams and the proposed code changes in the Direct transport assembly and the main SDK. The managed `Microsoft.Azure.Cosmos.Direct` assembly is now built from `Microsoft.Azure.Cosmos/Direct/src` and bundled in the SDK package.
 
-### `Microsoft.Azure.Cosmos.Direct` package class diagrams.
+### `Microsoft.Azure.Cosmos.Direct` assembly class diagrams.
 
 Introduce a new `IOpenConnectionsHandler` interface with `OpenRntbdChannelsAsync()` method. Create a new class `RntbdOpenConnectionHandler` that will eventually implement the `IOpenConnectionsHandler` interface and override the `OpenRntbdChannelsAsync()` method to establish Rntbd connections to the transport address uris. Note that, this class will also add the concurrency control logic, so that any burst of connection creation could be avoided. The below class diagram depicts the same behavior.
 

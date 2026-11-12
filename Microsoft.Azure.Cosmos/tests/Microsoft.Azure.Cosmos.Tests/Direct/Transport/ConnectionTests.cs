@@ -98,9 +98,8 @@ namespace Microsoft.Azure.Cosmos.Test
         ///
         /// 1. When a connection is opened, it's initially marked as healthy.
         ///
-        /// 2. When there is a delay before sending a write request and a delay after sending
-        ///    the write request, which eventually exceeds the receive hang grace period, the
-        ///    connection is eventually marked un-healthy.
+        /// 2. When the send and receive timestamps exceed the receive hang thresholds,
+        ///    the connection is marked un-healthy.
         ///
         /// 3. When a response is received afterwards, the connection is marked as healthy.
         ///
@@ -172,14 +171,19 @@ namespace Microsoft.Azure.Cosmos.Test
                         condition: connection.Healthy,
                         message: "A connection opened successfully is initially marked as healthy.");
 
-                    await Task.Delay(12000);
                     await connection
                         .WriteRequestAsync(
                             args: arguments.CommonArguments,
                             messagePayload: request,
                             transportRequestStats: null);
 
-                    await Task.Delay(10000);
+                    // Move past both receive thresholds without depending on timer precision.
+                    DateTime lastSendTime = DateTime.UtcNow.AddSeconds(-12);
+                    TestUtils.UpdateFieldUsingReflection(connection, "lastSendAttemptTime", lastSendTime);
+                    TestUtils.UpdateFieldUsingReflection(connection, "lastSendTime", lastSendTime);
+                    TestUtils.UpdateFieldUsingReflection(connection, "firstSendSinceLastReceive", lastSendTime);
+                    TestUtils.UpdateFieldUsingReflection(connection, "lastReceiveTime", lastSendTime.AddSeconds(-12));
+
                     Assert.IsFalse(
                         condition: connection.Healthy,
                         message: "When a write request is sent but the response is not received with-in the receive hang grace period, the connection will be marked as un-healthy.");

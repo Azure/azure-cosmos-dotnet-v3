@@ -7,10 +7,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
+    using System.Security.Cryptography;
     using System.Text.RegularExpressions;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
@@ -119,6 +123,76 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Assert.IsFalse(ConfigurationManager.ForceBypassQueryParsing(), $"{ConfigurationManager.BypassQueryParsing} must not force the gateway.");
             Assert.AreSame(LinuxQueryPlanInterop.Instance, QueryPlanInterop.Instance);
             Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing(), "An opted-in Linux process must use QueryPlanInterop instead of the gateway.");
+        }
+
+        [TestMethod]
+        [TestCategory("Windows")]
+        [TestCategory("ServiceInterop")]
+        public void WindowsX64ProcessUsesServiceInterop()
+        {
+            EnsureWindowsServiceInterop();
+
+            Assert.IsFalse(ConfigurationManager.ForceBypassQueryParsing(), $"{ConfigurationManager.BypassQueryParsing} must not force the gateway.");
+            Assert.AreSame(WindowsX64QueryPlanInterop.Instance, QueryPlanInterop.Instance);
+            Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing(), "Windows x64 must use ServiceInterop instead of the gateway.");
+
+            PartitionedQueryExecutionInfoInternal plan = Plan("SELECT TOP 5 * FROM c WHERE c.key = 42");
+            AssertPointRanges(plan, new object[] { 42 });
+            AssertQueryInfo(plan, new Expected { Top = 5 });
+
+            const string libraryName = "Microsoft.Azure.Cosmos.ServiceInterop.dll";
+            using Process process = Process.GetCurrentProcess();
+            ProcessModule library = process.Modules.Cast<ProcessModule>().Single(module =>
+                string.Equals(module.ModuleName, libraryName, StringComparison.OrdinalIgnoreCase));
+            string expectedPath = Path.Combine(Path.GetDirectoryName(typeof(CosmosClient).Assembly.Location), libraryName);
+            Assert.AreEqual(Path.GetFullPath(expectedPath), Path.GetFullPath(library.FileName), true,
+                "The planner must load the ServiceInterop payload shipped with this SDK, not another installation.");
+            using Stream nativeLibrary = File.OpenRead(library.FileName);
+            using SHA256 sha = SHA256.Create();
+            Console.WriteLine($"ServiceInterop: {library.FileName}; SHA256={Convert.ToHexString(sha.ComputeHash(nativeLibrary))}; ProcessArchitecture={RuntimeInformation.ProcessArchitecture}");
+        }
+
+        [DataTestMethod]
+        [TestCategory("Windows")]
+        [TestCategory("ServiceInterop")]
+        [DataRow("SELECT * FROM c WHERE", "Syntax error")]
+        [DataRow("SELECT BADFUNC(c.key) FROM c", "BADFUNC")]
+        public void WindowsServiceInteropRecoversAfterQueryError(string query, string error)
+        {
+            EnsureWindowsServiceInterop();
+            using QueryPartitionProvider provider = new QueryPartitionProvider(
+                new Dictionary<string, object> { { "maxSqlQueryInputLength", 524288 } });
+
+            TryCatch<PartitionedQueryExecutionInfoInternal> invalid = TryPlan(
+                query, Key, PartitionKind.Hash, null, provider: provider);
+            Assert.IsTrue(invalid.Failed);
+            StringAssert.Contains(invalid.Exception.ToString(), error);
+
+            PartitionedQueryExecutionInfoInternal plan = Plan(
+                "SELECT TOP 5 * FROM c WHERE c.key = 42", provider: provider);
+            AssertPointRanges(plan, new object[] { 42 });
+            AssertQueryInfo(plan, new Expected { Top = 5 });
+        }
+
+        [TestMethod]
+        [TestCategory("Windows")]
+        [TestCategory("ServiceInterop")]
+        public void WindowsServiceInteropPlansConcurrentParameterizedQueries()
+        {
+            EnsureWindowsServiceInterop();
+            using QueryPartitionProvider provider = new QueryPartitionProvider(
+                new Dictionary<string, object> { { "maxSqlQueryInputLength", 524288 } });
+
+            Parallel.For(0, 32, index =>
+            {
+                string key = $"tenant-\u6771\u4eac\U0001f642-{index}";
+                PartitionedQueryExecutionInfoInternal plan = Plan(
+                    "SELECT TOP @top * FROM c WHERE c.key = @key",
+                    parameters: new JArray(Param("@top", index + 1), Param("@key", key)),
+                    provider: provider);
+                AssertPointRanges(plan, new object[] { key });
+                AssertQueryInfo(plan, new Expected { Top = (uint)(index + 1) });
+            });
         }
 
         // Provider lifecycle and text encoding through the native library
@@ -752,6 +826,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             }
         }
 
+        private static void EnsureWindowsServiceInterop()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                || RuntimeInformation.ProcessArchitecture != Architecture.X64)
+            {
+                Assert.Inconclusive("Requires Windows x64 ServiceInterop.");
+            }
+
+            Assert.AreSame(WindowsX64QueryPlanInterop.Instance, QueryPlanInterop.Instance);
+            Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing(), "ServiceInterop coverage must not use gateway planning.");
+        }
+
         private static JObject Param(string name, JToken value)
         {
             return new JObject { { "name", name }, { "value", value } };
@@ -762,9 +848,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             string[] paths = null,
             PartitionKind kind = PartitionKind.Hash,
             JArray parameters = null,
-            bool hybridSearchSkipOrderByRewrite = false)
+            bool hybridSearchSkipOrderByRewrite = false,
+            QueryPartitionProvider provider = null)
         {
-            TryCatch<PartitionedQueryExecutionInfoInternal> result = TryPlan(query, paths ?? Key, kind, parameters, hybridSearchSkipOrderByRewrite);
+            TryCatch<PartitionedQueryExecutionInfoInternal> result = TryPlan(query, paths ?? Key, kind, parameters, hybridSearchSkipOrderByRewrite, provider);
             result.ThrowIfFailed();
             return result.Result;
         }
@@ -774,7 +861,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             string[] paths,
             PartitionKind kind,
             JArray parameters,
-            bool hybridSearchSkipOrderByRewrite = false)
+            bool hybridSearchSkipOrderByRewrite = false,
+            QueryPartitionProvider provider = null)
         {
             EnsureNativePlatform();
             JObject querySpec = new JObject { { "query", query }, { "parameters", parameters ?? new JArray() } };
@@ -785,7 +873,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 Version = PartitionKeyDefinitionVersion.V2,
             };
 
-            return QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfoInternal(
+            return (provider ?? QueryPartitionProviderTestInstance.Object).TryGetPartitionedQueryExecutionInfoInternal(
                 querySpecJsonString: querySpec.ToString(),
                 partitionKeyDefinition: partitionKey,
                 vectorEmbeddingPolicy: null,
