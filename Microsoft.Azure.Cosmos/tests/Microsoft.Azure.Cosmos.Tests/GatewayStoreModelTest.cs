@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Pins exactly what is escaped: trailing space, tab, CR and LF, and '%' anywhere. Everything else is left for
+        /// Pins exactly what is escaped: trailing space, tab, CR and LF. Everything else is left for
         /// System.Uri to handle as before.
         /// </summary>
         [TestMethod]
@@ -57,10 +57,10 @@ namespace Microsoft.Azure.Cosmos
         [DataRow("dbs/db1/colls/coll1/docs/abc\t", "dbs/db1/colls/coll1/docs/abc%09")]
         [DataRow("dbs/db1/colls/coll1/docs/abc\r\n", "dbs/db1/colls/coll1/docs/abc%0D%0A")]
         [DataRow("dbs/db1/colls/coll1/docs/abc \t", "dbs/db1/colls/coll1/docs/abc%20%09")]
-        [DataRow("dbs/db1/colls/coll1/docs/a%20b", "dbs/db1/colls/coll1/docs/a%2520b")]
-        [DataRow("dbs/db1/colls/coll1/docs/100%", "dbs/db1/colls/coll1/docs/100%25")]
-        [DataRow("dbs/db1/colls/coll1/docs/a%b ", "dbs/db1/colls/coll1/docs/a%25b%20")]
-        [DataRow("dbs/db1/colls/a%b/docs", "dbs/db1/colls/a%25b/docs")]
+        [DataRow("dbs/db1/colls/coll1/docs/a%20b", "dbs/db1/colls/coll1/docs/a%20b")]
+        [DataRow("dbs/db1/colls/coll1/docs/100%", "dbs/db1/colls/coll1/docs/100%")]
+        [DataRow("dbs/db1/colls/coll1/docs/a b ", "dbs/db1/colls/coll1/docs/a b%20")]
+        [DataRow("dbs/db1/colls/coll1 ", "dbs/db1/colls/coll1%20")]
         [DataRow("dbs/db1/colls/coll1/docs/ abc", "dbs/db1/colls/coll1/docs/ abc")]
         [DataRow("dbs/db1/colls/coll1/docs/a b", "dbs/db1/colls/coll1/docs/a b")]
         [DataRow("dbs/db1/colls/coll1/docs/a\tb", "dbs/db1/colls/coll1/docs/a\tb")]
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// For names with escaped characters, the decoded wire path of entry and feed URIs equals the signed resource
+        /// For names ending in whitespace, the decoded wire path of the entry URI equals the signed resource
         /// address.
         /// </summary>
         [TestMethod]
@@ -86,10 +86,7 @@ namespace Microsoft.Azure.Cosmos
         [DataRow("dbs/db1/colls/coll1/docs/abc%C2%A0%20")]
         [DataRow("dbs/db1/colls/coll1/docs/abc%09")]
         [DataRow("dbs/db1/colls/coll1/docs/abc%0D%0A")]
-        [DataRow("dbs/db1/colls/coll1/docs/a%2520b")]
-        [DataRow("dbs/db1/colls/coll1/docs/100%25")]
-        [DataRow("dbs/db1/colls/coll1/docs/a%25zz%20")]
-        [DataRow("dbs/db1%20/colls/coll%25%20")]
+        [DataRow("dbs/db1%20/colls/coll1%20")]
         public void RequestUriRoundTripsEscapedCharacters(string escapedAddress)
         {
             using GatewayStoreModel storeModel = GatewayStoreModelTest.CreateStoreModelForUriTests(out GlobalEndpointManager endpointManager);
@@ -108,17 +105,6 @@ namespace Microsoft.Azure.Cosmos
                     Assert.AreEqual("/" + request.ResourceAddress, Uri.UnescapeDataString(entityUri.AbsolutePath), $"{operationType} {entityUri.AbsoluteUri}");
                     Assert.AreEqual(string.Empty, entityUri.Query + entityUri.Fragment, entityUri.AbsoluteUri);
                 }
-
-                if (resourceType == ResourceType.Document)
-                {
-                    using DocumentServiceRequest create = DocumentServiceRequest.Create(
-                        OperationType.Create,
-                        ResourceType.Document,
-                        escapedAddress.Substring(0, escapedAddress.IndexOf("/docs/")),
-                        AuthorizationTokenType.PrimaryMasterKey);
-                    Uri feedUri = storeModel.GetFeedUri(create);
-                    Assert.AreEqual("/" + create.ResourceAddress + "/docs", Uri.UnescapeDataString(feedUri.AbsolutePath).TrimEnd('/'), feedUri.AbsoluteUri);
-                }
             }
         }
 
@@ -136,10 +122,14 @@ namespace Microsoft.Azure.Cosmos
         [DataRow("dbs/db1/colls/coll1/docs/abc%C2%A0", false)]
         [DataRow("dbs/db1/colls/coll1/docs/%E7%AC%AC67%E5%B1%8A", false)]
         [DataRow("dbs/db1/colls/coll1/docs/a%3Fb", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/a%2520b", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/100%25", false)]
+        [DataRow("dbs/db1/colls/a%25b/docs/abc", false)]
         [DataRow("dbs/db1/colls/coll1/docs/a%23b", false)]
         [DataRow("dbs/db1/colls/coll1/docs/a%22b%3C%3E%5E%60%7B%7C%7D%5B%5D", false)]
         [DataRow("dbs/Bp5BAA==/colls/Bp5BAI4vQwA=/docs/Bp5BAI4vQwABAAAAAAAAAA==/", false)]
         [DataRow("dbs/db1/colls/coll1", true)]
+        [DataRow("dbs/db1/colls/a%25b%20c", true)]
         [DataRow("dbs/Bp5BAA==/colls/Bp5BAI4vQwA=/", true)]
         public void RequestUriUnchangedWhenNothingToEscape(string escapedAddress, bool isFeed)
         {

@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private const string WorksToday = "Works today";
         private const string TrailingWhitespace = "Escaped: trailing whitespace";
-        private const string LiteralPercent = "Escaped: literal percent";
+        private const string LiteralPercent = "Literal percent";
         private const string NotHandled = "Not handled";
 
         internal static readonly IReadOnlyList<Scenario> Scenarios = new List<Scenario>
@@ -119,14 +119,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             new Scenario(TrailingWhitespace, "space then tab", b => b + " \t"),
             new Scenario(TrailingWhitespace, "960 trailing spaces", b => b + new string(' ', 960)),
 
-            // Ids with a literal '%', which System.Uri used to treat as the start of an escape sequence.
-            new Scenario(LiteralPercent, "literal %20", b => "a%20b" + b),
-            new Scenario(LiteralPercent, "literal %2F", b => "a%2Fb" + b),
-            new Scenario(LiteralPercent, "literal %3F", b => "a%3Fb" + b),
-            new Scenario(LiteralPercent, "literal %2520", b => "a%2520b" + b),
+            // Ids with a literal '%'. A valid %XX sequence is decoded by the service as a different id, so those still fail over Gateway.
+            new Scenario(LiteralPercent, "literal %20", b => "a%20b" + b, succeedsOverGateway: false),
+            new Scenario(LiteralPercent, "literal %2F", b => "a%2Fb" + b, succeedsOverGateway: false),
+            new Scenario(LiteralPercent, "literal %3F", b => "a%3Fb" + b, succeedsOverGateway: false),
+            new Scenario(LiteralPercent, "literal %2520", b => "a%2520b" + b, succeedsOverGateway: false),
             new Scenario(LiteralPercent, "trailing percent", b => b + "100%"),
             new Scenario(LiteralPercent, "invalid escape", b => "a%zz" + b),
-            new Scenario(LiteralPercent, "literal %20 then space", b => "a%20b" + b + " "),
+            new Scenario(LiteralPercent, "literal %20 then space", b => "a%20b" + b + " ", succeedsOverGateway: false),
             new Scenario(LiteralPercent, "320 percent signs", b => b + new string('%', 320)),
 
             // Ids that still fail over Gateway and thin client. The docs restrict '#' and '\'.
@@ -146,8 +146,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ("trailing tab vs. trimmed", b => b + "\t", b => b, true),
                 ("leading space vs. trimmed", b => " " + b, b => b, true),
                 ("trailing dot vs. trimmed", b => b + ".", b => b, true),
-                ("literal %20 vs. space", b => b + "a%20b", b => b + "a b", true),
-                ("literal %2520 vs. literal %20", b => b + "a%2520b", b => b + "a%20b", true),
+                ("literal %20 vs. space", b => b + "a%20b", b => b + "a b", false),
+                ("literal %2520 vs. literal %20", b => b + "a%2520b", b => b + "a%20b", false),
             };
         /// <summary>
         /// Returns the results whose outcome differs from the scenario's expectation for the given mode.
