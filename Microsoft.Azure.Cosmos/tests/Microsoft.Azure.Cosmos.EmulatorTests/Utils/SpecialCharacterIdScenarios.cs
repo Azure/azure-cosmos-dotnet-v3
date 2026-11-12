@@ -75,12 +75,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal const string ThinClient = "ThinClient";
 
         private const string WorksToday = "Works today";
-        private const string TrailingSpaces = "Trailing spaces";
+        private const string TrailingWhitespace = "Escaped: trailing whitespace";
+        private const string LiteralPercent = "Escaped: literal percent";
         private const string NotHandled = "Not handled";
 
         internal static readonly IReadOnlyList<Scenario> Scenarios = new List<Scenario>
         {
-            // Ids that already work in every mode. They guard against regressions.
+            // Ids that already worked in every mode. They guard against regressions.
             new Scenario(WorksToday, "GUID", b => b),
             new Scenario(WorksToday, "legal punctuation", b => b + "-_.!~*'();:@&=+$,"),
             new Scenario(WorksToday, "base64-like", b => b + "Ab+Cd=="),
@@ -95,8 +96,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             new Scenario(WorksToday, "pipe, caret, backtick", b => "a|^`" + b),
             new Scenario(WorksToday, "question mark", b => "a?b" + b),
             new Scenario(WorksToday, "trailing question mark", b => b + "?"),
-            new Scenario(WorksToday, "trailing percent", b => b + "100%"),
-            new Scenario(WorksToday, "invalid escape", b => "a%zz" + b),
             new Scenario(WorksToday, "trailing dot", b => b + "."),
             new Scenario(WorksToday, "two trailing dots", b => b + ".."),
             new Scenario(WorksToday, "space then dot", b => b + " ."),
@@ -104,30 +103,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             new Scenario(WorksToday, "trailing ideographic space", b => b + "\u3000"),
             new Scenario(WorksToday, "accented and CJK", b => "\u00E9\u6F22\u5B57" + b),
 
-            // Ids ending in spaces, which System.Uri used to trim from the request URI.
-            new Scenario(TrailingSpaces, "trailing space", b => b + " "),
-            new Scenario(TrailingSpaces, "two trailing spaces", b => b + "  "),
-            new Scenario(TrailingSpaces, "leading and trailing space", b => " " + b + " "),
-            new Scenario(TrailingSpaces, "interior and trailing space", b => "a b" + b + " "),
-            new Scenario(TrailingSpaces, "dot then space", b => b + ". "),
-            new Scenario(TrailingSpaces, "NBSP then space", b => b + "\u00A0 "),
-            new Scenario(TrailingSpaces, "emoji then space", b => "\uD83D\uDE00" + b + " "),
-            new Scenario(TrailingSpaces, "question mark then space", b => "a?b" + b + " "),
-            new Scenario(TrailingSpaces, "960 trailing spaces", b => b + new string(' ', 960)),
+            // Ids ending in whitespace that System.Uri used to trim from the request URI.
+            new Scenario(TrailingWhitespace, "trailing space", b => b + " "),
+            new Scenario(TrailingWhitespace, "two trailing spaces", b => b + "  "),
+            new Scenario(TrailingWhitespace, "leading and trailing space", b => " " + b + " "),
+            new Scenario(TrailingWhitespace, "interior and trailing space", b => "a b" + b + " "),
+            new Scenario(TrailingWhitespace, "dot then space", b => b + ". "),
+            new Scenario(TrailingWhitespace, "NBSP then space", b => b + "\u00A0 "),
+            new Scenario(TrailingWhitespace, "emoji then space", b => "\uD83D\uDE00" + b + " "),
+            new Scenario(TrailingWhitespace, "question mark then space", b => "a?b" + b + " "),
+            new Scenario(TrailingWhitespace, "trailing tab", b => b + "\t"),
+            new Scenario(TrailingWhitespace, "trailing LF", b => b + "\n"),
+            new Scenario(TrailingWhitespace, "trailing CR", b => b + "\r"),
+            new Scenario(TrailingWhitespace, "trailing CRLF", b => b + "\r\n"),
+            new Scenario(TrailingWhitespace, "space then tab", b => b + " \t"),
+            new Scenario(TrailingWhitespace, "960 trailing spaces", b => b + new string(' ', 960)),
 
-            // Ids that still fail over Gateway and thin client: other trailing whitespace, '#', '\' and literal '%XX'.
-            new Scenario(NotHandled, "trailing tab", b => b + "\t", succeedsOverGateway: false),
-            new Scenario(NotHandled, "trailing LF", b => b + "\n", succeedsOverGateway: false),
-            new Scenario(NotHandled, "trailing CR", b => b + "\r", succeedsOverGateway: false),
-            new Scenario(NotHandled, "trailing CRLF", b => b + "\r\n", succeedsOverGateway: false),
+            // Ids with a literal '%', which System.Uri used to treat as the start of an escape sequence.
+            new Scenario(LiteralPercent, "literal %20", b => "a%20b" + b),
+            new Scenario(LiteralPercent, "literal %2F", b => "a%2Fb" + b),
+            new Scenario(LiteralPercent, "literal %3F", b => "a%3Fb" + b),
+            new Scenario(LiteralPercent, "literal %2520", b => "a%2520b" + b),
+            new Scenario(LiteralPercent, "trailing percent", b => b + "100%"),
+            new Scenario(LiteralPercent, "invalid escape", b => "a%zz" + b),
+            new Scenario(LiteralPercent, "literal %20 then space", b => "a%20b" + b + " "),
+            new Scenario(LiteralPercent, "320 percent signs", b => b + new string('%', 320)),
+
+            // Ids that still fail over Gateway and thin client. The docs restrict '#' and '\'.
             new Scenario(NotHandled, "hash", b => "a#b" + b, succeedsOverGateway: false),
             new Scenario(NotHandled, "trailing hash", b => b + "#", succeedsOverGateway: false),
             new Scenario(NotHandled, "backslash", b => "a\\b" + b, succeedsOverGateway: false),
-            new Scenario(NotHandled, "literal %20", b => "a%20b" + b, succeedsOverGateway: false),
-            new Scenario(NotHandled, "literal %2F", b => "a%2Fb" + b, succeedsOverGateway: false),
-            new Scenario(NotHandled, "literal %3F", b => "a%3Fb" + b, succeedsOverGateway: false),
-            new Scenario(NotHandled, "literal %2520", b => "a%2520b" + b, succeedsOverGateway: false),
-            new Scenario(NotHandled, "literal %20 then space", b => "a%20b" + b + " ", succeedsOverGateway: false),
         };
 
         /// <summary>
@@ -138,11 +143,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ("trailing space vs. trimmed", b => b + " ", b => b, true),
                 ("two trailing spaces vs. one", b => b + "  ", b => b + " ", true),
+                ("trailing tab vs. trimmed", b => b + "\t", b => b, true),
                 ("leading space vs. trimmed", b => " " + b, b => b, true),
                 ("trailing dot vs. trimmed", b => b + ".", b => b, true),
-                ("literal %20 vs. space", b => b + "a%20b", b => b + "a b", false),
+                ("literal %20 vs. space", b => b + "a%20b", b => b + "a b", true),
+                ("literal %2520 vs. literal %20", b => b + "a%2520b", b => b + "a%20b", true),
             };
-
         /// <summary>
         /// Returns the results whose outcome differs from the scenario's expectation for the given mode.
         /// </summary>

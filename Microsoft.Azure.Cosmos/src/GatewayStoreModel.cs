@@ -23,7 +23,16 @@ namespace Microsoft.Azure.Cosmos
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModelExtension, IDisposable
     {
+        private const string HexDigits = "0123456789ABCDEF";
+
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
+
+        // Characters percent-encoded in request paths; see EscapePath. Only ASCII characters can be listed.
+        // System.Uri trims trailing whitespace, so these are escaped when they end the path.
+        private static readonly char[] EscapeWhenTrailing = { ' ', '\t', '\r', '\n' };
+
+        // System.Uri treats '%' as the start of an escape sequence, so these are escaped anywhere in the path.
+        private static readonly char[] EscapeAnywhere = { '%' };
 
         private readonly DocumentClientEventSource eventSource;
 
@@ -619,43 +628,77 @@ namespace Microsoft.Azure.Cosmos
             }
 
             string path = PathsHelper.GeneratePath(entity.ResourceType, entity, false);
-            return new Uri(this.endpointManager.ResolveServiceEndpoint(entity), GatewayStoreModel.EscapeTrailingSpaces(path));
+            return new Uri(this.endpointManager.ResolveServiceEndpoint(entity), GatewayStoreModel.EscapePath(path));
+        }
+
+        internal Uri GetFeedUri(DocumentServiceRequest request)
+        {
+            string path = PathsHelper.GeneratePath(request.ResourceType, request, true);
+            return new Uri(this.endpointManager.ResolveServiceEndpoint(request), GatewayStoreModel.EscapePath(path));
         }
 
         /// <summary>
-        /// System.Uri trims trailing whitespace from a URI string, so a resource name ending in spaces (for example
-        /// the item id "abc ") would be sent as "abc" while the request is signed over "abc ", and the Gateway
-        /// rejects it with 401. Only paths that end in a space are changed: their trailing spaces are
-        /// percent-encoded. Every other path is returned as is, so its URI is identical to before.
+        /// Percent-encodes the characters that System.Uri would otherwise drop or misinterpret in a request path, so the
+        /// path sent on the wire still matches the (unescaped) resource address the request is signed over. The Java SDK
+        /// escapes all of these through java.net.URI. Paths that contain none of them are returned as is, so their URI is
+        /// identical to before.
         /// </summary>
-        internal static string EscapeTrailingSpaces(string path)
+        internal static string EscapePath(string path)
         {
-            if (string.IsNullOrEmpty(path) || path[path.Length - 1] != ' ')
+            if (string.IsNullOrEmpty(path))
             {
                 return path;
             }
 
-            int end = path.Length - 1;
-            while (end > 0 && path[end - 1] == ' ')
+            int trailingStart = path.Length;
+            while (trailingStart > 0 && Array.IndexOf(GatewayStoreModel.EscapeWhenTrailing, path[trailingStart - 1]) >= 0)
             {
-                end--;
+                trailingStart--;
             }
 
-            char[] escaped = new char[end + ((path.Length - end) * 3)];
-            path.CopyTo(0, escaped, 0, end);
-            for (int i = end; i < escaped.Length; i += 3)
+            int escapeCount = path.Length - trailingStart;
+            for (int i = GatewayStoreModel.NextEscape(path, 0, trailingStart); i >= 0; i = GatewayStoreModel.NextEscape(path, i + 1, trailingStart))
             {
-                escaped[i] = '%';
-                escaped[i + 1] = '2';
-                escaped[i + 2] = '0';
+                escapeCount++;
+            }
+
+            if (escapeCount == 0)
+            {
+                return path;
+            }
+
+            char[] escaped = new char[path.Length + (2 * escapeCount)];
+            int position = 0;
+            int start = 0;
+            for (int i = GatewayStoreModel.NextEscape(path, 0, trailingStart); i >= 0; i = GatewayStoreModel.NextEscape(path, start, trailingStart))
+            {
+                path.CopyTo(start, escaped, position, i - start);
+                position = GatewayStoreModel.AppendEscaped(escaped, position + (i - start), path[i]);
+                start = i + 1;
+            }
+
+            path.CopyTo(start, escaped, position, trailingStart - start);
+            position += trailingStart - start;
+            for (int i = trailingStart; i < path.Length; i++)
+            {
+                position = GatewayStoreModel.AppendEscaped(escaped, position, path[i]);
             }
 
             return new string(escaped);
         }
 
-        internal Uri GetFeedUri(DocumentServiceRequest request)
+        private static int NextEscape(string path, int start, int end)
         {
-            return new Uri(this.endpointManager.ResolveServiceEndpoint(request), PathsHelper.GeneratePath(request.ResourceType, request, true));
+            return start < end ? path.IndexOfAny(GatewayStoreModel.EscapeAnywhere, start, end - start) : -1;
+        }
+
+        private static int AppendEscaped(char[] buffer, int position, char c)
+        {
+            Debug.Assert(c < 0x80, "Only ASCII characters can be escaped as a single %XX.");
+            buffer[position] = '%';
+            buffer[position + 1] = GatewayStoreModel.HexDigits[c >> 4];
+            buffer[position + 2] = GatewayStoreModel.HexDigits[c & 0xF];
+            return position + 3;
         }
 
         public Task OpenConnectionsToAllReplicasAsync(string databaseName, string containerLinkUri, CancellationToken cancellationToken = default)
