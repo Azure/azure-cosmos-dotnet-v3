@@ -151,8 +151,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IReadOnlyList<SpecialCharacterIdScenarios.Result> results = await SpecialCharacterIdScenarios.RunAsync(container, "/pk");
 
-            List<SpecialCharacterIdScenarios.Result> failures = results.Where(r => !r.Succeeded).ToList();
-            Assert.AreEqual(0, failures.Count, SpecialCharacterIdScenarios.Describe(failures));
+            List<SpecialCharacterIdScenarios.Result> unexpected = SpecialCharacterIdScenarios.GetUnexpected(results, isDirect: !useGateway);
+            Assert.AreEqual(0, unexpected.Count, SpecialCharacterIdScenarios.Describe(unexpected));
 
             string expectedTransport = useGateway ? SpecialCharacterIdScenarios.Gateway : SpecialCharacterIdScenarios.Direct;
             CollectionAssert.AreEquivalent(new[] { expectedTransport }, results.SelectMany(r => r.Transports).Distinct().ToList());

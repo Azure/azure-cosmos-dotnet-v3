@@ -19,11 +19,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         internal sealed class Scenario
         {
-            public Scenario(string category, string name, Func<string, string> createId)
+            public Scenario(string category, string name, Func<string, string> createId, bool succeedsOverGateway = true)
             {
                 this.Category = category;
                 this.Name = name;
                 this.CreateId = createId;
+                this.SucceedsOverGateway = succeedsOverGateway;
             }
 
             public string Category { get; }
@@ -31,6 +32,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public string Name { get; }
 
             public Func<string, string> CreateId { get; }
+
+            /// <summary>
+            /// False for ids whose point operations are known to fail in Gateway and thin-client modes because the
+            /// id isn't escaped in the request URI. Direct mode doesn't build a request URI, so every scenario
+            /// must succeed there.
+            /// </summary>
+            public bool SucceedsOverGateway { get; }
+
+            public bool ExpectedToSucceed(bool isDirect)
+            {
+                return isDirect || this.SucceedsOverGateway;
+            }
         }
 
         internal sealed class Result
@@ -61,78 +74,82 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal const string Gateway = "Gateway";
         internal const string ThinClient = "ThinClient";
 
+        private const string WorksToday = "Works today";
+        private const string TrailingSpaces = "Trailing spaces";
+        private const string NotHandled = "Not handled";
+
         internal static readonly IReadOnlyList<Scenario> Scenarios = new List<Scenario>
         {
-            // Legal in a URI path: the request URI must stay exactly as it was before the fix.
-            new Scenario("No escaping", "GUID", b => b),
-            new Scenario("No escaping", "legal punctuation", b => b + "-_.!~*'();:@&=+$,"),
-            new Scenario("No escaping", "base64-like", b => b + "Ab+Cd=="),
-            new Scenario("No escaping", "interior dot", b => "a." + b),
+            // Ids that already work in every mode. They guard against regressions.
+            new Scenario(WorksToday, "GUID", b => b),
+            new Scenario(WorksToday, "legal punctuation", b => b + "-_.!~*'();:@&=+$,"),
+            new Scenario(WorksToday, "base64-like", b => b + "Ab+Cd=="),
+            new Scenario(WorksToday, "interior dot", b => "a." + b),
+            new Scenario(WorksToday, "leading space", b => " " + b),
+            new Scenario(WorksToday, "leading tab", b => "\t" + b),
+            new Scenario(WorksToday, "interior space", b => "a b" + b),
+            new Scenario(WorksToday, "double quote", b => "a\"b" + b),
+            new Scenario(WorksToday, "angle brackets", b => "a<b>" + b),
+            new Scenario(WorksToday, "braces", b => "a{b}" + b),
+            new Scenario(WorksToday, "square brackets", b => "a[b]" + b),
+            new Scenario(WorksToday, "pipe, caret, backtick", b => "a|^`" + b),
+            new Scenario(WorksToday, "question mark", b => "a?b" + b),
+            new Scenario(WorksToday, "trailing question mark", b => b + "?"),
+            new Scenario(WorksToday, "trailing percent", b => b + "100%"),
+            new Scenario(WorksToday, "invalid escape", b => "a%zz" + b),
+            new Scenario(WorksToday, "trailing dot", b => b + "."),
+            new Scenario(WorksToday, "two trailing dots", b => b + ".."),
+            new Scenario(WorksToday, "space then dot", b => b + " ."),
+            new Scenario(WorksToday, "trailing NBSP", b => b + "\u00A0"),
+            new Scenario(WorksToday, "trailing ideographic space", b => b + "\u3000"),
+            new Scenario(WorksToday, "accented and CJK", b => "\u00E9\u6F22\u5B57" + b),
 
-            // Whitespace that System.Uri trims from the ends of a URI string.
-            new Scenario("Trimmed whitespace", "trailing space", b => b + " "),
-            new Scenario("Trimmed whitespace", "two trailing spaces", b => b + "  "),
-            new Scenario("Trimmed whitespace", "trailing tab", b => b + "\t"),
-            new Scenario("Trimmed whitespace", "trailing LF", b => b + "\n"),
-            new Scenario("Trimmed whitespace", "trailing CR", b => b + "\r"),
-            new Scenario("Trimmed whitespace", "trailing CRLF", b => b + "\r\n"),
-            new Scenario("Trimmed whitespace", "leading space", b => " " + b),
-            new Scenario("Trimmed whitespace", "leading tab", b => "\t" + b),
-            new Scenario("Trimmed whitespace", "leading and trailing space", b => " " + b + " "),
+            // Ids ending in spaces, which System.Uri used to trim from the request URI.
+            new Scenario(TrailingSpaces, "trailing space", b => b + " "),
+            new Scenario(TrailingSpaces, "two trailing spaces", b => b + "  "),
+            new Scenario(TrailingSpaces, "leading and trailing space", b => " " + b + " "),
+            new Scenario(TrailingSpaces, "interior and trailing space", b => "a b" + b + " "),
+            new Scenario(TrailingSpaces, "dot then space", b => b + ". "),
+            new Scenario(TrailingSpaces, "NBSP then space", b => b + "\u00A0 "),
+            new Scenario(TrailingSpaces, "emoji then space", b => "\uD83D\uDE00" + b + " "),
+            new Scenario(TrailingSpaces, "question mark then space", b => "a?b" + b + " "),
+            new Scenario(TrailingSpaces, "960 trailing spaces", b => b + new string(' ', 960)),
 
-            // ASCII characters that are not legal in a URI path.
-            new Scenario("Illegal ASCII", "interior space", b => "a b" + b),
-            new Scenario("Illegal ASCII", "double quote", b => "a\"b" + b),
-            new Scenario("Illegal ASCII", "angle brackets", b => "a<b>" + b),
-            new Scenario("Illegal ASCII", "braces", b => "a{b}" + b),
-            new Scenario("Illegal ASCII", "square brackets", b => "a[b]" + b),
-            new Scenario("Illegal ASCII", "pipe, caret, backtick", b => "a|^`" + b),
-
-            // URI delimiters that would otherwise start a query or fragment, or act as a path separator.
-            new Scenario("URI delimiter", "question mark", b => "a?b" + b),
-            new Scenario("URI delimiter", "hash", b => "a#b" + b),
-            new Scenario("URI delimiter", "backslash", b => "a\\b" + b),
-            new Scenario("URI delimiter", "trailing question mark", b => b + "?"),
-            new Scenario("URI delimiter", "trailing hash", b => b + "#"),
-
-            // Literal percent signs must be sent as %25 and never decoded into another character.
-            new Scenario("Literal percent", "literal %20", b => "a%20b" + b),
-            new Scenario("Literal percent", "literal %2F", b => "a%2Fb" + b),
-            new Scenario("Literal percent", "literal %3F", b => "a%3Fb" + b),
-            new Scenario("Literal percent", "literal %2520", b => "a%2520b" + b),
-            new Scenario("Literal percent", "trailing percent", b => b + "100%"),
-            new Scenario("Literal percent", "invalid escape", b => "a%zz" + b),
-
-            // Trailing dots, alone or mixed with whitespace.
-            new Scenario("Dots", "trailing dot", b => b + "."),
-            new Scenario("Dots", "two trailing dots", b => b + ".."),
-            new Scenario("Dots", "dot then space", b => b + ". "),
-            new Scenario("Dots", "space then dot", b => b + " ."),
-
-            // Non-ASCII characters, which System.Uri already encodes as UTF-8.
-            new Scenario("Non-ASCII", "trailing NBSP", b => b + "\u00A0"),
-            new Scenario("Non-ASCII", "NBSP then space", b => b + "\u00A0 "),
-            new Scenario("Non-ASCII", "trailing ideographic space", b => b + "\u3000"),
-            new Scenario("Non-ASCII", "accented and CJK", b => "\u00E9\u6F22\u5B57" + b),
-            new Scenario("Non-ASCII", "emoji then space", b => "\uD83D\uDE00" + b + " "),
-
-            // Every character escaped, close to the 1023-byte id limit.
-            new Scenario("Long", "1000 escaped characters", b => b + new string('%', 500) + new string(' ', 464)),
+            // Ids that still fail over Gateway and thin client: other trailing whitespace, '#', '\' and literal '%XX'.
+            new Scenario(NotHandled, "trailing tab", b => b + "\t", succeedsOverGateway: false),
+            new Scenario(NotHandled, "trailing LF", b => b + "\n", succeedsOverGateway: false),
+            new Scenario(NotHandled, "trailing CR", b => b + "\r", succeedsOverGateway: false),
+            new Scenario(NotHandled, "trailing CRLF", b => b + "\r\n", succeedsOverGateway: false),
+            new Scenario(NotHandled, "hash", b => "a#b" + b, succeedsOverGateway: false),
+            new Scenario(NotHandled, "trailing hash", b => b + "#", succeedsOverGateway: false),
+            new Scenario(NotHandled, "backslash", b => "a\\b" + b, succeedsOverGateway: false),
+            new Scenario(NotHandled, "literal %20", b => "a%20b" + b, succeedsOverGateway: false),
+            new Scenario(NotHandled, "literal %2F", b => "a%2Fb" + b, succeedsOverGateway: false),
+            new Scenario(NotHandled, "literal %3F", b => "a%3Fb" + b, succeedsOverGateway: false),
+            new Scenario(NotHandled, "literal %2520", b => "a%2520b" + b, succeedsOverGateway: false),
+            new Scenario(NotHandled, "literal %20 then space", b => "a%20b" + b + " ", succeedsOverGateway: false),
         };
 
         /// <summary>
         /// Pairs of ids that must resolve to different items.
         /// </summary>
-        internal static readonly IReadOnlyList<(string Name, Func<string, string> First, Func<string, string> Second)> Twins =
-            new List<(string, Func<string, string>, Func<string, string>)>
+        internal static readonly IReadOnlyList<(string Name, Func<string, string> First, Func<string, string> Second, bool SucceedsOverGateway)> Twins =
+            new List<(string, Func<string, string>, Func<string, string>, bool)>
             {
-                ("trailing space vs. trimmed", b => b + " ", b => b),
-                ("leading space vs. trimmed", b => " " + b, b => b),
-                ("trailing dot vs. trimmed", b => b + ".", b => b),
-                ("literal %20 vs. space", b => b + "a%20b", b => b + "a b"),
-                ("literal %3F vs. question mark", b => b + "a%3Fb", b => b + "a?b"),
+                ("trailing space vs. trimmed", b => b + " ", b => b, true),
+                ("two trailing spaces vs. one", b => b + "  ", b => b + " ", true),
+                ("leading space vs. trimmed", b => " " + b, b => b, true),
+                ("trailing dot vs. trimmed", b => b + ".", b => b, true),
+                ("literal %20 vs. space", b => b + "a%20b", b => b + "a b", false),
             };
 
+        /// <summary>
+        /// Returns the results whose outcome differs from the scenario's expectation for the given mode.
+        /// </summary>
+        internal static List<Result> GetUnexpected(IEnumerable<Result> results, bool isDirect)
+        {
+            return results.Where(r => r.Succeeded != r.Scenario.ExpectedToSucceed(isDirect)).ToList();
+        }
         /// <summary>
         /// Runs Create, Read, ReadMany, Replace, Upsert, Patch, query, Delete and a read-after-delete for every
         /// scenario, then checks that each twin pair resolves to two distinct items.
@@ -150,10 +167,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 results.Add(await SpecialCharacterIdScenarios.RunScenarioAsync(container, scenario, id, partitionKeyProperty, partitionKeyValue, partitionKey));
             }
 
-            foreach ((string name, Func<string, string> first, Func<string, string> second) in SpecialCharacterIdScenarios.Twins)
+            foreach ((string name, Func<string, string> first, Func<string, string> second, bool succeedsOverGateway) in SpecialCharacterIdScenarios.Twins)
             {
                 string baseId = Guid.NewGuid().ToString("N").Substring(0, 8);
-                results.Add(await SpecialCharacterIdScenarios.RunTwinsAsync(container, name, first(baseId), second(baseId), partitionKeyProperty, partitionKeyValue, partitionKey));
+                results.Add(await SpecialCharacterIdScenarios.RunTwinsAsync(container, name, succeedsOverGateway, first(baseId), second(baseId), partitionKeyProperty, partitionKeyValue, partitionKey));
             }
 
             return results;
@@ -164,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return string.Join(
                 Environment.NewLine,
                 results.Select(r => $"[{r.Scenario.Category}] {r.Scenario.Name} ({Escape(r.Id)}): " +
-                    (r.Succeeded ? "OK" : $"{r.FailedOperation} failed: {r.Error}")));
+                    (r.Succeeded ? "succeeded" : $"{r.FailedOperation} failed: {r.Error}")));
         }
 
         internal static string Escape(string id)
@@ -252,13 +269,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static async Task<Result> RunTwinsAsync(
             Container container,
             string name,
+            bool succeedsOverGateway,
             string firstId,
             string secondId,
             string partitionKeyProperty,
             string partitionKeyValue,
             PartitionKey partitionKey)
         {
-            Scenario scenario = new Scenario("Twins", name, _ => firstId);
+            Scenario scenario = new Scenario("Twins", name, _ => firstId, succeedsOverGateway);
             HashSet<string> transports = new HashSet<string>();
             string operation = "Create";
             try

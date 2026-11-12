@@ -87,7 +87,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal override async Task<StoreResponse> InvokeStoreAsync(Uri baseAddress, ResourceOperation resourceOperation, DocumentServiceRequest request)
         {
-            Uri physicalAddress = GatewayStoreClient.GetResourceUri(resourceOperation.resourceType, baseAddress, request);
+            Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType) ?
+                HttpTransportClient.GetResourceFeedUri(resourceOperation.resourceType, baseAddress, request) :
+                HttpTransportClient.GetResourceEntryUri(resourceOperation.resourceType, baseAddress, request);
 
             using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(
                 request,

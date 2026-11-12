@@ -1137,10 +1137,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IReadOnlyList<SpecialCharacterIdScenarios.Result> results = await SpecialCharacterIdScenarios.RunAsync(this.container, "/pk");
 
-            List<SpecialCharacterIdScenarios.Result> failures = results.Where(r => !r.Succeeded).ToList();
-            Assert.AreEqual(0, failures.Count, SpecialCharacterIdScenarios.Describe(failures));
+            List<SpecialCharacterIdScenarios.Result> unexpected = SpecialCharacterIdScenarios.GetUnexpected(results, isDirect: false);
+            Assert.AreEqual(0, unexpected.Count, SpecialCharacterIdScenarios.Describe(unexpected));
             Assert.IsTrue(
-                results.All(r => r.Transports.Contains(SpecialCharacterIdScenarios.ThinClient)),
+                results.Where(r => r.Succeeded).All(r => r.Transports.Contains(SpecialCharacterIdScenarios.ThinClient)),
                 "Every scenario should be served by the thin-client proxy.");
         }
 

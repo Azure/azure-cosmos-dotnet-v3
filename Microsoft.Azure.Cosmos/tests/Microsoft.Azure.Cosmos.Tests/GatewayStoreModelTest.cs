@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -48,103 +48,78 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Name-based paths are percent-encoded like the Java SDK's java.net.URI (RFC 2396 path rules), so
-        /// the decoded wire path always equals the signed resource address: trailing whitespace is not
-        /// dropped by System.Uri and '%', '?', '#' etc. are sent as data rather than URI syntax.
+        /// Trailing spaces are percent-encoded so System.Uri can't trim them: the decoded wire path equals the
+        /// signed resource address.
         /// </summary>
         [TestMethod]
-        [DataRow("abc%20")]
-        [DataRow("abc%20%20")]
-        [DataRow("abc%09")]
-        [DataRow("abc%0A")]
-        [DataRow("abc%0D")]
-        [DataRow("%20abc")]
-        [DataRow("%20abc%20")]
-        [DataRow("%20%20%20")]
-        [DataRow("abc.")]
-        [DataRow("abc..")]
-        [DataRow("abc.%20")]
-        [DataRow("abc%20.")]
-        [DataRow("abc%C2%A0")]
-        [DataRow("abc%C2%A0%20")]
-        [DataRow("abc%E3%80%80")]
-        [DataRow("a%20b")]
-        [DataRow("a%2520b")]
-        [DataRow("100%25")]
-        [DataRow("a%25b%20")]
-        [DataRow("a%3Fb")]
-        [DataRow("a%23b")]
-        [DataRow("a%22b%3C%3E%5E%60%7B%7C%7D%5B%5D")]
-        [DataRow("a+b=c;d:e@f&g$h,i!j~k*l'm(n)")]
-        [DataRow("%E7%AC%AC67%E5%B1%8A")]
-        [DataRow("abc")]
-        public void EntryUriRoundTripsResourceName(string escapedId)
+        [DataRow("dbs/db1/colls/coll1/docs/abc%20")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc%20%20")]
+        [DataRow("dbs/db1/colls/coll1/docs/%20abc%20")]
+        [DataRow("dbs/db1/colls/coll1/docs/%20%20%20")]
+        [DataRow("dbs/db1/colls/coll1/docs/a%20b%20")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc.%20")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc%C2%A0%20")]
+        [DataRow("dbs/db1%20/colls/coll1%20")]
+        public void EntryUriPreservesTrailingSpaces(string escapedAddress)
         {
             using GatewayStoreModel storeModel = GatewayStoreModelTest.CreateStoreModelForUriTests(out GlobalEndpointManager endpointManager);
             using (endpointManager)
             {
                 foreach (OperationType operationType in new[] { OperationType.Read, OperationType.Replace, OperationType.Delete, OperationType.Patch })
                 {
+                    ResourceType resourceType = escapedAddress.Contains("/docs/") ? ResourceType.Document : ResourceType.Collection;
                     using DocumentServiceRequest request = DocumentServiceRequest.Create(
                         operationType,
-                        ResourceType.Document,
-                        "dbs/db1/colls/coll1/docs/" + escapedId,
+                        resourceType,
+                        escapedAddress,
                         AuthorizationTokenType.PrimaryMasterKey);
 
-                    string expectedAddress = "/dbs/db1/colls/coll1/docs/" + Uri.UnescapeDataString(escapedId);
-                    Assert.AreEqual(expectedAddress, "/" + request.ResourceAddress);
+                    Assert.IsTrue(request.ResourceAddress.EndsWith(" "), request.ResourceAddress);
 
                     Uri entityUri = storeModel.GetEntityUri(request);
-                    Uri resourceUri = GatewayStoreClient.GetResourceUri(ResourceType.Document, new Uri("https://foo"), request);
-                    Assert.AreEqual(expectedAddress, Uri.UnescapeDataString(entityUri.AbsolutePath), $"{operationType} {entityUri.AbsoluteUri}");
-                    Assert.AreEqual(expectedAddress, Uri.UnescapeDataString(resourceUri.AbsolutePath), $"{operationType} {resourceUri.AbsoluteUri}");
-                    Assert.AreEqual(string.Empty, entityUri.Query + entityUri.Fragment, entityUri.AbsoluteUri);
+                    Assert.AreEqual("/" + Uri.UnescapeDataString(escapedAddress), Uri.UnescapeDataString(entityUri.AbsolutePath), $"{operationType} {entityUri.AbsoluteUri}");
+                    Assert.IsTrue(entityUri.AbsoluteUri.EndsWith("%20"), entityUri.AbsoluteUri);
                 }
             }
         }
 
+        /// <summary>
+        /// Only paths that end in a space are changed. Every other path, including ones with characters System.Uri
+        /// mishandles today, must produce exactly the URI that was produced before.
+        /// </summary>
         [TestMethod]
-        [DataRow("dbs/db1/colls/coll1/docs/7c9e6679-7425-40de-944b-e07fc1f90ae7", false)]
-        [DataRow("dbs/db1/colls/coll1/docs/a+b=c:d@e", false)]
-        [DataRow("dbs/db1/colls/coll1", true)]
-        [DataRow("dbs/Bp5BAA==/colls/Bp5BAI4vQwA=/docs/Bp5BAI4vQwABAAAAAAAAAA==/", false)]
-        public void UriUnchangedWhenNoEscapingIsNeeded(string address, bool isFeed)
+        [DataRow("dbs/db1/colls/coll1/docs/7c9e6679-7425-40de-944b-e07fc1f90ae7")]
+        [DataRow("dbs/db1/colls/coll1/docs/a+b=c;d:e@f&g$h,i!j~k*l'm(n)")]
+        [DataRow("dbs/db1/colls/coll1/docs/%20abc")]
+        [DataRow("dbs/db1/colls/coll1/docs/a%20b")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc%20x")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc%09")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc%0A")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc%0D")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc%20%09")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc.")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc%C2%A0")]
+        [DataRow("dbs/db1/colls/coll1/docs/%E7%AC%AC67%E5%B1%8A")]
+        [DataRow("dbs/db1/colls/coll1/docs/a%2520b")]
+        [DataRow("dbs/db1/colls/coll1/docs/100%25")]
+        [DataRow("dbs/db1/colls/coll1/docs/a%3Fb")]
+        [DataRow("dbs/db1/colls/coll1/docs/a%23b")]
+        [DataRow("dbs/db1/colls/coll1/docs/a%22b%3C%3E%5E%60%7B%7C%7D%5B%5D")]
+        [DataRow("dbs/Bp5BAA==/colls/Bp5BAI4vQwA=/docs/Bp5BAI4vQwABAAAAAAAAAA==/")]
+        public void EntryUriUnchangedUnlessPathEndsWithSpace(string escapedAddress)
         {
             using GatewayStoreModel storeModel = GatewayStoreModelTest.CreateStoreModelForUriTests(out GlobalEndpointManager endpointManager);
             using (endpointManager)
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
-                isFeed ? OperationType.Create : OperationType.Read,
+                OperationType.Read,
                 ResourceType.Document,
-                address,
+                escapedAddress,
                 AuthorizationTokenType.PrimaryMasterKey))
             {
-                Uri before = new Uri(new Uri("https://foo"), PathsHelper.GeneratePath(ResourceType.Document, request, isFeed));
-                Uri after = isFeed ? storeModel.GetFeedUri(request) : storeModel.GetEntityUri(request);
-                Assert.AreEqual(before.AbsoluteUri, after.AbsoluteUri);
-                Assert.AreEqual(
-                    before.AbsoluteUri,
-                    GatewayStoreClient.GetResourceUri(ResourceType.Document, new Uri("https://foo"), request).AbsoluteUri);
+                Uri before = new Uri(new Uri("https://foo"), PathsHelper.GeneratePath(ResourceType.Document, request, false));
+                Assert.AreEqual(before.AbsoluteUri, storeModel.GetEntityUri(request).AbsoluteUri);
             }
         }
-
-        [TestMethod]
-        public void FeedUriRoundTripsContainerName()
-        {
-            using GatewayStoreModel storeModel = GatewayStoreModelTest.CreateStoreModelForUriTests(out GlobalEndpointManager endpointManager);
-            using (endpointManager)
-            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
-                OperationType.Create,
-                ResourceType.Document,
-                "dbs/db1/colls/a%25b%3Fc",
-                AuthorizationTokenType.PrimaryMasterKey))
-            {
-                Assert.AreEqual("/dbs/db1/colls/a%b?c/docs", Uri.UnescapeDataString(storeModel.GetFeedUri(request).AbsolutePath).TrimEnd('/'));
-                Assert.AreEqual(
-                    "/dbs/db1/colls/a%b?c/docs",
-                    Uri.UnescapeDataString(GatewayStoreClient.GetResourceUri(ResourceType.Document, new Uri("https://foo"), request).AbsolutePath).TrimEnd('/'));
-            }
-        }
-
         private static GatewayStoreModel CreateStoreModelForUriTests(out GlobalEndpointManager endpointManager)
         {
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();

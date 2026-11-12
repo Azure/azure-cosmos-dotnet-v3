@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -618,12 +619,36 @@ namespace Microsoft.Azure.Cosmos
                 return new Uri(this.endpointManager.ResolveServiceEndpoint(entity), new Uri(contentLocation).AbsolutePath);
             }
 
-            return GatewayStoreClient.CreateResourceUri(this.endpointManager.ResolveServiceEndpoint(entity), entity.ResourceType, entity, isFeed: false);
+            string path = PathsHelper.GeneratePath(entity.ResourceType, entity, false);
+            return new Uri(this.endpointManager.ResolveServiceEndpoint(entity), GatewayStoreModel.EscapeTrailingSpaces(path));
+        }
+
+        /// <summary>
+        /// System.Uri trims trailing whitespace from a URI string, so a resource name ending in spaces (for example
+        /// the item id "abc ") would be sent as "abc" while the request is signed over "abc ", and the Gateway
+        /// rejects it with 401. Only paths that end in a space are changed: their trailing spaces are
+        /// percent-encoded. Every other path is returned as is, so its URI is identical to before.
+        /// </summary>
+        internal static string EscapeTrailingSpaces(string path)
+        {
+            if (string.IsNullOrEmpty(path) || path[path.Length - 1] != ' ')
+            {
+                return path;
+            }
+
+            string trimmed = path.TrimEnd(' ');
+            StringBuilder escaped = new StringBuilder(trimmed, trimmed.Length + ((path.Length - trimmed.Length) * 3));
+            for (int i = trimmed.Length; i < path.Length; i++)
+            {
+                escaped.Append("%20");
+            }
+
+            return escaped.ToString();
         }
 
         internal Uri GetFeedUri(DocumentServiceRequest request)
         {
-            return GatewayStoreClient.CreateResourceUri(this.endpointManager.ResolveServiceEndpoint(request), request.ResourceType, request, isFeed: true);
+            return new Uri(this.endpointManager.ResolveServiceEndpoint(request), PathsHelper.GeneratePath(request.ResourceType, request, true));
         }
 
         public Task OpenConnectionsToAllReplicasAsync(string databaseName, string containerLinkUri, CancellationToken cancellationToken = default)
