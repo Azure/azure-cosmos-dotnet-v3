@@ -48,16 +48,30 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// System.Uri trims trailing whitespace from the unescaped name-based resource address. The
-        /// entry URI must keep it (escaped) so the wire path matches the signed resource link.
+        /// System.Uri drops trailing space/tab/CR/LF (and trailing dots under legacy .NET Framework quirks)
+        /// from the unescaped name-based resource address. The entry URI must keep them (escaped) so the
+        /// decoded wire path matches the signed resource link; everything else must be left untouched.
         /// </summary>
         [TestMethod]
-        [DataRow("abc%20", "/dbs/db1/colls/coll1/docs/abc%20")]
-        [DataRow("abc%20%20", "/dbs/db1/colls/coll1/docs/abc%20%20")]
-        [DataRow("abc%09", "/dbs/db1/colls/coll1/docs/abc%09")]
-        [DataRow("a%20b", "/dbs/db1/colls/coll1/docs/a%20b")]
-        [DataRow("abc", "/dbs/db1/colls/coll1/docs/abc")]
-        public void EntryUriPreservesTrailingWhitespaceInResourceName(string escapedId, string expectedPath)
+        [DataRow("abc%20")]
+        [DataRow("abc%20%20")]
+        [DataRow("abc%09")]
+        [DataRow("abc%0A")]
+        [DataRow("abc%0D")]
+        [DataRow("%20abc")]
+        [DataRow("%20abc%20")]
+        [DataRow("%20%20%20")]
+        [DataRow("abc.")]
+        [DataRow("abc..")]
+        [DataRow("abc.%20")]
+        [DataRow("abc%20.")]
+        [DataRow("abc%C2%A0")]
+        [DataRow("abc%C2%A0%20")]
+        [DataRow("abc%20%C2%A0")]
+        [DataRow("abc%E3%80%80")]
+        [DataRow("a%20b")]
+        [DataRow("abc")]
+        public void EntryUriRoundTripsResourceName(string escapedId)
         {
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
@@ -80,13 +94,26 @@ namespace Microsoft.Azure.Cosmos
                     "dbs/db1/colls/coll1/docs/" + escapedId,
                     AuthorizationTokenType.PrimaryMasterKey);
 
-                Assert.AreEqual("dbs/db1/colls/coll1/docs/" + Uri.UnescapeDataString(escapedId), request.ResourceAddress);
-                Assert.AreEqual(expectedPath, storeModel.GetEntityUri(request).AbsolutePath, operationType.ToString());
-                Assert.AreEqual(
-                    expectedPath,
-                    GatewayStoreClient.GetResourceUri(ResourceType.Document, new Uri("https://foo"), request).AbsolutePath,
-                    operationType.ToString());
+                string expectedAddress = "/dbs/db1/colls/coll1/docs/" + Uri.UnescapeDataString(escapedId);
+                Assert.AreEqual(expectedAddress, "/" + request.ResourceAddress);
+
+                Uri entityUri = storeModel.GetEntityUri(request);
+                Uri resourceUri = GatewayStoreClient.GetResourceUri(ResourceType.Document, new Uri("https://foo"), request);
+                Assert.AreEqual(expectedAddress, Uri.UnescapeDataString(entityUri.AbsolutePath), $"{operationType} {entityUri.AbsoluteUri}");
+                Assert.AreEqual(expectedAddress, Uri.UnescapeDataString(resourceUri.AbsolutePath), $"{operationType} {resourceUri.AbsoluteUri}");
             }
+        }
+
+        [TestMethod]
+        public void EntryUriUnchangedForRegularIdsAndFeeds()
+        {
+            using DocumentServiceRequest readRequest = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                "dbs/db1/colls/coll1/docs/abc",
+                AuthorizationTokenType.PrimaryMasterKey);
+            Uri entryUri = new Uri("https://foo/dbs/db1/colls/coll1/docs/abc");
+            Assert.AreSame(entryUri, GatewayStoreClient.PreserveTrailingCharacters(entryUri, readRequest));
 
             using DocumentServiceRequest createRequest = DocumentServiceRequest.Create(
                 OperationType.Create,

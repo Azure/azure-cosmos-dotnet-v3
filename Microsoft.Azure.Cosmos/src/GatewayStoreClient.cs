@@ -87,37 +87,63 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Uri entryUri = HttpTransportClient.GetResourceEntryUri(resourceType, baseAddress, request);
-            return GatewayStoreClient.PreserveTrailingWhitespace(entryUri, request);
+            return GatewayStoreClient.PreserveTrailingCharacters(entryUri, request);
         }
 
         /// <summary>
-        /// The entry URI is built from the unescaped resource address, and System.Uri trims trailing
-        /// whitespace from it. A name-based resource whose id ends in whitespace would then be sent to a
-        /// different path than the one signed (401) or resolved by the service. Re-append it escaped.
+        /// The entry URI is built from the unescaped resource address, and System.Uri drops trailing
+        /// space, tab, CR and LF from it (and trailing dots under the legacy .NET Framework URI quirks).
+        /// A name-based resource whose id ends in one of these would then be sent to a different path
+        /// than the one signed (401) or resolved by the service. Re-append the dropped characters
+        /// percent-encoded. Ids that don't end in one of these characters return immediately.
         /// </summary>
-        internal static Uri PreserveTrailingWhitespace(Uri entryUri, DocumentServiceRequest request)
+        internal static Uri PreserveTrailingCharacters(Uri entryUri, DocumentServiceRequest request)
         {
             string resourceAddress = request.ResourceAddress;
             if (!request.IsNameBased
                 || string.IsNullOrEmpty(resourceAddress)
-                || !char.IsWhiteSpace(resourceAddress[resourceAddress.Length - 1]))
+                || !GatewayStoreClient.IsDroppedByUri(resourceAddress[resourceAddress.Length - 1]))
             {
                 return entryUri;
             }
 
+            int segmentStart = resourceAddress.LastIndexOf('/') + 1;
             int trailingStart = resourceAddress.Length;
-            while (trailingStart > 0 && char.IsWhiteSpace(resourceAddress[trailingStart - 1]))
+            while (trailingStart > segmentStart && GatewayStoreClient.IsDroppedByUri(resourceAddress[trailingStart - 1]))
             {
                 trailingStart--;
             }
 
-            string trailingWhitespace = resourceAddress.Substring(trailingStart);
-            if (Uri.UnescapeDataString(entryUri.AbsolutePath).EndsWith(trailingWhitespace, StringComparison.Ordinal))
+            string unescapedPath = Uri.UnescapeDataString(entryUri.AbsolutePath);
+            string segmentPrefix = "/" + resourceAddress.Substring(segmentStart, trailingStart - segmentStart);
+
+            // Find how much of the trailing run survived; the runtime may drop all of it or only part.
+            for (int kept = resourceAddress.Length - trailingStart; kept >= 0; kept--)
             {
-                return entryUri;
+                if (unescapedPath.EndsWith(segmentPrefix + resourceAddress.Substring(trailingStart, kept), StringComparison.Ordinal))
+                {
+                    if (trailingStart + kept == resourceAddress.Length)
+                    {
+                        return entryUri;
+                    }
+
+                    StringBuilder escapedSuffix = new StringBuilder();
+                    for (int i = trailingStart + kept; i < resourceAddress.Length; i++)
+                    {
+                        escapedSuffix.Append('%').Append(((int)resourceAddress[i]).ToString("X2"));
+                    }
+
+                    return new Uri(entryUri.GetLeftPart(UriPartial.Path) + escapedSuffix.ToString() + entryUri.Query);
+                }
             }
 
-            return new Uri(entryUri.GetLeftPart(UriPartial.Path) + Uri.EscapeDataString(trailingWhitespace) + entryUri.Query);
+            // Unexpected shape (for example a literal '%' in the id): leave the URI unchanged.
+            return entryUri;
+        }
+
+        private static bool IsDroppedByUri(char c)
+        {
+            return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '.';
         }
 
         internal override async Task<StoreResponse> InvokeStoreAsync(Uri baseAddress, ResourceOperation resourceOperation, DocumentServiceRequest request)

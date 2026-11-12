@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container = client.GetContainer(this.database.Id, this.Container.Id);
             string baseId = Guid.NewGuid().ToString();
 
-            foreach (string id in new[] { baseId + " ", baseId + "  ", baseId + "\t" })
+            foreach (string id in new[] { baseId + " ", baseId + "  ", baseId + "\t", baseId + "\n", baseId + "\r", " " + baseId + " ", baseId + "\u00A0 ", baseId + ". ", " " + baseId })
             {
                 ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(id: id);
                 Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(item.pk);
