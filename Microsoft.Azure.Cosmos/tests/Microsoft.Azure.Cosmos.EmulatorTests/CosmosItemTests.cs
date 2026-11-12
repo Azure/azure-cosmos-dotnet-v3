@@ -142,6 +142,57 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DataRow(true, DisplayName = "Gateway mode")]
+        [DataRow(false, DisplayName = "Direct mode")]
+        public async Task PointOperationsWithTrailingWhitespaceInIdTest(bool useGateway)
+        {
+            using CosmosClient client = TestCommon.CreateCosmosClient(useGateway);
+            Container container = client.GetContainer(this.database.Id, this.Container.Id);
+            string baseId = Guid.NewGuid().ToString();
+
+            foreach (string id in new[] { baseId + " ", baseId + "  ", baseId + "\t" })
+            {
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(id: id);
+                Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(item.pk);
+
+                ItemResponse<ToDoActivity> response = await container.CreateItemAsync(item, partitionKey);
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+
+                response = await container.ReadItemAsync<ToDoActivity>(id, partitionKey);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.AreEqual(id, response.Resource.id);
+
+                item.description = "replaced";
+                response = await container.ReplaceItemAsync(item, id, partitionKey);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+                response = await container.PatchItemAsync<ToDoActivity>(id, partitionKey, new[] { PatchOperation.Set("/taskNum", 42) });
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.AreEqual(id, response.Resource.id);
+                Assert.AreEqual("replaced", response.Resource.description);
+                Assert.AreEqual(42, response.Resource.taskNum);
+
+                response = await container.DeleteItemAsync<ToDoActivity>(id, partitionKey);
+                Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+
+                CosmosException notFound = await Assert.ThrowsExceptionAsync<CosmosException>(
+                    () => container.ReadItemAsync<ToDoActivity>(id, partitionKey));
+                Assert.AreEqual(HttpStatusCode.NotFound, notFound.StatusCode);
+            }
+
+            // An id with a trailing space and its trimmed twin must resolve to different items.
+            ToDoActivity trimmed = ToDoActivity.CreateRandomToDoActivity(pk: "twins", id: baseId);
+            ToDoActivity spaced = ToDoActivity.CreateRandomToDoActivity(pk: "twins", id: baseId + " ");
+            trimmed.description = "trimmed";
+            spaced.description = "spaced";
+            await container.CreateItemAsync(trimmed, new Cosmos.PartitionKey("twins"));
+            await container.CreateItemAsync(spaced, new Cosmos.PartitionKey("twins"));
+
+            Assert.AreEqual("spaced", (await container.ReadItemAsync<ToDoActivity>(spaced.id, new Cosmos.PartitionKey("twins"))).Resource.description);
+            Assert.AreEqual("trimmed", (await container.ReadItemAsync<ToDoActivity>(trimmed.id, new Cosmos.PartitionKey("twins"))).Resource.description);
+        }
+
+        [TestMethod]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         public async Task CreateDropItemTest(bool binaryEncodingEnabledInClient)
