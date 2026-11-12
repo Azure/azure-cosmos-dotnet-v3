@@ -48,6 +48,57 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// System.Uri trims trailing whitespace from the unescaped name-based resource address. The
+        /// entry URI must keep it (escaped) so the wire path matches the signed resource link.
+        /// </summary>
+        [TestMethod]
+        [DataRow("abc%20", "/dbs/db1/colls/coll1/docs/abc%20")]
+        [DataRow("abc%20%20", "/dbs/db1/colls/coll1/docs/abc%20%20")]
+        [DataRow("abc%09", "/dbs/db1/colls/coll1/docs/abc%09")]
+        [DataRow("a%20b", "/dbs/db1/colls/coll1/docs/a%20b")]
+        [DataRow("abc", "/dbs/db1/colls/coll1/docs/abc")]
+        public void EntryUriPreservesTrailingWhitespaceInResourceName(string escapedId, string expectedPath)
+        {
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                new SessionContainer(string.Empty),
+                ConsistencyLevel.Eventual,
+                DocumentClientEventSource.Instance,
+                null,
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient()),
+                GlobalPartitionEndpointManagerNoOp.Instance);
+
+            foreach (OperationType operationType in new[] { OperationType.Read, OperationType.Replace, OperationType.Delete, OperationType.Patch })
+            {
+                using DocumentServiceRequest request = DocumentServiceRequest.Create(
+                    operationType,
+                    ResourceType.Document,
+                    "dbs/db1/colls/coll1/docs/" + escapedId,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                Assert.AreEqual("dbs/db1/colls/coll1/docs/" + Uri.UnescapeDataString(escapedId), request.ResourceAddress);
+                Assert.AreEqual(expectedPath, storeModel.GetEntityUri(request).AbsolutePath, operationType.ToString());
+                Assert.AreEqual(
+                    expectedPath,
+                    GatewayStoreClient.GetResourceUri(ResourceType.Document, new Uri("https://foo"), request).AbsolutePath,
+                    operationType.ToString());
+            }
+
+            using DocumentServiceRequest createRequest = DocumentServiceRequest.Create(
+                OperationType.Create,
+                ResourceType.Document,
+                "dbs/db1/colls/coll1",
+                AuthorizationTokenType.PrimaryMasterKey);
+            Assert.AreEqual(
+                "/dbs/db1/colls/coll1/docs",
+                GatewayStoreClient.GetResourceUri(ResourceType.Document, new Uri("https://foo"), createRequest).AbsolutePath.TrimEnd('/'));
+        }
+
+        /// <summary>
         /// Tests to make sure OpenAsync should fail fast with bad url.
         /// </summary>
         [TestMethod]

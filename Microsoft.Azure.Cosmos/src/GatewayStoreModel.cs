@@ -618,7 +618,8 @@ namespace Microsoft.Azure.Cosmos
                 return new Uri(this.endpointManager.ResolveServiceEndpoint(entity), new Uri(contentLocation).AbsolutePath);
             }
 
-            return new Uri(this.endpointManager.ResolveServiceEndpoint(entity), PathsHelper.GeneratePath(entity.ResourceType, entity, false));
+            Uri entityUri = new Uri(this.endpointManager.ResolveServiceEndpoint(entity), PathsHelper.GeneratePath(entity.ResourceType, entity, false));
+            return GatewayStoreClient.PreserveTrailingWhitespace(entityUri, entity);
         }
 
         internal Uri GetFeedUri(DocumentServiceRequest request)

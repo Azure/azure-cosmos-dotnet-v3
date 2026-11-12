@@ -79,11 +79,50 @@ namespace Microsoft.Azure.Cosmos
                 requestOperationType == OperationType.Batch;
         }
 
+        internal static Uri GetResourceUri(ResourceType resourceType, Uri baseAddress, DocumentServiceRequest request)
+        {
+            if (GatewayStoreClient.IsFeedRequest(request.OperationType))
+            {
+                return HttpTransportClient.GetResourceFeedUri(resourceType, baseAddress, request);
+            }
+
+            Uri entryUri = HttpTransportClient.GetResourceEntryUri(resourceType, baseAddress, request);
+            return GatewayStoreClient.PreserveTrailingWhitespace(entryUri, request);
+        }
+
+        /// <summary>
+        /// The entry URI is built from the unescaped resource address, and System.Uri trims trailing
+        /// whitespace from it. A name-based resource whose id ends in whitespace would then be sent to a
+        /// different path than the one signed (401) or resolved by the service. Re-append it escaped.
+        /// </summary>
+        internal static Uri PreserveTrailingWhitespace(Uri entryUri, DocumentServiceRequest request)
+        {
+            string resourceAddress = request.ResourceAddress;
+            if (!request.IsNameBased
+                || string.IsNullOrEmpty(resourceAddress)
+                || !char.IsWhiteSpace(resourceAddress[resourceAddress.Length - 1]))
+            {
+                return entryUri;
+            }
+
+            int trailingStart = resourceAddress.Length;
+            while (trailingStart > 0 && char.IsWhiteSpace(resourceAddress[trailingStart - 1]))
+            {
+                trailingStart--;
+            }
+
+            string trailingWhitespace = resourceAddress.Substring(trailingStart);
+            if (Uri.UnescapeDataString(entryUri.AbsolutePath).EndsWith(trailingWhitespace, StringComparison.Ordinal))
+            {
+                return entryUri;
+            }
+
+            return new Uri(entryUri.GetLeftPart(UriPartial.Path) + Uri.EscapeDataString(trailingWhitespace) + entryUri.Query);
+        }
+
         internal override async Task<StoreResponse> InvokeStoreAsync(Uri baseAddress, ResourceOperation resourceOperation, DocumentServiceRequest request)
         {
-            Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType) ?
-                HttpTransportClient.GetResourceFeedUri(resourceOperation.resourceType, baseAddress, request) :
-                HttpTransportClient.GetResourceEntryUri(resourceOperation.resourceType, baseAddress, request);
+            Uri physicalAddress = GatewayStoreClient.GetResourceUri(resourceOperation.resourceType, baseAddress, request);
 
             using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceOperation.resourceType, physicalAddress, default))
             {
