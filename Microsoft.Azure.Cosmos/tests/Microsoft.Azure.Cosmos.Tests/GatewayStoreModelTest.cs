@@ -1,4 +1,4 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -45,6 +45,121 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.Callback(message);
             }
+        }
+
+        /// <summary>
+        /// Pins exactly what is escaped: trailing space, tab, CR and LF. Everything else is left for
+        /// System.Uri to handle as before.
+        /// </summary>
+        [TestMethod]
+        [DataRow("dbs/db1/colls/coll1/docs/abc ", "dbs/db1/colls/coll1/docs/abc%20")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc  ", "dbs/db1/colls/coll1/docs/abc%20%20")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc\t", "dbs/db1/colls/coll1/docs/abc%09")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc\r\n", "dbs/db1/colls/coll1/docs/abc%0D%0A")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc \t", "dbs/db1/colls/coll1/docs/abc%20%09")]
+        [DataRow("dbs/db1/colls/coll1/docs/a%20b", "dbs/db1/colls/coll1/docs/a%20b")]
+        [DataRow("dbs/db1/colls/coll1/docs/100%", "dbs/db1/colls/coll1/docs/100%")]
+        [DataRow("dbs/db1/colls/coll1/docs/a b ", "dbs/db1/colls/coll1/docs/a b%20")]
+        [DataRow("dbs/db1/colls/coll1 ", "dbs/db1/colls/coll1%20")]
+        [DataRow("dbs/db1/colls/coll1/docs/ abc", "dbs/db1/colls/coll1/docs/ abc")]
+        [DataRow("dbs/db1/colls/coll1/docs/a b", "dbs/db1/colls/coll1/docs/a b")]
+        [DataRow("dbs/db1/colls/coll1/docs/a\tb", "dbs/db1/colls/coll1/docs/a\tb")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc.", "dbs/db1/colls/coll1/docs/abc.")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc\u00A0", "dbs/db1/colls/coll1/docs/abc\u00A0")]
+        [DataRow("dbs/db1/colls/coll1/docs/a#b?c\\d", "dbs/db1/colls/coll1/docs/a#b?c\\d")]
+        [DataRow("dbs/Bp5BAA==/colls/Bp5BAI4vQwA=/docs/Bp5BAI4vQwABAAAAAAAAAA==/", "dbs/Bp5BAA==/colls/Bp5BAI4vQwA=/docs/Bp5BAI4vQwABAAAAAAAAAA==/")]
+        [DataRow("", "")]
+        public void EscapePathEscapesOnlyConfiguredCharacters(string path, string expected)
+        {
+            Assert.AreEqual(expected, GatewayStoreModel.EscapePath(path));
+        }
+
+        /// <summary>
+        /// For names ending in whitespace, the decoded wire path of the entry URI equals the signed resource
+        /// address.
+        /// </summary>
+        [TestMethod]
+        [DataRow("dbs/db1/colls/coll1/docs/abc%20")]
+        [DataRow("dbs/db1/colls/coll1/docs/%20abc%20%20")]
+        [DataRow("dbs/db1/colls/coll1/docs/%20%20%20")]
+        [DataRow("dbs/db1/colls/coll1/docs/a%20b.%20")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc%C2%A0%20")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc%09")]
+        [DataRow("dbs/db1/colls/coll1/docs/abc%0D%0A")]
+        [DataRow("dbs/db1%20/colls/coll1%20")]
+        public void RequestUriRoundTripsEscapedCharacters(string escapedAddress)
+        {
+            using GatewayStoreModel storeModel = GatewayStoreModelTest.CreateStoreModelForUriTests(out GlobalEndpointManager endpointManager);
+            using (endpointManager)
+            {
+                ResourceType resourceType = escapedAddress.Contains("/docs/") ? ResourceType.Document : ResourceType.Collection;
+                foreach (OperationType operationType in new[] { OperationType.Read, OperationType.Replace, OperationType.Delete, OperationType.Patch })
+                {
+                    using DocumentServiceRequest request = DocumentServiceRequest.Create(
+                        operationType,
+                        resourceType,
+                        escapedAddress,
+                        AuthorizationTokenType.PrimaryMasterKey);
+
+                    Uri entityUri = storeModel.GetEntityUri(request);
+                    Assert.AreEqual("/" + request.ResourceAddress, Uri.UnescapeDataString(entityUri.AbsolutePath), $"{operationType} {entityUri.AbsoluteUri}");
+                    Assert.AreEqual(string.Empty, entityUri.Query + entityUri.Fragment, entityUri.AbsoluteUri);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Paths without an escaped character must produce exactly the URI that was produced before.
+        /// </summary>
+        [TestMethod]
+        [DataRow("dbs/db1/colls/coll1/docs/7c9e6679-7425-40de-944b-e07fc1f90ae7", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/a+b=c;d:e@f&g$h,i!j~k*l'm(n)", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/%20abc", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/a%20b", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/abc%20x", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/a%09b", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/abc.", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/abc%C2%A0", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/%E7%AC%AC67%E5%B1%8A", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/a%3Fb", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/a%2520b", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/100%25", false)]
+        [DataRow("dbs/db1/colls/a%25b/docs/abc", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/a%23b", false)]
+        [DataRow("dbs/db1/colls/coll1/docs/a%22b%3C%3E%5E%60%7B%7C%7D%5B%5D", false)]
+        [DataRow("dbs/Bp5BAA==/colls/Bp5BAI4vQwA=/docs/Bp5BAI4vQwABAAAAAAAAAA==/", false)]
+        [DataRow("dbs/db1/colls/coll1", true)]
+        [DataRow("dbs/db1/colls/a%25b%20c", true)]
+        [DataRow("dbs/Bp5BAA==/colls/Bp5BAI4vQwA=/", true)]
+        public void RequestUriUnchangedWhenNothingToEscape(string escapedAddress, bool isFeed)
+        {
+            using GatewayStoreModel storeModel = GatewayStoreModelTest.CreateStoreModelForUriTests(out GlobalEndpointManager endpointManager);
+            using (endpointManager)
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                isFeed ? OperationType.Create : OperationType.Read,
+                ResourceType.Document,
+                escapedAddress,
+                AuthorizationTokenType.PrimaryMasterKey))
+            {
+                Uri before = new Uri(new Uri("https://foo"), PathsHelper.GeneratePath(ResourceType.Document, request, isFeed));
+                Uri after = isFeed ? storeModel.GetFeedUri(request) : storeModel.GetEntityUri(request);
+                Assert.AreEqual(before.AbsoluteUri, after.AbsoluteUri);
+            }
+        }
+        private static GatewayStoreModel CreateStoreModelForUriTests(out GlobalEndpointManager endpointManager)
+        {
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            return new GatewayStoreModel(
+                endpointManager,
+                new SessionContainer(string.Empty),
+                ConsistencyLevel.Eventual,
+                DocumentClientEventSource.Instance,
+                null,
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient()),
+                GlobalPartitionEndpointManagerNoOp.Instance);
         }
 
         /// <summary>

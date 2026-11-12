@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [6215](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6215) Gateway: Fixes point operations (Read, Replace, Delete, Patch) failing with 401 Unauthorized in Gateway and thin-client modes when a resource id ends in whitespace (space, tab, CR or LF), by percent-encoding the trailing whitespace in the request URI.
+
 #### Other Changes
 
 ### <a name="3.65.0-preview.0"/> [3.65.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.65.0-preview.0) - 2026-11-06
