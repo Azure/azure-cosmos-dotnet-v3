@@ -2409,6 +2409,108 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsFalse(sentRequests.Any(IsGatewayV1DocumentRequest));
         }
 
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        [Timeout(1800000)]
+        public async Task ReadItem_WithCompoundSessionTokenAheadOfStaleRoutingMap_RefreshesAndSucceeds()
+        {
+            CosmosClientOptions CreateOptions(EventHandler<Documents.SendingRequestEventArgs> onSendingRequest = null)
+            {
+                return new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    ApplicationPreferredRegions = PreferredRegions,
+                    Serializer = this.cosmosSystemTextJsonSerializer,
+                    SendingRequestEventArgs = onSendingRequest,
+                };
+            }
+
+            ConcurrentQueue<HttpRequestMessage> staleReaderRequests = new ConcurrentQueue<HttpRequestMessage>();
+            using CosmosClient writerClient = new CosmosClient(this.connectionString, CreateOptions());
+            using CosmosClient staleReaderClient = new CosmosClient(
+                this.connectionString,
+                CreateOptions((sender, e) => staleReaderRequests.Enqueue(e.HttpRequest)));
+
+            // 400 RU/s provisions a single partition key range; raising it to 10,100 RU/s below forces a real split.
+            ContainerResponse containerResponse = await writerClient.GetDatabase(this.database.Id).CreateContainerAsync(
+                new ContainerProperties("CompoundSessionSplit_" + Guid.NewGuid(), "/pk"),
+                ThroughputProperties.CreateManualThroughput(400));
+            Container writerContainer = containerResponse.Container;
+            Container staleReaderContainer = staleReaderClient.GetContainer(this.database.Id, writerContainer.Id);
+            string collectionRid = containerResponse.Resource.ResourceId;
+            Routing.PartitionKeyRangeCache writerCache = await writerClient.DocumentClient.GetPartitionKeyRangeCacheAsync(Cosmos.Tracing.NoOpTrace.Singleton);
+            Routing.PartitionKeyRangeCache staleReaderCache = await staleReaderClient.DocumentClient.GetPartitionKeyRangeCacheAsync(Cosmos.Tracing.NoOpTrace.Singleton);
+
+            TestObject seed = new TestObject { Id = Guid.NewGuid().ToString(), Pk = "seed", Other = "seed" };
+            await WarmUpThinClientProbeAsync(writerContainer, seed);
+            await WarmUpThinClientProbeAsync(staleReaderContainer, new TestObject { Id = Guid.NewGuid().ToString(), Pk = "warmup", Other = "warmup" });
+
+            // Client B reads first, caching the pre-split routing map.
+            await staleReaderContainer.ReadItemAsync<TestObject>(seed.Id, new PartitionKey(seed.Pk));
+            Routing.CollectionRoutingMap mapBeforeSplit = await staleReaderCache.TryLookupAsync(collectionRid, null, null, Cosmos.Tracing.NoOpTrace.Singleton);
+            if (mapBeforeSplit.OrderedPartitionKeyRanges.Count != 1)
+            {
+                Assert.Inconclusive("The container did not start with a single partition key range.");
+            }
+
+            // Client A splits the container; client B stays idle so its cached map keeps predating the split.
+            await writerContainer.ReplaceThroughputAsync(ThroughputProperties.CreateManualThroughput(10100));
+            DateTime splitDeadline = DateTime.UtcNow + TimeSpan.FromMinutes(20);
+            Routing.CollectionRoutingMap writerMap = mapBeforeSplit;
+            while (writerMap.OrderedPartitionKeyRanges.Count < 2 && DateTime.UtcNow < splitDeadline)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(15));
+                writerMap = await writerCache.TryLookupAsync(collectionRid, writerMap, null, Cosmos.Tracing.NoOpTrace.Singleton);
+            }
+
+            if (writerMap.OrderedPartitionKeyRanges.Count < 2)
+            {
+                Assert.Inconclusive("The partition split did not complete within 20 minutes.");
+            }
+
+            // Client A writes and reads in the child ranges, so its session progress names ranges client B has never seen.
+            Dictionary<string, string> childTokenByRangeId = new Dictionary<string, string>();
+            TestObject childItem = null;
+            for (int i = 0; i < 100 && childTokenByRangeId.Count < 2; i++)
+            {
+                childItem = new TestObject { Id = Guid.NewGuid().ToString(), Pk = "child_" + i, Other = "split" };
+                await writerContainer.CreateItemAsync(childItem, new PartitionKey(childItem.Pk));
+                ItemResponse<TestObject> writerRead = await writerContainer.ReadItemAsync<TestObject>(childItem.Id, new PartitionKey(childItem.Pk));
+                string sessionToken = writerRead.Headers.Session;
+                childTokenByRangeId[sessionToken.Substring(0, sessionToken.IndexOf(':'))] = sessionToken;
+            }
+
+            if (childTokenByRangeId.Count < 2)
+            {
+                Assert.Inconclusive("Writes after the split did not reach two child ranges.");
+            }
+
+            Routing.CollectionRoutingMap staleMap = await staleReaderCache.TryLookupAsync(collectionRid, null, null, Cosmos.Tracing.NoOpTrace.Singleton);
+            Assert.IsTrue(
+                childTokenByRangeId.Keys.All(rangeId => staleMap.TryGetRangeByPartitionKeyRangeId(rangeId) == null),
+                "Client B must still hold its pre-split routing map, or the refresh path is not exercised.");
+
+            string compoundToken = string.Join(",", childTokenByRangeId.Values);
+            staleReaderRequests.Clear();
+            ItemResponse<TestObject> staleRead = await staleReaderContainer.ReadItemAsync<TestObject>(
+                childItem.Id,
+                new PartitionKey(childItem.Pk),
+                new ItemRequestOptions { SessionToken = compoundToken });
+
+            Assert.AreEqual(HttpStatusCode.OK, staleRead.StatusCode);
+            List<HttpRequestMessage> requests = staleReaderRequests.ToList();
+            int firstProxyRequest = requests.FindIndex(r => r.RequestUri.Port == ThinClientProxyPort);
+            int firstRoutingMapRefresh = requests.FindIndex(r => r.RequestUri.AbsolutePath.Contains("/pkranges"));
+            Assert.IsTrue(firstProxyRequest >= 0, "The read must be served by the thin-client proxy.");
+            Assert.IsFalse(requests.Any(IsGatewayV1DocumentRequest), "The read must not be routed to Gateway V1.");
+            Assert.IsTrue(
+                firstRoutingMapRefresh >= 0 && firstRoutingMapRefresh < firstProxyRequest,
+                "Client B must refresh its stale routing map before sending the scoped token to the proxy.");
+
+            Routing.CollectionRoutingMap refreshedMap = await staleReaderCache.TryLookupAsync(collectionRid, null, null, Cosmos.Tracing.NoOpTrace.Singleton);
+            Assert.IsTrue(childTokenByRangeId.Keys.All(rangeId => refreshedMap.TryGetRangeByPartitionKeyRangeId(rangeId) != null));
+        }
+
         private static bool IsGatewayV1DocumentRequest(HttpRequestMessage request)
         {
             return request.RequestUri.Port != ThinClientProxyPort

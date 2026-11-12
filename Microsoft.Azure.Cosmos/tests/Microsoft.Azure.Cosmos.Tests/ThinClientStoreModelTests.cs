@@ -548,7 +548,7 @@ namespace Microsoft.Azure.Cosmos
         [DataTestMethod]
         [Owner("aavasthy")]
         [DataRow("0:1#30,2:1#50", 0, DisplayName = "Known ranges without target progress: no refresh")]
-        [DataRow("5:1#12,9:1#40", 1, DisplayName = "Ranges unknown even after one refresh")]
+        [DataRow("5:1#12,9:1#40", 1, DisplayName = "Incorrect token (ranges unknown even after one refresh): no 410, sent without a token")]
         public async Task ProcessMessageAsync_CompoundSessionTokenWithoutTargetProgress_SendsNoTokenToProxy(
             string compoundToken,
             int expectedRoutingMapRefreshes)
