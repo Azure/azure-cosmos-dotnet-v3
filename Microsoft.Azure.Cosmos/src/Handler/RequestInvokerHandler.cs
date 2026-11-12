@@ -23,9 +23,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class RequestInvokerHandler : RequestHandler
     {
-        // TODO: Move to HttpConstants when the Direct package includes partial partition key interop.
-        internal const string PartialPartitionKeyHeader = "x-ms-documentdb-partialpartitionkey";
-
         private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
         private static readonly string BinarySerializationFormat = SupportedSerializationFormats.CosmosBinary.ToString();
         private static (bool, ResponseMessage) clientIsValid = (false, null);
@@ -311,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                             RequestInvokerHandler.PopulatePartialPartitionKeyHeader(
                                 request,
-                                (requestOptions as QueryRequestOptions)?.PartitionKey,
+                                requestOptions,
                                 collectionFromCache.PartitionKey);
 
                             PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
@@ -710,19 +707,23 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         internal static void PopulatePartialPartitionKeyHeader(
             RequestMessage request,
-            Cosmos.PartitionKey? partitionKey,
+            RequestOptions requestOptions,
             PartitionKeyDefinition partitionKeyDefinition)
         {
+            Cosmos.PartitionKey? partitionKey = (requestOptions as QueryRequestOptions)?.PartitionKey;
+
             if (request.ResourceType == ResourceType.Document
                 && request.OperationType == OperationType.Query
-                && string.IsNullOrEmpty(request.Headers.PartitionKey)
                 && partitionKey.HasValue
                 && !partitionKey.Value.IsNone
                 && partitionKeyDefinition.Kind == PartitionKind.MultiHash
                 && partitionKey.Value.InternalKey.Components.Count > 0
                 && partitionKey.Value.InternalKey.Components.Count < partitionKeyDefinition.Paths.Count)
             {
-                request.Headers[PartialPartitionKeyHeader] = partitionKey.Value.ToJsonString();
+                // The partition key and partial partition key headers are mutually exclusive.
+                Debug.Assert(string.IsNullOrEmpty(request.Headers.PartitionKey));
+
+                request.Headers["x-ms-documentdb-partialpartitionkey"] = partitionKey.Value.ToJsonString();
             }
         }
 

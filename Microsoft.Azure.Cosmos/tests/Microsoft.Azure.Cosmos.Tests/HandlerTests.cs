@@ -235,8 +235,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Assert.AreEqual("1", request.PartitionKeyRangeId.PartitionKeyRangeId);
                     Assert.IsNull(request.Headers.PartitionKey);
                     string expectedHeader = (OperationType)operation == OperationType.Query ? prefixJson : null;
-                    Assert.AreEqual(expectedHeader, request.Headers[RequestInvokerHandler.PartialPartitionKeyHeader]);
-                    Assert.AreEqual(expectedHeader, request.ToDocumentServiceRequest().Headers[RequestInvokerHandler.PartialPartitionKeyHeader]);
+                    Assert.AreEqual(expectedHeader, request.Headers["x-ms-documentdb-partialpartitionkey"]);
+                    Assert.AreEqual(expectedHeader, request.ToDocumentServiceRequest().Headers["x-ms-documentdb-partialpartitionkey"]);
                     Assert.AreEqual(exactRange ? null : "10", request.Headers.StartEpk);
                     Assert.AreEqual(exactRange ? null : "20", request.Headers.EndEpk);
                     return TestHandler.ReturnSuccess();

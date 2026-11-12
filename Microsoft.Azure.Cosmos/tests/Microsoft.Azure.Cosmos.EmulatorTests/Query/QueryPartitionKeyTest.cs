@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Handlers;
     using RequestHandlerHelper = Microsoft.Azure.Cosmos.SDK.EmulatorTests.RequestHandlerHelper;
     using TestCommon = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon;
     using Microsoft.Azure.Documents;
@@ -304,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             Assert.AreEqual(
                 expectedPartialPartitionKey,
-                request.Headers[RequestInvokerHandler.PartialPartitionKeyHeader],
+                request.Headers["x-ms-documentdb-partialpartitionkey"],
                 "Unexpected partial partition key header on outgoing SDK query request.");
             return true;
         }
