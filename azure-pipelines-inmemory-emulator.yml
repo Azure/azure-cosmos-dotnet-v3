@@ -1,0 +1,6 @@
+# Focused entry point for the same job run by SDK PR and nightly CI.
+trigger: none
+pr: none
+
+jobs:
+- template: templates/build-inmemory-emulator.yml
