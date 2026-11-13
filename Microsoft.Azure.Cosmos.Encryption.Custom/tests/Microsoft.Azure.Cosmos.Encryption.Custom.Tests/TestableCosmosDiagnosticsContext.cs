@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
             public long ElapsedTicks { get; }
 
-            public TimeSpan Elapsed => TimeSpan.FromTicks(this.ElapsedTicks);
+            public TimeSpan Elapsed => TimeSpan.FromSeconds((double)this.ElapsedTicks / Stopwatch.Frequency);
         }
 
         /// <summary>

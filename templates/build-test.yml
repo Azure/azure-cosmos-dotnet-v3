@@ -54,6 +54,28 @@ jobs:
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.Tests
 
+  - task: DotNetCoreCLI@2
+    displayName: Microsoft.Azure.Cosmos.Encryption.Tests
+    condition: and(succeeded(), eq(${{ parameters.IncludeEncryption }}, true))
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos.Encryption/tests/Microsoft.Azure.Cosmos.Encryption.Tests/*.csproj'
+      arguments: ${{ parameters.Arguments }} --configuration ${{ coalesce(parameters.BuildConfiguration, 'Debug') }} /p:SdkProjectRef=false /p:OS=${{ parameters.OS }}
+      publishTestResults: true
+      nugetConfigPath: NuGet.config
+      testRunTitle: Microsoft.Azure.Cosmos.Encryption.Tests
+
+  - task: DotNetCoreCLI@2
+    displayName: Microsoft.Azure.Cosmos.Encryption.Custom.Tests
+    condition: and(succeeded(), eq(${{ parameters.IncludeEncryption }}, true))
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/*.csproj'
+      arguments: ${{ parameters.Arguments }} --configuration ${{ coalesce(parameters.BuildConfiguration, 'Debug') }} /p:SdkProjectRef=false /p:OS=${{ parameters.OS }}
+      publishTestResults: true
+      nugetConfigPath: NuGet.config
+      testRunTitle: Microsoft.Azure.Cosmos.Encryption.Custom.Tests
+
 - job:
   displayName: Microsoft.Azure.Cosmos.Tests Flaky
   pool:
