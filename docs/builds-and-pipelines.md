@@ -26,7 +26,7 @@ how to add to or troubleshoot them, and the conventions to follow.
 | Concept | Detail |
 | --- | --- |
 | **Agent pool** | Almost every job runs on the **`OneES`** 1ES-managed pool (Windows). A few opt into other images via `demands: ImageOverride -equals <image>` (e.g. `dotnet-ubuntu-latest` for the CTL Docker build) or a hosted `VmImage` (macOS/Linux in the cron pipeline). |
-| **.NET versions** | Jobs install **.NET 6.0 runtime + .NET 8.0 SDK** via `UseDotNet@2`. `build-internal.yml` also installs the **.NET 9.0 SDK**. Test projects target `net6.0`. |
+| **.NET versions** | Jobs install **.NET 6.0 runtime + .NET 8.0 SDK** via `UseDotNet@2`. `build-internal.yml` also installs the **.NET 9.0 SDK**. Core/Encryption test projects target `net6.0`; Custom unit/emulator projects declare `net6.0;net8.0`. Installing an SDK does not by itself prove execution on its runtime. |
 | **Build flags** | Compile-time feature flags gate different SDK surfaces: `IsPreview=true` (the `-preview` package), `INTERNAL` / friend-assembly + dogfood surface (`build-internal.yml`), `SdkProjectRef` / `OSSProjectRef` (source vs NuGet references for the encryption/benchmark parity builds). Versions and constants are centralized in [`Directory.Build.props`](../Directory.Build.props) — do **not** change them casually. |
 | **Emulator** | Windows integration tests need the Cosmos DB emulator, installed/started by [`templates/emulator-setup.yml`](../templates/emulator-setup.yml) (see [Emulator setup](#emulator-setup-emulator-setupyml)). |
 | **Test selection** | Everything is driven by MSTest `TestCategory` filters passed to `dotnet test --filter`. See [Test categories](#test-categories--filtering). |
@@ -68,9 +68,9 @@ The gate every PR to `main` / `releases/*` must pass. It excludes doc-only chang
 | [`nuget-pack.yml`](../templates/nuget-pack.yml) | The SDK still packs into a valid NuGet package (`ReleasePackage: false` here — no publish). |
 | [`build-ctl.yml`](../templates/build-ctl.yml) | The [CTL runner](../Microsoft.Azure.Cosmos.Samples/Tools/CTL) builds. |
 | [`build-samples.yml`](../templates/build-samples.yml) | The [samples](../Microsoft.Azure.Cosmos.Samples/Usage) build. |
-| [`build-test.yml`](../templates/build-test.yml) | **The core** — unit tests, emulator tests (4 parallel category buckets), flaky retries, coverage, perf baseline, encryption emulator tests. |
+| [`build-test.yml`](../templates/build-test.yml) | **The core** — core and Encryption/Custom companion unit tests, emulator tests (4 parallel category buckets), flaky retries, coverage, perf baseline, encryption emulator tests. |
 | [`build-internal.yml`](../templates/build-internal.yml) | The solution builds under the `INTERNAL` flag (dogfood / friend-assembly surface). |
-| [`build-preview.yml`](../templates/build-preview.yml) | The PREVIEW-flag build + preview unit tests + encryption/benchmark surface-area parity. |
+| [`build-preview.yml`](../templates/build-preview.yml) | The PREVIEW-flag build + core and Encryption/Custom companion preview unit tests + encryption/benchmark surface-area parity. |
 | [`build-benchmark.yml`](../templates/build-benchmark.yml) | The [benchmark tool](../Microsoft.Azure.Cosmos.Samples/Tools/Benchmark) builds (GA + preview). |
 | [`build-thinclient.yml`](../templates/build-thinclient.yml) | Thin-client protocol emulator tests. |
 | [`build-test-aad.yml`](../templates/build-test-aad.yml) | **Live-account AAD (Entra ID) tests** — see [that section](#live-account-aad-tests-multiregionaad). Self-skips until its service connection is set. |
@@ -146,7 +146,7 @@ The heart of CI. It defines a set of **parallel jobs** (all on `OneES`):
 
 | Job | Runs |
 | --- | --- |
-| `Microsoft.Azure.Cosmos.Tests` | Unit tests (no emulator, no endpoint). `retryCountOnTaskFailure: 2`. |
+| `Microsoft.Azure.Cosmos.Tests` | Core unit tests (no emulator, no endpoint), `retryCountOnTaskFailure: 2`; then explicit Encryption and Custom unit tasks when `IncludeEncryption` is true, without new automatic retries. Custom retains both declared test TFMs. |
 | `…Tests Flaky` | Unit tests filtered to `TestCategory=Flaky`, retried up to 4×. |
 | `…Tests Coverage` | Unit tests in Debug with Coverlet → Cobertura report (gated on `IncludeCoverage`). |
 | `PerformanceTests` | Builds + runs the micro-benchmarks with `--BaselineValidation` (gated on `IncludePerformance`, 120-min timeout). |
@@ -156,6 +156,28 @@ The heart of CI. It defines a set of **parallel jobs** (all on `OneES`):
 | `Encryption EmulatorTests` / `Encryption.Custom EmulatorTests` | The two encryption emulator suites (gated on `IncludeEncryption`). |
 | `EmulatorTests … MultiRegion` | `TestCategory=MultiRegion` against a live multi-region account (`COSMOSDB_MULTI_REGION`). |
 | `EmulatorTests … MultiMaster` | `TestCategory=MultiMaster` against a live multi-master account (`COSMOSDB_MULTIMASTER`). |
+
+Encryption and Custom unit tasks forward caller filters, OS and configuration,
+use `SdkProjectRef=false` for package-backed execution, and default an empty
+configuration to `Debug`. Their preview tasks use `IsPreview=true` in the
+existing parity jobs and run even when emulator tests are disabled.
+
+Run both unit projects from the repository root (no emulator required):
+
+```shell
+dotnet test Microsoft.Azure.Cosmos.Encryption/tests/Microsoft.Azure.Cosmos.Encryption.Tests/Microsoft.Azure.Cosmos.Encryption.Tests.csproj --configuration Release /p:SdkProjectRef=false
+dotnet test Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj --configuration Release /p:SdkProjectRef=false
+```
+
+Add `/p:IsPreview=true` to reproduce preview units, or `--filter` to select
+specific tests. Leave `--framework` unset to run both Custom target frameworks
+(`net6.0;net8.0`); Encryption targets `net6.0`. Custom's default core package is
+`3.41.0-preview.0` even without `IsPreview=true`.
+
+For service tests, use the corresponding `tests/EmulatorTests/*.csproj` with
+the same configuration and reference flags after the [emulator setup](#emulator-setup-emulator-setupyml)
+below. The existing Custom emulator job has no separate preview counterpart;
+source-reference parity builds do not execute service tests.
 
 Buckets 1 and 2 exist purely to **parallelize** the large emulator suite and shorten PR feedback
 time. Every emulator job pulls in `emulator-setup.yml` and sets
@@ -186,7 +208,7 @@ with comparable flags (see [CONTRIBUTING](../CONTRIBUTING.md#usage-of-cosmos-db-
 | [`nuget-pack.yml`](../templates/nuget-pack.yml) | Build + `dotnet pack` the SDK. When `ReleasePackage: true`: also `.snupkg` symbols, SBOM (`ManifestGeneratorTask@0`), and `AzureFileCopy@6` to the `azuresdkpartnerdrops` `drops` container under `cosmosdb/csharp/<BlobVersion>` (optionally cleaning first). |
 | [`static-tools.yml`](../templates/static-tools.yml) | Preview build + security scanners (BinSkim/CredScan/PoliCheck/AntiMalware/ComponentGovernance — several currently gated off with `condition: eq(1,2)`). |
 | [`build-internal.yml`](../templates/build-internal.yml) | Builds `Microsoft.Azure.Cosmos.sln` with `DefineConstants="DOCDBCLIENT COSMOSCLIENT NETSTANDARD20 INTERNAL"`; installs .NET 6/8/9. |
-| [`build-preview.yml`](../templates/build-preview.yml) | Preview-flag build, preview unit tests (+ flaky retries), and encryption **surface-area parity** builds (preview vs NuGet vs GA, `SdkProjectRef` combos) to catch missing abstract-member overrides. |
+| [`build-preview.yml`](../templates/build-preview.yml) | Preview-flag build, core preview unit tests (+ flaky retries), explicit Encryption/Custom preview units, and encryption **surface-area parity** builds (preview vs NuGet vs GA, `SdkProjectRef` combos) to catch missing abstract-member overrides. |
 | [`build-benchmark.yml`](../templates/build-benchmark.yml) | Builds `CosmosBenchmark.sln` GA (`OSSProjectRef=true`) and preview. |
 | [`build-samples.yml`](../templates/build-samples.yml) / [`build-ctl.yml`](../templates/build-ctl.yml) | Build the samples solution / the CTL tool solution. |
 | [`build-thinclient.yml`](../templates/build-thinclient.yml) | Emulator tests for the ThinClient protocol; sets `AZURE_COSMOS_THIN_CLIENT_ENABLED: True` and the `COSMOSDB_THINCLIENT*` connection strings. |
