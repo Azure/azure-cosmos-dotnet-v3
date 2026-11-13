@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -131,13 +130,31 @@ namespace Microsoft.Azure.Cosmos
             // First attempt dispatches under a freshly rotated token; after a retriable response the
             // next attempt's token strategy is decided below.
             bool rotateIdempotencyToken = true;
+            DistributedTransactionMetadataRefreshPolicy metadataRefreshPolicy = new DistributedTransactionMetadataRefreshPolicy(
+                this.operations, this.clientContext);
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 DistributedTransactionResponse response = await this.ExecuteCommitAsync(serverRequest, rotateIdempotencyToken, parentTrace, cancellationToken);
 
-                if (response.IsSuccessStatusCode || !response.IsRetriable)
+                bool retainResponse = false;
+                bool returnOriginalResponse;
+                try
+                {
+                    returnOriginalResponse = await metadataRefreshPolicy.ShouldReturnOriginalResponseAsync(
+                        response, parentTrace, cancellationToken);
+                    retainResponse = true;
+                }
+                finally
+                {
+                    if (!retainResponse)
+                    {
+                        response.Dispose();
+                    }
+                }
+
+                if (returnOriginalResponse || response.IsSuccessStatusCode || !response.IsRetriable)
                 {
                     response.Diagnostics = diagnostics;
                     return response;
