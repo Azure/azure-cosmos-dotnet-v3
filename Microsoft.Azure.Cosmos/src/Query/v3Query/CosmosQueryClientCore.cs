@@ -94,6 +94,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (SecondaryIndexMetadataRefreshException exception)
                 {
+                    // Do not route with stale GSI metadata; an empty set keeps this query on primary routing.
                     trace.AddDatum("SecondaryIndexMetadataRefreshFailure", exception.InnerException?.Message ?? exception.Message);
                 }
             }

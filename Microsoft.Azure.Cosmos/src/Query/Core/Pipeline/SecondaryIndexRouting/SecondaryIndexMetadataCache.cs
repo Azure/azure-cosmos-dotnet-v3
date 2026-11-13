@@ -19,7 +19,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 
         private readonly ISecondaryIndexMetadataProvider provider;
         private readonly AsyncCache<string, Snapshot> cache;
-        private readonly ConcurrentDictionary<string, byte> forceRefreshRequired;
+        // Concurrent set keyed by source collection RID; the byte value is unused.
+        // Membership preserves fresh-read semantics after a failed refresh evicts its snapshot.
+        private readonly ConcurrentDictionary<string, byte> refreshRetryRequired;
         private readonly Func<DateTime> utcNowProvider;
 
         public SecondaryIndexMetadataCache(
@@ -29,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         {
             this.provider = indexMetadataProvider ?? throw new ArgumentNullException(nameof(indexMetadataProvider));
             this.cache = new AsyncCache<string, Snapshot>(enableAsyncCacheExceptionNoSharing);
-            this.forceRefreshRequired = new ConcurrentDictionary<string, byte>(StringComparer.Ordinal);
+            this.refreshRetryRequired = new ConcurrentDictionary<string, byte>(StringComparer.Ordinal);
             this.utcNowProvider = utcNowProvider ?? (() => DateTime.UtcNow);
         }
 
@@ -58,15 +60,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                     () => this.CreateSnapshotAsync(source, trace, cancellationToken, forceCollectionRefresh: true),
                     cancellationToken,
                     forceRefresh: true);
-                this.forceRefreshRequired.TryRemove(sourceCollectionRid, out _);
+                this.refreshRetryRequired.TryRemove(sourceCollectionRid, out _);
                 return forcedSnapshot?.Metadata;
             }
 
-            bool requiresFreshDiscovery = this.forceRefreshRequired.ContainsKey(sourceCollectionRid);
+            bool requiresRefreshRetry = this.refreshRetryRequired.ContainsKey(sourceCollectionRid);
             Snapshot currentSnapshot = await this.cache.GetAsync(
                 sourceCollectionRid,
                 obsoleteValue: null,
-                () => requiresFreshDiscovery
+                () => requiresRefreshRetry
                     ? this.CreateRefreshSnapshotAsync(source, trace, cancellationToken)
                     : this.CreateSnapshotAsync(source, trace, cancellationToken, forceCollectionRefresh: false),
                 cancellationToken);
@@ -82,6 +84,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 return currentSnapshot?.Metadata;
             }
 
+            // Supplying the stale snapshot as the obsolete value coalesces concurrent refreshes
+            // without returning stale metadata while the replacement is being discovered.
             Snapshot refreshedSnapshot = await this.cache.GetAsync(
                 sourceCollectionRid,
                 obsoleteValue: currentSnapshot,
@@ -99,11 +103,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             }
 
             this.cache.Remove(sourceCollectionRid);
-            this.forceRefreshRequired.TryRemove(sourceCollectionRid, out _);
+            this.refreshRetryRequired.TryRemove(sourceCollectionRid, out _);
         }
 
         private static string CreateSourceMembershipFingerprint(ContainerProperties source)
         {
+            // Length-prefixing the ordered referenced RIDs avoids ambiguous concatenations.
             StringBuilder fingerprint = new StringBuilder();
             foreach (MaterializedViewProperties materializedView in source.MaterializedViews)
             {
@@ -157,12 +162,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                     trace,
                     cancellationToken,
                     forceCollectionRefresh: true);
-                this.forceRefreshRequired.TryRemove(source.ResourceId, out _);
+                this.refreshRetryRequired.TryRemove(source.ResourceId, out _);
                 return snapshot;
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
-                this.forceRefreshRequired[source.ResourceId] = 0;
+                // The sentinel lets every caller coalesced on this refresh observe the same failure.
+                // ThrowIfRefreshFailed removes it; the retry marker then makes the next miss force-fresh.
+                this.refreshRetryRequired[source.ResourceId] = 0;
                 return Snapshot.CreateRefreshFailure(exception);
             }
         }
@@ -176,6 +183,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             }
         }
 
+        /// <summary>
+        /// Represents either successfully discovered metadata and its freshness signals,
+        /// or a refresh failure shared by all callers coalesced on the same refresh.
+        /// </summary>
         private sealed class Snapshot
         {
             public Snapshot(

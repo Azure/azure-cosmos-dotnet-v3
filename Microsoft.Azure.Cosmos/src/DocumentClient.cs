@@ -692,11 +692,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal void RegisterSecondaryIndexMetadataInvalidationCallback(
-            Action<string> secondaryIndexMetadataInvalidationCallback)
+            Action<string> callback)
         {
-            this.secondaryIndexMetadataInvalidationCallback = secondaryIndexMetadataInvalidationCallback;
-            this.collectionCache?.SetSecondaryIndexMetadataInvalidationCallback(
-                secondaryIndexMetadataInvalidationCallback);
+            this.secondaryIndexMetadataInvalidationCallback = callback;
+            // Client initialization is lazy, so registration can precede collection cache creation.
+            this.collectionCache?.SetSecondaryIndexMetadataInvalidationCallback(callback);
         }
 
         internal virtual async Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync(ITrace trace)
