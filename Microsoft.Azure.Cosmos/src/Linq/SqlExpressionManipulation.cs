@@ -118,6 +118,16 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                         return SqlInScalarExpression.Create(expression, inExpression.Not, items);
                     }
+                case SqlExistsScalarExpression:
+                    {
+                        // A subquery has its own scope, so the identifier to replace is not
+                        // visible inside it.
+                        return into;
+                    }
+                case SqlParameterRefScalarExpression:
+                    {
+                        return into;
+                    }
                 default:
                     throw new ArgumentOutOfRangeException("Unexpected Sql Scalar expression kind " + into.GetType());
             }

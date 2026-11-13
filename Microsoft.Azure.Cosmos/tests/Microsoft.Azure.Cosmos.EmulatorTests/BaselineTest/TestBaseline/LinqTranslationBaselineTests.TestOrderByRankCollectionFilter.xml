@@ -1,0 +1,24 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Any() collection filter + Order By Rank]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.Tags.Any(tag => (tag.Name == "Electronics"))).OrderByRank(doc => doc.Embedding.VectorDistance(new [] {1, 2, 3}, False, null)).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+WHERE EXISTS(
+    SELECT VALUE t0 
+    FROM root 
+    JOIN t0 IN root["Tags"] 
+    WHERE (t0["Name"] = "Electronics")) 
+    ORDER BY RANK VectorDistance(root["Embedding"], [1, 2, 3], false)
+]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+</Results>

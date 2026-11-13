@@ -286,6 +286,280 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
+        /// Rewrites the FROM bindings that wrap a pure <c>SELECT VALUE EXISTS(&lt;subquery&gt;)</c> on the
+        /// query node carrying an <c>ORDER BY RANK</c> clause into inline <c>EXISTS</c> scalar expressions
+        /// in that node's WHERE clause, dropping the corresponding JOIN.
+        /// </summary>
+        /// <remarks>
+        /// The service rejects queries that combine a JOINed subquery with <c>ORDER BY RANK</c>, while the
+        /// equivalent <c>WHERE EXISTS</c> form is accepted. Only queries carrying a rank order-by are
+        /// modified, and only bindings whose variable is used exclusively as a plain reference in the
+        /// node's WHERE clause are rewritten, so every other query shape keeps its existing SQL.
+        /// </remarks>
+        /// <returns>The query (the rewrite is applied in place to the rank-carrying node).</returns>
+        public QueryUnderConstruction NormalizeExistsSubqueriesForRank()
+        {
+            // Order By Rank is translated on the current query node, which also carries the WHERE clause
+            // and the FROM bindings introduced by collection filters, so only this node is checked.
+            if (this.orderByClause == null || !this.orderByClause.Rank || this.whereClause == null)
+            {
+                return this;
+            }
+
+            SqlWhereClause whereClause = this.whereClause;
+            bool changed = false;
+            foreach (Binding binding in this.FromParameters.GetBindings().ToList())
+            {
+                if (!IsPureExistsSubqueryCollection(binding, out SqlQuery existsSubquery))
+                {
+                    continue;
+                }
+
+                string variableName = binding.Parameter.Name;
+
+                // The join variable must be used in the WHERE clause as a plain reference only:
+                // it must not be member-accessed (substitution would produce an invalid expression)
+                // and it must not be used in any other clause (the JOIN cannot be dropped then).
+                if (!IsUsedAsPlainReferenceOnly(whereClause.FilterExpression, variableName) ||
+                    HasIdentifierReference(this.selectClause, variableName) ||
+                    HasIdentifierReference(this.orderByClause, variableName) ||
+                    HasIdentifierReference(this.groupByClause, variableName))
+                {
+                    continue;
+                }
+
+                SqlScalarExpression newFilterExpression = SqlExpressionManipulation.Substitute(
+                    SqlExistsScalarExpression.Create(existsSubquery),
+                    SqlIdentifier.Create(variableName),
+                    whereClause.FilterExpression);
+
+                whereClause = SqlWhereClause.Create(newFilterExpression);
+                this.FromParameters.Remove(binding);
+                changed = true;
+            }
+
+            if (changed)
+            {
+                this.whereClause = whereClause;
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Determines whether a FROM binding's definition is a subquery collection of the pure shape
+        /// <c>SELECT VALUE EXISTS(&lt;subquery&gt;)</c> (no FROM, WHERE, GROUP BY, ORDER BY or OFFSET/LIMIT).
+        /// </summary>
+        /// <param name="binding">The binding to inspect.</param>
+        /// <param name="existsSubquery">When <c>true</c> is returned, the subquery wrapped by EXISTS.</param>
+        /// <returns><c>true</c> if the binding wraps a pure EXISTS subquery, otherwise <c>false</c>.</returns>
+        private static bool IsPureExistsSubqueryCollection(Binding binding, out SqlQuery existsSubquery)
+        {
+            existsSubquery = null;
+
+            if (!(binding.ParameterDefinition is SqlSubqueryCollection subqueryCollection))
+            {
+                return false;
+            }
+
+            SqlQuery query = subqueryCollection.Query;
+            if (query == null ||
+                query.FromClause != null ||
+                query.WhereClause != null ||
+                query.GroupByClause != null ||
+                query.OrderByClause != null ||
+                query.OffsetLimitClause != null)
+            {
+                return false;
+            }
+
+            if (!(query.SelectClause?.SelectSpec is SqlSelectValueSpec selectValueSpec) ||
+                !(selectValueSpec.Expression is SqlExistsScalarExpression existsExpression))
+            {
+                return false;
+            }
+
+            existsSubquery = existsExpression.Subquery;
+            return existsSubquery != null;
+        }
+
+        /// <summary>
+        /// Determines whether a WHERE-clause filter uses the given identifier as a plain reference
+        /// (e.g. <c>v0</c>) and nowhere else (not as a member access such as <c>v0["x"]</c>).
+        /// </summary>
+        private static bool IsUsedAsPlainReferenceOnly(SqlScalarExpression expression, string identifierName)
+        {
+            bool plainReferenceFound = false;
+            bool memberAccessedReferenceFound = false;
+            ScanForIdentifierReference(expression, identifierName, ref plainReferenceFound, ref memberAccessedReferenceFound);
+            return plainReferenceFound && !memberAccessedReferenceFound;
+        }
+
+        /// <summary>
+        /// Determines whether a select clause references the given identifier in any form.
+        /// </summary>
+        private static bool HasIdentifierReference(SqlSelectClause selectClause, string identifierName)
+        {
+            if (selectClause == null)
+            {
+                return false;
+            }
+
+            switch (selectClause.SelectSpec)
+            {
+                case SqlSelectValueSpec selectValueSpec:
+                    return HasIdentifierReference(selectValueSpec.Expression, identifierName);
+
+                case SqlSelectListSpec selectListSpec:
+                    return selectListSpec.Items.Any(item => HasIdentifierReference(item.Expression, identifierName));
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether an order-by clause references the given identifier in any form.
+        /// </summary>
+        private static bool HasIdentifierReference(SqlOrderByClause orderByClause, string identifierName)
+        {
+            if (orderByClause == null)
+            {
+                return false;
+            }
+
+            return orderByClause.OrderByItems.Any(item => HasIdentifierReference(item.Expression, identifierName));
+        }
+
+        /// <summary>
+        /// Determines whether a group-by clause references the given identifier in any form.
+        /// </summary>
+        private static bool HasIdentifierReference(SqlGroupByClause groupByClause, string identifierName)
+        {
+            if (groupByClause == null)
+            {
+                return false;
+            }
+
+            return groupByClause.Expressions.Any(expression => HasIdentifierReference(expression, identifierName));
+        }
+
+        /// <summary>
+        /// Determines whether a scalar expression references the given identifier in any form
+        /// (either as a plain reference or as a member access).
+        /// </summary>
+        private static bool HasIdentifierReference(SqlScalarExpression expression, string identifierName)
+        {
+            bool plainReferenceFound = false;
+            bool memberAccessedReferenceFound = false;
+            ScanForIdentifierReference(expression, identifierName, ref plainReferenceFound, ref memberAccessedReferenceFound);
+            return plainReferenceFound || memberAccessedReferenceFound;
+        }
+
+        /// <summary>
+        /// Scans a scalar expression tree for references to the given identifier.
+        /// </summary>
+        /// <remarks>
+        /// A plain reference is a property reference without a member whose identifier matches
+        /// (e.g. <c>v0</c>). A member-accessed reference is a plain reference used as the member of
+        /// another property reference (e.g. <c>v0["x"]</c>). Subqueries are not scanned as the join
+        /// variable is not in scope inside them.
+        /// </remarks>
+        private static void ScanForIdentifierReference(
+            SqlScalarExpression expression,
+            string identifierName,
+            ref bool plainReferenceFound,
+            ref bool memberAccessedReferenceFound)
+        {
+            if (expression == null)
+            {
+                return;
+            }
+
+            switch (expression)
+            {
+                case SqlPropertyRefScalarExpression propertyRef:
+                    if (propertyRef.Member == null)
+                    {
+                        if (propertyRef.Identifier.Value == identifierName)
+                        {
+                            plainReferenceFound = true;
+                        }
+                    }
+                    else
+                    {
+                        bool memberPlain = false;
+                        bool memberAccessed = false;
+                        ScanForIdentifierReference(propertyRef.Member, identifierName, ref memberPlain, ref memberAccessed);
+
+                        // Any reference found in the member subtree is a member-accessed reference
+                        // from this node's perspective (e.g. <c>v0["x"]</c>).
+                        memberAccessedReferenceFound |= (memberPlain || memberAccessed);
+                    }
+
+                    break;
+
+                case SqlBinaryScalarExpression binaryExpression:
+                    ScanForIdentifierReference(binaryExpression.LeftExpression, identifierName, ref plainReferenceFound, ref memberAccessedReferenceFound);
+                    ScanForIdentifierReference(binaryExpression.RightExpression, identifierName, ref plainReferenceFound, ref memberAccessedReferenceFound);
+                    break;
+
+                case SqlUnaryScalarExpression unaryExpression:
+                    ScanForIdentifierReference(unaryExpression.Expression, identifierName, ref plainReferenceFound, ref memberAccessedReferenceFound);
+                    break;
+
+                case SqlFunctionCallScalarExpression functionCall:
+                    foreach (SqlScalarExpression argument in functionCall.Arguments)
+                    {
+                        ScanForIdentifierReference(argument, identifierName, ref plainReferenceFound, ref memberAccessedReferenceFound);
+                    }
+
+                    break;
+
+                case SqlArrayCreateScalarExpression arrayCreate:
+                    foreach (SqlScalarExpression item in arrayCreate.Items)
+                    {
+                        ScanForIdentifierReference(item, identifierName, ref plainReferenceFound, ref memberAccessedReferenceFound);
+                    }
+
+                    break;
+
+                case SqlObjectCreateScalarExpression objectCreate:
+                    foreach (var property in objectCreate.Properties)
+                    {
+                        ScanForIdentifierReference(property.Value, identifierName, ref plainReferenceFound, ref memberAccessedReferenceFound);
+                    }
+
+                    break;
+
+                case SqlMemberIndexerScalarExpression memberIndexer:
+                    ScanForIdentifierReference(memberIndexer.Member, identifierName, ref plainReferenceFound, ref memberAccessedReferenceFound);
+                    ScanForIdentifierReference(memberIndexer.Indexer, identifierName, ref plainReferenceFound, ref memberAccessedReferenceFound);
+                    break;
+
+                case SqlConditionalScalarExpression conditional:
+                    ScanForIdentifierReference(conditional.Condition, identifierName, ref plainReferenceFound, ref memberAccessedReferenceFound);
+                    ScanForIdentifierReference(conditional.Consequent, identifierName, ref plainReferenceFound, ref memberAccessedReferenceFound);
+                    ScanForIdentifierReference(conditional.Alternative, identifierName, ref plainReferenceFound, ref memberAccessedReferenceFound);
+                    break;
+
+                case SqlInScalarExpression inExpression:
+                    ScanForIdentifierReference(inExpression.Needle, identifierName, ref plainReferenceFound, ref memberAccessedReferenceFound);
+                    foreach (SqlScalarExpression haystackItem in inExpression.Haystack)
+                    {
+                        ScanForIdentifierReference(haystackItem, identifierName, ref plainReferenceFound, ref memberAccessedReferenceFound);
+                    }
+
+                    break;
+
+                // SqlLiteralScalarExpression, SqlParameterScalarExpression and
+                // SqlExistsScalarExpression (subquery scope) carry no references to the join variable.
+                default:
+                    break;
+            }
+        }
+
+        /// <summary>
         /// Flatten subqueries into a single query by substituting their expressions in the current query.
         /// </summary>
         /// <returns>A flattened query.</returns>
