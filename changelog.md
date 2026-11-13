@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [6198](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6198) Distributed Transactions (preview): Fixes operations using `PartitionKey.None` failing with `400` / `13007` (`ThinProxy_InvalidRequestBytes`). `PartitionKey.None` is now resolved to the container's none value, so items stored without a partition key value can be addressed in distributed read and write transactions.
+
 #### Other Changes
 
 ### <a name="3.65.0-preview.0"/> [3.65.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.65.0-preview.0) - 2026-11-06
