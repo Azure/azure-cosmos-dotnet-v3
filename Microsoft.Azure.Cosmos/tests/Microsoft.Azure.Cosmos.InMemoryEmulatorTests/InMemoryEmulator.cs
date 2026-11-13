@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.InMemoryEmulatorTests
             this.process.Dispose();
         }
 
-        private static Uri ReadLoopbackEndpoint(JsonElement root, string property)
+        internal static Uri ReadLoopbackEndpoint(JsonElement root, string property)
         {
             if (!Uri.TryCreate(root.GetProperty(property).GetString(), UriKind.Absolute, out Uri endpoint)
                 || endpoint.Scheme != Uri.UriSchemeHttp

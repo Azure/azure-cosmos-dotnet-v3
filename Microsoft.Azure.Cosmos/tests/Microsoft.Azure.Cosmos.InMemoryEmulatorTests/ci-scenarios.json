@@ -1,0 +1,98 @@
+{
+  "Items": {
+    "host": {
+      "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.EmulatorLifecycleTests": {
+        "ReadsDynamicallyAssignedEndpoints": 1,
+        "RejectsUnexpectedEndpoints": 4,
+        "ReportsExitBeforeReadiness": 1,
+        "MissingExecutableIsAnError": 1
+      },
+      "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.ItemTests": {
+        "ItemCrudRoundTripsThroughGateway": 1,
+        "PartitionKeysIsolateIdenticalIds": 1,
+        "DuplicateAndStaleEtagReturnServiceErrors": 1,
+        "PartitionScopedReadFeedPaginates": 1,
+        "PatchPersistsUpdatedValue": 1,
+        "InvalidConfigurationReportsStartupFailure": 1,
+        "HostsHaveIsolatedStateAndStopOnDisposal": 1
+      },
+      "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.PartitionTopologyTests": {
+        "ManualSplitMergePreservesPartitionScopedContinuation": 3
+      }
+    },
+    "shared": {
+      "Microsoft.Azure.Cosmos.SDK.EmulatorTests.ResourceValidationTests": {
+        "CreateDatabaseRejectsEmptyId": 1,
+        "CreateContainerRejectsEmptyId": 1
+      },
+      "Microsoft.Azure.Cosmos.SDK.EmulatorTests.BinaryNumericWireTests": {
+        "PointRoundTripPreservesNumberAndRequestedWireFormat": 14,
+        "FractionalServerIncrementPersistsExactValue": 1
+      },
+      "Microsoft.Azure.Cosmos.SDK.EmulatorTests.CosmosItemTests": {
+        "ParentResourceTest": 1,
+        "HttpRequestVersionIsOnePointOneWhenUsingGatewayMode": 1,
+        "PatchItemStreamTest": 1,
+        "ItemPatchViaGatewayTest": 1,
+        "ItemPatchStreamInputTest": 1,
+        "ItemPatchCustomSerializerTest": 1,
+        "ItemPatchSuccessTest": 1,
+        "AutoGenerateIdPatternTest": 1,
+        "ContainerRecreateScenarioGatewayTest": 1,
+        "GivenPatchItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync": 1,
+        "GivenPatchItemAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync": 1,
+        "NoAutoGenerateIdTest": 1,
+        "GivenDeleteItemAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync": 1,
+        "GivenDeleteItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync": 1
+      },
+      "Microsoft.Azure.Cosmos.SDK.EmulatorTests.CosmosDatabaseTests": {
+        "DatabaseContractTest": 1,
+        "CreateDropDatabase": 1,
+        "StreamCrudTestAsync": 1,
+        "StreamCreateConflictTestAsync": 1,
+        "CreateConflict": 1,
+        "ImplicitConversion": 1,
+        "DropNonExistingDatabase": 1,
+        "CreateIfNotExists": 1,
+        "NoThroughputTests": 1
+      },
+      "Microsoft.Azure.Cosmos.SDK.EmulatorTests.CosmosContainerTests": {
+        "ContainerContractTest": 1,
+        "ContainerBuilderContractTest": 1,
+        "ContainerBuilderPartitionKeyDefinitionContractTest": 1,
+        "PartitionedCRUDTest": 1,
+        "PartitionedCreateWithPathDelete": 1,
+        "CreateContainerIfNotExistsPropertiesTestAsync": 1,
+        "CreateContainerIfNotExistsAsyncTest": 1,
+        "NoPartitionedCreateFail": 1,
+        "StreamPartitionedCreateWithPathDelete": 1,
+        "PartitionedCreateDeleteIfNotExists": 1,
+        "DeleteNonExistingContainer": 1,
+        "ImplicitConversion": 1
+      }
+    }
+  },
+  "Reads": {
+    "host": {
+      "Microsoft.Azure.Cosmos.InMemoryEmulatorTests.ReplicationRoutingTests": {
+        "PausedReplicaHonorsEventualReadRouting": 3,
+        "ExplicitSessionTokenRecoversFromReplicaLagAndResume": 1
+      }
+    },
+    "shared": {
+      "Microsoft.Azure.Cosmos.SDK.EmulatorTests.CosmosItemTests": {
+        "ReadCollectionNotExists": 1,
+        "GivenReadItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync": 1,
+        "GivenReadItemAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync": 1
+      },
+      "Microsoft.Azure.Cosmos.SDK.EmulatorTests.CosmosDatabaseTests": {
+        "ReadDatabase": 1,
+        "DatabaseIterator": 1,
+        "DatabaseQueryIterator": 1
+      },
+      "Microsoft.Azure.Cosmos.SDK.EmulatorTests.CosmosContainerTests": {
+        "StreamIteratorTest": 1
+      }
+    }
+  }
+}
