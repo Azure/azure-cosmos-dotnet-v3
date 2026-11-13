@@ -179,7 +179,8 @@ namespace Microsoft.Azure.Cosmos.Test
                             messagePayload: request,
                             transportRequestStats: null);
 
-                    await Task.Delay(10000);
+                    // The health check requires strictly more than the 10-second receive hang grace period.
+                    await Task.Delay(12000);
                     Assert.IsFalse(
                         condition: connection.Healthy,
                         message: "When a write request is sent but the response is not received with-in the receive hang grace period, the connection will be marked as un-healthy.");
