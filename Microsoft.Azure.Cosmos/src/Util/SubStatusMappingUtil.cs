@@ -117,7 +117,46 @@ namespace Microsoft.Azure.Cosmos.Util
                     : nameof(SubStatusCodes.PartitionMigrationFinalizeMigrationsDidNotCompleteInTenRetries);
             }
 
-            return subStatusCode.ToString();
+            return SubStatusMappingUtil.GetCorrectedSpelling(subStatusCode) ?? subStatusCode.ToString();
+        }
+
+        /// <summary>
+        /// Returns the correctly spelled name of a <see cref="SubStatusCodes"/> member whose name is misspelled in
+        /// Microsoft.Azure.Cosmos.Direct, or <c>null</c> when the name is spelled correctly.
+        /// </summary>
+        /// <remarks>
+        /// The names surface in diagnostics and OpenTelemetry attributes, so they are corrected here until the enum
+        /// itself is fixed (https://github.com/Azure/azure-cosmos-dotnet-v3/issues/6134). The cases reference the
+        /// misspelled members on purpose: once Direct renames them, this method stops compiling and can be removed.
+        /// Only values that no other member shares are listed, because Enum.ToString is not deterministic for
+        /// shared values; 2020 (PartitionMigrationServiceTypeAndOperationTypeDoesnotMatch) shares its value with
+        /// CollectionStateChanged and is therefore left out.
+        /// </remarks>
+        private static string GetCorrectedSpelling(SubStatusCodes subStatusCode)
+        {
+            switch (subStatusCode)
+            {
+                case SubStatusCodes.CanNotAquireMasterPartitionAccessLock:
+                    return "CanNotAcquireMasterPartitionAccessLock";
+                case SubStatusCodes.PartitionMigrationIsDisableOnTheGlobalDatabaseAccount:
+                    return "PartitionMigrationIsDisabledOnTheGlobalDatabaseAccount";
+                case SubStatusCodes.PartitionMigrationIsDisableOnTheRunnerAccount:
+                    return "PartitionMigrationIsDisabledOnTheRunnerAccount";
+                case SubStatusCodes.AccountAlreadyinTargetGateway:
+                    return "AccountAlreadyInTargetGateway";
+                case SubStatusCodes.FederationDoesnotExistOrIsLocked:
+                    return "FederationDoesNotExistOrIsLocked";
+                case SubStatusCodes.ThottleDueToSplit:
+                    return "ThrottleDueToSplit";
+                case SubStatusCodes.PartitionkeyHashCollisionForId:
+                    return "PartitionKeyHashCollisionForId";
+                case SubStatusCodes.FabricTokenValidatonFailed:
+                    return "FabricTokenValidationFailed";
+                case SubStatusCodes.InvalidFabricAritfactId:
+                    return "InvalidFabricArtifactId";
+                default:
+                    return null;
+            }
         }
     }
 }
