@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos
         internal TelemetryToServiceHelper telemetryToServiceHelper { get; set; }
 
         private ClientCollectionCache collectionCache;
-        private Action<string> collectionRefreshCallback;
+        private Action<string> secondaryIndexMetadataInvalidationCallback;
 
         private PartitionKeyRangeCache partitionKeyRangeCache;
 
@@ -691,10 +691,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal void RegisterCollectionCacheRefreshCallback(Action<string> callback)
+        internal void RegisterSecondaryIndexMetadataInvalidationCallback(
+            Action<string> secondaryIndexMetadataInvalidationCallback)
         {
-            this.collectionRefreshCallback = callback;
-            this.collectionCache?.SetCollectionRefreshCallback(callback);
+            this.secondaryIndexMetadataInvalidationCallback = secondaryIndexMetadataInvalidationCallback;
+            this.collectionCache?.SetSecondaryIndexMetadataInvalidationCallback(
+                secondaryIndexMetadataInvalidationCallback);
         }
 
         internal virtual async Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync(ITrace trace)
@@ -780,7 +782,7 @@ namespace Microsoft.Azure.Cosmos
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
                     metadataHedgingStrategy: this.metadataHedgingStrategy,
-                    collectionRefreshCallback: this.collectionRefreshCallback);
+                    secondaryIndexMetadataInvalidationCallback: this.secondaryIndexMetadataInvalidationCallback);
                 this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing, this.metadataHedgingStrategy);
 
                 DefaultTrace.TraceWarning("Exception occurred while OpenAsync. Exception Message: {0}", ex.Message);
@@ -1267,7 +1269,7 @@ namespace Microsoft.Azure.Cosmos
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
                     metadataHedgingStrategy: this.metadataHedgingStrategy,
-                    collectionRefreshCallback: this.collectionRefreshCallback);
+                    secondaryIndexMetadataInvalidationCallback: this.secondaryIndexMetadataInvalidationCallback);
             this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing, this.metadataHedgingStrategy);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 

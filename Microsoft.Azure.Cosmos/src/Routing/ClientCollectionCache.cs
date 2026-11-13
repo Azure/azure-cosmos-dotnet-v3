@@ -37,8 +37,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             TelemetryToServiceHelper telemetryToServiceHelper,
             bool enableAsyncCacheExceptionNoSharing = true,
             MetadataHedgingStrategy metadataHedgingStrategy = null,
-            Action<string> collectionRefreshCallback = null)
-            : base(enableAsyncCacheExceptionNoSharing, collectionRefreshCallback)
+            Action<string> secondaryIndexMetadataInvalidationCallback = null)
+            : base(enableAsyncCacheExceptionNoSharing, secondaryIndexMetadataInvalidationCallback)
         {
             this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
             this.tokenProvider = tokenProvider;
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IClientSideRequestStatistics clientSideRequestStatistics,
             CancellationToken cancellationToken)
         {
-            if (forceRefesh && (this.sessionContainer != null || this.HasCollectionRefreshCallback))
+            if (forceRefesh && (this.sessionContainer != null || this.HasSecondaryIndexMetadataInvalidationCallback))
             {
                 return TaskHelper.InlineIfPossible(
                     async () =>
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             clientSideRequestStatistics,
                             cancellationToken))?.ResourceId;
 
-                        this.OnCollectionRefresh(oldRid);
+                        this.InvalidateSecondaryIndexMetadata(oldRid);
 
                         ContainerProperties propertiesAfterRefresh = await base.ResolveByNameAsync(
                             apiVersion,
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             string previouslyResolvedCollectionRid = request?.RequestContext?.ResolvedCollectionRid;
             if (request?.ForceNameCacheRefresh == true)
             {
-                this.OnCollectionRefresh(previouslyResolvedCollectionRid);
+                this.InvalidateSecondaryIndexMetadata(previouslyResolvedCollectionRid);
             }
 
             try

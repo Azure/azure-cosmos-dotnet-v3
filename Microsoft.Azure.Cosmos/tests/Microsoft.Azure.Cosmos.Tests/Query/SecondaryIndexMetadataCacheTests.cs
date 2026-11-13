@@ -505,7 +505,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             public TestClientCollectionCache(
                 ContainerProperties source,
-                Action<string> collectionRefreshCallback)
+                Action<string> secondaryIndexMetadataInvalidationCallback)
                 : base(
                     new SessionContainer("testhost"),
                     new ServerStoreModel(null),
@@ -514,7 +514,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                     telemetryToServiceHelper: null,
                     enableAsyncCacheExceptionNoSharing: true,
                     metadataHedgingStrategy: null,
-                    collectionRefreshCallback: collectionRefreshCallback)
+                    secondaryIndexMetadataInvalidationCallback: secondaryIndexMetadataInvalidationCallback)
             {
                 this.source = source;
             }
