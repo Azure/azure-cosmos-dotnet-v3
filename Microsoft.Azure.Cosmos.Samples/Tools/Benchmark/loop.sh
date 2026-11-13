@@ -2,6 +2,16 @@
 
 export OSSProjectRef=True
 export RESULTS_PK=test_runs
+# PL=18 is used for all three modes so latency numbers are directly comparable.
+# Reasoning:
+#   - Direct (rntbd, multiplexed TCP): 18 stays under the per-conn request cap;
+#     higher values queue in the SDK and inflate P99.
+#   - ThinClient (HTTP/2, one multiplexed conn): 18 streams sits well under the
+#     server's SETTINGS_MAX_CONCURRENT_STREAMS window, so no stream contention.
+#   - Gateway (HTTP/1.1, conn-per-request): 18 needs only 18 HTTP conns from the
+#     pool (limit is 500), so no pool exhaustion.
+# Throughput ceiling per mode is a separate experiment and should be run at each
+# mode's own saturation PL, not mixed into this latency-comparison loop.
 export PL=18
 
 #These must be configured
