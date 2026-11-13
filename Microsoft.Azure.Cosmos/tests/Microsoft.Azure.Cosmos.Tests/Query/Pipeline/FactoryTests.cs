@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -109,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             queryClient.Setup(client => client.GetCachedContainerQueryPropertiesAsync(
                 It.IsAny<string>(), It.IsAny<Cosmos.PartitionKey?>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new ContainerQueryProperties(
-                    "rid", null, null, partitionKeyDefinition, null, Cosmos.GeospatialType.Geography, useLengthAwareRangeComparer: false));
+                    "rid", null, null, partitionKeyDefinition, null, Cosmos.GeospatialType.Geography, useLengthAwareRangeComparer: false, Array.Empty<ISecondaryIndexMetadata>()));
             queryClient.SetupSequence(client => client.GetTargetPartitionKeyRangesAsync(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<Range<string>>>(), false, It.IsAny<ITrace>()))
                 .ReturnsAsync(targetRanges)
@@ -201,6 +202,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             using MockDocumentClient documentClient = new MockDocumentClient();
             Mock<CosmosClientContext> context = new Mock<CosmosClientContext>(MockBehavior.Strict);
             context.SetupGet(client => client.DocumentClient).Returns(documentClient);
+            context.SetupGet(client => client.ClientOptions).Returns(new CosmosClientOptions());
             context.Setup(client => client.GetCachedContainerPropertiesAsync(
                 "dbs/db/colls/container", NoOpTrace.Singleton, CancellationToken.None)).ReturnsAsync(properties);
 
@@ -363,7 +365,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         {
             return new ContainerQueryProperties(
                 resourceId, etag, null, new PartitionKeyDefinition { Paths = new Collection<string> { "/pk" }, Kind = PartitionKind.Hash },
-                null, Cosmos.GeospatialType.Geography, useLengthAwareRangeComparer: false);
+                null, Cosmos.GeospatialType.Geography, useLengthAwareRangeComparer: false, Array.Empty<ISecondaryIndexMetadata>());
         }
 
         private static T GetPrivateField<T>(object instance, string name)

@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
@@ -456,7 +457,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 queryInfo: null,
                 hybridSearchQueryInfo: CreateStatisticsCacheQueryInfo(scenario),
                 maxItemCount: scenario.PageSize,
-                new ContainerQueryProperties("rid", etag, null, null, null, Cosmos.GeospatialType.Geography, false),
+                new ContainerQueryProperties("rid", etag, null, null, null, Cosmos.GeospatialType.Geography, false, Array.Empty<ISecondaryIndexMetadata>()),
                 StatisticsCacheRanges,
                 isContinuationExpected: true,
                 maxConcurrency: MaxConcurrency,
@@ -997,7 +998,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     isContinuationExpected: true,
                     maxConcurrency: MaxConcurrency,
                     fullTextScoreScope: FullTextScoreScope.Global,
-                    requestContinuationToken: null);
+                    requestContinuationToken: null,
+                    statisticsCacheFactory: HybridSearchStatisticsCacheFactory.Create(null, 0));
                 Assert.IsTrue(tryCreatePipeline.Succeeded);
 
                 (IReadOnlyList<CosmosElement> results, _) = await RunPipelineStage(tryCreatePipeline.Result, DocumentCount);
