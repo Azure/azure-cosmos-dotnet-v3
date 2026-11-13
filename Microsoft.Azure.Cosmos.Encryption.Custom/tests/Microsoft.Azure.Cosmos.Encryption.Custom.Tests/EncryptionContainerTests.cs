@@ -79,6 +79,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 Times.Once);
         }
 
+        [TestMethod]
+        public async Task GetPartitionKeyRangesAsync_ForwardsFeedRangeAndCancellationToken()
+        {
+            FeedRange feedRange = FeedRange.FromPartitionKey(new PartitionKey("test"));
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            IEnumerable<string> expectedRangeIds = new[] { "0", "1" };
+            this.innerContainerMock
+                .Setup(c => c.GetPartitionKeyRangesAsync(feedRange, cancellationTokenSource.Token))
+                .ReturnsAsync(expectedRangeIds);
+            Container container = this.encryptionContainer;
+
+            IEnumerable<string> rangeIds = await container.GetPartitionKeyRangesAsync(
+                feedRange,
+                cancellationTokenSource.Token);
+
+            Assert.AreSame(expectedRangeIds, rangeIds);
+            this.innerContainerMock.Verify(
+                c => c.GetPartitionKeyRangesAsync(feedRange, cancellationTokenSource.Token),
+                Times.Once);
+        }
+
         [DataTestMethod]
         [DynamicData(nameof(GetSupportedJsonProcessorsData), DynamicDataSourceType.Method)]
         public async Task GetItemQueryIterator_ReturnsTypedEncryptionFeedIteratorAsync(string jsonProcessor)
