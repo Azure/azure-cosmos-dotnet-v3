@@ -628,6 +628,7 @@ namespace Microsoft.Azure.Documents
             SupportedQueryFeatures = 0x00FF,
             QueryVersion = 0x0100,
             SupportedSerializationFeatures = 0x0101,
+            PartialPartitionKey = 0x0108,
 
             // Changes require sign-off from cdbcosdk.
         }
@@ -877,6 +878,7 @@ namespace Microsoft.Azure.Documents
             public RntbdToken supportedQueryFeatures;
             public RntbdToken queryVersion;
             public RntbdToken supportedSerializationFeatures;
+            public RntbdToken partialPartitionKey;
 
             public Request()
             {
@@ -1121,6 +1123,7 @@ namespace Microsoft.Azure.Documents
                 this.supportedQueryFeatures = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.SupportedQueryFeatures);
                 this.queryVersion = new RntbdToken(false, RntbdTokenTypes.SmallString, (ushort)RequestIdentifiers.QueryVersion);
                 this.supportedSerializationFeatures = new RntbdToken(false, RntbdTokenTypes.UShort, (ushort)RequestIdentifiers.SupportedSerializationFeatures);
+                this.partialPartitionKey = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.PartialPartitionKey);
 
                 this.tokens = new RntbdToken[]
                 {
@@ -1382,6 +1385,13 @@ namespace Microsoft.Azure.Documents
                     this.supportedQueryFeatures,
                     this.queryVersion,
                     this.supportedSerializationFeatures,
+                    null, // 0x0102
+                    null, // 0x0103
+                    null, // 0x0104
+                    null, // 0x0105
+                    null, // 0x0106
+                    null, // 0x0107
+                    this.partialPartitionKey,
                 };
             }
         }
