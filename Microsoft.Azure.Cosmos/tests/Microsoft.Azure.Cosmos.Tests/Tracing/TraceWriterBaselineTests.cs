@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
@@ -764,7 +765,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 isContinuationExpected: true,
                 maxConcurrency: 10,
                 fullTextScoreScope: FullTextScoreScope.Global,
-                requestContinuationToken: state);
+                requestContinuationToken: state,
+                statisticsCacheFactory: HybridSearchStatisticsCacheFactory.Create(null, 0));
 
             tryCreatePipeline.ThrowIfFailed();
 

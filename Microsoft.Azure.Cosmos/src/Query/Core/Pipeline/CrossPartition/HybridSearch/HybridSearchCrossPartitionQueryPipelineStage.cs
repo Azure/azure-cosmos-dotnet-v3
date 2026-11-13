@@ -34,6 +34,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private readonly static QueryState Continuation = new QueryState(CosmosString.Create("HybridSearchInProgress"));
 
+        private readonly string containerResourceId;
+
+        private readonly string containerETag;
+
+        private readonly HybridSearchStatisticsCache statisticsCache;
+
         private readonly HybridSearchQueryInfo hybridSearchQueryInfo;
 
         private readonly int pageSize;
@@ -65,6 +71,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         }
 
         private HybridSearchCrossPartitionQueryPipelineStage(
+            string containerResourceId,
+            string containerETag,
+            HybridSearchStatisticsCache statisticsCache,
             HybridSearchQueryInfo hybridSearchQueryInfo,
             HybridSearchComponentPipelineFactory pipelineFactory,
             int pageSize,
@@ -80,6 +89,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             this.state = state;
             this.globalStatisticsPipeline = globalStatisticsPipeline;
             this.queryPipelineStages = queryPipelineStages;
+            this.containerResourceId = containerResourceId;
+            this.containerETag = containerETag;
+            this.statisticsCache = statisticsCache ?? throw new ArgumentNullException(nameof(statisticsCache));
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
@@ -93,7 +105,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             int maxItemCount,
             bool isContinuationExpected,
             int maxConcurrency,
-            Cosmos.FullTextScoreScope fullTextScoreScope)
+            Cosmos.FullTextScoreScope fullTextScoreScope,
+            HybridSearchStatisticsCacheFactory statisticsCacheFactory)
         {
             TryCatch<IQueryPipelineStage> ComponentPipelineFactory(QueryInfo rewrittenQueryInfo)
             {
@@ -173,6 +186,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             return TryCatch<IQueryPipelineStage>.FromResult(
                 new HybridSearchCrossPartitionQueryPipelineStage(
+                    containerQueryProperties.ResourceId,
+                    containerQueryProperties.ETag,
+                    statisticsCacheFactory.GetCache(fullTextScoreScope, queryInfo),
                     queryInfo,
                     ComponentPipelineFactory,
                     pageSize,
@@ -216,6 +232,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private async ValueTask<bool> MoveNextAsync_GatherGlobalStatisticsAsync(ITrace trace, CancellationToken cancellationToken)
         {
+            if (this.statisticsCache.TryGet(this.containerResourceId, this.containerETag, this.hybridSearchQueryInfo, trace, out GlobalFullTextSearchStatistics cachedStatistics))
+            {
+                // The statistics pipeline is never moved on a hit, so no statistics request is issued.
+                if (!this.TryCreateComponentPipelines(cachedStatistics))
+                {
+                    return true;
+                }
+
+                return await this.MoveNextAsync_RunComponentQueriesAsync(trace, cancellationToken);
+            }
+
+            // Capture the start before any statistics request so a slow fan-out does not appear fresher than it is.
+            TimeSpan collectionStartedAt = this.statisticsCache.GetElapsedTime();
+
             TryCatch<(GlobalFullTextSearchStatistics, QueryPage)> tryGatherStatistics = await GatherStatisticsAsync(
                 this.globalStatisticsPipeline,
                 trace,
@@ -228,7 +258,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             }
 
             (GlobalFullTextSearchStatistics statistics, QueryPage queryPage) = tryGatherStatistics.Result;
+            this.statisticsCache.TryAdd(this.containerResourceId, this.containerETag, this.hybridSearchQueryInfo, statistics, collectionStartedAt);
 
+            if (!this.TryCreateComponentPipelines(statistics))
+            {
+                return true;
+            }
+
+            this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+            return true;
+        }
+
+        private bool TryCreateComponentPipelines(GlobalFullTextSearchStatistics statistics)
+        {
             TryCatch<List<IQueryPipelineStage>> tryCreateQueryPipelineStages = CreateQueryPipelineStages(
                 this.hybridSearchQueryInfo.ComponentQueryInfos,
                 statistics,
@@ -237,12 +279,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             {
                 this.Current = TryCatch<QueryPage>.FromException(tryCreateQueryPipelineStages.Exception);
                 this.state = State.Done;
-                return true;
+                return false;
             }
 
             this.queryPipelineStages = tryCreateQueryPipelineStages.Result;
             this.state = State.Initialized;
-            this.Current = TryCatch<QueryPage>.FromResult(queryPage);
             return true;
         }
 

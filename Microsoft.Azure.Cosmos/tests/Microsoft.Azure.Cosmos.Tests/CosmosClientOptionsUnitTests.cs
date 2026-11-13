@@ -29,6 +29,165 @@ namespace Microsoft.Azure.Cosmos.Tests
         public const string ConnectionString = "AccountEndpoint=https://example.documents.azure.com:443/;AccountKey=NotRealKey==;";
         public Func<HttpClient> HttpClientFactoryDelegate = () => new HttpClient();
 
+        public TestContext TestContext { get; set; }
+
+        [TestMethod]
+        public void FullTextStatisticsCacheMaxAgeDefaultsAndCopies()
+        {
+            CosmosClientOptions options = new CosmosClientOptions();
+            Assert.IsNull(options.FullTextStatisticsCacheMaxAge);
+            Assert.IsNull(typeof(QueryRequestOptions).GetProperty(nameof(CosmosClientOptions.FullTextStatisticsCacheMaxAge)));
+
+            List<CacheAgeTestCase> testCases = new List<CacheAgeTestCase>
+            {
+                new CacheAgeTestCase("Null age", null),
+                new CacheAgeTestCase("Minimum age", TimeSpan.FromMinutes(2)),
+                new CacheAgeTestCase("Ten-minute age", TimeSpan.FromMinutes(10)),
+                new CacheAgeTestCase("Maximum age", TimeSpan.MaxValue),
+            };
+
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                CacheAgeTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                TimeSpan? maxAge = testCase.MaxAge;
+                options.FullTextStatisticsCacheMaxAge = maxAge;
+                CosmosClientOptions copy = options.Clone();
+                using CosmosClient client = new CosmosClient(
+                    AccountEndpoint, MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey, options, new MockDocumentClient());
+
+                Assert.AreNotSame(options, copy);
+                Assert.AreEqual(maxAge, copy.FullTextStatisticsCacheMaxAge);
+                Assert.AreEqual(maxAge, client.ClientOptions.FullTextStatisticsCacheMaxAge);
+                copy.FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(3);
+                Assert.AreEqual(maxAge, options.FullTextStatisticsCacheMaxAge);
+                options.FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(4);
+                Assert.AreEqual(maxAge, client.ClientOptions.FullTextStatisticsCacheMaxAge);
+            }
+        }
+
+        [TestMethod]
+        public void FullTextStatisticsCacheMaxAgeRejectsValuesBelowTwoMinutes()
+        {
+            TimeSpan originalMaxAge = TimeSpan.FromMinutes(5);
+            CosmosClientOptions options = new CosmosClientOptions { FullTextStatisticsCacheMaxAge = originalMaxAge };
+
+            List<CacheAgeTestCase> testCases = new List<CacheAgeTestCase>
+            {
+                new CacheAgeTestCase("Just below two minutes", TimeSpan.FromMinutes(2) - TimeSpan.FromTicks(1)),
+                new CacheAgeTestCase("Zero", TimeSpan.Zero),
+                new CacheAgeTestCase("Negative tick", TimeSpan.FromTicks(-1)),
+                new CacheAgeTestCase("Minimum value", TimeSpan.MinValue),
+            };
+
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                CacheAgeTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                TimeSpan maxAge = testCase.MaxAge.Value;
+                ArgumentOutOfRangeException exception = Assert.ThrowsException<ArgumentOutOfRangeException>(
+                    () => options.FullTextStatisticsCacheMaxAge = maxAge);
+
+                Assert.AreEqual(nameof(CosmosClientOptions.FullTextStatisticsCacheMaxAge), exception.ParamName);
+                Assert.AreEqual(maxAge, exception.ActualValue);
+                Assert.AreEqual(originalMaxAge, options.FullTextStatisticsCacheMaxAge);
+            }
+        }
+
+        [TestMethod]
+        public void FullTextStatisticsCacheMaxEntriesDefaultsTo256()
+        {
+            CosmosClientOptions options = new CosmosClientOptions();
+            Assert.AreEqual(256, options.FullTextStatisticsCacheMaxEntries);
+        }
+
+        [TestMethod]
+        public void FullTextStatisticsCacheSettingsAreClonedPerClient()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                FullTextStatisticsCacheMaxEntries = 2,
+                FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(2),
+            };
+
+            CosmosClientOptions clone = options.Clone();
+            using CosmosClient firstClient = new CosmosClient(
+                AccountEndpoint, MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey, options, new MockDocumentClient());
+
+            options.FullTextStatisticsCacheMaxEntries = 4;
+            options.FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(3);
+
+            using CosmosClient secondClient = new CosmosClient(
+                AccountEndpoint, MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey, options, new MockDocumentClient());
+
+            Assert.AreNotSame(options, clone);
+            Assert.AreNotSame(options, firstClient.ClientOptions);
+            Assert.AreNotSame(firstClient.ClientOptions, secondClient.ClientOptions);
+            Assert.AreEqual(2, clone.FullTextStatisticsCacheMaxEntries);
+            Assert.AreEqual(TimeSpan.FromMinutes(2), clone.FullTextStatisticsCacheMaxAge);
+            Assert.AreEqual(2, firstClient.ClientOptions.FullTextStatisticsCacheMaxEntries);
+            Assert.AreEqual(TimeSpan.FromMinutes(2), firstClient.ClientOptions.FullTextStatisticsCacheMaxAge);
+
+            Assert.AreEqual(4, secondClient.ClientOptions.FullTextStatisticsCacheMaxEntries);
+            Assert.AreEqual(TimeSpan.FromMinutes(3), secondClient.ClientOptions.FullTextStatisticsCacheMaxAge);
+
+            clone.FullTextStatisticsCacheMaxEntries = 8;
+            clone.FullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(4);
+            Assert.AreEqual(4, options.FullTextStatisticsCacheMaxEntries);
+            Assert.AreEqual(TimeSpan.FromMinutes(3), options.FullTextStatisticsCacheMaxAge);
+        }
+
+        [TestMethod]
+        public void FullTextStatisticsCacheSettingsAcceptValidLimits()
+        {
+            List<CacheLimitTestCase> testCases = new List<CacheLimitTestCase>
+            {
+                new CacheLimitTestCase("Minimum capacity", 1),
+                new CacheLimitTestCase("Maximum capacity", int.MaxValue),
+            };
+
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                CacheLimitTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                CosmosClientOptions options = new CosmosClientOptions
+                {
+                    FullTextStatisticsCacheMaxEntries = testCase.Entries,
+                };
+
+                using CosmosClient client = new CosmosClient(
+                    AccountEndpoint, MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey, options, new MockDocumentClient());
+                Assert.AreEqual(testCase.Entries, client.ClientOptions.FullTextStatisticsCacheMaxEntries);
+            }
+        }
+
+        [TestMethod]
+        public void FullTextStatisticsCacheSettingsRejectInvalidLimits()
+        {
+            List<CacheLimitTestCase> testCases = new List<CacheLimitTestCase>
+            {
+                new CacheLimitTestCase("Zero capacity", 0),
+                new CacheLimitTestCase("Negative capacity", -1),
+                new CacheLimitTestCase("Minimum integer capacity", int.MinValue),
+            };
+
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                CacheLimitTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                CosmosClientOptions options = new CosmosClientOptions
+                {
+                    FullTextStatisticsCacheMaxEntries = 4,
+                };
+
+                ArgumentOutOfRangeException exception = Assert.ThrowsException<ArgumentOutOfRangeException>(
+                    () => options.FullTextStatisticsCacheMaxEntries = testCase.Entries);
+                Assert.AreEqual(nameof(CosmosClientOptions.FullTextStatisticsCacheMaxEntries), exception.ParamName);
+                Assert.AreEqual(testCase.Entries, exception.ActualValue);
+                Assert.AreEqual(4, options.FullTextStatisticsCacheMaxEntries);
+            }
+        }
+
         [TestMethod]
         public void VerifyCosmosConfigurationPropertiesGetUpdated()
         {
@@ -1696,6 +1855,36 @@ namespace Microsoft.Azure.Cosmos.Tests
             RemoteCertificateValidationCallback? httpClientRemoreCertValidationCallback = socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback;
             Assert.IsNotNull(httpClientRemoreCertValidationCallback);
 #nullable disable
+        }
+
+        private readonly struct CacheAgeTestCase
+        {
+            public CacheAgeTestCase(string name, TimeSpan? maxAge)
+            {
+                this.Name = name;
+                this.MaxAge = maxAge;
+            }
+
+            public string Name { get; }
+
+            public TimeSpan? MaxAge { get; }
+
+            public override string ToString() => $"{this.Name}: MaxAge={this.MaxAge?.ToString() ?? "<null>"}";
+        }
+
+        private readonly struct CacheLimitTestCase
+        {
+            public CacheLimitTestCase(string name, int entries)
+            {
+                this.Name = name;
+                this.Entries = entries;
+            }
+
+            public string Name { get; }
+
+            public int Entries { get; }
+
+            public override string ToString() => $"{this.Name}: Entries={this.Entries}";
         }
 
         private class TestWebProxy : IWebProxy

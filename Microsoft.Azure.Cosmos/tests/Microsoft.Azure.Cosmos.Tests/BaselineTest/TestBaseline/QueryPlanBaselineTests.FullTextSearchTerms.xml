@@ -1,0 +1,617 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Ordered terms</Description>
+      <Query>SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, 'swim', 'run')</Query>
+      <PartitionKeys>
+        <Key>/id</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <HybridSearchQueryInfo>
+          <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "swim")), COUNTIF(FullTextContains(c.text, "run"))]}] AS fullTextStatistics
+FROM c</GlobalStatisticsQuery>
+          <FullTextSearchTerms>
+            <Entry>
+              <Path>
+                <Segment>text</Segment>
+              </Path>
+              <Terms>
+                <Term>
+                  <Text>swim</Text>
+                </Term>
+                <Term>
+                  <Text>run</Text>
+                </Term>
+              </Terms>
+            </Entry>
+          </FullTextSearchTerms>
+          <componentQueryInfo>
+            <DistinctType>None</DistinctType>
+            <Top>120</Top>
+            <Offset />
+            <Limit />
+            <GroupByExpressions />
+            <OrderBy>
+              <SortOrder>Descending</SortOrder>
+            </OrderBy>
+            <OrderByExpressions>
+              <OrderByExpression>_FullTextScore(c.text, ["swim", "run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})</OrderByExpression>
+            </OrderByExpressions>
+            <Aggregates />
+            <GroupByAliasToAggregateType />
+            <GroupByAliases />
+            <HasSelectValue>False</HasSelectValue>
+            <RewrittenQuery><![CDATA[SELECT TOP 120 c._rid, [{"item": _FullTextScore(c.text, ["swim", "run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})}] AS orderByItems, {"payload": c, "componentScores": [(_FullTextScore(c.text, ["swim", "run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1)]} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY _FullTextScore(c.text, ["swim", "run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC]]></RewrittenQuery>
+          </componentQueryInfo>
+          <Take>10</Take>
+          <RequiresGlobalStatistics>True</RequiresGlobalStatistics>
+        </HybridSearchQueryInfo>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Nested string indexers</Description>
+      <Query>SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c["author"]["bio"], 'energy')</Query>
+      <PartitionKeys>
+        <Key>/id</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <HybridSearchQueryInfo>
+          <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c["author"]["bio"])), "hitCounts": [COUNTIF(FullTextContains(c["author"]["bio"], "energy"))]}] AS fullTextStatistics
+FROM c</GlobalStatisticsQuery>
+          <FullTextSearchTerms>
+            <Entry>
+              <Path>
+                <Segment>author</Segment>
+                <Segment>bio</Segment>
+              </Path>
+              <Terms>
+                <Term>
+                  <Text>energy</Text>
+                </Term>
+              </Terms>
+            </Entry>
+          </FullTextSearchTerms>
+          <componentQueryInfo>
+            <DistinctType>None</DistinctType>
+            <Top>120</Top>
+            <Offset />
+            <Limit />
+            <GroupByExpressions />
+            <OrderBy>
+              <SortOrder>Descending</SortOrder>
+            </OrderBy>
+            <OrderByExpressions>
+              <OrderByExpression>_FullTextScore(c["author"]["bio"], ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})</OrderByExpression>
+            </OrderByExpressions>
+            <Aggregates />
+            <GroupByAliasToAggregateType />
+            <GroupByAliases />
+            <HasSelectValue>False</HasSelectValue>
+            <RewrittenQuery><![CDATA[SELECT TOP 120 c._rid, [{"item": _FullTextScore(c["author"]["bio"], ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})}] AS orderByItems, {"payload": c, "componentScores": [(_FullTextScore(c["author"]["bio"], ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1)]} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY _FullTextScore(c["author"]["bio"], ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC]]></RewrittenQuery>
+          </componentQueryInfo>
+          <Take>10</Take>
+          <RequiresGlobalStatistics>True</RequiresGlobalStatistics>
+        </HybridSearchQueryInfo>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Path segment containing a separator</Description>
+      <Query>SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c["a/b"], 'energy')</Query>
+      <PartitionKeys>
+        <Key>/id</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <HybridSearchQueryInfo>
+          <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c["a/b"])), "hitCounts": [COUNTIF(FullTextContains(c["a/b"], "energy"))]}] AS fullTextStatistics
+FROM c</GlobalStatisticsQuery>
+          <FullTextSearchTerms>
+            <Entry>
+              <Path>
+                <Segment>a/b</Segment>
+              </Path>
+              <Terms>
+                <Term>
+                  <Text>energy</Text>
+                </Term>
+              </Terms>
+            </Entry>
+          </FullTextSearchTerms>
+          <componentQueryInfo>
+            <DistinctType>None</DistinctType>
+            <Top>120</Top>
+            <Offset />
+            <Limit />
+            <GroupByExpressions />
+            <OrderBy>
+              <SortOrder>Descending</SortOrder>
+            </OrderBy>
+            <OrderByExpressions>
+              <OrderByExpression>_FullTextScore(c["a/b"], ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})</OrderByExpression>
+            </OrderByExpressions>
+            <Aggregates />
+            <GroupByAliasToAggregateType />
+            <GroupByAliases />
+            <HasSelectValue>False</HasSelectValue>
+            <RewrittenQuery><![CDATA[SELECT TOP 120 c._rid, [{"item": _FullTextScore(c["a/b"], ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})}] AS orderByItems, {"payload": c, "componentScores": [(_FullTextScore(c["a/b"], ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1)]} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY _FullTextScore(c["a/b"], ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC]]></RewrittenQuery>
+          </componentQueryInfo>
+          <Take>10</Take>
+          <RequiresGlobalStatistics>True</RequiresGlobalStatistics>
+        </HybridSearchQueryInfo>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Numeric indexer</Description>
+      <Query>SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.tags[0], 'energy')</Query>
+      <PartitionKeys>
+        <Key>/id</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <HybridSearchQueryInfo>
+          <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.tags[0])), "hitCounts": [COUNTIF(FullTextContains(c.tags[0], "energy"))]}] AS fullTextStatistics
+FROM c</GlobalStatisticsQuery>
+          <FullTextSearchTerms>
+            <Entry>
+              <Path>
+                <Segment>tags</Segment>
+                <Segment>[0]</Segment>
+              </Path>
+              <Terms>
+                <Term>
+                  <Text>energy</Text>
+                </Term>
+              </Terms>
+            </Entry>
+          </FullTextSearchTerms>
+          <componentQueryInfo>
+            <DistinctType>None</DistinctType>
+            <Top>120</Top>
+            <Offset />
+            <Limit />
+            <GroupByExpressions />
+            <OrderBy>
+              <SortOrder>Descending</SortOrder>
+            </OrderBy>
+            <OrderByExpressions>
+              <OrderByExpression>_FullTextScore(c.tags[0], ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})</OrderByExpression>
+            </OrderByExpressions>
+            <Aggregates />
+            <GroupByAliasToAggregateType />
+            <GroupByAliases />
+            <HasSelectValue>False</HasSelectValue>
+            <RewrittenQuery><![CDATA[SELECT TOP 120 c._rid, [{"item": _FullTextScore(c.tags[0], ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})}] AS orderByItems, {"payload": c, "componentScores": [(_FullTextScore(c.tags[0], ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1)]} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY _FullTextScore(c.tags[0], ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC]]></RewrittenQuery>
+          </componentQueryInfo>
+          <Take>10</Take>
+          <RequiresGlobalStatistics>True</RequiresGlobalStatistics>
+        </HybridSearchQueryInfo>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Repeated path with different terms</Description>
+      <Query>SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.text, 'swim'), FullTextScore(c.text, 'run'))</Query>
+      <PartitionKeys>
+        <Key>/id</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <HybridSearchQueryInfo>
+          <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "swim"))]}, {"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "run"))]}] AS fullTextStatistics
+FROM c</GlobalStatisticsQuery>
+          <FullTextSearchTerms>
+            <Entry>
+              <Path>
+                <Segment>text</Segment>
+              </Path>
+              <Terms>
+                <Term>
+                  <Text>swim</Text>
+                </Term>
+              </Terms>
+            </Entry>
+            <Entry>
+              <Path>
+                <Segment>text</Segment>
+              </Path>
+              <Terms>
+                <Term>
+                  <Text>run</Text>
+                </Term>
+              </Terms>
+            </Entry>
+          </FullTextSearchTerms>
+          <componentQueryInfo>
+            <DistinctType>None</DistinctType>
+            <Top>120</Top>
+            <Offset />
+            <Limit />
+            <GroupByExpressions />
+            <OrderBy>
+              <SortOrder>Descending</SortOrder>
+            </OrderBy>
+            <OrderByExpressions>
+              <OrderByExpression>_FullTextScore(c.text, ["swim"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})</OrderByExpression>
+            </OrderByExpressions>
+            <Aggregates />
+            <GroupByAliasToAggregateType />
+            <GroupByAliases />
+            <HasSelectValue>False</HasSelectValue>
+            <RewrittenQuery><![CDATA[SELECT TOP 120 c._rid, [{"item": _FullTextScore(c.text, ["swim"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})}] AS orderByItems, {"payload": c, "componentScores": [(_FullTextScore(c.text, ["swim"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_FullTextScore(c.text, ["run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1}) ?? -1)]} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY _FullTextScore(c.text, ["swim"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC]]></RewrittenQuery>
+          </componentQueryInfo>
+          <componentQueryInfo>
+            <DistinctType>None</DistinctType>
+            <Top>120</Top>
+            <Offset />
+            <Limit />
+            <GroupByExpressions />
+            <OrderBy>
+              <SortOrder>Descending</SortOrder>
+            </OrderBy>
+            <OrderByExpressions>
+              <OrderByExpression>_FullTextScore(c.text, ["run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1})</OrderByExpression>
+            </OrderByExpressions>
+            <Aggregates />
+            <GroupByAliasToAggregateType />
+            <GroupByAliases />
+            <HasSelectValue>False</HasSelectValue>
+            <RewrittenQuery><![CDATA[SELECT TOP 120 c._rid, [{"item": _FullTextScore(c.text, ["run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1})}] AS orderByItems, {"payload": c, "componentScores": [(_FullTextScore(c.text, ["swim"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_FullTextScore(c.text, ["run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1}) ?? -1)]} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY _FullTextScore(c.text, ["run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1}) DESC]]></RewrittenQuery>
+          </componentQueryInfo>
+          <Take>10</Take>
+          <RequiresGlobalStatistics>True</RequiresGlobalStatistics>
+        </HybridSearchQueryInfo>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multiple paths and components</Description>
+      <Query>SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.title, 'energy'), FullTextScore(c.text, 'swim', 'run'))</Query>
+      <PartitionKeys>
+        <Key>/id</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <HybridSearchQueryInfo>
+          <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.title)), "hitCounts": [COUNTIF(FullTextContains(c.title, "energy"))]}, {"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "swim")), COUNTIF(FullTextContains(c.text, "run"))]}] AS fullTextStatistics
+FROM c</GlobalStatisticsQuery>
+          <FullTextSearchTerms>
+            <Entry>
+              <Path>
+                <Segment>title</Segment>
+              </Path>
+              <Terms>
+                <Term>
+                  <Text>energy</Text>
+                </Term>
+              </Terms>
+            </Entry>
+            <Entry>
+              <Path>
+                <Segment>text</Segment>
+              </Path>
+              <Terms>
+                <Term>
+                  <Text>swim</Text>
+                </Term>
+                <Term>
+                  <Text>run</Text>
+                </Term>
+              </Terms>
+            </Entry>
+          </FullTextSearchTerms>
+          <componentQueryInfo>
+            <DistinctType>None</DistinctType>
+            <Top>120</Top>
+            <Offset />
+            <Limit />
+            <GroupByExpressions />
+            <OrderBy>
+              <SortOrder>Descending</SortOrder>
+            </OrderBy>
+            <OrderByExpressions>
+              <OrderByExpression>_FullTextScore(c.title, ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})</OrderByExpression>
+            </OrderByExpressions>
+            <Aggregates />
+            <GroupByAliasToAggregateType />
+            <GroupByAliases />
+            <HasSelectValue>False</HasSelectValue>
+            <RewrittenQuery><![CDATA[SELECT TOP 120 c._rid, [{"item": _FullTextScore(c.title, ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})}] AS orderByItems, {"payload": c, "componentScores": [(_FullTextScore(c.title, ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_FullTextScore(c.text, ["swim", "run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1}) ?? -1)]} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY _FullTextScore(c.title, ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC]]></RewrittenQuery>
+          </componentQueryInfo>
+          <componentQueryInfo>
+            <DistinctType>None</DistinctType>
+            <Top>120</Top>
+            <Offset />
+            <Limit />
+            <GroupByExpressions />
+            <OrderBy>
+              <SortOrder>Descending</SortOrder>
+            </OrderBy>
+            <OrderByExpressions>
+              <OrderByExpression>_FullTextScore(c.text, ["swim", "run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1})</OrderByExpression>
+            </OrderByExpressions>
+            <Aggregates />
+            <GroupByAliasToAggregateType />
+            <GroupByAliases />
+            <HasSelectValue>False</HasSelectValue>
+            <RewrittenQuery><![CDATA[SELECT TOP 120 c._rid, [{"item": _FullTextScore(c.text, ["swim", "run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1})}] AS orderByItems, {"payload": c, "componentScores": [(_FullTextScore(c.title, ["energy"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_FullTextScore(c.text, ["swim", "run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1}) ?? -1)]} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY _FullTextScore(c.text, ["swim", "run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1}) DESC]]></RewrittenQuery>
+          </componentQueryInfo>
+          <Take>10</Take>
+          <RequiresGlobalStatistics>True</RequiresGlobalStatistics>
+        </HybridSearchQueryInfo>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Fuzzy term distance</Description>
+      <Query>SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, {'term': 'swim', 'distance': 2}, 'run')</Query>
+      <PartitionKeys>
+        <Key>/id</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <HybridSearchQueryInfo>
+          <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, {"term": "swim", "distance": 2})), COUNTIF(FullTextContains(c.text, "run"))]}] AS fullTextStatistics
+FROM c</GlobalStatisticsQuery>
+          <FullTextSearchTerms>
+            <Entry>
+              <Path>
+                <Segment>text</Segment>
+              </Path>
+              <Terms>
+                <Term>
+                  <Text>swim</Text>
+                  <Distance>2</Distance>
+                </Term>
+                <Term>
+                  <Text>run</Text>
+                </Term>
+              </Terms>
+            </Entry>
+          </FullTextSearchTerms>
+          <componentQueryInfo>
+            <DistinctType>None</DistinctType>
+            <Top>120</Top>
+            <Offset />
+            <Limit />
+            <GroupByExpressions />
+            <OrderBy>
+              <SortOrder>Descending</SortOrder>
+            </OrderBy>
+            <OrderByExpressions>
+              <OrderByExpression>_FullTextScore(c.text, [{"term": "swim", "distance": 2}, "run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})</OrderByExpression>
+            </OrderByExpressions>
+            <Aggregates />
+            <GroupByAliasToAggregateType />
+            <GroupByAliases />
+            <HasSelectValue>False</HasSelectValue>
+            <RewrittenQuery><![CDATA[SELECT TOP 120 c._rid, [{"item": _FullTextScore(c.text, [{"term": "swim", "distance": 2}, "run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})}] AS orderByItems, {"payload": c, "componentScores": [(_FullTextScore(c.text, [{"term": "swim", "distance": 2}, "run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1)]} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY _FullTextScore(c.text, [{"term": "swim", "distance": 2}, "run"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC]]></RewrittenQuery>
+          </componentQueryInfo>
+          <Take>10</Take>
+          <RequiresGlobalStatistics>True</RequiresGlobalStatistics>
+        </HybridSearchQueryInfo>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Duplicate terms and phrase</Description>
+      <Query>SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, 'run', 'swim', 'run', 'United States')</Query>
+      <PartitionKeys>
+        <Key>/id</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <HybridSearchQueryInfo>
+          <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "run")), COUNTIF(FullTextContains(c.text, "swim")), COUNTIF(FullTextContains(c.text, "run")), COUNTIF(FullTextContains(c.text, "United States"))]}] AS fullTextStatistics
+FROM c</GlobalStatisticsQuery>
+          <FullTextSearchTerms>
+            <Entry>
+              <Path>
+                <Segment>text</Segment>
+              </Path>
+              <Terms>
+                <Term>
+                  <Text>run</Text>
+                </Term>
+                <Term>
+                  <Text>swim</Text>
+                </Term>
+                <Term>
+                  <Text>run</Text>
+                </Term>
+                <Term>
+                  <Text>United States</Text>
+                </Term>
+              </Terms>
+            </Entry>
+          </FullTextSearchTerms>
+          <componentQueryInfo>
+            <DistinctType>None</DistinctType>
+            <Top>120</Top>
+            <Offset />
+            <Limit />
+            <GroupByExpressions />
+            <OrderBy>
+              <SortOrder>Descending</SortOrder>
+            </OrderBy>
+            <OrderByExpressions>
+              <OrderByExpression>_FullTextScore(c.text, ["run", "swim", "run", "United States"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})</OrderByExpression>
+            </OrderByExpressions>
+            <Aggregates />
+            <GroupByAliasToAggregateType />
+            <GroupByAliases />
+            <HasSelectValue>False</HasSelectValue>
+            <RewrittenQuery><![CDATA[SELECT TOP 120 c._rid, [{"item": _FullTextScore(c.text, ["run", "swim", "run", "United States"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})}] AS orderByItems, {"payload": c, "componentScores": [(_FullTextScore(c.text, ["run", "swim", "run", "United States"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1)]} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY _FullTextScore(c.text, ["run", "swim", "run", "United States"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC]]></RewrittenQuery>
+          </componentQueryInfo>
+          <Take>10</Take>
+          <RequiresGlobalStatistics>True</RequiresGlobalStatistics>
+        </HybridSearchQueryInfo>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Resolved path and term parameters</Description>
+      <Query>SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[@path], @term)</Query>
+      <PartitionKeys>
+        <Key>/id</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <QueryParameters><![CDATA[[
+  {
+    "name": "@path",
+    "value": "text"
+  },
+  {
+    "name": "@term",
+    "value": "swim"
+  }
+]]]></QueryParameters>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <HybridSearchQueryInfo>
+          <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c[@path])), "hitCounts": [COUNTIF(FullTextContains(c[@path], @term))]}] AS fullTextStatistics
+FROM c</GlobalStatisticsQuery>
+          <FullTextSearchTerms>
+            <Entry>
+              <Path>
+                <Segment>text</Segment>
+              </Path>
+              <Terms>
+                <Term>
+                  <Text>swim</Text>
+                </Term>
+              </Terms>
+            </Entry>
+          </FullTextSearchTerms>
+          <componentQueryInfo>
+            <DistinctType>None</DistinctType>
+            <Top>120</Top>
+            <Offset />
+            <Limit />
+            <GroupByExpressions />
+            <OrderBy>
+              <SortOrder>Descending</SortOrder>
+            </OrderBy>
+            <OrderByExpressions>
+              <OrderByExpression>_FullTextScore(c[@path], [@term], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})</OrderByExpression>
+            </OrderByExpressions>
+            <Aggregates />
+            <GroupByAliasToAggregateType />
+            <GroupByAliases />
+            <HasSelectValue>False</HasSelectValue>
+            <RewrittenQuery><![CDATA[SELECT TOP 120 c._rid, [{"item": _FullTextScore(c[@path], [@term], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})}] AS orderByItems, {"payload": c, "componentScores": [(_FullTextScore(c[@path], [@term], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1)]} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY _FullTextScore(c[@path], [@term], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC]]></RewrittenQuery>
+          </componentQueryInfo>
+          <Take>10</Take>
+          <RequiresGlobalStatistics>True</RequiresGlobalStatistics>
+        </HybridSearchQueryInfo>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+</Results>
