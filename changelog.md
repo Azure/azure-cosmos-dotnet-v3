@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Breaking Changes
 
 #### Bugs Fixed
+- [6173](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6173) Distributed Transactions (preview): Fixes invalid request JSON for Create, Replace, Upsert, and Patch when binary encoding is enabled together with `CosmosClientOptions.SerializerOptions`.
+- [6173](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6173) Distributed Transactions (preview): Fixes a resource leak when serializing Create, Replace, Upsert, and Patch requests with a custom serializer.
 
 #### Other Changes
 
