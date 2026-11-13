@@ -178,6 +178,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string keyId,
             CancellationToken cancellationToken)
         {
+            ProtectedDataEncryptionKey protectedDataEncryptionKey;
+
             if (await EncryptionCosmosClient.EncryptionKeyCacheSemaphore.WaitAsync(-1, cancellationToken))
             {
                 try
@@ -187,20 +189,28 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
                         this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProviderImpl);
 
-                    ProtectedDataEncryptionKey protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
+                    protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
                         keyId,
                         keyEncryptionKey,
                         clientEncryptionKeyProperties.WrappedDataEncryptionKey);
-
-                    return protectedDataEncryptionKey;
                 }
                 finally
                 {
                     EncryptionCosmosClient.EncryptionKeyCacheSemaphore.Release(1);
                 }
             }
+            else
+            {
+                throw new InvalidOperationException("Failed to build ProtectedDataEncryptionKey. ");
+            }
 
-            throw new InvalidOperationException("Failed to build ProtectedDataEncryptionKey. ");
+            // Register entry for background refresh (outside semaphore to avoid holding the lock).
+            this.encryptionContainer.EncryptionCosmosClient.CacheRefreshWorker?.TrackEntry(
+                keyId,
+                this.encryptionContainer,
+                this.databaseRid);
+
+            return protectedDataEncryptionKey;
         }
     }
 }
