@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
     using EncryptionKeyWrapMetadata = EncryptionKeyWrapMetadata;
 
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -292,6 +293,127 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 Assert.AreEqual($"Failed to retrieve Data Encryption Key with id: '{unknownDek}'.", ex.Message);
                 Assert.IsTrue(ex.InnerException is CosmosException);
             }
+        }
+
+        [DataTestMethod]
+        [DataRow(true, false, false)]
+        [DataRow(true, true, false)]
+        [DataRow(true, false, true)]
+        [DataRow(false, false, false)]
+        [DataRow(false, true, false)]
+        [DataRow(false, false, true)]
+        public async Task EncryptionLegacyProcessorRoundTrip(bool useGateway, bool nullSensitive, bool includeMissingPath)
+        {
+            using CosmosClient testClient = TestCommon.CreateCosmosClient(useGateway);
+            Container plainContainer = testClient.GetContainer(database.Id, itemContainer.Id);
+            await using CosmosDataEncryptionKeyProvider provider = new(new TestKeyWrapProvider());
+            await provider.InitializeAsync(testClient.GetDatabase(database.Id), keyContainer.Id);
+            string keyId = Guid.NewGuid().ToString();
+            await CreateDekAsync(provider, keyId);
+            Container encryptedContainer = plainContainer.WithEncryptor(new CosmosEncryptor(provider));
+            JObject document = new()
+            {
+                ["id"] = Guid.NewGuid().ToString(),
+                ["PK"] = Guid.NewGuid().ToString(),
+                ["NonSensitive"] = "legacy-plain",
+                ["SensitiveStr"] = nullSensitive ? null : "legacy-secret",
+                ["SensitiveInt"] = -37,
+                ["SensitiveArr"] = new JArray("one", "two"),
+                ["SensitiveDict"] = new JObject { ["key"] = "value" }
+            };
+            JObject expected = (JObject)document.DeepClone();
+            string id = document.Value<string>("id");
+            string partitionKey = document.Value<string>("PK");
+            List<string> paths = includeMissingPath
+                ? new List<string> { "/SensitiveStr", "/Invalid" }
+                : new List<string> { "/SensitiveStr", "/SensitiveInt", "/SensitiveArr", "/SensitiveDict" };
+            EncryptionItemRequestOptions options = GetRequestOptions(keyId, paths);
+            Dictionary<string, object> processorProperties = new()
+            {
+                { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft.ToString() }
+            };
+            options.Properties = processorProperties;
+
+#if NET8_0_OR_GREATER
+            processorProperties[JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey] = JsonProcessor.Stream.ToString();
+            NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(() =>
+                encryptedContainer.CreateItemAsync(document, new PartitionKey(partitionKey), options));
+            StringAssert.Contains(exception.Message, "JsonProcessor.Stream");
+            using (ResponseMessage absent = await plainContainer.ReadItemStreamAsync(id, new PartitionKey(partitionKey)))
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, absent.StatusCode);
+            }
+
+            processorProperties[JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey] = JsonProcessor.Newtonsoft.ToString();
+#endif
+
+            ItemResponse<JObject> created = await encryptedContainer.CreateItemAsync(document, new PartitionKey(partitionKey), options);
+            Assert.AreEqual(HttpStatusCode.Created, created.StatusCode);
+            Assert.IsTrue(JToken.DeepEquals(expected, document), "Create must not mutate the caller's document.");
+            VerifyLegacyProcessorDocument(expected, created.Resource);
+
+            ItemResponse<JObject> stored = await plainContainer.ReadItemAsync<JObject>(id, new PartitionKey(partitionKey));
+            Assert.AreEqual(HttpStatusCode.OK, stored.StatusCode);
+            foreach (JProperty property in expected.Properties())
+            {
+                if (paths.Contains("/" + property.Name))
+                {
+                    Assert.IsNull(stored.Resource.Property(property.Name), $"Legacy encrypted property {property.Name} must not remain in plaintext.");
+                }
+                else
+                {
+                    Assert.IsTrue(JToken.DeepEquals(property.Value, stored.Resource[property.Name]), $"Untargeted property {property.Name} must be unchanged.");
+                }
+            }
+
+            Assert.IsNull(stored.Resource.Property("Invalid"));
+            JToken encryptedInfo = stored.Resource[Constants.EncryptedInfo];
+            Assert.IsNotNull(encryptedInfo);
+            Assert.AreEqual(JTokenType.Object, encryptedInfo.Type);
+            EncryptionProperties properties = encryptedInfo.ToObject<EncryptionProperties>();
+            Assert.AreEqual(2, properties.EncryptionFormatVersion);
+            Assert.AreEqual(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, properties.EncryptionAlgorithm);
+            Assert.AreEqual(keyId, properties.DataEncryptionKeyId);
+            Assert.IsNotNull(properties.EncryptedData);
+            Assert.IsTrue(properties.EncryptedData.Length > 0);
+            CollectionAssert.AreEquivalent(paths.ToArray(), properties.EncryptedPaths.ToArray());
+
+            ItemRequestOptions readOptions = new()
+            {
+                Properties = new Dictionary<string, object>
+                {
+#if NET8_0_OR_GREATER
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Stream.ToString() }
+#else
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, JsonProcessor.Newtonsoft.ToString() }
+#endif
+                }
+            };
+            ItemResponse<JObject> read = await encryptedContainer.ReadItemAsync<JObject>(id, new PartitionKey(partitionKey), readOptions);
+            Assert.AreEqual(HttpStatusCode.OK, read.StatusCode);
+            VerifyLegacyProcessorDocument(expected, read.Resource);
+
+            using (ResponseMessage streamRead = await encryptedContainer.ReadItemStreamAsync(id, new PartitionKey(partitionKey), readOptions))
+            {
+                Assert.AreEqual(HttpStatusCode.OK, streamRead.StatusCode);
+                Assert.IsNotNull(streamRead.Content);
+                Assert.IsTrue(streamRead.Content.CanSeek);
+                Assert.AreEqual(0L, streamRead.Content.Position);
+                Assert.IsTrue(streamRead.Content.Length > 0);
+                VerifyLegacyProcessorDocument(expected, TestCommon.FromStream<JObject>(streamRead.Content));
+            }
+
+            ItemResponse<DecryptableItem> decryptableRead = await encryptedContainer.ReadItemAsync<DecryptableItem>(
+                id, new PartitionKey(partitionKey), readOptions);
+            Assert.AreEqual(HttpStatusCode.OK, decryptableRead.StatusCode);
+            (JObject decrypted, DecryptionContext context) = await decryptableRead.Resource.GetItemAsync<JObject>();
+            VerifyLegacyProcessorDocument(expected, decrypted);
+            Assert.IsNotNull(context);
+            Assert.AreEqual(1, context.DecryptionInfoList.Count);
+            Assert.AreEqual(keyId, context.DecryptionInfoList[0].DataEncryptionKeyId);
+            CollectionAssert.AreEquivalent(
+                includeMissingPath ? new[] { "/SensitiveStr" } : paths.ToArray(),
+                context.DecryptionInfoList[0].PathsDecrypted.ToArray());
         }
 
         [TestMethod]
@@ -1548,6 +1670,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             Assert.AreEqual(pathsEncrypted.Count, decryptionInfo.PathsDecrypted.Count);
             Assert.IsFalse(pathsEncrypted.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
+        }
+
+        private static void VerifyLegacyProcessorDocument(JObject expected, JObject actual)
+        {
+            Assert.IsNotNull(actual);
+            foreach (JProperty property in expected.Properties())
+            {
+                JProperty actualProperty = actual.Property(property.Name);
+                Assert.IsNotNull(actualProperty, $"Property {property.Name} must remain present, including null values.");
+                Assert.IsTrue(JToken.DeepEquals(property.Value, actualProperty.Value), $"Property {property.Name} must round-trip exactly.");
+            }
+
+            Assert.IsNull(actual.Property(Constants.EncryptedInfo));
+            Assert.IsNull(actual.Property("Invalid"));
         }
 
         private static async Task VerifyItemByReadStreamAsync(Container container, TestDoc testDoc, ItemRequestOptions requestOptions = null)
