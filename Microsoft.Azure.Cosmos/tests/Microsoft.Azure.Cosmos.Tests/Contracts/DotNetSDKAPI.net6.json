@@ -3731,24 +3731,12 @@
           "Attributes": [],
           "MethodInfo": "Boolean DisableDistributedTracing;CanRead:True;CanWrite:True;Boolean get_DisableDistributedTracing();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DisableDistributedTracing(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Boolean DisableSendingMetricsToService": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "Boolean DisableSendingMetricsToService;CanRead:True;CanWrite:True;Boolean get_DisableSendingMetricsToService();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DisableSendingMetricsToService(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Boolean get_DisableDistributedTracing()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Boolean get_DisableDistributedTracing();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Boolean get_DisableSendingMetricsToService()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Boolean get_DisableSendingMetricsToService();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.CosmosThresholdOptions CosmosThresholdOptions": {
           "Type": "Property",
@@ -3792,13 +3780,6 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_DisableDistributedTracing(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_DisableSendingMetricsToService(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_DisableSendingMetricsToService(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",

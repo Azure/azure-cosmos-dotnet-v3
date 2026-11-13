@@ -392,8 +392,8 @@
         /// Determines the current .NET version and builds file paths from patterns.
         /// </summary>
         /// <param name="dllName">The name of the DLL to validate</param>
-        /// <param name="contractType">The type of contract to validate (Standard, Telemetry, or Preview)</param>
-        /// <param name="baselinePattern">The baseline file name pattern (e.g., "DotNetSDKAPI", "DotNetSDKTelemetryAPI")</param>
+        /// <param name="contractType">The type of contract to validate (Standard or Preview)</param>
+        /// <param name="baselinePattern">The baseline file name pattern (e.g., "DotNetSDKAPI", "DotNetPreviewSDKAPI")</param>
         /// <param name="breakingChangesPattern">The breaking changes file name pattern (e.g., "DotNetSDKAPIChanges")</param>
         /// <param name="officialBaselinePattern">For Preview contracts only: the official baseline pattern (e.g., "DotNetSDKAPI")</param>
         public static void ValidateContract(
@@ -429,7 +429,6 @@
             return contractType switch
             {
                 ContractType.Standard => GetCurrentContract(dllName),
-                ContractType.Telemetry => GetCurrentTelemetryContract(dllName),
                 ContractType.Preview => GetCurrentContract(dllName),
                 _ => throw new ArgumentException($"Unknown contract type: {contractType}", nameof(contractType))
             };
@@ -460,31 +459,6 @@
             Assembly assembly = ContractEnforcement.GetAssemblyLocally(dllName);
             Type[] exportedTypes = assembly.GetExportedTypes();
             ContractEnforcement.BuildTypeTree(locally, exportedTypes);
-
-            string localJson = JsonConvert.SerializeObject(locally, Formatting.Indented);
-            return localJson;
-        }
-
-        public static string GetCurrentTelemetryContract(string dllName)
-        {
-            List<string> nonTelemetryModels = new()
-            {
-                "AzureVMMetadata",
-                "Compute",
-                "NetworkMetricData",
-                "OperationMetricData"
-            };
-
-            TypeTree locally = new(typeof(object));
-            Assembly assembly = ContractEnforcement.GetAssemblyLocally(dllName);
-            Type[] exportedTypes = assembly.GetTypes().Where(t =>
-                                                                t != null &&
-                                                                t.Namespace != null &&
-                                                                t.Namespace.Contains("Microsoft.Azure.Cosmos.Telemetry.Models") &&
-                                                                !nonTelemetryModels.Contains(t.Name))
-                                                       .ToArray();
-
-            ContractEnforcement.BuildTypeTree(locally, exportedTypes, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
             string localJson = JsonConvert.SerializeObject(locally, Formatting.Indented);
             return localJson;

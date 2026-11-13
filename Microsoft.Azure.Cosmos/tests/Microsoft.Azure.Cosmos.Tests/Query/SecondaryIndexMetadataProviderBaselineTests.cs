@@ -436,7 +436,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             private readonly IReadOnlyDictionary<string, ContainerProperties> collections;
 
             public TestClientCollectionCache(IReadOnlyDictionary<string, ContainerProperties> collections)
-                : base(new SessionContainer("testhost"), new ServerStoreModel(null), null, null, null, true, null)
+                : base(new SessionContainer("testhost"), new ServerStoreModel(null), null, null, true, null)
             {
                 this.collections = collections;
             }

@@ -27,8 +27,7 @@ The default pipeline structure is:
 flowchart
     RequestInvokerHandler <--> UserHandlers([Any User defined handlers])
     UserHandlers <--> DiagnosticHandler
-    DiagnosticHandler <--> TelemetryHandler
-    TelemetryHandler <--> RetryHandler[Cross region retries]
+    DiagnosticHandler <--> RetryHandler[Cross region retries]
     RetryHandler <--> ThrottlingRetries[Throttling retries]
     ThrottlingRetries <--> RouteHandler
     RouteHandler <--> IsPartitionedFeedOperation{{Partitioned Feed operation?}}

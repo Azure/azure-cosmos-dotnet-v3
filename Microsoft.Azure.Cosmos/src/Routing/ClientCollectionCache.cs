@@ -8,8 +8,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Telemetry;
-    using Microsoft.Azure.Cosmos.Telemetry.Collector;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -20,13 +18,10 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// </summary>
     internal class ClientCollectionCache : CollectionCache
     {
-        private const string TelemetrySourceName = "ClientCollectionCache";
-
         private readonly IStoreModel storeModel;
         private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly IRetryPolicyFactory retryPolicy;
         private readonly ISessionContainer sessionContainer;
-        private readonly TelemetryToServiceHelper telemetryToServiceHelper;
         private readonly MetadataHedgingStrategy metadataHedgingStrategy;
 
         public ClientCollectionCache(
@@ -34,7 +29,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             IStoreModel storeModel,
             ICosmosAuthorizationTokenProvider tokenProvider,
             IRetryPolicyFactory retryPolicy,
-            TelemetryToServiceHelper telemetryToServiceHelper,
             bool enableAsyncCacheExceptionNoSharing = true,
             MetadataHedgingStrategy metadataHedgingStrategy = null)
             : base(enableAsyncCacheExceptionNoSharing)
@@ -43,7 +37,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.tokenProvider = tokenProvider;
             this.retryPolicy = retryPolicy;
             this.sessionContainer = sessionContainer;
-            this.telemetryToServiceHelper = telemetryToServiceHelper;
             this.metadataHedgingStrategy = metadataHedgingStrategy;
         }
 
@@ -265,22 +258,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                             using (response)
                             {
-                                ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
-                                
-                                this.telemetryToServiceHelper.GetCollector().CollectCacheInfo(
-                                     ClientCollectionCache.TelemetrySourceName,
-                                     () => new TelemetryInformation
-                                     {
-                                         RegionsContactedList = response.RequestStats.RegionsContacted,
-                                         RequestLatency = response.RequestStats.RequestLatency,
-                                         StatusCode = response.StatusCode,
-                                         OperationType = request.OperationType,
-                                         ResourceType = request.ResourceType,
-                                         SubStatusCode = response.SubStatusCode,
-                                         CollectionLink = collectionLink
-                                     });
-
-                                return containerProperties;
+                                return CosmosResource.FromStream<ContainerProperties>(response);
                             }
                         }
                         catch (DocumentClientException ex)

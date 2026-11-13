@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- The SDK no longer collects or sends client telemetry to the Cosmos DB telemetry service. `CosmosClientTelemetryOptions.DisableSendingMetricsToService` has been removed; remove assignments to this property when upgrading. Request diagnostics, distributed tracing, and separately enabled OpenTelemetry metrics remain available.
+
 #### Bugs Fixed
 
 #### Other Changes

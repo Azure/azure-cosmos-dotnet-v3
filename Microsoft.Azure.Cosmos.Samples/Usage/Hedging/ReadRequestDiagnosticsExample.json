@@ -46,36 +46,30 @@
                     "duration in milliseconds": 1151.0061,
                     "children": [
                         {
-                            "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
-                            "duration in milliseconds": 1151.004,
+                            "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+                            "duration in milliseconds": 1151.0058,
                             "children": [
                                 {
-                                    "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                                    "duration in milliseconds": 1151.0058,
+                                    "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                                    "duration in milliseconds": 1151.0004,
                                     "children": [
                                         {
-                                            "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                            "duration in milliseconds": 1151.0004,
+                                            "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                                            "duration in milliseconds": 1151.002,
                                             "children": [
                                                 {
-                                                    "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                                    "duration in milliseconds": 1151.002,
-                                                    "children": [
-                                                        {
-                                                            "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                                            "duration in milliseconds": 1150.9186,
-                                                            "data": {
-                                                                "Client Side Request Stats": {
-                                                                    "Id": "AggregatedClientSideRequestStatistics",
-                                                                    "ContactedReplicas": [],
-                                                                    "RegionsContacted": [],
-                                                                    "FailedReplicas": [],
-                                                                    "AddressResolutionStatistics": [],
-                                                                    "StoreResponseStatistics": []
-                                                                }
-                                                            }
+                                                    "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                    "duration in milliseconds": 1150.9186,
+                                                    "data": {
+                                                        "Client Side Request Stats": {
+                                                            "Id": "AggregatedClientSideRequestStatistics",
+                                                            "ContactedReplicas": [],
+                                                            "RegionsContacted": [],
+                                                            "FailedReplicas": [],
+                                                            "AddressResolutionStatistics": [],
+                                                            "StoreResponseStatistics": []
                                                         }
-                                                    ]
+                                                    }
                                                 }
                                             ]
                                         }
@@ -94,7 +88,7 @@
                                 {
                                     "dateUtc": "2025-05-09T16:14:24.8037599Z",
                                     "cpu": 47.922,
-                                    "memory": 594752.000,
+                                    "memory": 594752.0,
                                     "threadInfo": {
                                         "isThreadStarving": "False",
                                         "threadWaitIntervalInMs": 0.9073,
@@ -107,7 +101,7 @@
                                 {
                                     "dateUtc": "2025-05-09T16:14:34.8179966Z",
                                     "cpu": 38.084,
-                                    "memory": 607580.000,
+                                    "memory": 607580.0,
                                     "threadInfo": {
                                         "isThreadStarving": "False",
                                         "threadWaitIntervalInMs": 0.167,
@@ -120,7 +114,7 @@
                                 {
                                     "dateUtc": "2025-05-09T16:14:44.8294121Z",
                                     "cpu": 42.072,
-                                    "memory": 1054836.000,
+                                    "memory": 1054836.0,
                                     "threadInfo": {
                                         "isThreadStarving": "False",
                                         "threadWaitIntervalInMs": 0.074,
@@ -133,7 +127,7 @@
                                 {
                                     "dateUtc": "2025-05-09T16:14:54.8360653Z",
                                     "cpu": 36.015,
-                                    "memory": 1038760.000,
+                                    "memory": 1038760.0,
                                     "threadInfo": {
                                         "isThreadStarving": "False",
                                         "threadWaitIntervalInMs": 0.1299,
@@ -146,7 +140,7 @@
                                 {
                                     "dateUtc": "2025-05-09T16:15:04.8435121Z",
                                     "cpu": 43.817,
-                                    "memory": 1616568.000,
+                                    "memory": 1616568.0,
                                     "threadInfo": {
                                         "isThreadStarving": "False",
                                         "threadWaitIntervalInMs": 0.1434,
@@ -159,7 +153,7 @@
                                 {
                                     "dateUtc": "2025-05-09T16:15:14.8453053Z",
                                     "cpu": 35.239,
-                                    "memory": 1629004.000,
+                                    "memory": 1629004.0,
                                     "threadInfo": {
                                         "isThreadStarving": "False",
                                         "threadWaitIntervalInMs": 0.1103,
@@ -174,142 +168,136 @@
                     },
                     "children": [
                         {
-                            "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
-                            "duration in milliseconds": 992.2298,
+                            "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+                            "duration in milliseconds": 992.1824,
                             "children": [
                                 {
-                                    "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                                    "duration in milliseconds": 992.1824,
+                                    "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                                    "duration in milliseconds": 992.1503,
                                     "children": [
                                         {
-                                            "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                            "duration in milliseconds": 992.1503,
+                                            "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                                            "duration in milliseconds": 992.1449,
                                             "children": [
                                                 {
-                                                    "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                                    "duration in milliseconds": 992.1449,
-                                                    "children": [
-                                                        {
-                                                            "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                                            "duration in milliseconds": 991.3114,
-                                                            "data": {
-                                                                "Client Side Request Stats": {
-                                                                    "Id": "AggregatedClientSideRequestStatistics",
-                                                                    "ContactedReplicas": [
-                                                                        {
-                                                                            "Count": 1,
-                                                                            "Uri": "rntbd://cdb-ms-prod-westus1-be169.documents.azure.com:14031/apps/81e4cdc8-2da0-416c-beb1-394af2e72180/services/2844fd18-25a1-46e3-896e-898a02c31a8a/partitions/1e954280-38c1-4e0c-b4bf-3e63bdfc3615/replicas/133888881810264235p/"
-                                                                        }
-                                                                    ],
-                                                                    "RegionsContacted": [],
-                                                                    "FailedReplicas": [],
-                                                                    "AddressResolutionStatistics": [
-                                                                        {
-                                                                            "StartTimeUTC": "2025-05-09T16:15:21.4249712Z",
-                                                                            "EndTimeUTC": "2025-05-09T16:15:21.8670316Z",
-                                                                            "TargetEndpoint": "https://hedging-example-westus.documents.azure.com//addresses/?$resolveFor=dbs%2fZWUNAA%3d%3d%2fcolls%2fZWUNALftZ78%3d%2fdocs&$filter=protocol eq rntbd&$partitionKeyRangeIds=0"
-                                                                        }
-                                                                    ],
-                                                                    "StoreResponseStatistics": [
-                                                                        {
-                                                                            "ResponseTimeUTC": "2025-05-09T16:15:22.4138215Z",
-                                                                            "DurationInMs": 546.1124,
-                                                                            "ResourceType": "Document",
-                                                                            "OperationType": "Read",
-                                                                            "RequestSessionToken": "0:0#5#7=-1#8=-1",
-                                                                            "LocationEndpoint": "https://hedging-example-westus.documents.azure.com/",
-                                                                            "StoreResult": {
-                                                                                "ActivityId": "a1cfa80c-cb67-4ef5-b96a-dac4a7247429",
-                                                                                "StatusCode": "Ok",
-                                                                                "SubStatusCode": "Unknown",
-                                                                                "LSN": 8,
-                                                                                "PartitionKeyRangeId": "0",
-                                                                                "GlobalCommittedLSN": 5,
-                                                                                "ItemLSN": 6,
-                                                                                "UsingLocalLSN": true,
-                                                                                "QuorumAckedLSN": 8,
-                                                                                "SessionToken": "0#5#7=-1#8=-1",
-                                                                                "CurrentWriteQuorum": 3,
-                                                                                "CurrentReplicaSetSize": 4,
-                                                                                "NumberOfReadRegions": 2,
-                                                                                "IsValid": true,
-                                                                                "StorePhysicalAddress": "rntbd://cdb-ms-prod-westus1-be169.documents.azure.com:14031/apps/81e4cdc8-2da0-416c-beb1-394af2e72180/services/2844fd18-25a1-46e3-896e-898a02c31a8a/partitions/1e954280-38c1-4e0c-b4bf-3e63bdfc3615/replicas/133888881810264235p/",
-                                                                                "RequestCharge": 1,
-                                                                                "RetryAfterInMs": null,
-                                                                                "BELatencyInMs": "0.293",
-                                                                                "ReplicaHealthStatuses": [
-                                                                                    "(port: 14031 | status: Unknown | lkt: 5/9/2025 4:15:21 PM)",
-                                                                                    "(port: 14184 | status: Unknown | lkt: 5/9/2025 4:15:21 PM)",
-                                                                                    "(port: 14356 | status: Unknown | lkt: 5/9/2025 4:15:21 PM)",
-                                                                                    "(port: 14405 | status: Unknown | lkt: 5/9/2025 4:15:21 PM)"
-                                                                                ],
-                                                                                "transportRequestTimeline": {
-                                                                                    "requestTimeline": [
-                                                                                        {
-                                                                                            "event": "Created",
-                                                                                            "startTimeUtc": "2025-05-09T16:15:21.8675967Z",
-                                                                                            "durationInMs": 0.0123
-                                                                                        },
-                                                                                        {
-                                                                                            "event": "ChannelAcquisitionStarted",
-                                                                                            "startTimeUtc": "2025-05-09T16:15:21.8676090Z",
-                                                                                            "durationInMs": 455.3481
-                                                                                        },
-                                                                                        {
-                                                                                            "event": "Pipelined",
-                                                                                            "startTimeUtc": "2025-05-09T16:15:22.3229571Z",
-                                                                                            "durationInMs": 0.4602
-                                                                                        },
-                                                                                        {
-                                                                                            "event": "Transit Time",
-                                                                                            "startTimeUtc": "2025-05-09T16:15:22.3234173Z",
-                                                                                            "durationInMs": 90.0714
-                                                                                        },
-                                                                                        {
-                                                                                            "event": "Received",
-                                                                                            "startTimeUtc": "2025-05-09T16:15:22.4134887Z",
-                                                                                            "durationInMs": 0.3431
-                                                                                        },
-                                                                                        {
-                                                                                            "event": "Completed",
-                                                                                            "startTimeUtc": "2025-05-09T16:15:22.4138318Z",
-                                                                                            "durationInMs": 0
-                                                                                        }
-                                                                                    ],
-                                                                                    "serviceEndpointStats": {
-                                                                                        "inflightRequests": 1,
-                                                                                        "openConnections": 1
-                                                                                    },
-                                                                                    "connectionStats": {
-                                                                                        "waitforConnectionInit": "True",
-                                                                                        "callsPendingReceive": 0,
-                                                                                        "lastSendAttempt": "2025-05-09T16:15:22.2294194Z",
-                                                                                        "lastSend": "2025-05-09T16:15:22.2300082Z",
-                                                                                        "lastReceive": "2025-05-09T16:15:22.3219096Z"
-                                                                                    },
-                                                                                    "requestSizeInBytes": 475,
-                                                                                    "responseMetadataSizeInBytes": 489,
-                                                                                    "responseBodySizeInBytes": 230
-                                                                                },
-                                                                                "TransportException": null
-                                                                            }
-                                                                        }
-                                                                    ],
-                                                                    "HttpResponseStats": [
-                                                                        {
-                                                                            "StartTimeUTC": "2025-05-09T16:15:21.4250207Z",
-                                                                            "DurationInMs": 441.9028,
-                                                                            "RequestUri": "https://hedging-example-westus.documents.azure.com//addresses/?$resolveFor=dbs%2fZWUNAA%3d%3d%2fcolls%2fZWUNALftZ78%3d%2fdocs&$filter=protocol eq rntbd&$partitionKeyRangeIds=0",
-                                                                            "ResourceType": "Document",
-                                                                            "HttpMethod": "GET",
-                                                                            "ActivityId": "a1cfa80c-cb67-4ef5-b96a-dac4a7247429",
-                                                                            "StatusCode": "OK"
-                                                                        }
-                                                                    ]
+                                                    "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                    "duration in milliseconds": 991.3114,
+                                                    "data": {
+                                                        "Client Side Request Stats": {
+                                                            "Id": "AggregatedClientSideRequestStatistics",
+                                                            "ContactedReplicas": [
+                                                                {
+                                                                    "Count": 1,
+                                                                    "Uri": "rntbd://cdb-ms-prod-westus1-be169.documents.azure.com:14031/apps/81e4cdc8-2da0-416c-beb1-394af2e72180/services/2844fd18-25a1-46e3-896e-898a02c31a8a/partitions/1e954280-38c1-4e0c-b4bf-3e63bdfc3615/replicas/133888881810264235p/"
                                                                 }
-                                                            }
+                                                            ],
+                                                            "RegionsContacted": [],
+                                                            "FailedReplicas": [],
+                                                            "AddressResolutionStatistics": [
+                                                                {
+                                                                    "StartTimeUTC": "2025-05-09T16:15:21.4249712Z",
+                                                                    "EndTimeUTC": "2025-05-09T16:15:21.8670316Z",
+                                                                    "TargetEndpoint": "https://hedging-example-westus.documents.azure.com//addresses/?$resolveFor=dbs%2fZWUNAA%3d%3d%2fcolls%2fZWUNALftZ78%3d%2fdocs&$filter=protocol eq rntbd&$partitionKeyRangeIds=0"
+                                                                }
+                                                            ],
+                                                            "StoreResponseStatistics": [
+                                                                {
+                                                                    "ResponseTimeUTC": "2025-05-09T16:15:22.4138215Z",
+                                                                    "DurationInMs": 546.1124,
+                                                                    "ResourceType": "Document",
+                                                                    "OperationType": "Read",
+                                                                    "RequestSessionToken": "0:0#5#7=-1#8=-1",
+                                                                    "LocationEndpoint": "https://hedging-example-westus.documents.azure.com/",
+                                                                    "StoreResult": {
+                                                                        "ActivityId": "a1cfa80c-cb67-4ef5-b96a-dac4a7247429",
+                                                                        "StatusCode": "Ok",
+                                                                        "SubStatusCode": "Unknown",
+                                                                        "LSN": 8,
+                                                                        "PartitionKeyRangeId": "0",
+                                                                        "GlobalCommittedLSN": 5,
+                                                                        "ItemLSN": 6,
+                                                                        "UsingLocalLSN": true,
+                                                                        "QuorumAckedLSN": 8,
+                                                                        "SessionToken": "0#5#7=-1#8=-1",
+                                                                        "CurrentWriteQuorum": 3,
+                                                                        "CurrentReplicaSetSize": 4,
+                                                                        "NumberOfReadRegions": 2,
+                                                                        "IsValid": true,
+                                                                        "StorePhysicalAddress": "rntbd://cdb-ms-prod-westus1-be169.documents.azure.com:14031/apps/81e4cdc8-2da0-416c-beb1-394af2e72180/services/2844fd18-25a1-46e3-896e-898a02c31a8a/partitions/1e954280-38c1-4e0c-b4bf-3e63bdfc3615/replicas/133888881810264235p/",
+                                                                        "RequestCharge": 1,
+                                                                        "RetryAfterInMs": null,
+                                                                        "BELatencyInMs": "0.293",
+                                                                        "ReplicaHealthStatuses": [
+                                                                            "(port: 14031 | status: Unknown | lkt: 5/9/2025 4:15:21 PM)",
+                                                                            "(port: 14184 | status: Unknown | lkt: 5/9/2025 4:15:21 PM)",
+                                                                            "(port: 14356 | status: Unknown | lkt: 5/9/2025 4:15:21 PM)",
+                                                                            "(port: 14405 | status: Unknown | lkt: 5/9/2025 4:15:21 PM)"
+                                                                        ],
+                                                                        "transportRequestTimeline": {
+                                                                            "requestTimeline": [
+                                                                                {
+                                                                                    "event": "Created",
+                                                                                    "startTimeUtc": "2025-05-09T16:15:21.8675967Z",
+                                                                                    "durationInMs": 0.0123
+                                                                                },
+                                                                                {
+                                                                                    "event": "ChannelAcquisitionStarted",
+                                                                                    "startTimeUtc": "2025-05-09T16:15:21.8676090Z",
+                                                                                    "durationInMs": 455.3481
+                                                                                },
+                                                                                {
+                                                                                    "event": "Pipelined",
+                                                                                    "startTimeUtc": "2025-05-09T16:15:22.3229571Z",
+                                                                                    "durationInMs": 0.4602
+                                                                                },
+                                                                                {
+                                                                                    "event": "Transit Time",
+                                                                                    "startTimeUtc": "2025-05-09T16:15:22.3234173Z",
+                                                                                    "durationInMs": 90.0714
+                                                                                },
+                                                                                {
+                                                                                    "event": "Received",
+                                                                                    "startTimeUtc": "2025-05-09T16:15:22.4134887Z",
+                                                                                    "durationInMs": 0.3431
+                                                                                },
+                                                                                {
+                                                                                    "event": "Completed",
+                                                                                    "startTimeUtc": "2025-05-09T16:15:22.4138318Z",
+                                                                                    "durationInMs": 0
+                                                                                }
+                                                                            ],
+                                                                            "serviceEndpointStats": {
+                                                                                "inflightRequests": 1,
+                                                                                "openConnections": 1
+                                                                            },
+                                                                            "connectionStats": {
+                                                                                "waitforConnectionInit": "True",
+                                                                                "callsPendingReceive": 0,
+                                                                                "lastSendAttempt": "2025-05-09T16:15:22.2294194Z",
+                                                                                "lastSend": "2025-05-09T16:15:22.2300082Z",
+                                                                                "lastReceive": "2025-05-09T16:15:22.3219096Z"
+                                                                            },
+                                                                            "requestSizeInBytes": 475,
+                                                                            "responseMetadataSizeInBytes": 489,
+                                                                            "responseBodySizeInBytes": 230
+                                                                        },
+                                                                        "TransportException": null
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "HttpResponseStats": [
+                                                                {
+                                                                    "StartTimeUTC": "2025-05-09T16:15:21.4250207Z",
+                                                                    "DurationInMs": 441.9028,
+                                                                    "RequestUri": "https://hedging-example-westus.documents.azure.com//addresses/?$resolveFor=dbs%2fZWUNAA%3d%3d%2fcolls%2fZWUNALftZ78%3d%2fdocs&$filter=protocol eq rntbd&$partitionKeyRangeIds=0",
+                                                                    "ResourceType": "Document",
+                                                                    "HttpMethod": "GET",
+                                                                    "ActivityId": "a1cfa80c-cb67-4ef5-b96a-dac4a7247429",
+                                                                    "StatusCode": "OK"
+                                                                }
+                                                            ]
                                                         }
-                                                    ]
+                                                    }
                                                 }
                                             ]
                                         }

@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -159,7 +158,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
 
         private void Init()
         {
-            this.collectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), new ServerStoreModel(null), null, null, null, true, null);
+            this.collectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), new ServerStoreModel(null), null, null, true, null);
             const string pkPath = "/pk";
             this.collectionCache.Setup
                     (m =>
@@ -268,13 +267,6 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
             this.MockGlobalEndpointManager.Setup(gep => gep.InitializeAccountPropertiesAndStartBackgroundRefresh(It.IsAny<AccountProperties>()));
             SessionContainer sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
 
-            this.telemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob("test-client",
-                                                                 this.ConnectionPolicy,
-                                                                 new Mock<AuthorizationTokenProvider>().Object,
-                                                                 new Mock<CosmosHttpClient>().Object,
-                                                                 this.ServiceEndpoint,
-                                                                 this.GlobalEndpointManager,
-                                                                 default);
             this.sessionContainer = sessionContainer;
         }
     }

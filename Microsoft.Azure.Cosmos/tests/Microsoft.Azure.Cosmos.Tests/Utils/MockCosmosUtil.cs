@@ -30,16 +30,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public static CosmosClient CreateMockCosmosClient(
             Action<CosmosClientBuilder> customizeClientBuilder = null,
-            Cosmos.ConsistencyLevel? accountConsistencyLevel = null,
-            bool enableTelemetry = false)
+            Cosmos.ConsistencyLevel? accountConsistencyLevel = null)
         {
-            ConnectionPolicy policy = new ConnectionPolicy
-            {
-                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions
-                {
-                    DisableSendingMetricsToService = !enableTelemetry
-                }
-            };
+            ConnectionPolicy policy = new ConnectionPolicy();
 
             DocumentClient documentClient = accountConsistencyLevel.HasValue ? new MockDocumentClient(accountConsistencyLevel.Value, policy) : new MockDocumentClient(policy);
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
