@@ -1978,6 +1978,51 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             Assert.AreEqual("https://writelocation.documents.azure.com/", cache.WriteEndpoints[0].AbsoluteUri);
         }
 
+        [TestMethod]
+        public void PreferenceChangeImmediatelyReordersNormalAndThinClientEndpoints()
+        {
+            AccountProperties accountProperties = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+                    new AccountRegion { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() }
+                },
+                WriteLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() },
+                    new AccountRegion { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() }
+                },
+                ThinClientReadableLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "location1", Endpoint = "https://location1.documents.azure.com:10650/" },
+                    new AccountRegion { Name = "location2", Endpoint = "https://location2.documents.azure.com:10650/" }
+                },
+                ThinClientWritableLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = "location1", Endpoint = "https://location1.documents.azure.com:10650/" },
+                    new AccountRegion { Name = "location2", Endpoint = "https://location2.documents.azure.com:10650/" }
+                },
+                EnableMultipleWriteLocations = true
+            };
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: new List<string> { "location1", "location2" }.AsReadOnly(),
+                defaultEndpoint: LocationCacheTests.DefaultEndpoint,
+                enableEndpointDiscovery: true,
+                connectionLimit: 10,
+                useMultipleWriteLocations: true);
+            cache.OnDatabaseAccountRead(accountProperties);
+
+            cache.OnLocationPreferenceChanged(
+                new List<string> { "location2", "location1" }.AsReadOnly());
+
+            Assert.AreEqual(LocationCacheTests.Location2Endpoint, cache.ReadEndpoints[0]);
+            Assert.AreEqual(LocationCacheTests.Location2Endpoint, cache.WriteEndpoints[0]);
+            Assert.AreEqual("location2.documents.azure.com", cache.ThinClientReadEndpoints[0].Host);
+            Assert.AreEqual("location2.documents.azure.com", cache.ThinClientWriteEndpoints[0].Host);
+        }
+
         /// <summary>
         /// Regression test for the thin-client kill-switch: <see cref="LocationCache.HasThinClientReadLocations"/>
         /// and <see cref="LocationCache.HasThinClientWriteLocations"/> must each track the most

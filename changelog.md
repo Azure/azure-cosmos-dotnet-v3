@@ -260,6 +260,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- [#5745](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5745) Region Proximity: Reconciles preferred regions with the current account topology and uses server-provided ordering when available. Routing and unavailable-endpoint retry attempts are limited to currently provisioned regions, including no regional failover for eligible requests when only one region remains.
 - [#5887](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5887) Direct: Documents that `MaxTcpConnectionsPerEndpoint` accepts any positive value to allow customer control of the connection pool size; values of 16 or greater remain recommended.
 
 ### <a name="3.61.0-preview.0"/> [3.61.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.61.0-preview.0) - 2026-5-18
