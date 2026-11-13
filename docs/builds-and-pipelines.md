@@ -228,6 +228,33 @@ etc. are kept out).
 
 See [CONTRIBUTING → Tests](../CONTRIBUTING.md#tests) for the unit vs emulator project split.
 
+### Mixed-type vector search live test
+
+`MixedVectorEmbeddingTypesRankFusionTest` in
+[`CosmosItemThinClientTests`](../Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/CosmosItemThinClientTests.cs)
+uses the `ThinClient` job's `COSMOSDB_THINCLIENT` connection string for all three rows:
+Gateway with ThinClient disabled, Direct, and Gateway with ThinClient enabled. The account
+must support vector search, four DiskANN indexes covering Float32, Float16, Int8, and Uint8,
+and healthy HTTP/2 ThinClient read/write endpoints. Missing configuration or Gateway fallback
+fails the test rather than skipping coverage.
+
+Each row adds a mixed-type container to the fixture's database, ingests 1,108 vector
+documents plus a vector-free document, and runs one four-component RRF query with a small
+page size. Fixed expected IDs make the query sensitive to every component. Transport
+assertions distinguish document traffic from metadata, query-plan requests, and probes.
+The test issues non-brute-force searches against DiskANN-configured paths; it does not
+assert physical index utilization or benchmark approximate-search recall.
+
+Run locally after setting `COSMOSDB_THINCLIENT` securely:
+
+```powershell
+dotnet test .\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Microsoft.Azure.Cosmos.EmulatorTests.csproj --filter "FullyQualifiedName~MixedVectorEmbeddingTypesRankFusionTest"
+```
+
+The data-driven test runs nonparallel, restores its ThinClient flag override, and reuses the
+fixture's database setup and cleanup. The existing
+thin-client job still has `continueOnError: true`; this test does not change that gate policy.
+
 ---
 
 ## Live-account AAD tests (`MultiRegionAad`)
