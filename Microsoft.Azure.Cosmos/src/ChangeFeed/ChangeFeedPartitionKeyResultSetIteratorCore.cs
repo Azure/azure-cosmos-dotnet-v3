@@ -55,6 +55,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 PageSizeHint = maxItemCount,
             };
 
+            ChangeFeedRequestOptions.ValidatePageSizeHint(requestOptions.PageSizeHint, requestOptions.EnableContinuationTokenOnly);
+
             return new ChangeFeedPartitionKeyResultSetIteratorCore(
                 container: container,
                 mode: mode,

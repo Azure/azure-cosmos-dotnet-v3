@@ -31,15 +31,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             int? pageSizeHint = null,
             JsonSerializationFormat? jsonSerializationFormat = null,
             Dictionary<string, string> additionalHeaders = null,
-            ChangeFeedQuerySpec changeFeedQuerySpec = null)
+            ChangeFeedQuerySpec changeFeedQuerySpec = null,
+            bool enableContinuationTokenOnly = false)
             : base(pageSizeHint, additionalHeaders)
         {
+            ChangeFeedRequestOptions.ValidatePageSizeHint(pageSizeHint, enableContinuationTokenOnly);
             this.Mode = mode ?? throw new ArgumentNullException(nameof(mode));
             this.ChangeFeedQuerySpec = changeFeedQuerySpec;
             this.JsonSerializationFormat = jsonSerializationFormat;
+            this.EnableContinuationTokenOnly = enableContinuationTokenOnly;
         }
 
         public ChangeFeedMode Mode { get; }
+
+        public bool EnableContinuationTokenOnly { get; }
 
         public ChangeFeedQuerySpec ChangeFeedQuerySpec { get; }
 
