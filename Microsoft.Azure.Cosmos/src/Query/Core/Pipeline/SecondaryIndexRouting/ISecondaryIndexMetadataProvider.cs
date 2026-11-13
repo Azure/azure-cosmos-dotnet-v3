@@ -16,11 +16,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
     {
         /// <summary>
         /// Gets normalized secondary index metadata using the supplied source container properties.
+        /// A forced refresh rereads the source and referenced candidate containers from the service.
         /// </summary>
         /// <returns>The secondary indexes associated with the source collection.</returns>
         Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
             ContainerProperties source,
             ITrace trace,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken,
+            bool forceRefresh = false);
     }
 }

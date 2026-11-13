@@ -731,7 +731,7 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false, null);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
@@ -810,7 +810,7 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false, null);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
@@ -889,7 +889,7 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false, null);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
@@ -977,7 +977,7 @@ namespace Microsoft.Azure.Cosmos
                 RequestTimeout = TimeSpan.FromSeconds(120)
             };
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false, null);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
@@ -1740,7 +1740,7 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false, null);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),

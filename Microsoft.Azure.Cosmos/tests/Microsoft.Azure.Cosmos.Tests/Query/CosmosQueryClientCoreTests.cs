@@ -96,6 +96,34 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             cache.VerifyNoOtherCalls();
         }
 
+        [TestMethod]
+        public async Task SecondaryIndexRefreshFailureFallsBackToPrimaryOnlyRouting()
+        {
+            ContainerProperties source = CreateSource();
+            InvalidOperationException refreshFailure = new InvalidOperationException("Refresh failed.");
+            Mock<ISecondaryIndexMetadataCache> cache = new Mock<ISecondaryIndexMetadataCache>(MockBehavior.Strict);
+            cache.Setup(c => c.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, CancellationToken.None, false))
+                .ThrowsAsync(new SecondaryIndexMetadataRefreshException(refreshFailure));
+            using MockDocumentClient documentClient = new MockDocumentClient();
+            CosmosQueryClientCore queryClient = CreateQueryClient(
+                documentClient,
+                source,
+                cache.Object,
+                enableSecondaryIndexRouting: true,
+                CancellationToken.None);
+
+            ContainerQueryProperties properties = await queryClient.GetCachedContainerQueryPropertiesAsync(
+                ContainerLink,
+                null,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(0, properties.GlobalSecondaryIndexes.Count());
+            Assert.AreEqual(source.ResourceId, properties.ResourceId);
+            Assert.AreSame(source.PartitionKey, properties.PartitionKeyDefinition);
+            cache.Verify(c => c.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, CancellationToken.None, false), Times.Once);
+        }
+
         private static async Task AssertDiscoveryFailureAsync<TException>(TException exception)
             where TException : Exception
         {

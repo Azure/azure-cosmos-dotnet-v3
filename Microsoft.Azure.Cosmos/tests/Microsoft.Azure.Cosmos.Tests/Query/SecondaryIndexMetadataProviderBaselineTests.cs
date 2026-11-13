@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Formatting = Newtonsoft.Json.Formatting;
+    using HttpConstants = Microsoft.Azure.Documents.HttpConstants;
     using IClientSideRequestStatistics = Microsoft.Azure.Documents.IClientSideRequestStatistics;
     using ResourceId = Microsoft.Azure.Documents.ResourceId;
     using ServerStoreModel = Microsoft.Azure.Documents.ServerStoreModel;
@@ -107,6 +108,50 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             Assert.AreEqual(0, metadata.Count());
             Assert.AreEqual(0, context.ResolveCount);
+        }
+
+        [TestMethod]
+        public async Task ForcedRefreshUsesFreshSourceAndCandidateMetadata()
+        {
+            ContainerProperties staleSource = CreateSource();
+            staleSource.MaterializedViews = new[]
+            {
+                new MaterializedViewProperties { ResourceId = GsiARid },
+            };
+            ContainerProperties freshSource = CreateSource();
+            freshSource.MaterializedViews = new[]
+            {
+                new MaterializedViewProperties { ResourceId = GsiBRid },
+            };
+            Dictionary<string, ContainerProperties> collections = new Dictionary<string, ContainerProperties>
+            {
+                [SourceRid] = staleSource,
+                [GsiARid] = CreateMaterializedView(GsiARid, "SELECT c.id, c.region FROM c", "/region"),
+                [GsiBRid] = CreateMaterializedView(GsiBRid, "SELECT c.id, c.category FROM c", "/category"),
+            };
+            using ProviderTestContext context = new ProviderTestContext(collections);
+
+            await context.ResolveCollectionByRidAsync(SourceRid);
+            await context.ResolveCollectionByRidAsync(GsiBRid);
+            await context.Provider.GetSecondaryIndexMetadataAsync(staleSource, NoOpTrace.Singleton, CancellationToken.None);
+
+            collections[SourceRid] = freshSource;
+            collections[GsiBRid] = CreateMaterializedView(
+                GsiBRid,
+                "SELECT c.id, c.region AS refreshedRegion FROM c",
+                "/region");
+
+            IEnumerable<ISecondaryIndexMetadata> refreshed = await context.Provider.GetSecondaryIndexMetadataAsync(
+                staleSource,
+                NoOpTrace.Singleton,
+                CancellationToken.None,
+                forceRefresh: true);
+
+            ISecondaryIndexMetadata metadata = refreshed.Single();
+            Assert.AreEqual(GsiBRid, metadata.Rid);
+            Assert.IsTrue(metadata.IncludedProperties.ContainsKey("refreshedRegion"));
+            Assert.IsFalse(metadata.IncludedProperties.ContainsKey("category"));
+            Assert.AreEqual(5, context.ResolveCount);
         }
 
         [TestMethod]
@@ -424,6 +469,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             public SecondaryIndexMetadataProvider Provider { get; }
 
             public int ResolveCount => this.collectionCache.ResolveCount;
+
+            public Task<ContainerProperties> ResolveCollectionByRidAsync(string resourceId)
+            {
+                return this.collectionCache.ResolveByRidAsync(
+                    HttpConstants.Versions.CurrentVersion,
+                    resourceId,
+                    NoOpTrace.Singleton,
+                    clientSideRequestStatistics: null,
+                    CancellationToken.None);
+            }
 
             public void Dispose()
             {

@@ -36,8 +36,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             IRetryPolicyFactory retryPolicy,
             TelemetryToServiceHelper telemetryToServiceHelper,
             bool enableAsyncCacheExceptionNoSharing = true,
-            MetadataHedgingStrategy metadataHedgingStrategy = null)
-            : base(enableAsyncCacheExceptionNoSharing)
+            MetadataHedgingStrategy metadataHedgingStrategy = null,
+            Action<string> secondaryIndexMetadataInvalidationCallback = null)
+            : base(enableAsyncCacheExceptionNoSharing, secondaryIndexMetadataInvalidationCallback)
         {
             this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
             this.tokenProvider = tokenProvider;
@@ -91,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IClientSideRequestStatistics clientSideRequestStatistics,
             CancellationToken cancellationToken)
         {
-            if (forceRefesh && this.sessionContainer != null)
+            if (forceRefesh && (this.sessionContainer != null || this.HasSecondaryIndexMetadataInvalidationCallback))
             {
                 return TaskHelper.InlineIfPossible(
                     async () =>
@@ -104,6 +105,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                             clientSideRequestStatistics,
                             cancellationToken))?.ResourceId;
 
+                        this.InvalidateSecondaryIndexMetadata(oldRid);
+
                         ContainerProperties propertiesAfterRefresh = await base.ResolveByNameAsync(
                             apiVersion,
                             resourceAddress,
@@ -112,7 +115,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                             clientSideRequestStatistics,
                             cancellationToken);
 
-                        if (oldRid != null && oldRid != propertiesAfterRefresh?.ResourceId)
+                        if (this.sessionContainer != null
+                            && oldRid != null
+                            && oldRid != propertiesAfterRefresh?.ResourceId)
                         {
                             string resourceFullName = PathsHelper.GetCollectionPath(resourceAddress);
                             this.sessionContainer.ClearTokenByCollectionFullname(resourceFullName);
@@ -158,6 +163,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             Func<Task<ContainerProperties>> resolveContainerProvider)
         {
             string previouslyResolvedCollectionRid = request?.RequestContext?.ResolvedCollectionRid;
+            if (request?.ForceNameCacheRefresh == true)
+            {
+                this.InvalidateSecondaryIndexMetadata(previouslyResolvedCollectionRid);
+            }
 
             try
             {

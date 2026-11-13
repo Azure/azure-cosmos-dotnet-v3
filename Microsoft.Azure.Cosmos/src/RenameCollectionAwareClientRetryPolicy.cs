@@ -93,6 +93,7 @@ namespace Microsoft.Azure.Cosmos
                     this.hasTriggered = true;
 
                     string oldCollectionRid = request.RequestContext.ResolvedCollectionRid;
+                    this.collectionCache.InvalidateSecondaryIndexMetadata(oldCollectionRid);
 
                     request.ForceNameCacheRefresh = true;
                     request.RequestContext.ResolvedCollectionRid = null;

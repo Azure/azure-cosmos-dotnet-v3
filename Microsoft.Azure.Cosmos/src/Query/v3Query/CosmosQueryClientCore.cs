@@ -84,11 +84,19 @@ namespace Microsoft.Azure.Cosmos
             IEnumerable<ISecondaryIndexMetadata> globalSecondaryIndexes = Array.Empty<ISecondaryIndexMetadata>();
             if (this.clientContext.ClientOptions.EnableSecondaryIndexRouting)
             {
-                globalSecondaryIndexes =
-                    await this.clientContext.SecondaryIndexMetadataCache.GetSecondaryIndexMetadataAsync(
-                        containerProperties,
-                        trace,
-                        cancellationToken: cancellationToken);
+                try
+                {
+                    globalSecondaryIndexes =
+                        await this.clientContext.SecondaryIndexMetadataCache.GetSecondaryIndexMetadataAsync(
+                            containerProperties,
+                            trace,
+                            cancellationToken: cancellationToken);
+                }
+                catch (SecondaryIndexMetadataRefreshException exception)
+                {
+                    // Do not route with stale GSI metadata; an empty set keeps this query on primary routing.
+                    trace.AddDatum("SecondaryIndexMetadataRefreshFailure", exception.InnerException?.Message ?? exception.Message);
+                }
             }
 
             return new ContainerQueryProperties(
@@ -298,7 +306,7 @@ namespace Microsoft.Azure.Cosmos
                     // This can only happen if collection is deleted/created with same name and client was not restarted
                     // in between.
                     CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(getPKRangesTrace);
-                    collectionCache.Refresh(resourceLink);
+                    collectionCache.Refresh(resourceLink, sourceCollectionRid: collectionResourceId);
                 }
 
                 if (ranges == null)
@@ -453,16 +461,14 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ClearSessionTokenCache(collectionLink);
 
-            CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
-            using (Documents.DocumentServiceRequest request = Documents.DocumentServiceRequest.Create(
-               Documents.OperationType.Query,
-               Documents.ResourceType.Collection,
-               collectionLink,
-               Documents.AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
-            {
-                request.ForceNameCacheRefresh = true;
-                await collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
-            }
+            ClientCollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
+            await collectionCache.ResolveByNameAsync(
+                HttpConstants.Versions.CurrentVersion,
+                collectionLink,
+                forceRefesh: true,
+                trace: NoOpTrace.Singleton,
+                clientSideRequestStatistics: null,
+                cancellationToken);
         }
 
         public override async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(

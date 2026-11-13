@@ -54,13 +54,16 @@ namespace Microsoft.Azure.Cosmos.Common
         /// for a collection, but this handles the situation if customer is using multiple API versions from different applications
         /// </summary>
         protected readonly InternalCache[] cacheByApiList;
+        private Action<string> secondaryIndexMetadataInvalidationCallback;
 
         protected CollectionCache(
-            bool enableAsyncCacheExceptionNoSharing = true)
+            bool enableAsyncCacheExceptionNoSharing = true,
+            Action<string> secondaryIndexMetadataInvalidationCallback = null)
         {
             this.cacheByApiList = new InternalCache[2];
             this.cacheByApiList[0] = new InternalCache(enableAsyncCacheExceptionNoSharing); // for API version < 2018-12-31
             this.cacheByApiList[1] = new InternalCache(enableAsyncCacheExceptionNoSharing); // for API version >= 2018-12-31
+            this.secondaryIndexMetadataInvalidationCallback = secondaryIndexMetadataInvalidationCallback;
         }
 
         /// <summary>
@@ -197,14 +200,33 @@ namespace Microsoft.Azure.Cosmos.Common
         /// <summary>
         /// This method is only used in client SDK in retry policy as it doesn't have request handy.
         /// </summary>
-        public void Refresh(string resourceAddress, string apiVersion = null)
+        public void Refresh(
+            string resourceAddress,
+            string apiVersion = null,
+            string sourceCollectionRid = null)
         {
+            this.InvalidateSecondaryIndexMetadata(sourceCollectionRid);
+
             InternalCache cache = this.GetCache(apiVersion);
             if (PathsHelper.IsNameBased(resourceAddress))
             {
                 string resourceFullName = PathsHelper.GetCollectionPath(resourceAddress);
 
                 cache.collectionInfoByName.TryRemoveIfCompleted(resourceFullName);
+            }
+        }
+
+        internal void SetSecondaryIndexMetadataInvalidationCallback(
+            Action<string> secondaryIndexMetadataInvalidationCallback)
+        {
+            this.secondaryIndexMetadataInvalidationCallback = secondaryIndexMetadataInvalidationCallback;
+        }
+
+        internal void InvalidateSecondaryIndexMetadata(string sourceCollectionRid)
+        {
+            if (sourceCollectionRid != null)
+            {
+                this.secondaryIndexMetadataInvalidationCallback?.Invoke(sourceCollectionRid);
             }
         }
 
@@ -250,7 +272,8 @@ namespace Microsoft.Azure.Cosmos.Common
             string resourceId,
             ITrace trace,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool forceRefresh = false)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -268,7 +291,8 @@ namespace Microsoft.Azure.Cosmos.Common
                              (string currentKey, DateTime currentValue) => currentTime);
                     return collection;
                 },
-                cancellationToken);
+                cancellationToken,
+                forceRefresh);
         }
 
         internal virtual async Task<ContainerProperties> ResolveByNameAsync(
@@ -357,6 +381,9 @@ namespace Microsoft.Azure.Cosmos.Common
 
             return this.cacheByApiList[0];
         }
+
+        protected bool HasSecondaryIndexMetadataInvalidationCallback =>
+            this.secondaryIndexMetadataInvalidationCallback != null;
 
         private sealed class CollectionRidComparer : IEqualityComparer<ContainerProperties>
         {
