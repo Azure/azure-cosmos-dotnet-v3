@@ -303,7 +303,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Creates a Item as an asynchronous operation in the Azure Cosmos service.
+        /// Creates an Item as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="streamPayload">A <see cref="Stream"/> containing the payload.</param>
         /// <param name="partitionKey">The partition key for the item.</param>
@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Creates a item as an asynchronous operation in the Azure Cosmos service.
+        /// Creates an item as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosSerializer"/> to implement a custom serializer</param>
         /// <param name="partitionKey"><see cref="PartitionKey"/> for the item. If not specified will be populated by extracting from {T}</param>
@@ -376,7 +376,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Reads a item from the Azure Cosmos service as an asynchronous operation.
+        /// Reads an item from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The Cosmos item id</param>
         /// <param name="partitionKey">The partition key for the item.</param>
@@ -418,7 +418,7 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Reads a item from the Azure Cosmos service as an asynchronous operation.
+        /// Reads an item from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The Cosmos item id</param>
         /// <param name="partitionKey">The partition key for the item.</param>
@@ -558,7 +558,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
+        /// Replaces an item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <remarks>
         /// The item's partition key value is immutable. 
@@ -607,7 +607,7 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
+        /// Replaces an item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <remarks>
         /// The item's partition key value is immutable. 
@@ -835,7 +835,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Delete a item from the Azure Cosmos service as an asynchronous operation.
+        /// Delete an item from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The Cosmos item id</param>
         /// <param name="partitionKey">The partition key for the item.</param>
@@ -872,7 +872,7 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Delete a item from the Azure Cosmos service as an asynchronous operation.
+        /// Delete an item from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The Cosmos item id</param>
         /// <param name="partitionKey">The partition key for the item.</param>

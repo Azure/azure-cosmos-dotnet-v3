@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </summary>
     /// <typeparam name="T">Type of item.</typeparam>
     /// <example>
-    /// This example takes in a item, encrypts it and writes to Cosmos container.
+    /// This example takes in an item, encrypts it and writes to Cosmos container.
     /// <code language="c#">
     /// <![CDATA[
     /// public class ToDoActivity{

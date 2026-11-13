@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
         private MaterializedViewDefinition materializedViewDefinitionInternal;
 
         /// <summary>
-        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This contains additional values for scenarios where the SDK is not aware of new fields.
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
@@ -443,7 +443,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// JSON path used for containers partitioning
-        /// 
+        ///
         /// For hierarchical partition keys, please use <see cref="ContainerProperties.PartitionKeyPaths"/>
         /// </summary>
         /// <remarks>
@@ -474,7 +474,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     Paths = new Collection<string>() { value }
                 };
-                
+
                 if (currentDefinitionVersion.HasValue)
                 {
                     this.PartitionKeyDefinitionVersion = currentDefinitionVersion.Value;
@@ -518,7 +518,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// It is an optional property.
         /// This property should be only present when DefaultTimeToLive is set. When this property is present, time to live
-        /// for a item is decided based on the value of this property in item.
+        /// for an item is decided based on the value of this property in item.
         /// By default, TimeToLivePropertyPath is set to null meaning the time to live is based on the _ts property in item.
         /// </value>
 #if !INTERNAL
@@ -555,7 +555,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// When the <see cref="DefaultTimeToLive"/> is a nonzero positive integer, the time-to-live will be turned on for the container.
-        /// And a default time-to-live in seconds will be applied to all the items. A item will be expired after the
+        /// And a default time-to-live in seconds will be applied to all the items. An item will be expired after the
         /// specified <see cref="DefaultTimeToLive"/> value in seconds since its last write time.
         /// </para>
         /// </remarks>

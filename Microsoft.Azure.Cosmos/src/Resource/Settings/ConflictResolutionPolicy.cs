@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Represents the conflict resolution policy configuration for specifying how to resolve conflicts 
+    /// Represents the conflict resolution policy configuration for specifying how to resolve conflicts
     /// in case writes from different regions result in conflicts on items in the container in the Azure Cosmos DB service.
     /// </summary>
     public class ConflictResolutionPolicy
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the path which is present in each item in the Azure Cosmos DB service for last writer wins conflict-resolution.
         /// This path must be present in each item and must be an integer value.
-        /// In case of a conflict occurring on a item, the item with the higher integer value in the specified path will be picked.
+        /// In case of a conflict occurring on an item, the item with the higher integer value in the specified path will be picked.
         /// If the path is unspecified, by default the time stamp path will be used.
         /// </summary>
         /// <remarks>
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets or sets the <see cref="StoredProcedureProperties"/> which is used for conflict resolution in the Azure Cosmos DB service.
-        /// This stored procedure may be created after the <see cref="Container"/> is created and can be changed as required. 
+        /// This stored procedure may be created after the <see cref="Container"/> is created and can be changed as required.
         /// </summary>
         /// <remarks>
         /// 1. This value should only be set when using <see cref="ConflictResolutionMode.Custom"/>
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
         public string ResolutionProcedure { get; set; }
 
         /// <summary>
-        /// This contains additional values for scenarios where the SDK is not aware of new fields. 
+        /// This contains additional values for scenarios where the SDK is not aware of new fields.
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
