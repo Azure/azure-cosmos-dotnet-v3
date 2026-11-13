@@ -24,6 +24,58 @@ namespace Microsoft.Azure.Cosmos
     [TestClass]
     public class SessionContainerTest
     {
+        [DataTestMethod]
+        [DataRow("0:1#5#4=3", "0", "1:1#5#4=3")]
+        [DataRow("0:1#5#4=3,2:1#7#4=6", "0,2", "1:1#7#4=6")]
+        [DataRow("0:1#5#4=8#5=1,2:1#7#4=3#5=9", "0,2", "1:1#7#4=8#5=9")]
+        [DataRow("0:1#9#4=8,1:1#5#4=3", "0", "1:1#5#4=3")]
+        [DataRow("2:1#7#4=6", "0", null)]
+        [DataRow(null, "0", null)]
+        public void ResolvePartitionLocalSessionTokenByRid_UsesChildOrMergedParents(
+            string cachedTokens, string parents, string expectedToken)
+        {
+            string collectionRid = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+            foreach (string token in cachedTokens?.Split(',') ?? Array.Empty<string>())
+            {
+                sessionContainer.SetSessionToken(
+                    collectionRid,
+                    "dbs/db/colls/items",
+                    new RequestNameValueCollection { [HttpConstants.HttpHeaders.SessionToken] = token });
+            }
+
+            PartitionKeyRange range = new PartitionKeyRange
+            {
+                Id = "1",
+                Parents = new Collection<string>(parents.Split(','))
+            };
+
+            Assert.AreEqual(expectedToken, sessionContainer.ResolvePartitionLocalSessionTokenForGateway(collectionRid, range));
+        }
+
+        [TestMethod]
+        public void ResolvePartitionLocalSessionTokenByRid_DoesNotUseReplacedCollectionsProgress()
+        {
+            string oldRid = ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString();
+            string newRid = ResourceId.NewDocumentCollectionId(42, 130).DocumentCollectionId.ToString();
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+            sessionContainer.SetSessionToken(
+                oldRid,
+                "dbs/db/colls/items",
+                new RequestNameValueCollection { [HttpConstants.HttpHeaders.SessionToken] = "0:1#9#4=8" });
+
+            Assert.IsNull(sessionContainer.ResolvePartitionLocalSessionTokenForGateway(newRid, new PartitionKeyRange { Id = "0" }));
+
+            sessionContainer.SetSessionToken(
+                newRid,
+                "dbs/db/colls/items",
+                new RequestNameValueCollection { [HttpConstants.HttpHeaders.SessionToken] = "0:1#5#4=3" });
+
+            Assert.AreEqual(
+                "0:1#5#4=3",
+                sessionContainer.ResolvePartitionLocalSessionTokenForGateway(newRid, new PartitionKeyRange { Id = "0" }));
+        }
+
         /// <summary>
         /// Simple test for <see cref="SessionContainer"/> class.
         /// </summary>

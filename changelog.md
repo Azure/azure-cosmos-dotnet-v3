@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- [6083](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6083) Distributed Transactions (preview): Rejects malformed or legacy LSN-only caller-supplied session tokens, automatically applies cached tokens to reads and writes on Session-consistency accounts, inherits parent-partition session progress after splits or merges, and refreshes routing when responses indicate a move from the range resolved for an automatic token. Required routing lookup failures prevent dispatch instead of omitting session progress.
+
 ### <a name="3.65.0-preview.0"/> [3.65.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.65.0-preview.0) - 2026-11-06
 
 #### Bugs Fixed
