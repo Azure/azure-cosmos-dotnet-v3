@@ -151,9 +151,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     .ConfigureAwait(false);
             }
 
-            this.documentServiceLeaseStoreManager.LeaseManager.ChangeFeedModeSwitchingCheck(
-                await this.documentServiceLeaseStoreManager.LeaseContainer.GetAllLeasesAsync().ConfigureAwait(false),
-                this.changeFeedLeaseOptions.Mode);
+            this.documentServiceLeaseStoreManager
+                .LeaseManager
+                .ChangeFeedModeSwitchingCheck(
+                    documentServiceLeases: await this.documentServiceLeaseStoreManager
+                        .LeaseContainer
+                            .GetAllLeasesAsync()
+                            .ConfigureAwait(false),
+                    changeFeedLeaseOptionsMode: this.changeFeedLeaseOptions.Mode);
 
             this.partitionManager = this.BuildPartitionManager(
                 containerRid,

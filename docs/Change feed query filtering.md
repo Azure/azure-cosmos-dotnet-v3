@@ -180,10 +180,18 @@ Failed or canceled reads do not adopt an error response's ETag.
 
 Automatic processor checkpointing advances after successful pages, including
 empty pages. Typed callbacks skip empty batches; stream callbacks can receive
-them. Manual checkpointing does not automatically acknowledge an earlier batch
-when later pages are empty. Calling a later checkpoint explicitly acknowledges
-all physical progress up to that position. HTTP 304 advances the live iterator,
-but does not by itself persist a processor checkpoint.
+them. During ordinary processing with manual checkpointing, empty pages do not
+themselves checkpoint an earlier batch. Calling a later checkpoint explicitly
+acknowledges all physical progress up to that position. HTTP 304 advances the
+live iterator, but does not by itself persist a processor checkpoint.
+
+This is not a replay guarantee across partition splits. Existing split recovery
+uses the live continuation when creating replacement leases, which can be ahead
+of the last explicit checkpoint after empty pages or a 304. Restarting from
+those leases may therefore skip an earlier uncheckpointed batch. This behavior
+predates query filtering and also applies to unfiltered processors. The combined
+uncheckpointed-batch, empty-page/304, split, and restart sequence has not been
+validated end to end; a live service split has not been reproduced.
 
 Existing status, substatus, activity ID, request charge, and timing diagnostics
 remain available. No raw SQL, query fingerprint, or document body is added to
@@ -233,7 +241,7 @@ emulator case does not certify every cloud storage engine or transport.
 | Synchronous/asynchronous backend reads | SDK async pull and processor emulator cases | `ChangeFeedContextWithAsyncReadTest` parity with native synchronous reads. |
 | Operation Log / Log Store / Local Store / HybridRow | Not selectable or certified by these SDK tests | All named `DocumentResourceManagerTest` and `DocumentResourceManagerTestWithLogStore` combinations in the issue, including switch points and disabled support. |
 | Latest version and all versions/deletes | `PullFiltersBothModesAndComposesWithPartitionKey`, `QueryReadsPreserveProtocolAndOwnEachPayload`, `AllContainerBuilderShapesAcceptQuery`; `AllVersionsAndDeletesStartsAndRestartsWithFreshInMemoryLeases` verifies filtered/unfiltered public-builder startup and restart through the local request pipeline; `StartAsyncRejectsExistingLeaseInDifferentMode` preserves mode-mismatch rejection | Native full-fidelity storage parity and full-fidelity processor delivery/restart acceptance. Local lifecycle coverage is not backend full-fidelity processor E2E. |
-| Empty pages and continuation progress | `EmptyPagesAdvanceReadsWithoutAcknowledgingManualBatches`, `FailedReadRetainsContinuation`, `CancellationDisposesPayloadWithoutAdvancing` | Backend evaluator loop/cancellation limits. |
+| Empty pages and continuation progress | `EmptyPagesAdvanceReadsWithoutAcknowledgingManualBatches`, `FailedReadRetainsContinuation`, `CancellationDisposesPayloadWithoutAdvancing` cover ordinary processing, not replay across splits | Combined uncheckpointed batch, empty pages/304, split, replacement leases, and restart coverage; live split acceptance and backend evaluator loop/cancellation limits. |
 | Response-size preemption/order | `LargeFilteredResponsesDrainWithoutLoss` drains a 6 MB single-partition backlog, with a large page-size hint, in multiple pages without loss, duplication, or reordering | Native `TestReadFeedIfNoneMatchWithQueryPreemptionByResponseSize`, including nonmatching records and both image modes. |
 | Pull query changes | `PullContinuationAllowsChangingQueryWithoutReplayingEarlierChanges` | Cloud parity with existing continuation formats. |
 | Processor identity/lifecycle | `ProcessorFiltersCheckpointsAndRestarts` covers typed/stream, auto/manual checkpoints, persisted identity, new compatible host and incompatible startup; `ReadErrorsNotifyAndRecoverAcrossAcquisitionCycles` covers 400/429/503 and restart; `ChangedQueryDuringRenewalStopsWorkerAndNotifiesWithoutCheckpoint` covers changed stored identity with the same or a new owner; `TransientRenewalFailureDoesNotCancelWorker` preserves filtered/unfiltered renewal recovery | Cross-SDK fingerprint agreement. `PreFeatureLeaseSchemaDropsQueryIdentityOnReplacement` models the verified old serializer schema, not a complete old-SDK process test; mixed-version filtered cohosting is unsupported. |
