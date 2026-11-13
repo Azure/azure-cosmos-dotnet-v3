@@ -494,6 +494,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
             }
 
+            trace.SetWalkingStateRecursively();
             trace.Data.TryGetValue("Hybrid Search Statistics Cache", out object traceDatum);
             return new CachedHybridSearchRun(documents, requestCharge, container.StatisticsRequestCount, (string)traceDatum, failure);
         }

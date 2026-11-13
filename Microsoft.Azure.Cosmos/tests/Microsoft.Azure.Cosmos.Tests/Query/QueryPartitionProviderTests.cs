@@ -127,10 +127,10 @@
                 }
                 else
                 {
-                    Assert.AreEqual(expected, JsonConvert.SerializeObject(hybridPlan.FullTextSearchTerms));
+                    Assert.AreEqual(expected, JsonConvert.SerializeObject(hybridPlan.FullTextSearchTerms, Formatting.None));
                     string serialized = JsonConvert.SerializeObject(hybridPlan);
                     HybridSearchQueryInfo roundTripped = JsonConvert.DeserializeObject<HybridSearchQueryInfo>(serialized);
-                    Assert.AreEqual(expected, JsonConvert.SerializeObject(roundTripped.FullTextSearchTerms));
+                    Assert.AreEqual(expected, JsonConvert.SerializeObject(roundTripped.FullTextSearchTerms, Formatting.None));
                 }
             }
         }

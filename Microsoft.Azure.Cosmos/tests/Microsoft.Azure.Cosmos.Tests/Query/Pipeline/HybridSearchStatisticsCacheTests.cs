@@ -61,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 Assert.IsFalse(disabled.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), disabled.GetElapsedTime()));
                 Assert.IsFalse(disabled.TryGet("rid", "etag", CreatePlan(), trace, out GlobalFullTextSearchStatistics result));
                 Assert.IsNull(result);
+                trace.SetWalkingStateRecursively();
                 Assert.IsFalse(trace.Data.ContainsKey("Hybrid Search Statistics Cache"));
             }
 
@@ -69,11 +70,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Assert.AreNotSame(HybridSearchStatisticsCache.GetNoOpImpl(), enabled);
             using Cosmos.Tracing.Trace missTrace = Cosmos.Tracing.Trace.GetRootTrace("Enabled cache miss");
             Assert.IsFalse(enabled.TryGet("rid", "etag", CreatePlan(), missTrace, out _));
+            missTrace.SetWalkingStateRecursively();
             Assert.AreEqual("Miss", missTrace.Data["Hybrid Search Statistics Cache"]);
 
             using Cosmos.Tracing.Trace hitTrace = Cosmos.Tracing.Trace.GetRootTrace("Enabled cache hit");
             Assert.IsTrue(enabled.TryAdd("rid", "etag", CreatePlan(), CreateStatistics(), enabled.GetElapsedTime()));
             Assert.IsTrue(enabled.TryGet("rid", "etag", CreatePlan(), hitTrace, out _));
+            hitTrace.SetWalkingStateRecursively();
             Assert.AreEqual("Hit", hitTrace.Data["Hybrid Search Statistics Cache"]);
         }
 

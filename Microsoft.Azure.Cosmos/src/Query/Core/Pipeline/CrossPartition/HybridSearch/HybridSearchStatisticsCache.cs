@@ -199,7 +199,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 for (int pathIndex = 0; pathIndex < fullTextSearchTerms.Count; pathIndex++)
                 {
                     FullTextStatistics pathStatistics = statistics.FullTextStatistics[pathIndex];
-                    Debug.Assert(pathStatistics.HitCounts.Length == fullTextSearchTerms[pathIndex].Terms.Count, "Statistics must have one hit count per term.");
                     entryCount += 1 + pathStatistics.HitCounts.Length;
                 }
 
@@ -221,6 +220,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                         collectionStartedAt);
 
                     ReadOnlySpan<long> hitCounts = pathStatistics.HitCounts.Span;
+                    Debug.Assert(hitCounts.Length == pathSearchTerms.Terms.Count, "Statistics must have one hit count per term.");
                     for (int termIndex = 0; termIndex < hitCounts.Length; termIndex++)
                     {
                         FullTextSearchTerm term = pathSearchTerms.Terms[termIndex];
