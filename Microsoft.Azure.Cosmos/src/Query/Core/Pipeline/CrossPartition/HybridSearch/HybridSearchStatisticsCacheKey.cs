@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             string term,
             int? distance)
         {
-            HashCode hash = new HashCode();
+            HashCode hash = new ();
             hash.Add(containerResourceId);
             hash.Add(containerETag);
             hash.Add(kind);

@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         // Each count is read and written independently; a lookup may combine counts from different collections.
         private sealed class Impl : HybridSearchStatisticsCache
         {
-            private readonly ConcurrentDictionary<CacheKey, CachedCount> counts = new ConcurrentDictionary<CacheKey, CachedCount>();
+            private readonly ConcurrentDictionary<CacheKey, CachedCount> counts = new ();
             private readonly TimeSpan maxAge;
             private readonly int maxEntries;
             private readonly Func<TimeSpan> getElapsedTime;
@@ -237,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             private void Set(CacheKey key, long value, TimeSpan collectionStartedAt)
             {
-                CachedCount count = new CachedCount(value, collectionStartedAt);
+                CachedCount count = new (value, collectionStartedAt);
 
                 // A slower, older collection must not replace a newer count.
                 this.counts.AddOrUpdate(
@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private sealed class NoOpImpl : HybridSearchStatisticsCache
         {
-            public static readonly NoOpImpl Instance = new NoOpImpl();
+            public static readonly NoOpImpl Instance = new ();
 
             private NoOpImpl()
             {
