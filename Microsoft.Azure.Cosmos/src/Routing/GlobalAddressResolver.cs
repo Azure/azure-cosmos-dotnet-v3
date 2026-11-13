@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -40,7 +41,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly bool enableTcpConnectionEndpointRediscovery;
         private readonly bool isReplicaAddressValidationEnabled;
         private readonly bool enableAsyncCacheExceptionNoSharing;
+        private readonly bool useReducedControlPlaneRetries;
         private readonly IConnectionStateListener connectionStateListener;
+        private readonly AuthorizationTokenProvider authorizationTokenProvider;
         private IOpenConnectionsHandler openConnectionsHandler;
 
         public GlobalAddressResolver(
@@ -54,7 +57,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             ConnectionPolicy connectionPolicy,
             CosmosHttpClient httpClient,
             IConnectionStateListener connectionStateListener,
-            bool enableAsyncCacheExceptionNoSharing = true)
+            bool enableAsyncCacheExceptionNoSharing = true,
+            AuthorizationTokenProvider authorizationTokenProvider = null)
         {
             this.endpointManager = endpointManager;
             this.partitionKeyRangeLocationCache = partitionKeyRangeLocationCache;
@@ -65,6 +69,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.serviceConfigReader = serviceConfigReader;
             this.httpClient = httpClient;
             this.connectionStateListener = connectionStateListener;
+            this.authorizationTokenProvider = authorizationTokenProvider;
 
             int maxBackupReadEndpoints =
                 !connectionPolicy.EnableReadRequestsFallback.HasValue || connectionPolicy.EnableReadRequestsFallback.Value
@@ -75,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
 
             this.enableAsyncCacheExceptionNoSharing = enableAsyncCacheExceptionNoSharing;
+            this.useReducedControlPlaneRetries = connectionPolicy.UseReducedControlPlaneRetries;
 
             this.maxEndpoints = maxBackupReadEndpoints + 2; // for write and alternate write endpoint (during failover)
 
@@ -229,8 +235,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             IAddressResolver resolver = this.GetAddressResolver(request);
             PartitionAddressInformation partitionAddressInformation = await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
-
-            if (!this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request))
+            if (!this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request, checkHubRegionOverrideInCache: false))
             {
                 return partitionAddressInformation;
             }
@@ -296,11 +301,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceWarning("Failed to open connection to all the replica addresses for the PkRange: {0}, collectionRid: {1} and originalFailedLocation: {2}, with exception: {3}",
-                        pkRange.Id,
-                        collectionRid,
-                        originalFailedLocation,
-                        ex.Message);
+                    if (DiagnosticsHandlerHelper.ShouldTrace(System.Diagnostics.TraceEventType.Warning))
+                    {
+                        DefaultTrace.TraceWarning("Failed to open connection to all the replica addresses for the PkRange: {0}, collectionRid: {1} and originalFailedLocation: {2}, with exception: {3}",
+                            pkRange.Id,
+                            collectionRid,
+                            originalFailedLocation,
+                            ex.Message);
+                    }
                 }
             }
         }
@@ -349,7 +357,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.connectionStateListener,
                         enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery,
                         replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled,
-                        enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
+                        enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
+                        authorizationTokenProvider: this.authorizationTokenProvider,
+                        useReducedControlPlaneRetries: this.useReducedControlPlaneRetries);
 
                     string location = this.endpointManager.GetLocation(endpoint);
                     AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);

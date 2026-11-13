@@ -643,6 +643,67 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
         }
 
         [TestMethod]
+        [Timeout(120000)]
+        [Owner("ntripician")]
+        [Description("Regression test for issue #5846 (https://github.com/Azure/azure-cosmos-dotnet-v3/issues/5846). " +
+            "PR #5617 introduced an unconditional StartTime backfill in ChangeFeedProcessorCore.StartAsync() that " +
+            "broke AVAD push processors on cold start (the AVAD endpoint 400s on an explicit StartTime against a " +
+            "null-continuation lease). Verifies an AVAD ChangeFeedProcessor started cold (no WithStartTime / " +
+            "WithStartFromBeginning, empty lease container) actually delivers an inserted document to the observer.")]
+        public async Task TestAllVersionsAndDeletesProcessor_ColdStart_DoesNotFail()
+        {
+            ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes);
+            ManualResetEvent docDelivered = new ManualResetEvent(false);
+            Exception exception = default;
+
+            ChangeFeedProcessor processor = monitoredContainer
+                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(
+                    processorName: "regressionProcessor",
+                    onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<ToDoActivity>> docs, CancellationToken token) =>
+                    {
+                        if (docs != null && docs.Count > 0)
+                        {
+                            docDelivered.Set();
+                        }
+
+                        return Task.CompletedTask;
+                    })
+                .WithInstanceName(Guid.NewGuid().ToString())
+                .WithLeaseContainer(this.LeaseContainer)
+                .WithErrorNotification((leaseToken, error) =>
+                {
+                    exception = error.InnerException ?? error;
+
+                    return Task.CompletedTask;
+                })
+                .Build();
+
+            await processor.StartAsync();
+
+            try
+            {
+                await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+                await monitoredContainer.CreateItemAsync<ToDoActivity>(
+                    new ToDoActivity { id = "1", pk = "1", description = "AVAD cold-start regression test for #5846.", ttl = -1 },
+                    partitionKey: new PartitionKey("1"));
+
+                bool received = docDelivered.WaitOne(TimeSpan.FromSeconds(30));
+
+                if (exception != default)
+                {
+                    Assert.Fail($"AVAD CFP cold-start regression (#5846) surfaced an error: {exception.Message}");
+                }
+
+                Assert.IsTrue(received, "AVAD CFP cold-start (#5846) did not deliver any change to the observer within the timeout.");
+            }
+            finally
+            {
+                await processor.StopAsync();
+            }
+        }
+
+        [TestMethod]
         [Owner("trivediyash")]
         [Description("Validates that ConflictResolutionTimestampInSeconds getter throws JsonException when value is zero.")]
         public void ValidateConflictResolutionTimestampInSecondsGetterThrowsOnZeroTest()

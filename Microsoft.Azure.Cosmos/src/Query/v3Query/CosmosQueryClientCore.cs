@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
@@ -80,13 +81,24 @@ namespace Microsoft.Azure.Cosmos
                 };
             }
 
+            IEnumerable<ISecondaryIndexMetadata> globalSecondaryIndexes = Array.Empty<ISecondaryIndexMetadata>();
+            if (this.clientContext.ClientOptions.EnableSecondaryIndexRouting)
+            {
+                globalSecondaryIndexes =
+                    await this.clientContext.SecondaryIndexMetadataCache.GetSecondaryIndexMetadataAsync(
+                        containerProperties,
+                        trace,
+                        cancellationToken: cancellationToken);
+            }
+
             return new ContainerQueryProperties(
                 containerProperties.ResourceId,
                 effectivePartitionKeyRange,
                 containerProperties.PartitionKey,
                 containerProperties.VectorEmbeddingPolicy,
                 containerProperties.GeospatialConfig.GeospatialType,
-                this.documentClient.UseLengthAwareRangeComparer);
+                this.documentClient.UseLengthAwareRangeComparer,
+                globalSecondaryIndexes);
         }
 
         public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
@@ -143,6 +155,7 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            requestOptions = (QueryRequestOptions)requestOptions.ShallowCopy();
             requestOptions.MaxItemCount = pageSize;
 
             ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
@@ -182,16 +195,24 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
+            IReadOnlyList<string> excludeRegions,
             Guid clientQueryCorrelationId,
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            // Mirrors the real query's RequestOptions.ExcludeRegions handling (RequestMessage.cs) so that
+            // gateway query-plan requests honor caller-specified excluded regions the same way a regular
+            // Query request does, instead of always defaulting to the unfiltered/preferred read-endpoint list.
+            RequestOptions requestOptions = (excludeRegions != null && excludeRegions.Count > 0)
+                ? new RequestOptions { ExcludeRegions = excludeRegions.ToList() }
+                : null;
+
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
             using (ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
-                requestOptions: null,
+                requestOptions: requestOptions,
                 feedRange: partitionKey.HasValue ? new FeedRangePartitionKey(partitionKey.Value) : null,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
@@ -209,20 +230,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
-
-                if (this.documentClient.isThinClientEnabled)
-                {
-                    ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
-                        resourceUri, trace, cancellationToken);
-
-                    partitionedQueryExecutionInfo = ThinClientQueryPlanHelper.DeserializeQueryPlanResponse(
-                        message.Content,
-                        containerProperties.PartitionKey);
-                }
-                else
-                {
-                    partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
-                }
+                partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
             }
 
             return partitionedQueryExecutionInfo;

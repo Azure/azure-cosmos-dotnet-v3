@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private const int DefaultRentCapacity = 16;
 
         private List<T[]> rentedBuffers;
+        private T[] scratch;
         private bool disposedValue;
 
         public ArrayPoolManager()
@@ -36,6 +37,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return buffer;
         }
 
+        /// <summary>
+        /// Rents a single reusable scratch buffer for transient staging where the copied bytes are
+        /// fully consumed before the next call (e.g. copy-then-write). The same buffer is returned
+        /// across calls, growing only when a larger minimum length is requested, so a document with
+        /// many small transient copies (e.g. escaped pass-through strings/property names) does not
+        /// churn the shared pool with one rental per copy. The scratch buffer is returned (and
+        /// cleared) together with the rest on <see cref="Dispose()"/>.
+        /// </summary>
+        public T[] RentScratch(int minimumLength)
+        {
+            if (this.scratch == null || this.scratch.Length < minimumLength)
+            {
+                this.scratch = this.Rent(minimumLength);
+            }
+
+            return this.scratch;
+        }
+
+        internal int RentedBufferCount => this.rentedBuffers?.Count ?? 0;
+
         protected virtual void Dispose(bool disposing)
         {
             if (!this.disposedValue)
@@ -48,6 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     }
 
                     this.rentedBuffers = null;
+                    this.scratch = null;
                 }
 
                 this.disposedValue = true;

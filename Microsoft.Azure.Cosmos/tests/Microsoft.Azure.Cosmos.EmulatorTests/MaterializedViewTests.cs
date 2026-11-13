@@ -1,0 +1,116 @@
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Net;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+
+    [TestClass]
+    public class MaterializedViewTests
+    {
+        private CosmosClient cosmosClient;
+        private Database database;
+
+        [TestInitialize]
+        public async Task TestInitialize()
+        {
+            this.cosmosClient = TestCommon.CreateCosmosClient();
+            await Util.DeleteAllDatabasesAsync(this.cosmosClient);
+            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+        }
+
+        [TestCleanup]
+        public async Task TestCleanup()
+        {
+            if (this.database != null)
+            {
+                await this.database.DeleteStreamAsync();
+            }
+
+            this.cosmosClient?.Dispose();
+        }
+
+        [DataTestMethod]
+        [DataRow("SELECT * FROM c", 0)]
+        [DataRow("SELECT c.pk FROM c", 1)]
+        public async Task ReadContainerPropertiesIncludesMaterializedViewMetadata(string query, int expectedCandidateCount)
+        {
+            string sourceContainerId = $"source-{Guid.NewGuid()}";
+            string materializedViewContainerId = $"view-{Guid.NewGuid()}";
+
+            ContainerProperties sourceContainerProperties = new ContainerProperties(sourceContainerId, "/pk");
+            // The emulator preview contract requires the legacy source opt-in field.
+            JsonConvert.PopulateObject(
+                @"{""allowMaterializedViews"":true}",
+                sourceContainerProperties);
+
+            ContainerResponse sourceCreateResponse = await this.database.CreateContainerAsync(
+                sourceContainerProperties);
+            Assert.AreEqual(HttpStatusCode.Created, sourceCreateResponse.StatusCode);
+
+            ContainerProperties materializedViewProperties = new ContainerProperties(
+                materializedViewContainerId,
+                "/pk")
+            {
+                MaterializedViewDefinition = new MaterializedViewDefinition
+                {
+                    SourceContainerResourceId = sourceCreateResponse.Resource.ResourceId,
+                    SourceContainerId = sourceContainerId,
+                    Definition = query,
+                },
+            };
+
+            ContainerResponse materializedViewCreateResponse = await this.database.CreateContainerAsync(
+                materializedViewProperties,
+                ThroughputProperties.CreateAutoscaleThroughput(5000));
+            Assert.AreEqual(HttpStatusCode.Created, materializedViewCreateResponse.StatusCode);
+
+            ContainerResponse sourceReadResponse = await sourceCreateResponse.Container.ReadContainerAsync();
+            Assert.AreEqual(1, sourceReadResponse.Resource.MaterializedViews.Count);
+            MaterializedViewProperties sourceMetadata = sourceReadResponse.Resource.MaterializedViews[0];
+            Assert.AreEqual(materializedViewContainerId, sourceMetadata.Id);
+            Assert.AreEqual(materializedViewCreateResponse.Resource.ResourceId, sourceMetadata.ResourceId);
+
+            ContainerResponse materializedViewReadResponse =
+                await materializedViewCreateResponse.Container.ReadContainerAsync();
+            Assert.IsNotNull(materializedViewReadResponse.Resource.MaterializedViewDefinition);
+            MaterializedViewDefinition definition =
+                materializedViewReadResponse.Resource.MaterializedViewDefinition;
+            Assert.AreEqual(sourceCreateResponse.Resource.ResourceId, definition.SourceContainerResourceId);
+            Assert.AreEqual(sourceContainerId, definition.SourceContainerId);
+            Assert.AreEqual(query, definition.Definition);
+
+            using CosmosClient discoveryClient = TestCommon.CreateCosmosClient();
+            ISecondaryIndexMetadataProvider provider = new SecondaryIndexMetadataProvider(
+                discoveryClient.DocumentClient);
+            IEnumerable<ISecondaryIndexMetadata> metadata = await provider.GetSecondaryIndexMetadataAsync(
+                sourceReadResponse.Resource,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreEqual(expectedCandidateCount, metadata.Count());
+            if (expectedCandidateCount == 0)
+            {
+                return;
+            }
+
+            Assert.AreEqual(materializedViewCreateResponse.Resource.ResourceId, metadata.ElementAt(0).Rid);
+            Assert.AreEqual(sourceCreateResponse.Resource.ResourceId, metadata.ElementAt(0).SourceCollectionRid);
+            Assert.AreEqual("/pk", metadata.ElementAt(0).PartitionKey.Paths[0]);
+            Assert.AreEqual(1, metadata.ElementAt(0).IncludedProperties.Count);
+            PropertyPath partitionKeyPath = new PropertyPath(new[] { "pk" });
+            Assert.AreEqual(partitionKeyPath, metadata.ElementAt(0).IncludedProperties["pk"]);
+            Assert.AreEqual(ConsistencyLevel.Eventual, metadata.ElementAt(0).ConsistencyLevel);
+        }
+    }
+}

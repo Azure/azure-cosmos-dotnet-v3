@@ -158,5 +158,25 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             return this.Value.Summary.GetFailedCount();
        }
+
+        /// <inheritdoc/>
+        public override bool HedgingStarted()
+        {
+            return this.Value?.Summary?.HedgingDetectionState?.HedgingStarted ?? false;
+        }
+
+        /// <inheritdoc/>
+        public override IReadOnlyList<RequestedRegion> GetRequestedRegions()
+        {
+            return this.Value?.Summary?.HedgingDetectionState?.GetRequestedRegionsSnapshot()
+                ?? Array.Empty<RequestedRegion>();
+        }
+
+        /// <inheritdoc/>
+        public override IReadOnlyList<string> GetRespondedRegions()
+        {
+            return this.Value?.Summary?.HedgingDetectionState?.GetRespondedRegionsSnapshot()
+                ?? Array.Empty<string>();
+        }
     }
 }

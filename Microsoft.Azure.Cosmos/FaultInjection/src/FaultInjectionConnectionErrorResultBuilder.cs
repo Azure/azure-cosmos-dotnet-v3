@@ -50,7 +50,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>the <see cref="FaultInjectionConnectionErrorResultBuilder"/>.</returns>
         public FaultInjectionConnectionErrorResultBuilder WithThreshold(double thresholdPercentage)
         {
-            if (thresholdPercentage <= 0 || thresholdPercentage > 1)
+            // Negated so that double.NaN, which compares false against every bound, is rejected.
+            if (!(thresholdPercentage > 0 && thresholdPercentage <= 1))
             {
                 throw new ArgumentOutOfRangeException(nameof(thresholdPercentage), "Argument 'thresholdPercentage' must be within the range (0, 1].");
             }

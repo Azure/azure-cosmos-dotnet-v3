@@ -581,14 +581,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
             if (cosmosQueryContext.QueryClient.BypassQueryParsing())
             {
-                // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
-                // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
+                // Use gateway planning when native planning is unavailable, disabled, or unsupported.
                 partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
                     cosmosQueryContext,
                     inputParameters.SqlQuerySpec,
                     cosmosQueryContext.ResourceLink,
                     inputParameters.PartitionKey,
                     inputParameters.IsHybridSearchQueryPlanOptimizationDisabled,
+                    inputParameters.ExcludeRegions,
                     trace,
                     cancellationToken);
             }
@@ -840,7 +840,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 bool isHybridSearchQueryPlanOptimizationDisabled,
                 bool enableDistributedQueryGatewayMode,
                 FullTextScoreScope fullTextScoreScope,
-                TestInjections testInjections)
+                TestInjections testInjections,
+                IReadOnlyList<string> excludeRegions = null)
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.InitialUserContinuationToken = initialUserContinuationToken;
@@ -857,6 +858,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.EnableDistributedQueryGatewayMode = enableDistributedQueryGatewayMode;
                 this.FullTextScoreScope = fullTextScoreScope;
                 this.TestInjections = testInjections;
+                this.ExcludeRegions = excludeRegions;
             }
 
             public static InputParameters Create(
@@ -874,7 +876,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 bool isHybridSearchQueryPlanOptimizationDisabled,
                 bool enableDistributedQueryGatewayMode,
                 FullTextScoreScope fullTextScoreScope,
-                TestInjections testInjections)
+                TestInjections testInjections,
+                IReadOnlyList<string> excludeRegions = null)
             {
                 if (sqlQuerySpec == null)
                 {
@@ -914,7 +917,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     isHybridSearchQueryPlanOptimizationDisabled: isHybridSearchQueryPlanOptimizationDisabled,
                     enableDistributedQueryGatewayMode: enableDistributedQueryGatewayMode,
                     fullTextScoreScope: fullTextScoreScope,
-                    testInjections: testInjections);
+                    testInjections: testInjections,
+                    excludeRegions: excludeRegions);
             }
 
             public SqlQuerySpec SqlQuerySpec { get; }
@@ -933,6 +937,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public bool EnableDistributedQueryGatewayMode { get; }
             public bool UseLengthAwareRangeComparer { get; }
             public FullTextScoreScope FullTextScoreScope { get; }
+            public IReadOnlyList<string> ExcludeRegions { get; }
 
             public InputParameters WithContinuationToken(CosmosElement token)
             {
@@ -951,7 +956,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     this.IsHybridSearchQueryPlanOptimizationDisabled,
                     this.EnableDistributedQueryGatewayMode,
                     this.FullTextScoreScope,
-                    this.TestInjections);
+                    this.TestInjections,
+                    this.ExcludeRegions);
             }
         }
 

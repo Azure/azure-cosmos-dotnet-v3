@@ -129,7 +129,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="id">The unique identifier of the item to patch.</param>
         /// <param name="patchOperations">The list of <see cref="PatchOperation"/> to apply to the item.</param>
-        /// <param name="requestOptions">Options for the patch operation</param>
+        /// <param name="requestOptions">
+        /// Options for the patch operation. Set <see cref="DistributedTransactionPatchItemRequestOptions.FilterPredicate"/>
+        /// to perform a conditional patch that the server evaluates atomically before applying the operations.
+        /// </param>
         /// <returns>The current <see cref="DistributedWriteTransaction"/> instance for method chaining.</returns>
         /// <remarks>
         /// The distributed transaction bypasses the per-container request pipeline. Only the database and
@@ -141,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             string id,
             IReadOnlyList<PatchOperation> patchOperations,
-            DistributedTransactionRequestOptions requestOptions = null);
+            DistributedTransactionPatchItemRequestOptions requestOptions = null);
 
         /// <summary>
         /// Adds a patch operation to the distributed transaction using a pre-serialized JSON patch stream.

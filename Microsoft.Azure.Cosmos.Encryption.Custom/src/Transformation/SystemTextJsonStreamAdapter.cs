@@ -58,6 +58,12 @@ internal sealed class SystemTextJsonStreamAdapter : IMdeJsonProcessorAdapter
         try
         {
             DecryptionContext context = await this.streamProcessor.DecryptStreamAsync(input, bufferWriter, encryptor, properties, diagnosticsContext, cancellationToken);
+
+            // This adapter owns input-stream disposal on the success path (matching the Newtonsoft
+            // adapter and the documented processor contract). EncryptionProcessor.DecryptAsync also
+            // disposes input on success; Stream.Dispose is idempotent, so the double-dispose is
+            // benign. Do not rely on either layer alone to release the input.
+            await input.DisposeAsync();
             return (new ReadOnlyBufferWriterStream(bufferWriter), context);
         }
         catch

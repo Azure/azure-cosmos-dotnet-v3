@@ -19,18 +19,34 @@ namespace Microsoft.Azure.Cosmos
     abstract class DistributedTransaction
     {
         /// <summary>
+        /// Gets the idempotency token of the latest commit attempt that reached the dispatch boundary.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Guid.Empty"/> until the first attempt is dispatched. Because the token is published
+        /// before the dispatch is awaited, it remains observable even when <see cref="ExecuteTransactionAsync"/>
+        /// throws <see cref="OperationCanceledException"/> — including cancellation during an in-flight dispatch.
+        /// </remarks>
+        internal virtual Guid IdempotencyToken => Guid.Empty;
+
+        /// <summary>
         /// Commits the distributed transaction.
         /// </summary>
         /// <remarks>
-        /// This method is single-use: it can only be called once per transaction instance.
-        /// If the call fails for any reason (including transient network failures or cancellation),
-        /// the transaction instance is permanently consumed. To retry, construct a new transaction
-        /// with the same operations.
+        /// Add all operations before calling this method; later additions are not submitted.
+        /// An empty transaction is rejected without consuming the instance. Otherwise, the instance is
+        /// single-use, even if execution fails or is cancelled. Create a new transaction for further operations.
+        /// Concurrent use of the transaction builder is not supported.
+        /// <para>
+        /// Cancellation stops client-side processing; it does not roll back writes that may have already
+        /// reached the service. Cancellation or a network failure can leave the transaction's outcome unknown.
+        /// Reconcile that outcome before resubmitting: a new transaction uses a new idempotency token and
+        /// can apply the same writes twice.
+        /// </para>
         /// </remarks>
-        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe during client-side processing. Cancellation does not guarantee that a write transaction has not committed.</param>
         /// <returns>A <see cref="Task{TResult}"/> containing a <see cref="DistributedTransactionResponse"/> that represents the result of the transaction.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if <see cref="CommitTransactionAsync"/> has already been called on this instance.</exception>
-        /// <exception cref="OperationCanceledException">Thrown if <paramref name="cancellationToken"/> is cancelled before or during the commit.</exception>
-        public abstract Task<DistributedTransactionResponse> CommitTransactionAsync(CancellationToken cancellationToken = default);
+        /// <exception cref="InvalidOperationException">Thrown if the transaction has no operations or execution has already started on this instance.</exception>
+        /// <exception cref="OperationCanceledException">Thrown when cancellation is observed before or during execution. A write transaction may still have committed.</exception>
+        public abstract Task<DistributedTransactionResponse> ExecuteTransactionAsync(CancellationToken cancellationToken = default);
     }
 }

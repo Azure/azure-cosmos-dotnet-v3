@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Text;
+    using System.Threading;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
@@ -24,8 +25,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly int times;
         private readonly TimeSpan delay;
         private readonly bool suppressServiceRequest;
-        private readonly double injectionRate;
         private readonly FaultInjectionApplicationContext applicationContext;
+
+        private double injectionRate;
 
         /// <summary>
         /// Constructor for FaultInjectionCustomServerErrorResultInternal
@@ -106,7 +108,17 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>The injection rate.</returns>
         public double GetInjectionRate()
         {
-            return this.injectionRate;
+            return Volatile.Read(ref this.injectionRate);
+        }
+
+        /// <summary>
+        /// Updates the percentage of how many times the rule will be applied. The new rate takes
+        /// effect on the next request evaluated by the rule.
+        /// </summary>
+        /// <param name="injectionRate">The new injection rate, in the range (0, 1].</param>
+        public void SetInjectionRate(double injectionRate)
+        {
+            Volatile.Write(ref this.injectionRate, injectionRate);
         }
 
         /// <summary>

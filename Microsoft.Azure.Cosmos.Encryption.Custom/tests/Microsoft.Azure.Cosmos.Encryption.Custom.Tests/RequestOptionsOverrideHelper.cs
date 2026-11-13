@@ -30,5 +30,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
             return null;
 #endif
         }
+
+        internal static EncryptionItemRequestOptions Create(EncryptionOptions encryptionOptions, JsonProcessor processor)
+        {
+            return new EncryptionItemRequestOptions
+            {
+                EncryptionOptions = encryptionOptions,
+                Properties = new Dictionary<string, object>
+                {
+                    { JsonProcessorRequestOptionsExtensions.JsonProcessorPropertyBagKey, processor }
+                }
+            };
+        }
     }
 }

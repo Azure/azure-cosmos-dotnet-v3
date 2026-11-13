@@ -18,29 +18,59 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual bool ShouldThrow503OnTimeout => false;
 
+        /// <summary>
+        /// The request timeout of the first attempt in this policy's timeout sequence.
+        /// Cross-region metadata hedging derives its hedge threshold from this value
+        /// (first-attempt timeout + a fixed step) so the threshold always sits between
+        /// the first and second HTTP attempt timeouts. See
+        /// <c>docs/metadata-hedging-simple-design.md</c> §5.
+        /// </summary>
+        public virtual TimeSpan FirstAttemptTimeout
+        {
+            get
+            {
+                using IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> e = this.GetTimeoutEnumerator();
+                return e.MoveNext() ? e.Current.requestTimeout : TimeSpan.Zero;
+            }
+        }
+
         public static HttpTimeoutPolicy GetTimeoutPolicy(
            DocumentServiceRequest documentServiceRequest,
            bool isPartitionLevelFailoverEnabled = false,
-           bool isThinClientEnabled = false)
+           bool isThinClientEnabled = false,
+           bool useReducedControlPlaneRetries = false)
         {
             //Query Plan Requests
             if (documentServiceRequest.ResourceType == ResourceType.Document
                 && documentServiceRequest.OperationType == OperationType.QueryPlan)
             {
-                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
+                return HttpTimeoutPolicy.GetControlPlaneHotPathPolicy(useReducedControlPlaneRetries);
             }
 
             //Get Partition Key Range Requests
             if (documentServiceRequest.ResourceType == ResourceType.PartitionKeyRange
                 && documentServiceRequest.OperationType == OperationType.ReadFeed)
             {
-                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
+                return HttpTimeoutPolicy.GetControlPlaneHotPathPolicy(useReducedControlPlaneRetries);
             }
 
             //Get Addresses Requests
             if (documentServiceRequest.ResourceType == ResourceType.Address)
             {
-                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
+                return HttpTimeoutPolicy.GetControlPlaneHotPathPolicy(useReducedControlPlaneRetries);
+            }
+
+            // Distributed transaction (DTX) requests have their own retry/backoff policy
+            // (see DistributedTransactionCommitter outer loop and ClientRetryPolicy.ShouldRetryDtxRequest).
+            // They must use the default HTTP timeout policy regardless of OperationType (Read for
+            // DistributedReadTransaction vs CommitDistributedTransaction for DistributedWriteTransaction)
+            // so that read DTX is not mis-classified as a metadata-read on the control-plane hot path
+            // (1s/5s/65s timeouts), which would cancel long-running commits prematurely.
+            if (DistributedTransactionConstants.IsDistributedTransactionRequest(
+                    documentServiceRequest.OperationType,
+                    documentServiceRequest.ResourceType))
+            {
+                return HttpTimeoutPolicyDefault.Instance;
             }
 
             //Data Plane Operations
@@ -78,11 +108,18 @@ namespace Microsoft.Azure.Cosmos
             //Meta Data Read
             if (HttpTimeoutPolicy.IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
             {
-                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
+                return HttpTimeoutPolicy.GetControlPlaneHotPathPolicy(useReducedControlPlaneRetries);
             }
 
             //Default behavior
             return HttpTimeoutPolicyDefault.Instance;
+        }
+
+        public static HttpTimeoutPolicy GetControlPlaneHotPathPolicy(bool useReducedControlPlaneRetries)
+        {
+            return useReducedControlPlaneRetries
+                ? HttpTimeoutPolicyControlPlaneReducedRetriesHotPath.InstanceShouldThrow503OnTimeout
+                : HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
         }
 
         private static bool IsMetaData(DocumentServiceRequest request)

@@ -75,12 +75,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.QuantizerType, NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(StringEnumConverter))]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        QuantizerType? QuantizerType
+        public QuantizerType? QuantizerType
         { get; set; }
 
         /// <summary>

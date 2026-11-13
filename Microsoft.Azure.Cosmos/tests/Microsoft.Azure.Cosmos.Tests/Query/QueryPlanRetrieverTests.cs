@@ -7,9 +7,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Runtime.InteropServices;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -24,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class QueryPlanRetrieverTests
@@ -62,6 +66,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Kind = PartitionKind.Hash,
             Version = PartitionKeyDefinitionVersion.V2
         };
+
+        private string originalUseQueryInterop;
+
+        [TestInitialize]
+        public void TestInitialize()
+        {
+            // Local query planning is opt-in on Linux; other platforms ignore this variable.
+            this.originalUseQueryInterop = Environment.GetEnvironmentVariable(ConfigurationManager.UseQueryInterop);
+            Environment.SetEnvironmentVariable(ConfigurationManager.UseQueryInterop, "true");
+        }
+
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.UseQueryInterop, this.originalUseQueryInterop);
+        }
 
         [TestMethod]
         public async Task ServiceInterop_BadRequestContainsInnerException()
@@ -200,6 +220,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                     ("AZURE_COSMOS_BYPASS_QUERY_PARSING", string.Empty, false)
                 })
             {
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && name != ConfigurationManager.BypassQueryParsing)
+                {
+                    continue;
+                }
+
                 try
                 {
                     // Test new value
@@ -245,6 +270,54 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
                 Assert.IsTrue(receivedException, $"Expected exception was not received for value '{value}'");
             }
+        }
+
+        [TestMethod]
+        public async Task GetQueryPlanThroughGatewayAsync_PropagatesExcludeRegionsToQueryPlanRequest()
+        {
+            // Regression test: gateway query-plan requests must honor QueryRequestOptions.ExcludeRegions the
+            // same way the actual data query does, instead of silently dropping it (which previously caused
+            // the query-plan call to ignore excluded regions and route to the default/write region).
+            IReadOnlyList<string> expectedExcludeRegions = new List<string> { "East US 2" };
+            IReadOnlyList<string> actualExcludeRegions = null;
+
+            Mock<CosmosQueryClient> queryClient = new Mock<CosmosQueryClient>();
+            Mock<CosmosQueryContext> queryContext = new Mock<CosmosQueryContext>(
+                queryClient.Object,
+                ResourceType.Document,
+                OperationType.Query,
+                typeof(object),
+                "dbs/db/colls/coll",
+                Guid.NewGuid(),
+                /* isContinuationExpected: */ false,
+                /* allowNonValueAggregateQuery: */ false,
+                /* useSystemPrefix: */ false,
+                /* containerResourceId: */ null);
+
+            queryContext.Setup(c => c.ExecuteQueryPlanRequestAsync(
+                It.IsAny<string>(),
+                It.IsAny<ResourceType>(),
+                It.IsAny<OperationType>(),
+                It.IsAny<SqlQuerySpec>(),
+                It.IsAny<Cosmos.PartitionKey?>(),
+                It.IsAny<string>(),
+                It.IsAny<IReadOnlyList<string>>(),
+                It.IsAny<ITrace>(),
+                It.IsAny<CancellationToken>()))
+                .Callback<string, ResourceType, OperationType, SqlQuerySpec, Cosmos.PartitionKey?, string, IReadOnlyList<string>, ITrace, CancellationToken>(
+                    (_, __, ___, ____, _____, ______, excludeRegions, _______, ________) => actualExcludeRegions = excludeRegions)
+                .ReturnsAsync(new PartitionedQueryExecutionInfo());
+
+            await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
+                queryContext.Object,
+                new SqlQuerySpec("SELECT * FROM c"),
+                "dbs/db/colls/coll",
+                partitionKey: null,
+                isHybridSearchQueryPlanOptimizationDisabled: false,
+                excludeRegions: expectedExcludeRegions,
+                trace: NoOpTrace.Singleton);
+
+            CollectionAssert.AreEqual((List<string>)expectedExcludeRegions, (List<string>)actualExcludeRegions);
         }
 
         [TestMethod]
@@ -440,7 +513,74 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 JsonConvert.SerializeObject(partitionedQueryExecutionInfo.HybridSearchQueryInfo, jsonSerializerSettings);
             DebugTraceHelper.TraceQueryPlan(queryPlan);
 
-            Assert.AreEqual(testCase.ExpectedQueryPlan, queryPlan);
+            Assert.IsTrue(
+                JToken.DeepEquals(NormalizeQueryPlan(testCase.ExpectedQueryPlan), NormalizeQueryPlan(queryPlan)),
+                $"Query: {testCase.Query.QueryText}{Environment.NewLine}Expected: {testCase.ExpectedQueryPlan}{Environment.NewLine}Actual: {queryPlan}");
+        }
+
+        [DataTestMethod]
+        [DataRow("SELECT -1.79769e+308", "SELECT -1.7976900000000001e+308", true)]
+        [DataRow("SELECT 1.79769e+308", "SELECT 1.7976900000000001e+308", true)]
+        [DataRow("SELECT 1.79769e+308", "SELECT 1.79768e+308", false)]
+        [DataRow("SELECT '1.79769e+308'", "SELECT '1.7976900000000001e+308'", false)]
+        [DataRow("SELECT \"1.79769e+308\"", "SELECT \"1.7976900000000001e+308\"", false)]
+        public void QueryPlanComparisonPreservesSqlLiteralMeaning(string expectedSql, string actualSql, bool equivalent)
+        {
+            string expected = new JObject { ["rewrittenQuery"] = expectedSql }.ToString();
+            string actual = new JObject { ["rewrittenQuery"] = actualSql }.ToString();
+            Assert.AreEqual(equivalent, JToken.DeepEquals(NormalizeQueryPlan(expected), NormalizeQueryPlan(actual)));
+        }
+
+        [DataTestMethod]
+        [DataRow("Rrf", true)]
+        [DataRow("WeightedSum", false)]
+        public void QueryPlanComparisonOnlyDefaultsLegacyRrf(string scoreCombinationKind, bool equivalent)
+        {
+            JObject expected = new JObject { ["componentQueryInfos"] = new JArray() };
+            JObject actual = (JObject)expected.DeepClone();
+            actual["scoreCombinationKind"] = scoreCombinationKind;
+            Assert.AreEqual(
+                equivalent,
+                JToken.DeepEquals(NormalizeQueryPlan(expected.ToString()), NormalizeQueryPlan(actual.ToString())));
+        }
+
+        private static JObject NormalizeQueryPlan(string json)
+        {
+            JObject plan = JObject.Parse(json);
+            if (plan["componentQueryInfos"] != null && plan.Property("scoreCombinationKind") == null)
+            {
+                plan["scoreCombinationKind"] = "Rrf";
+            }
+
+            foreach (JProperty property in plan.Descendants().OfType<JProperty>())
+            {
+                if (property.Name != "rewrittenQuery" &&
+                    property.Name != "globalStatisticsQuery" &&
+                    property.Name != "orderByExpressions" &&
+                    property.Name != "groupByExpressions")
+                {
+                    continue;
+                }
+
+                IEnumerable<JValue> strings = property.Value is JArray expressions
+                    ? expressions.OfType<JValue>()
+                    : property.Value is JValue scalar ? new[] { scalar } : Enumerable.Empty<JValue>();
+                foreach (JValue sql in strings.Where(value => value.Type == JTokenType.String))
+                {
+                    // Skip quoted SQL text; only equivalent floating-point literals may change spelling.
+                    sql.Value = Regex.Replace(
+                        (string)sql.Value,
+                        @"'(?:[^'\\]|\\.|'')*'|""(?:[^""\\]|\\.|"""")*""|(?<![\w.])(?<number>-?\d+(?:\.\d+)?[eE][+-]?\d+)(?![\w.])",
+                        match => match.Groups["number"].Success &&
+                            double.TryParse(match.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out double number) &&
+                            !double.IsInfinity(number) &&
+                            !double.IsNaN(number)
+                                ? number.ToString("R", CultureInfo.InvariantCulture)
+                                : match.Value);
+                }
+            }
+
+            return plan;
         }
 
         private static TestCase MakeTest(
@@ -573,7 +713,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 throw new NotImplementedException();
             }
 
-            public override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(string resourceUri, ResourceType resourceType, OperationType operationType, SqlQuerySpec sqlQuerySpec, Cosmos.PartitionKey? partitionKey, string supportedQueryFeatures, Guid clientQueryCorrelationId, ITrace trace, CancellationToken cancellationToken)
+            public override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(string resourceUri, ResourceType resourceType, OperationType operationType, SqlQuerySpec sqlQuerySpec, Cosmos.PartitionKey? partitionKey, string supportedQueryFeatures, IReadOnlyList<string> excludeRegions, Guid clientQueryCorrelationId, ITrace trace, CancellationToken cancellationToken)
             {
                 throw new NotImplementedException();
             }

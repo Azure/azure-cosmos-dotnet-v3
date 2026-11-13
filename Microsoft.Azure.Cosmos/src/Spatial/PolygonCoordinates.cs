@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Linq;
     using System.Runtime.Serialization;
     using Converters;
+    using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -18,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// <seealso cref="MultiPolygon"/>
     [DataContract]
     [JsonConverter(typeof(PolygonCoordinatesJsonConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(PolygonCoordinatesSTJConverter))]
     public sealed class PolygonCoordinates : IEquatable<PolygonCoordinates>
     {
         /// <summary>

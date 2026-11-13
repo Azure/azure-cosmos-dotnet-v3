@@ -21,6 +21,12 @@ variables:
 
 
 jobs:
+- template:  templates/build-linux-queryplaninterop.yml
+  parameters:
+    BuildConfiguration: Release
+    LiveConnectionString: $(COSMOSDB_MULTI_REGION)
+    LiveConnectionStringName: COSMOSDB_MULTI_REGION
+
 - template:  templates/static-tools.yml
   parameters:
     BuildConfiguration: Release
@@ -72,6 +78,16 @@ jobs:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage:  $(VmImage)
+
+# FaultInjection compiles against Microsoft.Azure.Cosmos.Direct internals, so a
+# $(DirectVersion) bump can break it while the main SDK still builds. Keep this
+# gate on the PR pipeline; the live-account tests stay in the release pipeline.
+- template:  templates/build-fault-injection.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage:  $(VmImage)
+    IncludeIntegration: false
     
 - template:  templates/build-thinclient.yml
   parameters:
@@ -83,3 +99,14 @@ jobs:
     MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
     IncludePerformance: true
     IncludeCoverage: true
+
+# Live-account AAD (Microsoft Entra ID) integration tests (TestCategory=MultiRegionAad).
+# These run on every pipeline (PR + nightly), targeting the configured live Cosmos DB account
+# via an Azure Resource Manager (Workload Identity Federation) service
+# connection whose app-registration identity (co-tenant with the account) holds the Cosmos DB
+# data-plane role. The job stays skipped (green) if 'AadServiceConnection' is cleared.
+- template:  templates/build-test-aad.yml
+  parameters:
+    BuildConfiguration: Release
+    MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
+    AadServiceConnection: 'dotnet-v3-aad-ci'

@@ -69,15 +69,15 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
             {
-                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null ||
-                            clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
+                IReadOnlyList<(string, Uri)> regionsContacted = clientSideRequestStatisticsTraceDatum.RegionsContactedSnapshot;
+                if (regionsContacted.Count == 0)
                 {
                     return;
                 }
 
                 lock (this.regionContactedInternal)
                 {
-                    this.regionContactedInternal.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                    this.regionContactedInternal.UnionWith(regionsContacted);
                 }
             }
         }
@@ -94,6 +94,17 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.regionContactedInternal.Add((regionName, locationEndpoint));
             }
         }
+
+        /// <summary>
+        /// Per-operation state backing the Hedging Detection API surface (HedgingStarted /
+        /// GetRequestedRegions / GetRespondedRegions on <see cref="CosmosDiagnostics"/>).
+        /// </summary>
+        /// <remarks>
+        /// Lives on <see cref="TraceSummary"/> so that the entire trace tree for a single
+        /// operation shares one state instance. Populated at orchestrator dispatch sites
+        /// and response-handling sites; never serialized into the trace tree.
+        /// </remarks>
+        public HedgingDetectionState HedgingDetectionState { get; } = new HedgingDetectionState();
 
     }
 }

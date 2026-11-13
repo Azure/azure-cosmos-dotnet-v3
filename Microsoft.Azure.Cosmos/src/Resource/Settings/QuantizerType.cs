@@ -11,12 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// Defines the quantizer type of a vector index path specification in the Azure Cosmos DB service.
     /// </summary>
     [JsonConverter(typeof(StringEnumConverter))]
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    enum QuantizerType
+    public enum QuantizerType
     {
         /// <summary>
         /// Represents a product quantizer type.

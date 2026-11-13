@@ -420,6 +420,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 SqlQuerySpec sqlQuerySpec,
                 Cosmos.PartitionKey? partitionKey,
                 string supportedQueryFeatures,
+                IReadOnlyList<string> excludeRegions,
                 Guid clientQueryCorrelationId,
                 Cosmos.Tracing.ITrace trace,
                 CancellationToken cancellationToken)
@@ -439,6 +440,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     sqlQuerySpec,
                     partitionKey,
                     supportedQueryFeatures,
+                    excludeRegions,
                     clientQueryCorrelationId,
                     trace,
                     cancellationToken);

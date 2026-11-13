@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <remarks>
     /// Use <see cref="CosmosClient.CreateDistributedReadTransaction"/> to obtain an instance.
     /// Add read operations using <see cref="ReadItem"/> then call
-    /// <see cref="DistributedTransaction.CommitTransactionAsync"/> to execute all reads atomically.
+    /// <see cref="DistributedTransaction.ExecuteTransactionAsync"/> to execute all reads atomically.
     /// <para>
     /// <b>Isolation semantics:</b> All reads execute under snapshot isolation so the results reflect a
     /// consistent point in time across participating partitions.

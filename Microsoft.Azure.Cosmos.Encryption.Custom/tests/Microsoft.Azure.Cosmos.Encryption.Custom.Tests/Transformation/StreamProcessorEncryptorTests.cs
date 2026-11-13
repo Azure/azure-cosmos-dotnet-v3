@@ -60,6 +60,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             return JsonDocument.Parse(s);
         }
 
+        private static async Task<MemoryStream> EncryptJsonAsync(string json, EncryptionOptions options)
+        {
+            using MemoryStream input = new(Encoding.UTF8.GetBytes(json));
+            MemoryStream output = new();
+            await EncryptionProcessor.EncryptAsync(input, output, mockEncryptor.Object, options, JsonProcessor.Stream, new CosmosDiagnosticsContext(), CancellationToken.None);
+            output.Position = 0;
+            return output;
+        }
+
+        // An integer literal outside Int64 range must be rejected (fail-closed) rather than
+        // silently coerced to a lossy double (e.g. 1E+26).
+        [TestMethod]
+        public async Task Encrypt_OutOfRangeIntegerLiteral_Throws()
+        {
+            string json = "{\"id\":\"1\",\"n\":99999999999999999999999999}";
+            EncryptionOptions options = CreateOptions(new[] { "/n" });
+
+            try
+            {
+                await EncryptJsonAsync(json, options);
+                Assert.Fail("Expected an exception for an out-of-range integer literal.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                StringAssert.Contains(ex.ToString(), "Int64");
+            }
+        }
+
         [TestMethod]
         public async Task Encrypt_AllPrimitiveTypesAndContainers()
         {
@@ -115,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act (decrypt)
             encrypted.Position = 0;
-            (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+            (Stream decrypted, DecryptionContext ctx) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
             // Assert (roundtrip)
             using JsonDocument d2 = Parse(decrypted);
             JsonElement r2 = d2.RootElement;
@@ -152,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act (decrypt)
             encrypted.Position = 0;
-            (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+            (Stream decrypted, _) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
             // Assert (roundtrip)
             using JsonDocument d2 = Parse(decrypted);
             JsonElement r2 = d2.RootElement;
@@ -247,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
                 // Should succeed regardless of current culture and round-trip the value as a double
                 MemoryStream encrypted = await EncryptAsync(doc, options);
                 encrypted.Position = 0;
-                (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+                (Stream decrypted, _) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
                 // Assert
                 using JsonDocument d2 = JsonDocument.Parse(decrypted);
                 double value = d2.RootElement.GetProperty("Weird").GetDouble();
@@ -351,6 +379,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
+        public async Task Encrypt_BoundarySizedTokenFromOneByteReads_GrowsOnlyAsNeeded()
+        {
+            string sensitiveValue = new ('s', 64);
+            string json = "{\"id\":\"1\",\"SensitiveStr\":\"" + sensitiveValue + "\",\"Plain\":42}";
+            byte[] bytes = Encoding.UTF8.GetBytes(json);
+            using TrickleStream input = new (bytes, bytesPerRead: 1, maxReadBufferSize: 128);
+            using MemoryStream output = new ();
+            EncryptionOptions options = CreateOptions(new[] { "/SensitiveStr" });
+
+            await EncryptionProcessor.EncryptAsync(
+                input,
+                output,
+                mockEncryptor.Object,
+                options,
+                JsonProcessor.Stream,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            output.Position = 0;
+            using JsonDocument encrypted = JsonDocument.Parse(output);
+            Assert.AreEqual(42, encrypted.RootElement.GetProperty("Plain").GetInt32());
+            Assert.AreEqual(JsonValueKind.String, encrypted.RootElement.GetProperty("SensitiveStr").ValueKind);
+            Assert.IsTrue(
+                input.MaximumReadBufferSize <= 128,
+                $"One-byte reads caused the encryptor to request a {input.MaximumReadBufferSize}-byte buffer.");
+        }
+
+        [TestMethod]
         public async Task Encrypt_TruncatedJson_ViaTrickleStream_FailsCleanly()
         {
             // Regression test for isFinalBlock fix: when the input stream is exhausted
@@ -391,13 +447,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         {
             private readonly byte[] data;
             private readonly int bytesPerRead;
+            private readonly int maxReadBufferSize;
             private int pos;
 
-            public TrickleStream(byte[] data, int bytesPerRead)
+            public TrickleStream(byte[] data, int bytesPerRead, int maxReadBufferSize = int.MaxValue)
             {
                 this.data = data;
                 this.bytesPerRead = bytesPerRead;
+                this.maxReadBufferSize = maxReadBufferSize;
             }
+
+            public int MaximumReadBufferSize { get; private set; }
 
             public override bool CanRead => true;
             public override bool CanSeek => false;
@@ -413,6 +473,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                this.MaximumReadBufferSize = Math.Max(this.MaximumReadBufferSize, buffer.Length);
+                if (buffer.Length > this.maxReadBufferSize)
+                {
+                    throw new InvalidOperationException(
+                        $"Read buffer grew to {buffer.Length} bytes while the stream was returning one byte per read.");
+                }
+
                 int remaining = this.data.Length - this.pos;
                 if (remaining <= 0) return ValueTask.FromResult(0);
                 int toRead = Math.Min(Math.Min(this.bytesPerRead, remaining), buffer.Length);
@@ -520,7 +587,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             // Act (decrypt)
             encrypted.Position = 0;
-            (Stream decrypted, _) = await EncryptionProcessor.DecryptStreamAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
+            (Stream decrypted, _) = await EncryptionProcessor.DecryptAsync(encrypted, mockEncryptor.Object, new CosmosDiagnosticsContext(), CancellationToken.None);
             // Assert
             using JsonDocument jdec = JsonDocument.Parse(decrypted);
             Assert.AreEqual(0.0, jdec.RootElement.GetProperty("DZ").GetDouble(), 0.0);
@@ -806,6 +873,38 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             }
 
             Assert.IsTrue(found, "Surrogate-pair escaped property name must match /😀");
+        }
+
+        [TestMethod]
+        public async Task Encrypt_DoesNotMatchNestedPropertyWithSameName()
+        {
+            // Arrange: top-level "SensitiveStr" is configured for encryption; a same-named property at depth 2 must NOT be encrypted.
+            var doc = new
+            {
+                id = "1",
+                SensitiveStr = "top",
+                Nested = new { SensitiveStr = "inner", Other = 1 }
+            };
+            EncryptionOptions options = CreateOptions(new[] { "/SensitiveStr" });
+
+            MemoryStream encrypted = await EncryptAsync(doc, options);
+            using JsonDocument jd = Parse(encrypted);
+            JsonElement root = jd.RootElement;
+
+            // Nested SensitiveStr must remain plain text
+            JsonElement nestedSensitive = root.GetProperty("Nested").GetProperty("SensitiveStr");
+            Assert.AreEqual(JsonValueKind.String, nestedSensitive.ValueKind);
+            Assert.AreEqual("inner", nestedSensitive.GetString());
+            Assert.AreEqual(1, root.GetProperty("Nested").GetProperty("Other").GetInt32());
+
+            // Top-level SensitiveStr must be encrypted
+            byte[] cipherBytes = Convert.FromBase64String(root.GetProperty("SensitiveStr").GetString());
+            Assert.AreEqual((byte)TypeMarker.String, cipherBytes[0]);
+
+            // EncryptionProperties must list the top-level path exactly once and nothing nested
+            EncryptionProperties props = System.Text.Json.JsonSerializer.Deserialize<EncryptionProperties>(root.GetProperty(Constants.EncryptedInfo).GetRawText());
+            Assert.AreEqual(1, props.EncryptedPaths.Count());
+            Assert.IsTrue(props.EncryptedPaths.Contains("/SensitiveStr"));
         }
     }
 }

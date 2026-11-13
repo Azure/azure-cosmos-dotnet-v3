@@ -60,6 +60,18 @@ namespace Microsoft.Azure.Cosmos.Linq
                     searchList = methodCallExpression.Arguments[0];
                     searchExpression = methodCallExpression.Arguments[1];
                 }
+                // In .NET 10+, enum arrays resolve to MemoryExtensions.Contains(ReadOnlySpan<T>, T, IEqualityComparer<T>)
+                // which has 3 arguments. The compiler passes null for the comparer when using default equality
+                // (e.g., enum arrays). A non-null comparer cannot be honored in SQL translation and will
+                // fall through to the unsupported method error below.
+                else if (methodCallExpression.Arguments.Count == 3
+                    && methodCallExpression.Method.DeclaringType == typeof(MemoryExtensions)
+                    && methodCallExpression.Arguments[2] is ConstantExpression comparerConstant
+                    && comparerConstant.Value == null)
+                {
+                    searchList = methodCallExpression.Arguments[0];
+                    searchExpression = methodCallExpression.Arguments[1];
+                }
 
                 if (searchList == null || searchExpression == null)
                 {

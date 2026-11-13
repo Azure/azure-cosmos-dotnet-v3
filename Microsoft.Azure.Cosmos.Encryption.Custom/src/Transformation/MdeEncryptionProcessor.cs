@@ -72,9 +72,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             ArgumentValidation.ThrowIfNull(diagnosticsContext);
 
             JsonProcessor jsonProcessor = this.GetRequestedJsonProcessor(requestOptions);
+
+            return await this.DecryptAsync(input, encryptor, jsonProcessor, diagnosticsContext, cancellationToken);
+        }
+
+        public async Task<(Stream, DecryptionContext)> DecryptAsync(
+            Stream input,
+            Encryptor encryptor,
+            JsonProcessor jsonProcessor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
             using IDisposable selectionScope = diagnosticsContext.CreateScope(CosmosDiagnosticsContext.ScopeDecryptModeSelectionPrefix + jsonProcessor);
 
             IMdeJsonProcessorAdapter adapter = this.GetAdapter(jsonProcessor);
+
             return await adapter.DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
         }
 
@@ -131,43 +143,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         }
 
 #if NET8_0_OR_GREATER
-        public async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
+        public async Task<Stream> DecryptJsonArrayStreamInPlaceAsync(
             Stream input,
             Encryptor encryptor,
-            EncryptionProperties properties,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            PooledMemoryStream ms = new ();
-            try
-            {
-                DecryptionContext context = await this.StreamProcessor.DecryptStreamAsync(input, ms, encryptor, properties, diagnosticsContext, cancellationToken);
-                if (context == null)
-                {
-                    // CRITICAL: Must dispose PooledMemoryStream to prevent memory leak
-                    await ms.DisposeAsync();
-                    return (input, null);
-                }
+            await this.StreamProcessor.DecryptJsonArrayStreamInPlaceAsync(input, encryptor, diagnosticsContext, cancellationToken);
 
-                return (ms, context);  // Ownership transfers successfully
-            }
-            catch
-            {
-                // CRITICAL: Dispose PooledMemoryStream on exception to prevent memory leak
-                await ms.DisposeAsync();
-                throw;  // Rethrow to preserve original exception
-            }
-        }
-
-        public async Task<DecryptionContext> DecryptStreamAsync(
-            Stream input,
-            Stream output,
-            Encryptor encryptor,
-            EncryptionProperties properties,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            return await this.StreamProcessor.DecryptStreamAsync(input, output, encryptor, properties, diagnosticsContext, cancellationToken);
+            return input;
         }
 #endif
 

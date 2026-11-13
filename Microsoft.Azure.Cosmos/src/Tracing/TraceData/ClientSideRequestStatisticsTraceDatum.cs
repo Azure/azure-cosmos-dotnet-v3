@@ -6,15 +6,19 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Text;
+    using System.Threading;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
-    internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatistics
+    internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatisticsExtension
     {
         private static readonly IReadOnlyDictionary<string, AddressResolutionStatistics> EmptyEndpointToAddressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
         private static readonly IReadOnlyList<StoreResponseStatistics> EmptyStoreResponseStatistics = new List<StoreResponseStatistics>();
@@ -33,15 +37,18 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private IReadOnlyList<HttpResponseStatistics> shallowCopyOfHttpResponseStatistics = null;
         private SystemUsageHistory systemUsageHistory = null;
 
+        // Written by the Direct store paths while diagnostics may be serialized on another thread, so they are
+        // immutable snapshots swapped atomically. Lists (not sets) keep serialization in insertion order.
+        private ImmutableList<TransportAddressUri> contactedReplicas = ImmutableList<TransportAddressUri>.Empty;
+        private ImmutableList<TransportAddressUri> failedReplicas = ImmutableList<TransportAddressUri>.Empty;
+        private ImmutableList<(string, Uri)> regionsContacted = ImmutableList<(string, Uri)>.Empty;
+
         public ClientSideRequestStatisticsTraceDatum(DateTime startTime, ITrace trace)
         {
             this.RequestStartTimeUtc = startTime;
             this.RequestEndTimeUtc = null;
             this.endpointToAddressResolutionStats = new Dictionary<string, AddressResolutionStatistics>();
-            this.ContactedReplicas = new List<TransportAddressUri>();
             this.storeResponseStatistics = new List<StoreResponseStatistics>();
-            this.FailedReplicas = new HashSet<TransportAddressUri>();
-            this.RegionsContacted = new HashSet<(string, Uri)>();
             this.httpResponseStatistics = new List<HttpResponseStatistics>();
             this.Trace = trace;
         }
@@ -67,11 +74,23 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
-        public List<TransportAddressUri> ContactedReplicas { get; set; }
+        // The interface getters return copies, so mutations must go through the Append*/Record* methods below.
+        public List<TransportAddressUri> ContactedReplicas
+        {
+            get => new List<TransportAddressUri>(this.contactedReplicas);
+            set => this.RecordContactedReplicas(value);
+        }
 
-        public HashSet<TransportAddressUri> FailedReplicas { get; }
+        public HashSet<TransportAddressUri> FailedReplicas => new HashSet<TransportAddressUri>(this.failedReplicas);
 
-        public HashSet<(string, Uri)> RegionsContacted { get; }
+        public HashSet<(string, Uri)> RegionsContacted => new HashSet<(string, Uri)>(this.regionsContacted);
+
+        // Allocation-free reads for SDK code; prefer these over the copying interface getters above.
+        public IReadOnlyList<TransportAddressUri> ContactedReplicasSnapshot => this.contactedReplicas;
+
+        public IReadOnlyList<TransportAddressUri> FailedReplicasSnapshot => this.failedReplicas;
+
+        public IReadOnlyList<(string, Uri)> RegionsContactedSnapshot => this.regionsContacted;
 
         public ITrace Trace { get; private set; }
 
@@ -269,6 +288,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     this.TraceSummary?.AddRegionContacted(regionName, locationEndpoint);
                 }
 
+                // Hedging-Detection API: record the responding region (duplicates allowed and
+                // expected — see internal-spec §3.1 and AC14).
+                this.TraceSummary?.HedgingDetectionState?.AppendResponded(regionName);
+
                 if (responseStatistics.StoreResult != null && !((HttpStatusCode)responseStatistics.StoreResult.StatusCode).IsSuccess()
                     && !(responseStatistics.StoreResult.StatusCode == StatusCodes.NotFound && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown)
                     && !(responseStatistics.StoreResult.StatusCode == StatusCodes.Conflict && responseStatistics.StoreResult.SubStatusCode == SubStatusCodes.Unknown)
@@ -284,6 +307,54 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 this.shallowCopyOfStoreResponseStatistics = null;
                 this.storeResponseStatistics.Add(responseStatistics);
             }
+        }
+
+        public void AppendContactedReplica(TransportAddressUri contactedReplica)
+        {
+            ImmutableInterlocked.Update(
+                ref this.contactedReplicas,
+                static (replicas, replica) => replicas.Add(replica),
+                contactedReplica);
+        }
+
+        public void AppendContactedReplicas(IReadOnlyList<TransportAddressUri> contactedReplicas)
+        {
+            if (contactedReplicas == null)
+            {
+                return;
+            }
+
+            ImmutableInterlocked.Update(
+                ref this.contactedReplicas,
+                static (replicas, replicasToAdd) => replicas.AddRange(replicasToAdd),
+                contactedReplicas);
+        }
+
+        public void RecordContactedReplicas(IReadOnlyList<TransportAddressUri> contactedReplicas)
+        {
+            if (contactedReplicas == null)
+            {
+                return;
+            }
+
+            // A plain swap is safe because the write path replaces the list before any read-path appends.
+            Interlocked.Exchange(ref this.contactedReplicas, ImmutableList.CreateRange(contactedReplicas));
+        }
+
+        public void AppendFailedReplica(TransportAddressUri failedReplica)
+        {
+            ImmutableInterlocked.Update(
+                ref this.failedReplicas,
+                static (replicas, replica) => replicas.Contains(replica) ? replicas : replicas.Add(replica),
+                failedReplica);
+        }
+
+        public void AppendRegionContacted(string regionName, Uri locationEndpoint)
+        {
+            ImmutableInterlocked.Update(
+                ref this.regionsContacted,
+                static (regions, region) => regions.Contains(region) ? regions : regions.Add(region),
+                (regionName, locationEndpoint));
         }
 
         public void RecordException(
@@ -327,7 +398,14 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             {
                 if (!this.endpointToAddressResolutionStats.ContainsKey(identifier))
                 {
-                    throw new ArgumentException("Identifier {0} does not exist. Please call start before calling end.", identifier);
+                    // Address resolution statistics are diagnostics bookkeeping only. A missing
+                    // identifier means the start was recorded on a different datum instance (for
+                    // example a background address refresh outliving the attempt that started it),
+                    // which must never fault the caller.
+                    DefaultTrace.TraceVerbose(
+                        "ClientSideRequestStatisticsTraceDatum: address resolution identifier {0} was not recorded by this instance. Skipping end.",
+                        identifier);
+                    return;
                 }
 
                 AddressResolutionStatistics start = this.endpointToAddressResolutionStats[identifier];
@@ -357,6 +435,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                         request.Properties.TryGetValue(HttpRequestRegionNameProperty, out regionName))
                 {
                     this.TraceSummary.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
+                    this.TraceSummary.HedgingDetectionState?.AppendResponded(Convert.ToString(regionName));
                 }
 
                 this.shallowCopyOfHttpResponseStatistics = null;
@@ -367,7 +446,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                                            resourceType,
                                                                            response,
                                                                            exception: null,
-                                                                           region: Convert.ToString(regionName)));
+                                                                           region: Convert.ToString(regionName),
+                                                                           requestMessage: request));
             }
         }
 
@@ -388,6 +468,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                         request.Properties.TryGetValue(HttpRequestRegionNameProperty, out regionName))
                 {
                     this.TraceSummary.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
+                    this.TraceSummary.HedgingDetectionState?.AppendResponded(Convert.ToString(regionName));
                 }
 
                 this.shallowCopyOfHttpResponseStatistics = null;
@@ -398,7 +479,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                                            resourceType,
                                                                            responseMessage: null,
                                                                            exception: exception,
-                                                                           region: Convert.ToString(regionName)));
+                                                                           region: Convert.ToString(regionName),
+                                                                           requestMessage: request));
             }
         }
 
@@ -501,7 +583,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 ResourceType resourceType,
                 HttpResponseMessage responseMessage,
                 Exception exception,
-                string region)
+                string region,
+                HttpRequestMessage requestMessage = null)
             {
                 this.RequestStartTime = requestStartTime;
                 this.Duration = requestEndTime - requestStartTime;
@@ -511,6 +594,26 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 this.HttpMethod = httpMethod;
                 this.RequestUri = requestUri;
                 this.Region = region;
+                this.IsDtxRetry = null;
+                this.IsDtxCrossRegionRedirect = null;
+
+                if (requestMessage != null)
+                {
+                    if (requestMessage.Headers.TryGetValues(
+                        DistributedTransactionConstants.IsDtxRetry,
+                        out IEnumerable<string> isDtxRetryValues))
+                    {
+                        this.IsDtxRetry = isDtxRetryValues.FirstOrDefault();
+                    }
+
+                    if (requestMessage.Headers.TryGetValues(
+                        DistributedTransactionConstants.IsDtxCrossRegionRedirect,
+                        out IEnumerable<string> isDtxCrossRegionRedirectValues))
+                    {
+                        this.IsDtxCrossRegionRedirect = isDtxCrossRegionRedirectValues.FirstOrDefault();
+                    }
+                }
+
                 this.ResponseContentLength = responseMessage?.Content?.Headers?.ContentLength;
                 if (responseMessage != null)
                 {
@@ -533,6 +636,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public Uri RequestUri { get; }
             public string ActivityId { get; }
             public long? ResponseContentLength { get; }
+            public string IsDtxRetry { get; }
+            public string IsDtxCrossRegionRedirect { get; }
         }
     }
 }

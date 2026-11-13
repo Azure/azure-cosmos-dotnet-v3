@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
@@ -217,6 +218,12 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public TryCatch<object> Visit(CosmosArray cosmosArray, Type type)
             {
+                // Recursive walk over a materialized CosmosElement graph: guard
+                // against a hostile deeply-nested response payload exhausting
+                // the CLR stack and crashing the host with an unrecoverable
+                // StackOverflowException.
+                RuntimeHelpers.EnsureSufficientExecutionStack();
+
                 bool isReadOnlyList = type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(IReadOnlyList<>));
                 if (!isReadOnlyList)
                 {
@@ -503,6 +510,12 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public TryCatch<object> Visit(CosmosObject cosmosObject, Type type)
             {
+                // Recursive walk over a materialized CosmosElement graph: guard
+                // against a hostile deeply-nested response payload exhausting
+                // the CLR stack and crashing the host with an unrecoverable
+                // StackOverflowException.
+                RuntimeHelpers.EnsureSufficientExecutionStack();
+
                 ConstructorInfo[] constructors = type.GetConstructors();
                 if (constructors.Length == 0)
                 {

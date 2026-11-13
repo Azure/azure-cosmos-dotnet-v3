@@ -12,9 +12,30 @@ namespace Microsoft.Azure.Cosmos
         // Commit guard: values used with Interlocked.CompareExchange to enforce single-use semantics.
         internal const int CommitNotStarted = 0;
         internal const int CommitStarted = 1;
+
+        /// <summary>
+        /// Envelope sub-status paired with HTTP 200 when every operation completed with 304. The
+        /// coordinator cannot send a 304 envelope because HTTP layers strip its body, discarding the
+        /// per-operation results. Not defined by <see cref="SubStatusCodes"/> in the referenced Direct package.
+        /// </summary>
+        internal const SubStatusCodes AllOperationsNotModified = (SubStatusCodes)5425;
+
+        /// <summary>
+        /// Request header reporting whether the current dispatch of a distributed write transaction is
+        /// resending an idempotency token that has already been dispatched at least once.
+        /// </summary>
+        internal const string IsDtxRetry = "x-ms-cosmos-internal-is-dtx-retry";
+
+        /// <summary>
+        /// Request header reporting whether an idempotency token has crossed write regions or a retry
+        /// cannot be proven to target its original region. Once true, it stays true for that token.
+        /// </summary>
+        internal const string IsDtxCrossRegionRedirect = "x-ms-cosmos-internal-is-dtx-cross-region-redirect";
+
         internal static bool IsDistributedTransactionRequest(OperationType operationType, ResourceType resourceType)
         {
-            return operationType == OperationType.CommitDistributedTransaction
+            return (operationType == OperationType.CommitDistributedTransaction
+                    || operationType == OperationType.Read)
                 && resourceType == ResourceType.DistributedTransactionBatch;
         }
 

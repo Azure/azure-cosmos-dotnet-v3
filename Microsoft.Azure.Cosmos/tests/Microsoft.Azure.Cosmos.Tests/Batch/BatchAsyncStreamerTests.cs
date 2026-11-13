@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithFailure = (PartitionKeyRangeServerBatchRequest request, ITrace trace, ItemRequestOptions options, CancellationToken cancellationToken) => throw expectedException;
 
-        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) => Task.CompletedTask;
+        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, TimeSpan retryDelay, CancellationToken cancellation) => Task.CompletedTask;
 
         [DataTestMethod]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
@@ -128,6 +128,28 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransactionalBatchOperationResult result = await context.OperationTask;
 
             Assert.AreEqual(this.ItemBatchOperation.Id, result.ETag);
+        }
+
+        [TestMethod]
+        public void AddAfterDisposeFails()
+        {
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(
+                2,
+                MaxBatchByteSize,
+                this.TimerWheel,
+                this.limiter,
+                1,
+                MockCosmosUtil.Serializer,
+                this.Executor,
+                this.Retrier,
+                this.GetMockClientContext());
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null, "disposed");
+            AttachContext(operation);
+
+            batchAsyncStreamer.Dispose();
+
+            Assert.ThrowsException<ObjectDisposedException>(() => batchAsyncStreamer.Add(operation));
+            Assert.AreEqual(TaskStatus.WaitingForActivation, operation.Context.OperationTask.Status);
         }
 
         [TestMethod]

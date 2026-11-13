@@ -1,10 +1,22 @@
 # File: templates/build-preview.yml
+#
+# NOTE for callers: the `Arguments` parameter is forwarded verbatim to the
+# `dotnet test` invocations below. It MUST carry the standard TestCategory
+# exclusions (at minimum `TestCategory!=Quarantine & TestCategory!=Ignore`).
+# The `Preview Tests` job runs Microsoft.Azure.Cosmos.Tests on an agent that
+# does NOT install the Cosmos emulator (there is no emulator-setup.yml step),
+# so an empty/unfiltered value pulls in the quarantined, account-dependent
+# BinaryEncodingOverTheWireTests and fails the job on every run.
 
 parameters:
   BuildConfiguration: ''
   Arguments: ''
   VmImage: ''
   OS: 'Windows'
+  # Set to false for pipelines whose definition does not define the
+  # EMULATORMSIURL variable (see the note above the `Preview Encryption
+  # EmulatorTests` job below).
+  IncludeEmulatorTests: true
 
 jobs:
 
@@ -111,10 +123,15 @@ jobs:
       arguments: -p:Optimize=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false
       versioningScheme: OFF
 
+# This is the only job in this template that needs the Cosmos DB Emulator, and
+# therefore the only one that requires the pipeline definition to supply the
+# EMULATORMSIURL variable (it is set per-pipeline in the Azure DevOps UI, not in
+# this repo). Callers whose definition does not define it must pass
+# IncludeEmulatorTests: false, otherwise emulator-setup.yml fails on an empty URL.
 - job:
   displayName: Preview Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 60
-  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
+  condition: and(eq(${{ parameters.IncludeEmulatorTests }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
     name: 'OneES'
 

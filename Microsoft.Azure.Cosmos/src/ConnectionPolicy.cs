@@ -343,6 +343,15 @@ namespace Microsoft.Azure.Cosmos
             set;
         }
 
+        /// <summary>
+        /// When true, control plane (metadata and address) HTTP requests use the reduced retries timeout policy.
+        /// </summary>
+        internal bool UseReducedControlPlaneRetries
+        {
+            get;
+            set;
+        }
+
         internal bool DisablePartitionLevelFailoverClientLevelOverride
         {
             get;
@@ -452,6 +461,15 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <remarks>
         /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
+        /// The supplied <see cref="TimeSpan"/> is preserved unchanged on this property. At the transport boundary,
+        /// values in [<see cref="TimeSpan.Zero"/>, 1 second) are treated as 0 (use <see cref="RequestTimeout"/>)
+        /// and values greater than or equal to 1 second are rounded up to the nearest whole second
+        /// (for example, 2.3 seconds becomes 3 seconds).
+        /// Negative values are not recommended. They are preserved on this property for backward
+        /// compatibility and will cause <c>DocumentClient</c> to emit a warning trace at client
+        /// construction time; at the transport boundary they are truncated to whole seconds and
+        /// the <c>TransportClient.Options.OpenTimeout</c> getter returns
+        /// <see cref="RequestTimeout"/> for any stored value that is not greater than <see cref="TimeSpan.Zero"/>.
         /// </remarks>
         public TimeSpan? OpenTcpConnectionTimeout
         {
@@ -612,5 +630,14 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.RetryOptions?.GetRetryWithConfiguration();
         }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the barrier early yield on 429
+        /// optimization is enabled. When true, ConsistencyWriter and QuorumReader
+        /// return early when all replicas return 429 (Too Many Requests) during a
+        /// barrier request, allowing the ResourceThrottleRetryPolicy to handle
+        /// the retry instead of spinning until timeout.
+        /// </summary>
+        internal bool EnableBarrierEarlyYieldOn429 { get; set; }
     }
 }

@@ -29,10 +29,12 @@ namespace Microsoft.Azure.Cosmos
         internal const string ResourceBody = "resourceBody";
         internal const string RequestCharge = "requestCharge";
         internal const string IsRetriable = "isRetriable";
+        internal const string ResponseMode = "responseMode";
         internal const string OperationResponses = "operationResponses";
         internal const string SessionToken = "sessionToken";
         internal const string PartitionKeyRangeId = "partitionKeyRangeId";
-        internal const string ETag = "ifMatch";
+        internal const string IfMatch = "ifMatch";
+        internal const string IfNoneMatch = "ifNoneMatch";
         internal const string ResponseETag = "Etag";
         internal const string OperationType = "operationType";
         internal const string ResourceType = "resourceType";
@@ -127,10 +129,16 @@ namespace Microsoft.Azure.Cosmos
                 jsonWriter.WriteString(SessionToken, operation.SessionToken);
             }
 
-            // etag
-            if (operation.ETag != null)
+            // ifMatch
+            if (operation.IfMatch != null)
             {
-                jsonWriter.WriteString(ETag, operation.ETag);
+                jsonWriter.WriteString(IfMatch, operation.IfMatch);
+            }
+
+            // ifNoneMatch
+            if (operation.IfNoneMatch != null)
+            {
+                jsonWriter.WriteString(IfNoneMatch, operation.IfNoneMatch);
             }
 
             // operationType (string)
