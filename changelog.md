@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Breaking Changes
 
 #### Bugs Fixed
+- [#5930](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5930) DistributedTransaction: Fixes operation type on the wire for `DistributedReadTransaction.CommitTransactionAsync` to be a read operation (previously sent as `CommitDistributedTransaction`). `DistributedWriteTransaction.CommitTransactionAsync` continues to send `CommitDistributedTransaction`.
 
 - [6188](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6188) Query: Fixes hybrid search reciprocal rank fusion (RRF) results being ranked incorrectly when component scores are tied. Each result now receives a unique ordinal rank, with deterministic tie-breaking based on the decoded document ID portion of `_rid`.
 - [6151](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6151) Query: Updates query-plan deserialization to preserve vector embedding policy paths alongside embedding text and recognize optional hybrid-search score combination metadata. This schema update does not enable `GenerateEmbeddings` or `CombinedScore` execution.
