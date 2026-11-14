@@ -30,9 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
     public class StreamProcessorDecryptorTests
     {
         private const string DekId = "dekId";
-        private static Mock<Encryptor> mockEncryptor;
-        private static Mock<DataEncryptionKey> mockDek;
-
+        private static TestEncryptorFactory.MdeConcreteEncryptor mockEncryptor;
         private static readonly JsonSerializerOptions SystemTextOptions = new()
         {
             AllowTrailingCommas = true,
@@ -46,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             // Force multiple resizes / leftover path with small initial buffer size
             PooledStreamConfiguration.SetConfiguration(new PooledStreamConfiguration { StreamProcessorBufferSize = 8 });
 
-            mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out mockDek);
+            mockEncryptor = TestEncryptorFactory.CreateMde(DekId);
         }
 
     private static EncryptionOptions CreateOptions(IEnumerable<string> paths)
