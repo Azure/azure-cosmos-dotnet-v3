@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     {
         private readonly Encryptor encryptor;
         private readonly CosmosSerializer cosmosSerializer;
+        private readonly bool isJsonObject;
         private readonly SemaphoreSlim asyncLock = new (1, 1);
 
         private Stream contentStream;
@@ -27,7 +28,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public StreamDecryptableItem(
             Stream decryptableContentStream,
             Encryptor encryptor,
-            CosmosSerializer cosmosSerializer)
+            CosmosSerializer cosmosSerializer,
+            bool isJsonObject = true)
         {
             ArgumentNullException.ThrowIfNull(decryptableContentStream);
             ArgumentNullException.ThrowIfNull(encryptor);
@@ -36,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.contentStream = decryptableContentStream;
             this.encryptor = encryptor;
             this.cosmosSerializer = cosmosSerializer;
+            this.isJsonObject = isJsonObject;
         }
 
         public override async Task<(T, DecryptionContext)> GetItemAsync<T>()
@@ -132,6 +135,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         private async Task<(Stream Stream, DecryptionContext Context)> DecryptContentStreamAsync()
         {
+            if (!this.isJsonObject)
+            {
+                return (this.contentStream, null);
+            }
+
             CosmosDiagnosticsContext diagnosticsContext = new ();
 
             // The stream adapter owns its input; shield pooled response content until serialization completes.
