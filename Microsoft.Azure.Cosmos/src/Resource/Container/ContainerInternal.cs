@@ -139,10 +139,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default);
 
 #if !PREVIEW
-        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            FeedRange feedRange,
-            CancellationToken cancellationToken = default);
-
         public abstract Task<bool> IsFeedRangePartOfAsync(
             Cosmos.FeedRange x,
             Cosmos.FeedRange y,

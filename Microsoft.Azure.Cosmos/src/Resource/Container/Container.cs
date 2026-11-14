@@ -1786,7 +1786,6 @@ namespace Microsoft.Azure.Cosmos
             throw new NotSupportedException("Deriving classes are expected to override this method with a valid implementation");
         }
 
-#if PREVIEW
         /// <summary>
         /// Gets the list of Partition Key Range identifiers for a <see cref="FeedRange"/>.
         /// </summary>
@@ -1795,10 +1794,12 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The list of Partition Key Range identifiers affected by a particular FeedRange.</returns>
         /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
-        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+        public virtual Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
-            CancellationToken cancellationToken = default);
-#endif
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException("Deriving classes are expected to override this method with a valid implementation");
+        }
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing with all versions and deletes.
