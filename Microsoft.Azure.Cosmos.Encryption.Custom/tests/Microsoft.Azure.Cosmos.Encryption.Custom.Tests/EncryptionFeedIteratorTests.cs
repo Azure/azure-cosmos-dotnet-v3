@@ -452,9 +452,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             return (JArray)documentsToken;
         }
 
-        private sealed class NoOpEncryptor : Encryptor
+        private sealed class NoOpEncryptor : Encryptor, IDataEncryptionKeyAccessor
         {
-            public override Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            public Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
             {
                 return Task.FromResult<DataEncryptionKey>(null);
             }
