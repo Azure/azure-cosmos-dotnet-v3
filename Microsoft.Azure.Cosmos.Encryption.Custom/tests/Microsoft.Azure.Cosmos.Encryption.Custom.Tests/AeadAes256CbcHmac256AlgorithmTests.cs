@@ -56,5 +56,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(plainTextBytes.Length, decryptedBytes);
             Assert.IsTrue(plainTextBytes.SequenceEqual(decrypted.AsSpan(0, decryptedBytes).ToArray()));
         }
+
+        [TestMethod]
+        public void DecryptData_TamperedAuthenticationTag_RejectedAtEveryBytePosition()
+        {
+            byte[] plainText = Enumerable.Range(0, 16).Select(i => (byte)i).ToArray();
+            byte[] cipher = algorithm.EncryptData(plainText);
+
+            // Cipher layout: [version:1][authTag:32][iv:16][ciphertext].
+            const int tagOffset = 1;
+            const int tagLength = 32;
+
+            for (int i = 0; i < tagLength; i++)
+            {
+                byte[] tampered = (byte[])cipher.Clone();
+                tampered[tagOffset + i] ^= 0xFF;
+
+                ArgumentException ex = Assert.ThrowsException<ArgumentException>(
+                    () => algorithm.DecryptData(tampered),
+                    $"A flipped authentication-tag byte at position {i} must be rejected.");
+                StringAssert.Contains(ex.Message, "authentication tag");
+            }
+        }
+
+        [TestMethod]
+        public void DecryptData_TamperedCipherText_Rejected()
+        {
+            byte[] plainText = Enumerable.Range(0, 16).Select(i => (byte)i).ToArray();
+            byte[] cipher = algorithm.EncryptData(plainText);
+
+            byte[] tampered = (byte[])cipher.Clone();
+            tampered[tampered.Length - 1] ^= 0xFF;
+
+            Assert.ThrowsException<ArgumentException>(() => algorithm.DecryptData(tampered));
+        }
     }
 }
