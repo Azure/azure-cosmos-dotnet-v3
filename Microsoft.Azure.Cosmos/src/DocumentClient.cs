@@ -1244,7 +1244,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource: this.eventSource,
                 serializerSettings: this.serializerSettings,
                 httpClient: this.httpClient,
-                globalPartitionEndpointManager: this.PartitionKeyRangeLocation);
+                globalPartitionEndpointManager: this.PartitionKeyRangeLocation,
+                useReducedControlPlaneRetries: this.ConnectionPolicy.UseReducedControlPlaneRetries);
 
             this.GatewayStoreModel = gatewayStoreModel;
 

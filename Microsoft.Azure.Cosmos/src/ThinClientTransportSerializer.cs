@@ -90,19 +90,24 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (request.Headers[ThinClientConstants.ProxyStartEpk] != null)
             {
-                // Re-add EPK headers removed by RequestInvokerHandler through Properties
+                // A sub-partition feed range already carries its own EPK range
+                // headers; it is narrower than the physical partition range and must take precedence.
+                string startEpk = request.Headers[HttpConstants.HttpHeaders.StartEpk] ?? request.Headers[ThinClientConstants.ProxyStartEpk];
+                string endEpk = request.Headers[HttpConstants.HttpHeaders.EndEpk] ?? request.Headers[ThinClientConstants.ProxyEndEpk];
+
+                // The proxy and backend consume the binary range, so it must match the range headers.
                 request.Properties = new Dictionary<string, object>
                 {
-                    { WFConstants.BackendHeaders.StartEpkHash, HexStringUtility.HexStringToBytes(request.Headers[ThinClientConstants.ProxyStartEpk]) },
-                    { WFConstants.BackendHeaders.EndEpkHash,   HexStringUtility.HexStringToBytes(request.Headers[ThinClientConstants.ProxyEndEpk]) }
+                    { WFConstants.BackendHeaders.StartEpkHash, HexStringUtility.HexStringToBytes(startEpk) },
+                    { WFConstants.BackendHeaders.EndEpkHash,   HexStringUtility.HexStringToBytes(endEpk) }
                 };
 
-                request.Headers.Add(HttpConstants.HttpHeaders.ReadFeedKeyType, RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString());
-                request.Headers.Add(HttpConstants.HttpHeaders.StartEpk, request.Headers[ThinClientConstants.ProxyStartEpk]);
-                request.Headers.Add(HttpConstants.HttpHeaders.EndEpk, request.Headers[ThinClientConstants.ProxyEndEpk]);
+                request.Headers.Set(HttpConstants.HttpHeaders.ReadFeedKeyType, RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString());
+                request.Headers.Set(HttpConstants.HttpHeaders.StartEpk, startEpk);
+                request.Headers.Set(HttpConstants.HttpHeaders.EndEpk, endEpk);
             }
             request.ResourceId = collection.ResourceId;
-            request.Headers.Add(WFConstants.BackendHeaders.CollectionRid, collection.ResourceId);
+            request.Headers.Set(WFConstants.BackendHeaders.CollectionRid, collection.ResourceId);
 
             await request.EnsureBufferedBodyAsync();
 

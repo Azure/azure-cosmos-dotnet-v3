@@ -26,7 +26,7 @@ how to add to or troubleshoot them, and the conventions to follow.
 | Concept | Detail |
 | --- | --- |
 | **Agent pool** | Almost every job runs on the **`OneES`** 1ES-managed pool (Windows). A few opt into other images via `demands: ImageOverride -equals <image>` (e.g. `dotnet-ubuntu-latest` for the CTL Docker build) or a hosted `VmImage` (macOS/Linux in the cron pipeline). |
-| **.NET versions** | Jobs install **.NET 6.0 runtime + .NET 8.0 SDK** via `UseDotNet@2`. `build-internal.yml` also installs the **.NET 9.0 SDK**. Test projects target `net6.0`. |
+| **.NET versions** | Jobs install **.NET 6.0 runtime + .NET 8.0 SDK** via `UseDotNet@2`. `build-internal.yml` also installs the **.NET 9.0 SDK**. Core/Encryption test projects target `net6.0`; Custom unit/emulator projects declare `net6.0;net8.0`. Installing an SDK does not by itself prove execution on its runtime. |
 | **Build flags** | Compile-time feature flags gate different SDK surfaces: `IsPreview=true` (the `-preview` package), `INTERNAL` / friend-assembly + dogfood surface (`build-internal.yml`), `SdkProjectRef` / `OSSProjectRef` (source vs NuGet references for the encryption/benchmark parity builds). Versions and constants are centralized in [`Directory.Build.props`](../Directory.Build.props) — do **not** change them casually. |
 | **Emulator** | Windows integration tests need the Cosmos DB emulator, installed/started by [`templates/emulator-setup.yml`](../templates/emulator-setup.yml) (see [Emulator setup](#emulator-setup-emulator-setupyml)). |
 | **Test selection** | Everything is driven by MSTest `TestCategory` filters passed to `dotnet test --filter`. See [Test categories](#test-categories--filtering). |
@@ -68,9 +68,9 @@ The gate every PR to `main` / `releases/*` must pass. It excludes doc-only chang
 | [`nuget-pack.yml`](../templates/nuget-pack.yml) | The SDK still packs into a valid NuGet package (`ReleasePackage: false` here — no publish). |
 | [`build-ctl.yml`](../templates/build-ctl.yml) | The [CTL runner](../Microsoft.Azure.Cosmos.Samples/Tools/CTL) builds. |
 | [`build-samples.yml`](../templates/build-samples.yml) | The [samples](../Microsoft.Azure.Cosmos.Samples/Usage) build. |
-| [`build-test.yml`](../templates/build-test.yml) | **The core** — unit tests, emulator tests (4 parallel category buckets), flaky retries, coverage, perf baseline, encryption emulator tests. |
+| [`build-test.yml`](../templates/build-test.yml) | **The core** — core and Encryption/Custom companion unit tests, emulator tests (4 parallel category buckets), flaky retries, coverage, perf baseline, encryption emulator tests. |
 | [`build-internal.yml`](../templates/build-internal.yml) | The solution builds under the `INTERNAL` flag (dogfood / friend-assembly surface). |
-| [`build-preview.yml`](../templates/build-preview.yml) | The PREVIEW-flag build + preview unit tests + encryption/benchmark surface-area parity. |
+| [`build-preview.yml`](../templates/build-preview.yml) | The PREVIEW-flag build + core and Encryption/Custom companion preview unit tests + encryption/benchmark surface-area parity. |
 | [`build-benchmark.yml`](../templates/build-benchmark.yml) | The [benchmark tool](../Microsoft.Azure.Cosmos.Samples/Tools/Benchmark) builds (GA + preview). |
 | [`build-thinclient.yml`](../templates/build-thinclient.yml) | Thin-client protocol emulator tests. |
 | [`build-test-aad.yml`](../templates/build-test-aad.yml) | **Live-account AAD (Entra ID) tests** — see [that section](#live-account-aad-tests-multiregionaad). Self-skips until its service connection is set. |
@@ -146,7 +146,7 @@ The heart of CI. It defines a set of **parallel jobs** (all on `OneES`):
 
 | Job | Runs |
 | --- | --- |
-| `Microsoft.Azure.Cosmos.Tests` | Unit tests (no emulator, no endpoint). `retryCountOnTaskFailure: 2`. |
+| `Microsoft.Azure.Cosmos.Tests` | Core unit tests (no emulator, no endpoint), `retryCountOnTaskFailure: 2`; then explicit Encryption and Custom unit tasks when `IncludeEncryption` is true, without new automatic retries. Custom retains both declared test TFMs. |
 | `…Tests Flaky` | Unit tests filtered to `TestCategory=Flaky`, retried up to 4×. |
 | `…Tests Coverage` | Unit tests in Debug with Coverlet → Cobertura report (gated on `IncludeCoverage`). |
 | `PerformanceTests` | Builds + runs the micro-benchmarks with `--BaselineValidation` (gated on `IncludePerformance`, 120-min timeout). |
@@ -156,6 +156,28 @@ The heart of CI. It defines a set of **parallel jobs** (all on `OneES`):
 | `Encryption EmulatorTests` / `Encryption.Custom EmulatorTests` | The two encryption emulator suites (gated on `IncludeEncryption`). |
 | `EmulatorTests … MultiRegion` | `TestCategory=MultiRegion` against a live multi-region account (`COSMOSDB_MULTI_REGION`). |
 | `EmulatorTests … MultiMaster` | `TestCategory=MultiMaster` against a live multi-master account (`COSMOSDB_MULTIMASTER`). |
+
+Encryption and Custom unit tasks forward caller filters, OS and configuration,
+use `SdkProjectRef=false` for package-backed execution, and default an empty
+configuration to `Debug`. Their preview tasks use `IsPreview=true` in the
+existing parity jobs and run even when emulator tests are disabled.
+
+Run both unit projects from the repository root (no emulator required):
+
+```shell
+dotnet test Microsoft.Azure.Cosmos.Encryption/tests/Microsoft.Azure.Cosmos.Encryption.Tests/Microsoft.Azure.Cosmos.Encryption.Tests.csproj --configuration Release /p:SdkProjectRef=false
+dotnet test Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj --configuration Release /p:SdkProjectRef=false
+```
+
+Add `/p:IsPreview=true` to reproduce preview units, or `--filter` to select
+specific tests. Leave `--framework` unset to run both Custom target frameworks
+(`net6.0;net8.0`); Encryption targets `net6.0`. Custom's default core package is
+`3.41.0-preview.0` even without `IsPreview=true`.
+
+For service tests, use the corresponding `tests/EmulatorTests/*.csproj` with
+the same configuration and reference flags after the [emulator setup](#emulator-setup-emulator-setupyml)
+below. The existing Custom emulator job has no separate preview counterpart;
+source-reference parity builds do not execute service tests.
 
 Buckets 1 and 2 exist purely to **parallelize** the large emulator suite and shorten PR feedback
 time. Every emulator job pulls in `emulator-setup.yml` and sets
@@ -186,7 +208,7 @@ with comparable flags (see [CONTRIBUTING](../CONTRIBUTING.md#usage-of-cosmos-db-
 | [`nuget-pack.yml`](../templates/nuget-pack.yml) | Build + `dotnet pack` the SDK. When `ReleasePackage: true`: also `.snupkg` symbols, SBOM (`ManifestGeneratorTask@0`), and `AzureFileCopy@6` to the `azuresdkpartnerdrops` `drops` container under `cosmosdb/csharp/<BlobVersion>` (optionally cleaning first). |
 | [`static-tools.yml`](../templates/static-tools.yml) | Preview build + security scanners (BinSkim/CredScan/PoliCheck/AntiMalware/ComponentGovernance — several currently gated off with `condition: eq(1,2)`). |
 | [`build-internal.yml`](../templates/build-internal.yml) | Builds `Microsoft.Azure.Cosmos.sln` with `DefineConstants="DOCDBCLIENT COSMOSCLIENT NETSTANDARD20 INTERNAL"`; installs .NET 6/8/9. |
-| [`build-preview.yml`](../templates/build-preview.yml) | Preview-flag build, preview unit tests (+ flaky retries), and encryption **surface-area parity** builds (preview vs NuGet vs GA, `SdkProjectRef` combos) to catch missing abstract-member overrides. |
+| [`build-preview.yml`](../templates/build-preview.yml) | Preview-flag build, core preview unit tests (+ flaky retries), explicit Encryption/Custom preview units, and encryption **surface-area parity** builds (preview vs NuGet vs GA, `SdkProjectRef` combos) to catch missing abstract-member overrides. |
 | [`build-benchmark.yml`](../templates/build-benchmark.yml) | Builds `CosmosBenchmark.sln` GA (`OSSProjectRef=true`) and preview. |
 | [`build-samples.yml`](../templates/build-samples.yml) / [`build-ctl.yml`](../templates/build-ctl.yml) | Build the samples solution / the CTL tool solution. |
 | [`build-thinclient.yml`](../templates/build-thinclient.yml) | Emulator tests for the ThinClient protocol; sets `AZURE_COSMOS_THIN_CLIENT_ENABLED: True` and the `COSMOSDB_THINCLIENT*` connection strings. |
@@ -232,7 +254,7 @@ See [CONTRIBUTING → Tests](../CONTRIBUTING.md#tests) for the unit vs emulator 
 
 ## Live-account AAD tests (`MultiRegionAad`)
 
-These authenticate to a **real, AAD-only** Cosmos DB account using a real Entra token
+These authenticate to a **real** Cosmos DB account using a real Entra token
 (data-plane RBAC) — the counterpart to the key-based `MultiRegion` live tests. They live in
 `Microsoft.Azure.Cosmos.EmulatorTests` under `[TestCategory("MultiRegionAad")]` and are wired into
 the PR and nightly pipelines via [`build-test-aad.yml`](../templates/build-test-aad.yml). The job
@@ -247,9 +269,56 @@ ADO service connection (Workload Identity Federation, no secret)
     → SDK DefaultAzureCredential → AzureCliCredential acquires a Cosmos data-plane token
 ```
 
-The tests set `COSMOSDB_MULTI_REGION_AAD` (the account endpoint) and
-`COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true`; `TestCommon` resolves the credential accordingly and
-skips with `Assert.Inconclusive` if endpoint/credentials/resources aren't configured.
+Both pipelines pass the existing secret `$(COSMOSDB_MULTI_REGION)` through
+`MultiRegionConnectionString` to the AAD template. `TestCommon.GetAadAccountEndpoint()` extracts
+only `AccountEndpoint` from that connection string. The AAD client is created with this endpoint
+and an Entra `TokenCredential`; it does not use `AccountKey` for authentication. The same account
+therefore serves both key-based and AAD tests without a second endpoint variable.
+
+The CI template clears the optional `COSMOSDB_MULTI_REGION_AAD` override so a stale value
+cannot redirect AAD tests to a different account. Local tests may still use that override for
+a dedicated AAD-only account. Keep account, subscription and tenant values out of source.
+
+The template sets `COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true` and
+`COSMOSDB_AAD_STRICT=true`. Missing credentials, permissions or resources fail CI rather than
+silently skipping the tests; local non-strict runs may use `Assert.Inconclusive`.
+
+### Isolated CFP checkpoint validation
+
+`ChangeFeed/CosmosAadLiveLeaseTests.cs` runs 100 sequential checkpoints through the
+real CFP checkpointer and lease updater for each lease representation in both Gateway
+and Direct mode. It is included automatically in the `MultiRegionAad` CI job.
+It requires 100 successful lease Replaces, zero 412s, zero conflict-recovery reads,
+each request's If-Match matching the preceding response ETag, and bodyless write responses.
+Setup and final verification reads are excluded from these counts.
+
+The test reuses `AadLiveTestDb/AadLiveTestContainer` (`/pk`). Lease documents have no
+`pk` property, so it uses `PartitionKey.None` and the existing non-partitioned lease
+request-options factory. Unique lease IDs isolate runs; cleanup deletes only each
+test's lease. No databases or containers are created or deleted, no processor host
+or renewal loop is started, and no new service connection or fixture is required.
+This tests lease checkpoint persistence, not full processor startup or `/id` lease
+container provisioning. Do not redirect the ordinary emulator `ChangeFeed` tests
+to a live account: their base fixture deletes databases.
+
+To run only this regression locally, sign in with `az login --tenant <tenant-id>`,
+set `COSMOSDB_MULTI_REGION_AAD` to the test account's endpoint,
+`COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true`, and `COSMOSDB_AAD_STRICT=true`.
+The signed-in identity needs Cosmos DB data-plane permissions on the existing fixture.
+Remove stale service-principal credential variables if using Azure CLI authentication.
+Use .NET 8 SDK with the .NET 6 runtime, then run from the repository root:
+
+```bash
+dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/Microsoft.Azure.Cosmos.EmulatorTests.csproj \
+  -c Release --filter 'FullyQualifiedName~CosmosAadLiveLeaseTests' \
+  --logger 'trx;LogFileName=cfp-live.trx'
+```
+
+Require all four cases to pass with no skips. The TRX records request counts, RU
+charges, and elapsed time for each checkpoint loop; timing is diagnostic, not an
+allocation or latency benchmark. Run the same test against the unfixed updater to
+confirm it detects stale ETags; do not treat general live-suite success as a
+substitute for these specific results.
 
 ### Why an app registration (not the build-agent MI)
 
@@ -260,16 +329,23 @@ The working pattern is a **single-tenant app registration created in the account
 service principal holds the Cosmos role. (An app-registration federated credential also sidesteps
 the corp policy that blocks *managed-identity* federated credentials.)
 
-### The account & identity (current setup)
+### Required account and identity configuration
 
 | Item | Value |
 | --- | --- |
-| Account | `dotnet-v3-multiregion` (AAD-only), RG `dotnet-v3-ci-pipelines`, sub `chrande-CosmosDB-SDK-CI` |
+| Account | Shared with the normal MultiRegion lane through secret `COSMOSDB_MULTI_REGION` |
+| Account tenant / subscription | Configured in the ARM service connection; must match the selected account |
 | DB / container | `AadLiveTestDb` / `AadLiveTestContainer` (`/pk`) — pre-created (data-plane identity can't create them) |
-| App registration | `dotnet-v3-aad-ci-app` (single-tenant, in the account's tenant) |
+| App registration | Single-tenant application in the account's tenant |
 | ADO service connection | `dotnet-v3-aad-ci` (ARM, Workload Identity Federation, saved *without verification*) |
 | Data-plane role | Cosmos DB Built-in Data Contributor (`…0002`) on the account → the app SP |
-| Control-plane role | **Reader** on RG `dotnet-v3-ci-pipelines` → the app SP (see gotcha below) |
+| Control-plane role | **Reader** on the account's resource group → the app SP (see gotcha below) |
+
+During rotation, update `COSMOSDB_MULTI_REGION` in every consuming CI/nightly pipeline and
+reconcile the service connection's tenant/subscription, identity, roles and fixture. These tests
+always authenticate with Entra tokens even though the shared account also supports keys.
+Do not disable an existing AAD-only account policy; dedicated local AAD-only tests can use their
+optional endpoint override.
 
 ### Setting it up from scratch (runbook)
 
@@ -279,7 +355,8 @@ the corp policy that blocks *managed-identity* federated credentials.)
 3. **Grant its service principal** the Cosmos data-plane role — note this uses the **SP object id**
    (enterprise-application object id), *not* the app-registration object id:
    ```
-   az cosmosdb sql role assignment create -a dotnet-v3-multiregion -g dotnet-v3-ci-pipelines \
+   az cosmosdb sql role assignment create -a <account-name> -g <resource-group> \
+     --subscription <subscription-id> \
      --role-definition-id 00000000-0000-0000-0000-000000000002 \
      --principal-id <SP-object-id> --scope "/"
    ```
@@ -295,10 +372,13 @@ the corp policy that blocks *managed-identity* federated credentials.)
    ```
    az role assignment create --assignee-object-id <SP-object-id> \
      --assignee-principal-type ServicePrincipal --role "Reader" \
-     --scope "/subscriptions/<sub>/resourceGroups/dotnet-v3-ci-pipelines"
+     --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>"
    ```
-7. **Set `AadServiceConnection`** (and `AadAccountEndpoint`) in `azure-pipelines.yml` and
-   `azure-pipelines-nightly.yml`. The job now runs.
+7. **Configure the existing secret `COSMOSDB_MULTI_REGION`** in every consuming CI/nightly
+   pipeline with the shared account's connection string. Keep `MultiRegionConnectionString`
+   bound to `$(COSMOSDB_MULTI_REGION)` in both YAMLs and select the configured ARM connection
+   via `AadServiceConnection`. Keep connection strings secret; never log or commit their values.
+   Subsequent account rotations update this shared secret, not SDK source.
 
 ### AAD gotchas (learned the hard way)
 

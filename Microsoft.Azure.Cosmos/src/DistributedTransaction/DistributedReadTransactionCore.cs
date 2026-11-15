@@ -80,6 +80,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException(CommitAlreadyCalledMessage);
             }
 
+            // Snapshot here because the operation helper may defer execution.
+            DistributedTransactionOperation[] operations = this.operations.ToArray();
+
             return this.clientContext.OperationHelperAsync(
                 operationName: $"{nameof(DistributedReadTransaction)}.{nameof(ExecuteTransactionAsync)}",
                 containerName: null,
@@ -89,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
                 task: (trace) =>
                 {
                     DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                        operations: this.operations,
+                        operations: operations,
                         clientContext: this.clientContext,
                         operationType: OperationType.Read,
                         onDispatch: this.PublishIdempotencyToken);

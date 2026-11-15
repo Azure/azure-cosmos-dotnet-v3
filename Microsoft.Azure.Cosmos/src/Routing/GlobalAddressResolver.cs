@@ -41,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly bool enableTcpConnectionEndpointRediscovery;
         private readonly bool isReplicaAddressValidationEnabled;
         private readonly bool enableAsyncCacheExceptionNoSharing;
+        private readonly bool useReducedControlPlaneRetries;
         private readonly IConnectionStateListener connectionStateListener;
         private readonly AuthorizationTokenProvider authorizationTokenProvider;
         private IOpenConnectionsHandler openConnectionsHandler;
@@ -79,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
 
             this.enableAsyncCacheExceptionNoSharing = enableAsyncCacheExceptionNoSharing;
+            this.useReducedControlPlaneRetries = connectionPolicy.UseReducedControlPlaneRetries;
 
             this.maxEndpoints = maxBackupReadEndpoints + 2; // for write and alternate write endpoint (during failover)
 
@@ -356,7 +358,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery,
                         replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled,
                         enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
-                        authorizationTokenProvider: this.authorizationTokenProvider);
+                        authorizationTokenProvider: this.authorizationTokenProvider,
+                        useReducedControlPlaneRetries: this.useReducedControlPlaneRetries);
 
                     string location = this.endpointManager.GetLocation(endpoint);
                     AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);

@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Security;
     using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -943,34 +944,59 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreSame(HttpTimeoutPolicyDefault.Instance, thinClientPolicy);
         }
 
-        [TestMethod]
-        public async Task ThinClientRetriableResponsesAreDisposedBeforeRetryAsync()
+        [DataTestMethod]
+        [DataRow("GET", 1, 1)]
+        [DataRow("POST", 2, 0)]
+        public async Task ThinClientRetriableResponsesAreDisposedBeforeRetryAsync(
+            string httpMethod,
+            int versionMajor,
+            int versionMinor)
         {
-            // Regression test for the retriable-response disposal fix.
-            // On the HTTP/2 thin-client path a 408 response is retried (ShouldRetryBasedOnResponse).
-            // The dropped 408 response must be disposed before the retry so the underlying stream is
-            // torn down deterministically instead of being left to GC finalization, where an HTTP/2
-            // stream abort would surface as an unobserved Http2StreamException ("stream aborted").
-            // This validates the disposal mechanism over an in-memory handler; a real-transport
-            // (Kestrel HTTP/2 / emulator) characterization test that reproduces the unobserved-task
-            // symptom is tracked separately.
+            // Observe disposal at the next send, not just after the loop returns.
+            // Both rows are in-memory; real HTTP/2 characterization remains tracked in #5996.
+            List<string> journal = new List<string>();
             List<DisposeTrackingContent> droppedResponseContents = new List<DisposeTrackingContent>();
+            DisposeTrackingContent firstContent = new DisposeTrackingContent(onDisposed: () => journal.Add("Dispose1"));
+            DisposeTrackingContent secondContent = new DisposeTrackingContent(onDisposed: () => journal.Add("Dispose2"));
+            DisposeTrackingContent successContent = new DisposeTrackingContent("ok", () => journal.Add("Dispose3"));
+            using HttpResponseMessage firstResponse = new HttpResponseMessage(HttpStatusCode.RequestTimeout) { Content = firstContent };
+            using HttpResponseMessage secondResponse = new HttpResponseMessage(HttpStatusCode.RequestTimeout) { Content = secondContent };
+            using HttpResponseMessage successResponse = new HttpResponseMessage(HttpStatusCode.OK) { Content = successContent };
+            using HttpResponseMessage recoveryResponse = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("recovered") };
+            bool allowRecovery = false;
             int count = 0;
             Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 count++;
+                journal.Add($"Send{count}");
+                Assert.AreEqual(httpMethod, request.Method.Method);
+                Assert.AreEqual(new Version(versionMajor, versionMinor), request.Version);
+                foreach (DisposeTrackingContent content in droppedResponseContents)
+                {
+                    Assert.IsTrue(content.IsDisposed, "Previous response disposal must complete before the next dispatch.");
+                }
 
                 if (count <= 2)
                 {
-                    DisposeTrackingContent content = new DisposeTrackingContent();
+                    DisposeTrackingContent content = count == 1 ? firstContent : secondContent;
                     droppedResponseContents.Add(content);
-                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.RequestTimeout) { Content = content });
+                    return Task.FromResult(count == 1 ? firstResponse : secondResponse);
                 }
 
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("ok") });
+                if (count == 3)
+                {
+                    return Task.FromResult(successResponse);
+                }
+
+                if (count == 4 && allowRecovery)
+                {
+                    return Task.FromResult(recoveryResponse);
+                }
+
+                throw new AssertFailedException("Unexpected HTTP dispatch.");
             }
 
-            DocumentServiceRequest documentServiceRequest = CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Read);
+            using DocumentServiceRequest documentServiceRequest = CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Read);
             HttpTimeoutPolicy thinClientPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(
                 documentServiceRequest: documentServiceRequest,
                 isPartitionLevelFailoverEnabled: false,
@@ -986,7 +1012,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
                 HttpResponseMessage responseMessage = await cosmosHttpClient.SendHttpAsync(() =>
                     new ValueTask<HttpRequestMessage>(
-                        result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                        result: new HttpRequestMessage(new HttpMethod(httpMethod), new Uri("http://localhost"))
+                        {
+                            Version = new Version(versionMajor, versionMinor)
+                        }),
                     resourceType: ResourceType.Document,
                     timeoutPolicy: thinClientPolicy,
                     clientSideRequestStatistics: datum,
@@ -994,6 +1023,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     documentServiceRequest: documentServiceRequest);
 
                 Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+                Assert.AreSame(successResponse, responseMessage);
+                Assert.IsFalse(successContent.IsDisposed, "The terminal response remains caller-owned.");
+                Assert.AreEqual("ok", await responseMessage.Content.ReadAsStringAsync());
+                journal.Add("Return200");
 
                 // The dropped 408 responses were disposed before each retry, but the diagnostics still
                 // hold a reference to them (RecordHttpResponse stored each one). Serializing the trace
@@ -1007,6 +1040,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 recordedStatistics = datum.HttpResponseStatisticsList;
             }
 
+            Assert.AreEqual(3, count);
+            CollectionAssert.AreEqual(
+                new[] { "Send1", "Dispose1", "Send2", "Dispose2", "Send3", "Return200" },
+                journal);
             Assert.AreEqual(2, droppedResponseContents.Count, "Two 408 responses should be produced before success.");
             foreach (DisposeTrackingContent content in droppedResponseContents)
             {
@@ -1049,6 +1086,354 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsNotNull(metricData.ResponseBodySize);
                 Assert.AreEqual(0L, metricData.ResponseBodySize.Value, "The guarded fallback should report a 0 byte body for a disposed response.");
             }
+
+            allowRecovery = true;
+            HttpResponseMessage recoveredResponse = await cosmosHttpClient.SendHttpAsync(
+                () => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(new HttpMethod(httpMethod), new Uri("http://localhost"))
+                {
+                    Version = new Version(versionMajor, versionMinor)
+                }),
+                resourceType: ResourceType.Document,
+                timeoutPolicy: thinClientPolicy,
+                clientSideRequestStatistics: null,
+                cancellationToken: default,
+                documentServiceRequest: documentServiceRequest);
+            Assert.AreSame(recoveryResponse, recoveredResponse);
+            Assert.AreEqual("recovered", await recoveredResponse.Content.ReadAsStringAsync());
+            Assert.AreEqual(4, count, "Dropped-response cleanup must leave the shared transport usable.");
+            Assert.IsFalse(successContent.IsDisposed);
+            CollectionAssert.AreEqual(
+                new[] { "Send1", "Dispose1", "Send2", "Dispose2", "Send3", "Return200", "Send4" },
+                journal);
+        }
+
+        [TestMethod]
+        public async Task RetryDisposal_ExhaustedFinalResponseRemainsCallerOwnedAsync()
+        {
+            List<string> journal = new List<string>();
+            DisposeTrackingContent firstContent = new DisposeTrackingContent(onDisposed: () => journal.Add("Dispose1"));
+            DisposeTrackingContent secondContent = new DisposeTrackingContent(onDisposed: () => journal.Add("Dispose2"));
+            DisposeTrackingContent finalContent = new DisposeTrackingContent("final timeout", () => journal.Add("Dispose3"));
+            using HttpResponseMessage firstResponse = new HttpResponseMessage(HttpStatusCode.RequestTimeout) { Content = firstContent };
+            using HttpResponseMessage secondResponse = new HttpResponseMessage(HttpStatusCode.RequestTimeout) { Content = secondContent };
+            using HttpResponseMessage finalResponse = new HttpResponseMessage(HttpStatusCode.RequestTimeout) { Content = finalContent };
+            HttpResponseMessage[] responses = { firstResponse, secondResponse, finalResponse };
+            DisposeTrackingContent[] contents = { firstContent, secondContent, finalContent };
+            int count = 0;
+            Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                count++;
+                journal.Add($"Send{count}");
+                Assert.IsTrue(count <= responses.Length, "Exhaustion must not dispatch a fourth attempt.");
+                for (int i = 0; i < count - 1; i++)
+                {
+                    Assert.IsTrue(contents[i].IsDisposed, "Previous response disposal must complete before the next dispatch.");
+                }
+
+                return Task.FromResult(responses[count - 1]);
+            }
+
+            using DocumentServiceRequest request = CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Read);
+            HttpTimeoutPolicy policy = HttpTimeoutPolicy.GetTimeoutPolicy(request, isThinClientEnabled: true);
+            using CosmosHttpClient client = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new MockMessageHandler(SendAsync)));
+            using ITrace trace = Trace.GetRootTrace(nameof(RetryDisposal_ExhaustedFinalResponseRemainsCallerOwnedAsync));
+            HttpResponseMessage response = await client.SendHttpAsync(
+                () => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Post, "http://localhost") { Version = new Version(2, 0) }),
+                ResourceType.Document,
+                policy,
+                new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
+                default,
+                request);
+
+            journal.Add("Return408");
+            Assert.AreEqual(3, count);
+            Assert.AreSame(finalResponse, response);
+            Assert.AreEqual(HttpStatusCode.RequestTimeout, response.StatusCode);
+            Assert.IsFalse(finalContent.IsDisposed, "Exhaustion must return the final response without disposing it.");
+            Assert.AreEqual("final timeout", await response.Content.ReadAsStringAsync());
+            CollectionAssert.AreEqual(
+                new[] { "Send1", "Dispose1", "Send2", "Dispose2", "Send3", "Return408" },
+                journal);
+
+            response.Dispose();
+            Assert.IsTrue(finalContent.IsDisposed);
+            CollectionAssert.AreEqual(
+                new[] { "Send1", "Dispose1", "Send2", "Dispose2", "Send3", "Return408", "Dispose3" },
+                journal);
+        }
+
+        [DataTestMethod]
+        [DataRow(false, false, HttpStatusCode.RequestTimeout)]
+        [DataRow(true, true, HttpStatusCode.RequestTimeout)]
+        [DataRow(true, false, HttpStatusCode.InternalServerError)]
+        public async Task RetryDisposal_NonRetriableResponseRemainsCallerOwnedAsync(
+            bool isThinClientEnabled,
+            bool isWrite,
+            HttpStatusCode statusCode)
+        {
+            List<string> journal = new List<string>();
+            DisposeTrackingContent content = new DisposeTrackingContent("terminal response", () => journal.Add("Dispose1"));
+            using HttpResponseMessage terminalResponse = new HttpResponseMessage(statusCode) { Content = content };
+            int count = 0;
+            Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequest, CancellationToken cancellationToken)
+            {
+                count++;
+                journal.Add($"Send{count}");
+                Assert.AreEqual(1, count, "A nonretryable response must not dispatch another attempt.");
+                return Task.FromResult(terminalResponse);
+            }
+
+            using DocumentServiceRequest request = CreateDocumentServiceRequestByOperation(
+                ResourceType.Document,
+                isWrite ? OperationType.Create : OperationType.Read);
+            HttpTimeoutPolicy policy = HttpTimeoutPolicy.GetTimeoutPolicy(
+                request,
+                isPartitionLevelFailoverEnabled: false,
+                isThinClientEnabled: isThinClientEnabled);
+            using CosmosHttpClient client = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new MockMessageHandler(SendAsync)));
+            using ITrace trace = Trace.GetRootTrace(nameof(RetryDisposal_NonRetriableResponseRemainsCallerOwnedAsync));
+            HttpResponseMessage response = await client.SendHttpAsync(
+                () => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(isThinClientEnabled ? HttpMethod.Post : HttpMethod.Get, "http://localhost")),
+                ResourceType.Document,
+                policy,
+                new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
+                default,
+                request);
+
+            journal.Add("Return");
+            Assert.AreEqual(1, count);
+            Assert.AreSame(terminalResponse, response);
+            Assert.AreEqual(statusCode, response.StatusCode);
+            Assert.IsFalse(content.IsDisposed);
+            Assert.AreEqual("terminal response", await response.Content.ReadAsStringAsync());
+            CollectionAssert.AreEqual(new[] { "Send1", "Return" }, journal);
+
+            response.Dispose();
+            Assert.IsTrue(content.IsDisposed);
+            CollectionAssert.AreEqual(new[] { "Send1", "Return", "Dispose1" }, journal);
+        }
+
+        [TestMethod]
+        public async Task RetryDisposal_PreCancelledCallerDoesNotDispatchAsync()
+        {
+            using CancellationTokenSource callerCancellation = new CancellationTokenSource();
+            callerCancellation.Cancel();
+            int factoryCount = 0;
+            int sendCount = 0;
+            using HttpResponseMessage unexpectedResponse = new HttpResponseMessage(HttpStatusCode.OK);
+            Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequest, CancellationToken cancellationToken)
+            {
+                sendCount++;
+                return Task.FromResult(unexpectedResponse);
+            }
+
+            using DocumentServiceRequest request = CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Read);
+            HttpTimeoutPolicy policy = HttpTimeoutPolicy.GetTimeoutPolicy(request, isThinClientEnabled: true);
+            using CosmosHttpClient client = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new MockMessageHandler(SendAsync)));
+            using ITrace trace = Trace.GetRootTrace(nameof(RetryDisposal_PreCancelledCallerDoesNotDispatchAsync));
+            OperationCanceledException exception = await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => client.SendHttpAsync(
+                    () =>
+                    {
+                        factoryCount++;
+                        return new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Post, "http://localhost"));
+                    },
+                    ResourceType.Document,
+                    policy,
+                    new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
+                    callerCancellation.Token,
+                    request));
+
+            Assert.AreEqual(callerCancellation.Token, exception.CancellationToken);
+            Assert.AreEqual(0, factoryCount);
+            Assert.AreEqual(0, sendCount);
+        }
+
+        [TestMethod]
+        public async Task RetryDisposal_CancellationAfterDropDoesNotSendAgainAsync()
+        {
+            using CancellationTokenSource callerCancellation = new CancellationTokenSource();
+            List<string> journal = new List<string>();
+            DisposeTrackingContent content = new DisposeTrackingContent(onDisposed: () =>
+            {
+                journal.Add("Dispose1");
+                callerCancellation.Cancel();
+                journal.Add("Cancel");
+            });
+            using HttpResponseMessage firstResponse = new HttpResponseMessage(HttpStatusCode.RequestTimeout) { Content = content };
+            using HttpResponseMessage recoveryResponse = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("recovered") };
+            int factoryCount = 0;
+            int sendCount = 0;
+            bool allowRecovery = false;
+            Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequest, CancellationToken cancellationToken)
+            {
+                sendCount++;
+                journal.Add($"Send{sendCount}");
+                if (sendCount == 1)
+                {
+                    return Task.FromResult(firstResponse);
+                }
+
+                Assert.IsTrue(allowRecovery, "Caller cancellation after disposal must prevent the next send.");
+                Assert.AreEqual(2, sendCount);
+                Assert.IsTrue(content.IsDisposed);
+                return Task.FromResult(recoveryResponse);
+            }
+
+            using DocumentServiceRequest request = CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Read);
+            HttpTimeoutPolicy policy = HttpTimeoutPolicy.GetTimeoutPolicy(request, isThinClientEnabled: true);
+            using CosmosHttpClient client = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new MockMessageHandler(SendAsync)));
+            using ITrace trace = Trace.GetRootTrace(nameof(RetryDisposal_CancellationAfterDropDoesNotSendAgainAsync));
+            ClientSideRequestStatisticsTraceDatum statistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+            OperationCanceledException exception = await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                () => client.SendHttpAsync(
+                    () =>
+                    {
+                        factoryCount++;
+                        return new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Post, "http://localhost"));
+                    },
+                    ResourceType.Document,
+                    policy,
+                    statistics,
+                    callerCancellation.Token,
+                    request));
+
+            journal.Add("Cancelled");
+            Assert.AreEqual(callerCancellation.Token, exception.CancellationToken);
+            Assert.AreEqual(1, factoryCount);
+            Assert.AreEqual(1, sendCount);
+            Assert.IsTrue(content.IsDisposed);
+            CollectionAssert.AreEqual(new[] { "Send1", "Dispose1", "Cancel", "Cancelled" }, journal);
+
+            allowRecovery = true;
+            HttpResponseMessage recoveredResponse = await client.SendHttpAsync(
+                () => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Post, "http://localhost")),
+                ResourceType.Document,
+                policy,
+                clientSideRequestStatistics: null,
+                cancellationToken: default,
+                documentServiceRequest: request);
+            Assert.AreSame(recoveryResponse, recoveredResponse);
+            Assert.AreEqual("recovered", await recoveredResponse.Content.ReadAsStringAsync());
+            Assert.AreEqual(2, sendCount);
+            CollectionAssert.AreEqual(new[] { "Send1", "Dispose1", "Cancel", "Cancelled", "Send2" }, journal);
+        }
+
+        [TestMethod]
+        public async Task RetryDisposal_NextSendFailurePreservesEarlierDisposalAsync()
+        {
+            List<string> journal = new List<string>();
+            DisposeTrackingContent content = new DisposeTrackingContent(onDisposed: () => journal.Add("Dispose1"));
+            using HttpResponseMessage firstResponse = new HttpResponseMessage(HttpStatusCode.RequestTimeout) { Content = content };
+            using HttpResponseMessage recoveryResponse = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("recovered") };
+            InvalidOperationException sentinel = new InvalidOperationException("Injected next-send failure.");
+            int count = 0;
+            bool allowRecovery = false;
+            Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequest, CancellationToken cancellationToken)
+            {
+                count++;
+                journal.Add($"Send{count}");
+                if (count == 1)
+                {
+                    return Task.FromResult(firstResponse);
+                }
+
+                Assert.IsTrue(content.IsDisposed, "The earlier response must already be disposed when the next send fails.");
+                if (count == 2)
+                {
+                    journal.Add("ThrowSentinel");
+                    throw sentinel;
+                }
+
+                Assert.IsTrue(allowRecovery);
+                Assert.AreEqual(3, count);
+                return Task.FromResult(recoveryResponse);
+            }
+
+            using DocumentServiceRequest request = CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Read);
+            HttpTimeoutPolicy policy = HttpTimeoutPolicy.GetTimeoutPolicy(request, isThinClientEnabled: true);
+            using CosmosHttpClient client = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new MockMessageHandler(SendAsync)));
+            using ITrace trace = Trace.GetRootTrace(nameof(RetryDisposal_NextSendFailurePreservesEarlierDisposalAsync));
+            ClientSideRequestStatisticsTraceDatum statistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => client.SendHttpAsync(
+                    () => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Post, "http://localhost")),
+                    ResourceType.Document,
+                    policy,
+                    statistics,
+                    default,
+                    request));
+
+            journal.Add("Faulted");
+            Assert.AreSame(sentinel, exception);
+            Assert.AreEqual(2, count);
+            Assert.IsTrue(content.IsDisposed);
+            Assert.AreSame(firstResponse, statistics.HttpResponseStatisticsList[0].HttpResponseMessage);
+            trace.AddDatum("stats", statistics);
+            StringAssert.Contains(new CosmosTraceDiagnostics(trace).ToString(), HttpStatusCode.RequestTimeout.ToString());
+            CollectionAssert.AreEqual(
+                new[] { "Send1", "Dispose1", "Send2", "ThrowSentinel", "Faulted" },
+                journal);
+
+            allowRecovery = true;
+            HttpResponseMessage recoveredResponse = await client.SendHttpAsync(
+                () => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Post, "http://localhost")),
+                ResourceType.Document,
+                policy,
+                clientSideRequestStatistics: null,
+                cancellationToken: default,
+                documentServiceRequest: request);
+            Assert.AreSame(recoveryResponse, recoveredResponse);
+            Assert.AreEqual("recovered", await recoveredResponse.Content.ReadAsStringAsync());
+            Assert.AreEqual(3, count);
+            CollectionAssert.AreEqual(
+                new[] { "Send1", "Dispose1", "Send2", "ThrowSentinel", "Faulted", "Send3" },
+                journal);
+        }
+
+        [TestMethod]
+        public async Task RetryDisposal_MetadataResponseIsDisposedBeforeNextSendAsync()
+        {
+            List<string> journal = new List<string>();
+            DisposeTrackingContent firstContent = new DisposeTrackingContent(onDisposed: () => journal.Add("Dispose1"));
+            DisposeTrackingContent finalContent = new DisposeTrackingContent("metadata", () => journal.Add("Dispose2"));
+            using HttpResponseMessage firstResponse = new HttpResponseMessage(HttpStatusCode.RequestTimeout) { Content = firstContent };
+            using HttpResponseMessage finalResponse = new HttpResponseMessage(HttpStatusCode.OK) { Content = finalContent };
+            int count = 0;
+            Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequest, CancellationToken cancellationToken)
+            {
+                count++;
+                journal.Add($"Send{count}");
+                if (count == 1)
+                {
+                    return Task.FromResult(firstResponse);
+                }
+
+                Assert.AreEqual(2, count);
+                Assert.IsTrue(firstContent.IsDisposed, "Metadata retries share the same response-disposal boundary.");
+                return Task.FromResult(finalResponse);
+            }
+
+            using DocumentServiceRequest request = CreateDocumentServiceRequestByOperation(ResourceType.Database, OperationType.Read);
+            HttpTimeoutPolicy policy = HttpTimeoutPolicy.GetTimeoutPolicy(request, isThinClientEnabled: false);
+            Assert.AreSame(HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout, policy);
+            using CosmosHttpClient client = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new MockMessageHandler(SendAsync)));
+            using ITrace trace = Trace.GetRootTrace(nameof(RetryDisposal_MetadataResponseIsDisposedBeforeNextSendAsync));
+            HttpResponseMessage response = await client.SendHttpAsync(
+                () => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Get, "http://localhost")),
+                ResourceType.Database,
+                policy,
+                new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
+                default,
+                request);
+
+            journal.Add("Return200");
+            Assert.AreEqual(2, count);
+            Assert.AreSame(finalResponse, response);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsFalse(finalContent.IsDisposed);
+            Assert.AreEqual("metadata", await response.Content.ReadAsStringAsync());
+            CollectionAssert.AreEqual(new[] { "Send1", "Dispose1", "Send2", "Return200" }, journal);
         }
 
         private static DocumentServiceRequest CreateDocumentServiceRequestByOperation(
@@ -1081,11 +1466,20 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private sealed class DisposeTrackingContent : HttpContent
         {
+            private readonly byte[] payload;
+            private readonly Action onDisposed;
+
+            public DisposeTrackingContent(string payload = "", Action onDisposed = null)
+            {
+                this.payload = Encoding.UTF8.GetBytes(payload);
+                this.onDisposed = onDisposed;
+            }
+
             public bool IsDisposed { get; private set; }
 
             protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
             {
-                return Task.CompletedTask;
+                return stream.WriteAsync(this.payload, 0, this.payload.Length);
             }
 
             protected override bool TryComputeLength(out long length)
@@ -1100,8 +1494,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             protected override void Dispose(bool disposing)
             {
-                this.IsDisposed = true;
                 base.Dispose(disposing);
+                if (disposing && !this.IsDisposed)
+                {
+                    this.IsDisposed = true;
+                    this.onDisposed?.Invoke();
+                }
             }
         }
     }
