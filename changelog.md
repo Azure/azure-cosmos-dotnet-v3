@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [6219](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6219) Region Availability: Adds `Regions.USNatNorth` for the USNat North region, and upgrades the Microsoft.Azure.Cosmos.Direct dependency to 3.44.5.
+
 #### Breaking Changes
 
 #### Bugs Fixed
