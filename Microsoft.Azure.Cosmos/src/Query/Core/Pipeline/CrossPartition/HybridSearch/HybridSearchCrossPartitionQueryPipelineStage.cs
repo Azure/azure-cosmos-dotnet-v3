@@ -82,6 +82,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             IQueryPipelineStage globalStatisticsPipeline,
             IReadOnlyList<IQueryPipelineStage> queryPipelineStages)
         {
+            this.containerResourceId = containerResourceId;
+            this.containerETag = containerETag;
+            this.statisticsCache = statisticsCache ?? throw new ArgumentNullException(nameof(statisticsCache));
             this.hybridSearchQueryInfo = hybridSearchQueryInfo ?? throw new ArgumentNullException(nameof(hybridSearchQueryInfo));
             this.pipelineFactory = pipelineFactory ?? throw new ArgumentNullException(nameof(pipelineFactory));
             this.pageSize = pageSize;
@@ -89,9 +92,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             this.state = state;
             this.globalStatisticsPipeline = globalStatisticsPipeline;
             this.queryPipelineStages = queryPipelineStages;
-            this.containerResourceId = containerResourceId;
-            this.containerETag = containerETag;
-            this.statisticsCache = statisticsCache ?? throw new ArgumentNullException(nameof(statisticsCache));
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(

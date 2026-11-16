@@ -56,19 +56,19 @@ namespace Microsoft.Azure.Cosmos
 
         private const ApiType DefaultApiType = ApiType.None;
 
-        private static readonly TimeSpan MinimumFullTextStatisticsCacheMaxAge = TimeSpan.FromMinutes(2);
+        private static readonly TimeSpan FullTextStatisticsCacheMaxAgeLowerBound = TimeSpan.FromMinutes(2);
 
         /// <summary>
         /// Default request timeout
         /// </summary>
         private int gatewayModeMaxConnectionLimit;
-        private int fullTextStatisticsCacheMaxEntries = 256;
-        private TimeSpan? fullTextStatisticsCacheMaxAge;
         private int? maxRetryAttemptsOnAbortedTransactions;
         private TimeSpan? maxRetryWaitTimeOnAbortedTransactions;
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializerInternal;
         private System.Text.Json.JsonSerializerOptions stjSerializerOptions;
+        private int fullTextStatisticsCacheMaxEntries = 256;
+        private TimeSpan? fullTextStatisticsCacheMaxAge;
 
         private ConnectionMode connectionMode;
         private Protocol connectionProtocol;
@@ -646,6 +646,9 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <remarks>
         /// <para>
+        /// The cache is most effective for workloads that repeat searches over the same full-text paths and terms.
+        /// </para>
+        /// <para>
         /// Age is measured from the start of statistics collection and applies independently to each cached document,
         /// word, and term-hit count. The cache applies only to
         /// <see cref="FullTextScoreScope.Global"/>. Changes after the client is created have no effect.
@@ -661,7 +664,7 @@ namespace Microsoft.Azure.Cosmos
             get => this.fullTextStatisticsCacheMaxAge;
             set
             {
-                if (value.HasValue && value.Value < MinimumFullTextStatisticsCacheMaxAge)
+                if (value.HasValue && value.Value < FullTextStatisticsCacheMaxAgeLowerBound)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.FullTextStatisticsCacheMaxAge), value, "The maximum statistics cache age must be at least two minutes.");
                 }
