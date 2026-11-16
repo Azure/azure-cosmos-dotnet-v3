@@ -81,8 +81,11 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Only record point operation stats if ClientSideRequestStats did not record the response.
-            if (!(documentServiceResponse.RequestStats != null) ||
-                (documentServiceResponse.RequestStats.ContactedReplicas.Count == 0 && documentServiceResponse.RequestStats.FailedReplicas.Count == 0))
+            IClientSideRequestStatistics requestStats = documentServiceResponse.RequestStats;
+            bool hasReplicaStatistics = requestStats is ClientSideRequestStatisticsTraceDatum requestStatsDatum
+                ? requestStatsDatum.ContactedReplicasSnapshot.Count > 0 || requestStatsDatum.FailedReplicasSnapshot.Count > 0
+                : requestStats != null && (requestStats.ContactedReplicas.Count > 0 || requestStats.FailedReplicas.Count > 0);
+            if (!hasReplicaStatistics)
             {
                 PointOperationStatisticsTraceDatum pointOperationStatistics = new PointOperationStatisticsTraceDatum(
                     activityId: headers.ActivityId,

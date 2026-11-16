@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Xml;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -1197,7 +1198,9 @@
                 @"/key")
             };
 
-            this.ExecuteTestSuite(testVariations);
+            this.ExecuteTestSuite(
+                testVariations,
+                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Top.Linux" : nameof(this.Top));
         }
 
         [TestMethod]
@@ -1359,7 +1362,9 @@
                     @"/key"),
             };
 
-            this.ExecuteTestSuite(testVariations);
+            this.ExecuteTestSuite(
+                testVariations,
+                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "OffsetLimit.Linux" : nameof(this.OffsetLimit));
         }
 
         [TestMethod]
@@ -1843,7 +1848,14 @@
             Exception ex = this.Exception;
             while (ex != null)
             {
-                stringBuilder.AppendLine($"{ex.GetType()} : {ex.Message}");
+                // Compare HRESULTs instead of platform-specific error messages.
+                string message = ex is COMException ? $"0x{ex.HResult:X8}" : ex.Message;
+
+                // Normalize optional fields before comparing error baselines.
+                message = message
+                    .Replace(",\"embeddingParameterMap\":null", string.Empty)
+                    .Replace(",\"requiresExtendedQueryPlan\":0", string.Empty);
+                stringBuilder.AppendLine($"{ex.GetType()} : {message}");
                 ex = ex.InnerException;
             }
 
@@ -1929,7 +1941,11 @@
         {
             writer.WriteStartElement("QueryRanges");
             writer.WriteStartElement("Range");
-            foreach (Range<PartitionKeyInternal> range in queryRanges)
+            // Keep range ordering deterministic in baselines.
+            IEnumerable<Range<PartitionKeyInternal>> sortedRanges = queryRanges
+                .OrderBy(range => range, Range<PartitionKeyInternal>.MinComparer.Instance)
+                .ThenBy(range => range, Range<PartitionKeyInternal>.MaxComparer.Instance);
+            foreach (Range<PartitionKeyInternal> range in sortedRanges)
             {
                 string minBound = range.IsMinInclusive ? "[" : "(";
                 string maxBound = range.IsMaxInclusive ? "]" : ")";

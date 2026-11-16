@@ -342,7 +342,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                     stringBuilder.AppendLine("Contacted Replicas");
                     Dictionary<Documents.TransportAddressUri, int> uriAndCounts = new Dictionary<Documents.TransportAddressUri, int>();
-                    foreach (Documents.TransportAddressUri uri in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
+                    foreach (Documents.TransportAddressUri uri in clientSideRequestStatisticsTraceDatum.ContactedReplicasSnapshot)
                     {
                         if (uri == null)
                         {
@@ -363,13 +363,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     }
 
                     stringBuilder.AppendLine("Failed to Contact Replicas");
-                    foreach (Documents.TransportAddressUri failedToContactReplica in clientSideRequestStatisticsTraceDatum.FailedReplicas)
+                    foreach (Documents.TransportAddressUri failedToContactReplica in clientSideRequestStatisticsTraceDatum.FailedReplicasSnapshot)
                     {
                         stringBuilder.AppendLine($"{space}{failedToContactReplica?.ToString() ?? "<null>"}");
                     }
 
                     stringBuilder.AppendLine("Regions Contacted");
-                    foreach (Documents.TransportAddressUri regionContacted in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
+                    foreach (Documents.TransportAddressUri regionContacted in clientSideRequestStatisticsTraceDatum.ContactedReplicasSnapshot)
                     {
                         stringBuilder.AppendLine($"{space}{regionContacted?.ToString() ?? "<null>"}");
                     }

@@ -1791,32 +1791,66 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
             }
         }
 
-        [TestMethod]
+        [DataTestMethod]
+        [DataRow(false, DisplayName = "Cancellation before a same-token retry")]
+        [DataRow(true, DisplayName = "Cancellation before a new-token retry after abort")]
         [Description("Verifies that cancelling the token during the retry delay causes OperationCanceledException to propagate rather than proceeding with the next attempt.")]
-        public async Task CommitTransaction_CancelledDuringRetryDelay_ThrowsOperationCanceledException()
+        public async Task CommitTransaction_CancelledDuringRetryDelay_ThrowsOperationCanceledException(bool isAborted)
         {
             using (CancellationTokenSource cts = new CancellationTokenSource())
             {
                 int callCount = 0;
+                int delayCount = 0;
+                List<Guid> publishedTokens = new List<Guid>();
+                List<string> capturedRequestTokens = new List<string>();
                 Mock<CosmosClientContext> mockContext = this.CreateMockClientContext();
-                this.SetupProcessResourceOperation(
+                this.SetupProcessResourceOperationWithStreamAndEnricherCapture(
                     mockContext,
+                    (stream, enricher) =>
+                    {
+                        using RequestMessage request = new RequestMessage
+                        {
+                            ResourceType = ResourceType.DistributedTransactionBatch,
+                            OperationType = OperationType.CommitDistributedTransaction,
+                        };
+                        enricher(request);
+                        capturedRequestTokens.Add(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
+                    },
                     () =>
                     {
                         callCount++;
-                        cts.Cancel(); // Cancel after the first call so the retry delay throws.
-                        return Task.FromResult(CreateRetriableErrorResponseMessage());
+                        return Task.FromResult(isAborted
+                            ? CreateRetriableErrorResponseMessage()
+                            : CreateRetriableNonAbortedResponseMessage());
                     });
 
-                // Non-zero delay so the retry path enters Task.Delay
-                // the token is already cancelled synchronously in the callback, so it throws immediately.
                 DistributedTransactionCommitter committer = new DistributedTransactionCommitter(
-                    CreateTestOperations(), mockContext.Object, OperationType.CommitDistributedTransaction, TimeSpan.FromMilliseconds(500));
+                    CreateTestOperations(),
+                    mockContext.Object,
+                    OperationType.CommitDistributedTransaction,
+                    retryBaseDelay: TimeSpan.Zero,
+                    delayProvider: (delay, token) =>
+                    {
+                        delayCount++;
+                        Assert.AreEqual(cts.Token, token);
+                        Assert.IsFalse(token.IsCancellationRequested,
+                            "The response must be parsed before cancellation is triggered at the retry delay.");
+                        cts.Cancel();
+                        return Task.FromCanceled(token);
+                    },
+                    onDispatch: token => publishedTokens.Add(token));
 
-                await Assert.ThrowsExceptionAsync<OperationCanceledException>(
+                TaskCanceledException cancellation = await Assert.ThrowsExceptionAsync<TaskCanceledException>(
                     () => committer.ExecuteTransactionAsync(NoOpTrace.Singleton, cts.Token));
 
+                Assert.AreEqual(cts.Token, cancellation.CancellationToken);
+                Assert.AreEqual(1, delayCount, "Cancellation must occur at the retry delay, not during response parsing.");
                 Assert.AreEqual(1, callCount);
+                Assert.AreEqual(1, capturedRequestTokens.Count);
+                Assert.AreEqual(1, publishedTokens.Count, "No token may be published for an unsent next attempt.");
+                Assert.AreNotEqual(Guid.Empty, publishedTokens[0]);
+                Assert.AreEqual(capturedRequestTokens[0], publishedTokens[0].ToString());
+                this.VerifyProcessResourceOperationCallCount(mockContext, Times.Once());
             }
         }
 

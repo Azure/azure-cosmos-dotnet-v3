@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos
             this.Container = container;
             this.Id = id;
             this.RequestOptions = requestOptions;
-            this.SessionToken = string.IsNullOrWhiteSpace(requestOptions?.SessionToken) ? null : requestOptions.SessionToken;
         }
 
         public PartitionKey PartitionKey { get; internal set; }
@@ -52,11 +51,11 @@ namespace Microsoft.Azure.Cosmos
 
         public string DatabaseResourceId { get; internal set; }
 
-        internal DistributedTransactionRequestOptions RequestOptions { get; }
+        internal DistributedTransactionRequestOptions RequestOptions { get; private set; }
 
         internal string PartitionKeyJson { get; set; }
 
-        internal string SessionToken { get; set; }
+        internal string SessionToken => string.IsNullOrWhiteSpace(this.RequestOptions?.SessionToken) ? null : this.RequestOptions.SessionToken;
 
         internal string IfMatch => this.RequestOptions?.IfMatchEtag;
 
@@ -68,6 +67,11 @@ namespace Microsoft.Azure.Cosmos
         {
             get => this.body;
             set => this.body = value;
+        }
+
+        internal virtual void CaptureRequestOptions()
+        {
+            this.RequestOptions = (DistributedTransactionRequestOptions)this.RequestOptions?.ShallowCopy();
         }
 
         internal virtual async Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
@@ -96,6 +100,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public T Resource { get; internal set; }
+
+        internal override void CaptureRequestOptions()
+        {
+            base.CaptureRequestOptions();
+
+            if (this.body.IsEmpty &&
+                this.Resource is PatchSpec patchSpec &&
+                this.RequestOptions is DistributedTransactionPatchItemRequestOptions patchOptions)
+            {
+                patchSpec.RequestOptions.FromLeft(null).FilterPredicate = patchOptions.FilterPredicate;
+            }
+        }
 
         internal override Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
