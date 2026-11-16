@@ -87,7 +87,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Environment variable for minimizing optional query-optimization headers. Default: false.
         /// Currently, setting this to true suppresses only x-ms-documentdb-partialpartitionkey.
-        /// Required routing headers are not disabled.
         /// </summary>
         public static readonly string QueryMinimizeHeaders = "AZURE_COSMOS_QUERY_MINIMIZE_HEADERS";
 
