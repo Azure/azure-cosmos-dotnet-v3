@@ -188,7 +188,31 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(ConnectionMode.Direct, true, "[\"tenant\",\"user\"]", (int)OperationType.Query)]
         [DataRow(ConnectionMode.Direct, false, "[\"tenant\",\"user\"]", (int)OperationType.Query)]
         [DataRow(ConnectionMode.Gateway, true, "[\"tenant\"]", (int)OperationType.ReadFeed)]
+        [DoNotParallelize]
         public async Task PrefixHeaderPreservesPhysicalPartitionRouting(ConnectionMode connectionMode, bool exactRange, string prefixJson, int operation)
+        {
+            string originalValue = Environment.GetEnvironmentVariable(ConfigurationManager.QueryMinimizeHeaders);
+            try
+            {
+                foreach (string value in new[] { null, "false", "true" })
+                {
+                    Environment.SetEnvironmentVariable(ConfigurationManager.QueryMinimizeHeaders, value);
+                    await ValidatePrefixHeaderPreservesPhysicalPartitionRoutingAsync(
+                        connectionMode, exactRange, prefixJson, operation, minimizeHeaders: value == "true");
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.QueryMinimizeHeaders, originalValue);
+            }
+        }
+
+        private static async Task ValidatePrefixHeaderPreservesPhysicalPartitionRoutingAsync(
+            ConnectionMode connectionMode,
+            bool exactRange,
+            string prefixJson,
+            int operation,
+            bool minimizeHeaders)
         {
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(builder =>
             {
@@ -234,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     sent = true;
                     Assert.AreEqual("1", request.PartitionKeyRangeId.PartitionKeyRangeId);
                     Assert.IsNull(request.Headers.PartitionKey);
-                    string expectedHeader = (OperationType)operation == OperationType.Query ? prefixJson : null;
+                    string expectedHeader = (OperationType)operation == OperationType.Query && !minimizeHeaders ? prefixJson : null;
                     Assert.AreEqual(expectedHeader, request.Headers["x-ms-documentdb-partialpartitionkey"]);
                     Assert.AreEqual(expectedHeader, request.ToDocumentServiceRequest().Headers["x-ms-documentdb-partialpartitionkey"]);
                     Assert.AreEqual(exactRange ? null : "10", request.Headers.StartEpk);
