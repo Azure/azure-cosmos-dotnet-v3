@@ -84,19 +84,11 @@ namespace Microsoft.Azure.Cosmos
             IEnumerable<ISecondaryIndexMetadata> globalSecondaryIndexes = Array.Empty<ISecondaryIndexMetadata>();
             if (this.clientContext.ClientOptions.EnableSecondaryIndexRouting)
             {
-                try
-                {
-                    globalSecondaryIndexes =
-                        await this.clientContext.SecondaryIndexMetadataCache.GetSecondaryIndexMetadataAsync(
-                            containerProperties,
-                            trace,
-                            cancellationToken: cancellationToken);
-                }
-                catch (SecondaryIndexMetadataRefreshException exception)
-                {
-                    // Do not route with stale GSI metadata; an empty set keeps this query on primary routing.
-                    trace.AddDatum("SecondaryIndexMetadataRefreshFailure", exception.InnerException?.Message ?? exception.Message);
-                }
+                globalSecondaryIndexes =
+                    await this.clientContext.SecondaryIndexMetadataCache.GetSecondaryIndexMetadataAsync(
+                        containerProperties,
+                        trace,
+                        cancellationToken: cancellationToken);
             }
 
             return new ContainerQueryProperties(
