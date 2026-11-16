@@ -27,7 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
-- Direct: Builds and bundles the managed transport implementation from SDK source instead of the separate Direct package, and obtains Windows native query planning from Microsoft.Azure.Cosmos.ServiceInterop 1.0.5. Existing Linux query-planning support is unchanged.
+- Direct: Builds and bundles the managed transport implementation from SDK source instead of the separate Direct package, and obtains Windows native query planning from Microsoft.Azure.Cosmos.ServiceInterop 1.0.6. Existing Linux query-planning support is unchanged.
+- Direct: Aligns the bundled transport library's file and informational versions with its existing assembly version, 3.44.4.0, independent of SDK release versions.
 
 ### <a name="3.65.0-preview.0"/> [3.65.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.65.0-preview.0) - 2026-11-06
 

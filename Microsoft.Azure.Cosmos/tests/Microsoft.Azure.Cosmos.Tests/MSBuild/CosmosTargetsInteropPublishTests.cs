@@ -149,6 +149,25 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         }
 
         [TestMethod]
+        [DataRow(false, false)]
+        [DataRow(true, false)]
+        [DataRow(false, true)]
+        [DataRow(true, true)]
+        public async Task Direct_MetadataMatchesAssemblyVersion(bool isPreview, bool isNightly)
+        {
+            string directProjectPath = Path.Combine(GetRepositoryRoot(), "Microsoft.Azure.Cosmos", "Direct", "src", "Microsoft.Azure.Cosmos.Direct.csproj");
+            string arguments = $"-nologo -p:IsPreview={isPreview} -p:IsNightly={isNightly} "
+                + "-getProperty:Version,FileVersion,InformationalVersion,AssemblyVersion";
+            JObject directProperties = (JObject)JObject.Parse(await RunDotnetCommandAsync(
+                $"msbuild \"{directProjectPath}\" {arguments}"))["Properties"];
+
+            foreach (string property in new[] { "Version", "FileVersion", "InformationalVersion", "AssemblyVersion" })
+            {
+                Assert.AreEqual("3.44.4.0", (string)directProperties[property], $"Direct's {property} must remain independent of SDK release versions.");
+            }
+        }
+
+        [TestMethod]
         [DataRow("Debug")]
         [DataRow("Release")]
         public async Task Direct_WithGlobalSdkConstants_PreservesProjectConstants(string configuration)

@@ -2487,8 +2487,10 @@ direct_transport_dependencies:
     The SDK's Direct mode transport layer (Connection.cs, StoreClientFactory.cs, etc.)
     is built from Microsoft.Azure.Cosmos/Direct/src/Microsoft.Azure.Cosmos.Direct.csproj.
     The SDK bundles the locally built assembly; it does not restore the original
-    Microsoft.Azure.Cosmos.Direct NuGet package. DirectVersion in Directory.Build.props
-    still controls the local assembly version.
+    Microsoft.Azure.Cosmos.Direct NuGet package. Direct's AssemblyVersion is fixed
+    at 3.44.4.0 for binding compatibility; its Version, FileVersion, and
+    InformationalVersion use that same value, independent of SDK release versions.
+    The SDK's version calculation stays in its own project.
 
   locating_managed_code:
     source: "Microsoft.Azure.Cosmos/Direct/src"

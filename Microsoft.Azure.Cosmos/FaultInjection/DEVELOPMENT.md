@@ -159,12 +159,15 @@ Direct source or version changes cannot break this package unnoticed (see below)
 `FaultInjection.csproj` and `FaultInjectionTests.csproj` both reference the local
 `Microsoft.Azure.Cosmos/Direct/src/Microsoft.Azure.Cosmos.Direct.csproj` project
 with `PrivateAssets="All"`, not the original Direct NuGet package. The local
-assembly's version comes from `DirectVersion` in the root `Directory.Build.props`.
+assembly's `AssemblyVersion` is fixed at `3.44.4.0` in the Direct project for
+binding compatibility. Its `Version`, `FileVersion`, and `InformationalVersion`
+use the same value, independent of SDK release versions; there is no independent
+package version to bump.
 The FaultInjection implementation
 binds to `Microsoft.Azure.Documents` internals (`IChaosInterceptor`,
 `Rntbd.Channel`, `Rntbd.Dispatcher`, `StoreResponse`, `TransportException`, …).
-A PR that changes those internals or `DirectVersion` can break this package while
-the main SDK still builds cleanly, so run the ladder below on the PR branch before
+A PR that changes those internals or the Direct assembly identity can break this
+package while the main SDK still builds cleanly, so run the ladder below on the PR branch before
 signing off. Internal OSS builds (`ProjectRef=True`) retain their original
 internal Direct provider.
 
@@ -224,8 +227,8 @@ which may contain an older Direct implementation.
 
 FaultInjection is compiled against the local Direct source, but its consumers
 use the Direct assembly bundled in the released SDK dependency. This distinction
-matters even when a source change does not bump `DirectVersion`. If FaultInjection
-uses a type or member absent from that released assembly, consumers get a
+matters even when a source change preserves the Direct assembly identity. If
+FaultInjection uses a type or member absent from that released assembly, consumers get a
 `TypeLoadException` / `MissingMethodException` at runtime.
 
 To check, diff the `Microsoft.Azure.Documents` types and members that

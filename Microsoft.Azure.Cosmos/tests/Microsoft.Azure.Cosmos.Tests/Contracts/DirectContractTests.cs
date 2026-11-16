@@ -53,6 +53,25 @@ namespace Microsoft.Azure.Cosmos.Contracts
             Assert.AreEqual(0, exportedTypes.Length, string.Join(",", exportedTypes.Select(e => e.Name).ToArray()));
         }
 
+#if !INTERNAL
+        [TestMethod]
+        public void DirectVersionMetadataMatchesAssemblyVersion()
+        {
+            const string expectedVersion = "3.44.4.0";
+            Assembly directAssembly = typeof(IStoreClient).Assembly;
+
+            Assert.AreEqual(new Version(expectedVersion), directAssembly.GetName().Version, "Direct's strong-name identity must remain compatible.");
+            Assert.AreEqual(expectedVersion, directAssembly.GetCustomAttribute<AssemblyFileVersionAttribute>().Version);
+            Assert.AreEqual(
+                expectedVersion,
+                directAssembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion);
+            Assert.AreEqual(
+                expectedVersion,
+                directAssembly.GetType("AssemblyVersionInfo", throwOnError: true)
+                    .GetField("AssemblyFileVersionString").GetRawConstantValue());
+        }
+#endif
+
         [TestMethod]
         public void MappedRegionsTest()
         {
@@ -127,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
             {
                 XElement nativeReference = nativeConsumer.Descendants("PackageReference")
                     .Single(reference => (string)reference.Attribute("Include") == "Microsoft.Azure.Cosmos.ServiceInterop");
-                Assert.AreEqual("1.0.6", (string)nativeReference.Attribute("Version"));
+                Assert.AreEqual("[$(ServiceInteropVersion)]", (string)nativeReference.Attribute("Version"));
                 Assert.AreEqual("All", (string)nativeReference.Attribute("PrivateAssets"));
                 Assert.AreEqual("All", (string)nativeReference.Attribute("ExcludeAssets"));
             }
