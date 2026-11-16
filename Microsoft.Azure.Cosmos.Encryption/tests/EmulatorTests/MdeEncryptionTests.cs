@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Text;
@@ -2927,16 +2928,127 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             VerifyDiagnostics(patchResponse.Diagnostics, expectedPropertiesEncryptedCount: 6);
             
             patchOperations.Add(PatchOperation.Increment("/Sensitive_IntFormat", 1));
-            try
-            {
-                await MdeEncryptionTests.encryptionContainer.PatchItemAsync<TestDoc>(
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                () => MdeEncryptionTests.encryptionContainer.PatchItemAsync<TestDoc>(
                     docPostPatching.Id,
                     new PartitionKey(docPostPatching.PK),
-                    patchOperations);
-            }
-            catch(InvalidOperationException ex)
+                    patchOperations));
+            Assert.AreEqual("Increment patch operation is not allowed for encrypted path '/Sensitive_IntFormat'.", exception.Message);
+        }
+
+        [DataTestMethod]
+        [DataRow(true, true, true)]
+        [DataRow(true, true, false)]
+        [DataRow(true, false, true)]
+        [DataRow(true, false, false)]
+        [DataRow(false, true, true)]
+        [DataRow(false, true, false)]
+        [DataRow(false, false, true)]
+        [DataRow(false, false, false)]
+        public async Task EncryptionPatchItemIncrement(bool useGateway, bool useStream, bool encryptedFirst)
+        {
+            PatchRequestHandler patchObserver = new PatchRequestHandler();
+            using CosmosClient encryptionClient = TestCommon.CreateCosmosClient(builder =>
             {
-                Assert.AreEqual("Increment patch operation is not allowed for encrypted path '/Sensitive_IntFormat'.", ex.Message);
+                if (useGateway)
+                {
+                    builder.WithConnectionModeGateway();
+                }
+                else
+                {
+                    builder.WithConnectionModeDirect();
+                }
+
+                builder.AddCustomHandlers(patchObserver);
+            }).WithEncryption(new TestKeyEncryptionKeyResolver(), TestKeyEncryptionKeyResolver.Id);
+
+            Container container = encryptionClient.GetContainer(
+                MdeEncryptionTests.database.Id,
+                MdeEncryptionTests.encryptionContainer.Id);
+            ItemResponse<TestDoc> createResponse = await MdeEncryptionTests.MdeCreateItemAsync(container);
+            TestDoc testDoc = createResponse.Resource;
+            JObject expectedDocument = JObject.FromObject(testDoc);
+            PartitionKey partitionKey = new PartitionKey(testDoc.PK);
+            Assert.IsFalse(string.IsNullOrEmpty(createResponse.ETag));
+
+            PatchOperation encryptedOperation = PatchOperation.Increment("/Sensitive_IntFormat", 1);
+            PatchOperation plainOperation = PatchOperation.Increment("/NonSensitiveInt", 2);
+            List<PatchOperation> rejectedOperations = encryptedFirst
+                ? new List<PatchOperation> { encryptedOperation, plainOperation }
+                : new List<PatchOperation> { plainOperation, encryptedOperation };
+
+            InvalidOperationException exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                async () =>
+                {
+                    if (useStream)
+                    {
+                        using ResponseMessage response = await container.PatchItemStreamAsync(
+                            testDoc.Id, partitionKey, rejectedOperations);
+                    }
+                    else
+                    {
+                        await container.PatchItemAsync<TestDoc>(testDoc.Id, partitionKey, rejectedOperations);
+                    }
+                });
+
+            StringAssert.Contains(exception.Message, "/Sensitive_IntFormat");
+            Assert.AreEqual(0, patchObserver.PatchCount, "Rejected encryption validation must not dispatch a logical Patch request.");
+
+            ItemResponse<TestDoc> readAfterRejection = await container.ReadItemAsync<TestDoc>(testDoc.Id, partitionKey);
+            Assert.AreEqual(HttpStatusCode.OK, readAfterRejection.StatusCode);
+            Assert.AreEqual(createResponse.ETag, readAfterRejection.ETag);
+            Assert.IsTrue(JToken.DeepEquals(expectedDocument, JObject.FromObject(readAfterRejection.Resource)),
+                "The rejected operation list must leave every item property unchanged.");
+
+            List<PatchOperation> validOperations = new List<PatchOperation> { plainOperation };
+            TestDoc patchedDocument;
+            string patchedEtag;
+            if (useStream)
+            {
+                using ResponseMessage response = await container.PatchItemStreamAsync(
+                    testDoc.Id, partitionKey, validOperations);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.IsNotNull(response.Content);
+                patchedDocument = TestCommon.FromStream<TestDoc>(response.Content);
+                patchedEtag = response.Headers.ETag;
+            }
+            else
+            {
+                ItemResponse<TestDoc> response = await container.PatchItemAsync<TestDoc>(
+                    testDoc.Id, partitionKey, validOperations);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                patchedDocument = response.Resource;
+                patchedEtag = response.ETag;
+            }
+
+            expectedDocument[nameof(TestDoc.NonSensitiveInt)] = testDoc.NonSensitiveInt + 2;
+            Assert.IsTrue(JToken.DeepEquals(expectedDocument, JObject.FromObject(patchedDocument)),
+                "A valid plain Increment must preserve the encrypted and unrelated plain fields.");
+            Assert.AreEqual(1, patchObserver.PatchCount, "The valid operation must exercise the same forwarding observer.");
+            Assert.IsFalse(string.IsNullOrEmpty(patchedEtag));
+            Assert.AreNotEqual(createResponse.ETag, patchedEtag);
+
+            ItemResponse<TestDoc> readAfterPatch = await container.ReadItemAsync<TestDoc>(testDoc.Id, partitionKey);
+            Assert.AreEqual(HttpStatusCode.OK, readAfterPatch.StatusCode);
+            Assert.AreEqual(patchedEtag, readAfterPatch.ETag);
+            Assert.IsTrue(JToken.DeepEquals(expectedDocument, JObject.FromObject(readAfterPatch.Resource)),
+                "A fresh service read must observe the exact patch effect without changing other properties.");
+        }
+
+        private sealed class PatchRequestHandler : RequestHandler
+        {
+            private int patchCount;
+
+            public int PatchCount => Volatile.Read(ref this.patchCount);
+
+            public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+            {
+                if (request.Method == HttpMethod.Patch)
+                {
+                    Interlocked.Increment(ref this.patchCount);
+                }
+
+                return base.SendAsync(request, cancellationToken);
             }
         }
 

@@ -25,9 +25,9 @@
         </QueryInfo>
         <QueryRanges>
           <Range>
-            <Range>[[3.0],[3.0]]</Range>
-            <Range>[[2.0],[2.0]]</Range>
             <Range>[[1.0],[1.0]]</Range>
+            <Range>[[2.0],[2.0]]</Range>
+            <Range>[[3.0],[3.0]]</Range>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
@@ -60,9 +60,9 @@
         </QueryInfo>
         <QueryRanges>
           <Range>
-            <Range>[["c"],["c"]]</Range>
             <Range>[["a"],["a"]]</Range>
             <Range>[["b"],["b"]]</Range>
+            <Range>[["c"],["c"]]</Range>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
@@ -194,13 +194,13 @@
         </QueryInfo>
         <QueryRanges>
           <Range>
-            <Range>[[false],[false]]</Range>
-            <Range>[["a"],["a"]]</Range>
             <Range>[[{}],[{}]]</Range>
             <Range>[[null],[null]]</Range>
+            <Range>[[false],[false]]</Range>
             <Range>[[true],[true]]</Range>
-            <Range>[[2.0],[2.0]]</Range>
             <Range>[[1.0],[1.0]]</Range>
+            <Range>[[2.0],[2.0]]</Range>
+            <Range>[["a"],["a"]]</Range>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
@@ -233,8 +233,8 @@
         </QueryInfo>
         <QueryRanges>
           <Range>
-            <Range>[[2.0],[2.0]]</Range>
             <Range>[[1.0],[1.0]]</Range>
+            <Range>[[2.0],[2.0]]</Range>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
@@ -632,9 +632,9 @@
         </QueryInfo>
         <QueryRanges>
           <Range>
-            <Range>[[3.0],[3.0]]</Range>
-            <Range>[[2.0],[2.0]]</Range>
             <Range>[[1.0],[1.0]]</Range>
+            <Range>[[2.0],[2.0]]</Range>
+            <Range>[[3.0],[3.0]]</Range>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
@@ -667,9 +667,9 @@
         </QueryInfo>
         <QueryRanges>
           <Range>
-            <Range>[[3.0],[3.0]]</Range>
-            <Range>[[2.0],[2.0]]</Range>
             <Range>[[1.0],[1.0]]</Range>
+            <Range>[[2.0],[2.0]]</Range>
+            <Range>[[3.0],[3.0]]</Range>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>

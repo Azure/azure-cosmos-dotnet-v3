@@ -16,6 +16,13 @@ Purpose: quick, actionable context so an AI coding assistant can be immediately 
   - Run unit/integration tests: `dotnet test --no-build` in the solution or specific test project folders under `**/tests/`.
   - CI uses the YAML files in the repository root and `templates/` — see `templates/emulator-setup.yml` for the Windows emulator script used in CI.
 
+- **Focused retry-disposal unit tests**: These use in-memory handlers, not an emulator or live account. Use a matching .NET 6 testhost for the `net6.0` target; do not retarget the project or substitute a newer runtime when reporting .NET 6 results. From the repository root, run the focused cases in GA Debug and preview Release:
+
+  ```sh
+  dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Microsoft.Azure.Cosmos.Tests.csproj --framework net6.0 --configuration Debug --filter "(FullyQualifiedName~CosmosHttpClientCoreTests.ThinClientRetriableResponsesAreDisposedBeforeRetryAsync|FullyQualifiedName~CosmosHttpClientCoreTests.RetryDisposal_)&TestCategory!=Quarantine&TestCategory!=Ignore"
+  dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Microsoft.Azure.Cosmos.Tests.csproj --framework net6.0 --configuration Release /p:IsPreview=true --filter "(FullyQualifiedName~CosmosHttpClientCoreTests.ThinClientRetriableResponsesAreDisposedBeforeRetryAsync|FullyQualifiedName~CosmosHttpClientCoreTests.RetryDisposal_)&TestCategory!=Quarantine&TestCategory!=Ignore"
+  ```
+
 - **Local emulator and integration testing**:
   - The codebase expects the Windows Cosmos DB Emulator in many integration tests. CI installs/starts it via `templates/emulator-setup.yml` (PowerShell scripts that download and launch the MSI and call `Start-Process CosmosDB.Emulator.exe`).
   - If running tests locally on Windows, install the emulator and ensure exclusions and local state paths match what's in `templates/emulator-setup.yml`.

@@ -35,8 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 isContinuationExpected: true,
                 maxConcurrency: 10,
                 fullTextScoreScope: FullTextScoreScope.Global,
-                requestContinuationToken: default,
-                isHybridSearchCompetitionRankingEnabled: false); ;
+                requestContinuationToken: default); ;
             Assert.IsTrue(monadicCreatePipeline.Succeeded);
         }
     }
