@@ -691,11 +691,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal void RegisterSecondaryIndexMetadataInvalidationCallback(
-            Action<string> callback)
+        internal void RegisterSecondaryIndexMetadataInvalidationCallback(Action<string> callback)
         {
             this.secondaryIndexMetadataInvalidationCallback = callback;
-            // Client initialization is lazy, so registration can precede collection cache creation.
             this.collectionCache?.SetSecondaryIndexMetadataInvalidationCallback(callback);
         }
 
