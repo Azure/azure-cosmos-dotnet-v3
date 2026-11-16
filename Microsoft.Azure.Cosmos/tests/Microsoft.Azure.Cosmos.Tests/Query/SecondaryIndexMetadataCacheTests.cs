@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Assert.IsInstanceOfType(exception.InnerException, typeof(InvalidOperationException));
             Assert.AreEqual(3, provider.CallCount);
             Assert.AreNotSame(initial, recovered);
-            CollectionAssert.AreEqual(new[] { false, true, true }, forceRefreshes);
+            CollectionAssert.AreEqual(new[] { false, true, false }, forceRefreshes);
         }
 
         [TestMethod]

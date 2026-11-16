@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Text;
     using System.Threading;
@@ -19,9 +18,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 
         private readonly ISecondaryIndexMetadataProvider provider;
         private readonly AsyncCache<string, Snapshot> cache;
-        // Concurrent set keyed by source collection RID; the byte value is unused.
-        // Membership preserves fresh-read semantics after a failed refresh evicts its snapshot.
-        private readonly ConcurrentDictionary<string, byte> refreshRetryRequired;
         private readonly Func<DateTime> utcNowProvider;
 
         public SecondaryIndexMetadataCache(
@@ -31,7 +27,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         {
             this.provider = indexMetadataProvider ?? throw new ArgumentNullException(nameof(indexMetadataProvider));
             this.cache = new AsyncCache<string, Snapshot>(enableAsyncCacheExceptionNoSharing);
-            this.refreshRetryRequired = new ConcurrentDictionary<string, byte>(StringComparer.Ordinal);
             this.utcNowProvider = utcNowProvider ?? (() => DateTime.UtcNow);
         }
 
@@ -60,17 +55,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                     () => this.CreateSnapshotAsync(source, trace, cancellationToken, forceCollectionRefresh: true),
                     cancellationToken,
                     forceRefresh: true);
-                this.refreshRetryRequired.TryRemove(sourceCollectionRid, out _);
                 return forcedSnapshot?.Metadata;
             }
 
-            bool requiresRefreshRetry = this.refreshRetryRequired.ContainsKey(sourceCollectionRid);
             Snapshot currentSnapshot = await this.cache.GetAsync(
                 sourceCollectionRid,
                 obsoleteValue: null,
-                () => requiresRefreshRetry
-                    ? this.CreateRefreshSnapshotAsync(source, trace, cancellationToken)
-                    : this.CreateSnapshotAsync(source, trace, cancellationToken, forceCollectionRefresh: false),
+                () => this.CreateSnapshotAsync(source, trace, cancellationToken, forceCollectionRefresh: false),
                 cancellationToken);
             this.ThrowIfRefreshFailed(sourceCollectionRid, currentSnapshot);
 
@@ -103,7 +94,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             }
 
             this.cache.Remove(sourceCollectionRid);
-            this.refreshRetryRequired.TryRemove(sourceCollectionRid, out _);
         }
 
         private static string CreateSourceMembershipFingerprint(ContainerProperties source)
@@ -162,14 +152,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                     trace,
                     cancellationToken,
                     forceCollectionRefresh: true);
-                this.refreshRetryRequired.TryRemove(source.ResourceId, out _);
                 return snapshot;
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
                 // The sentinel lets every caller coalesced on this refresh observe the same failure.
-                // ThrowIfRefreshFailed removes it; the retry marker then makes the next miss force-fresh.
-                this.refreshRetryRequired[source.ResourceId] = 0;
+                // ThrowIfRefreshFailed removes it so the next lookup performs normal cache-miss discovery.
                 return Snapshot.CreateRefreshFailure(exception);
             }
         }
