@@ -68,8 +68,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             if (currentSnapshot == null
                 || (!currentSnapshot.IsExpired(this.utcNowProvider())
                     && string.Equals(
-                        currentSnapshot.SourceMembershipFingerprint,
-                        CreateSourceMembershipFingerprint(source),
+                        currentSnapshot.MembershipFingerprint,
+                        CreateMembershipFingerprint(source),
                         StringComparison.Ordinal)))
             {
                 return currentSnapshot?.Metadata;
@@ -96,29 +96,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             this.cache.Remove(sourceCollectionRid);
         }
 
-        private static string CreateSourceMembershipFingerprint(ContainerProperties source)
+        private static string CreateMembershipFingerprint(ContainerProperties source)
         {
-            // Length-prefixing the ordered referenced RIDs avoids ambiguous concatenations.
             StringBuilder fingerprint = new StringBuilder();
             foreach (MaterializedViewProperties materializedView in source.MaterializedViews)
             {
-                AppendFingerprintValue(fingerprint, materializedView?.ResourceId);
+                string resourceId = materializedView?.ResourceId;
+                if (resourceId == null)
+                {
+                    fingerprint.Append("-1:");
+                }
+                else
+                {
+                    fingerprint.Append(resourceId.Length);
+                    fingerprint.Append(':');
+                    fingerprint.Append(resourceId);
+                }
             }
 
             return fingerprint.ToString();
-        }
-
-        private static void AppendFingerprintValue(StringBuilder fingerprint, string value)
-        {
-            if (value == null)
-            {
-                fingerprint.Append("-1:");
-                return;
-            }
-
-            fingerprint.Append(value.Length);
-            fingerprint.Append(':');
-            fingerprint.Append(value);
         }
 
         private async Task<Snapshot> CreateSnapshotAsync(
@@ -136,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 ? null
                 : new Snapshot(
                     metadata,
-                    CreateSourceMembershipFingerprint(source),
+                    CreateMembershipFingerprint(source),
                     this.utcNowProvider());
         }
 
@@ -179,11 +175,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         {
             public Snapshot(
                 IEnumerable<ISecondaryIndexMetadata> metadata,
-                string sourceMembershipFingerprint,
+                string membershipFingerprint,
                 DateTime createdUtc)
             {
                 this.Metadata = metadata;
-                this.SourceMembershipFingerprint = sourceMembershipFingerprint;
+                this.MembershipFingerprint = membershipFingerprint;
                 this.CreatedUtc = createdUtc;
             }
 
@@ -196,7 +192,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 
             public Exception RefreshException { get; }
 
-            public string SourceMembershipFingerprint { get; }
+            /// <summary>
+            /// Ordered GSI resource identifiers encoded as "&lt;length&gt;:&lt;value&gt;", with null encoded as "-1:".
+            /// </summary>
+            public string MembershipFingerprint { get; }
 
             private DateTime CreatedUtc { get; }
 
