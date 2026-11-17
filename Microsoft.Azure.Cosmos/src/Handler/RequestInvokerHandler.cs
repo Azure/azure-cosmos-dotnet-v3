@@ -718,8 +718,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 && !partitionKey.Value.IsNone
                 && partitionKeyDefinition.Kind == PartitionKind.MultiHash
                 && partitionKey.Value.InternalKey.Components.Count > 0
-                && partitionKey.Value.InternalKey.Components.Count < partitionKeyDefinition.Paths.Count
-                && !ConfigurationManager.IsQueryMinimizeHeadersEnabled())
+                && partitionKey.Value.InternalKey.Components.Count < partitionKeyDefinition.Paths.Count)
             {
                 // The partition key and partial partition key headers are mutually exclusive.
                 Debug.Assert(string.IsNullOrEmpty(request.Headers.PartitionKey));

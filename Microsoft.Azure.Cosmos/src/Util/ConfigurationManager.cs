@@ -85,12 +85,6 @@ namespace Microsoft.Azure.Cosmos
         public static readonly string OptimisticDirectExecutionEnabled = "AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED";
 
         /// <summary>
-        /// Environment variable for minimizing optional query-optimization headers. Default: false.
-        /// Currently, setting this to true suppresses only x-ms-documentdb-partialpartitionkey.
-        /// </summary>
-        public static readonly string QueryMinimizeHeaders = "AZURE_COSMOS_QUERY_MINIMIZE_HEADERS";
-
-        /// <summary>
         /// Environment variable name to disable sending non streaming order by query feature flag to the gateway.
         /// </summary>
         public static readonly string HybridSearchQueryPlanOptimizationDisabled = "AZURE_COSMOS_HYBRID_SEARCH_QUERYPLAN_OPTIMIZATION_DISABLED";
@@ -495,18 +489,6 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: HybridSearchQueryPlanOptimizationDisabled,
                         defaultValue: defaultValue);
-        }
-
-        /// <summary>
-        /// Gets whether optional query-optimization headers should be minimized. Defaults to false.
-        /// Currently affects only the partial partition key header, not required routing headers.
-        /// </summary>
-        public static bool IsQueryMinimizeHeadersEnabled()
-        {
-            return ConfigurationManager
-                    .GetEnvironmentVariable(
-                        variable: QueryMinimizeHeaders,
-                        defaultValue: false);
         }
 
         /// <summary>

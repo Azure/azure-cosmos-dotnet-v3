@@ -247,7 +247,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     string expectedPartialPartitionKey = partitionKeyDefinition.Kind == PartitionKind.MultiHash
                         && pkValues.Length > 0
                         && pkValues.Length < partitionKeyDefinition.Paths.Count
-                        && !Microsoft.Azure.Cosmos.ConfigurationManager.IsQueryMinimizeHeadersEnabled()
                         ? partitionKey.ToJsonString()
                         : null;
                     int observedQueryRequests = 0;
