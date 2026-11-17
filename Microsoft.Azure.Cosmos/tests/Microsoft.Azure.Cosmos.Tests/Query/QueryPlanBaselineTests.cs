@@ -1519,6 +1519,56 @@
         }
 
         [TestMethod]
+        public void FullTextSearchTerms()
+        {
+            this.ExecuteTestSuite(new[]
+            {
+                Hash(
+                    "Ordered terms",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, 'swim', 'run')",
+                    "/id"),
+                Hash(
+                    "Nested string indexers",
+                    @"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[""author""][""bio""], 'energy')",
+                    "/id"),
+                Hash(
+                    "Path segment containing a separator",
+                    @"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[""a/b""], 'energy')",
+                    "/id"),
+                Hash(
+                    "Numeric indexer",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.tags[0], 'energy')",
+                    "/id"),
+                Hash(
+                    "Repeated path with different terms",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.text, 'swim'), FullTextScore(c.text, 'run'))",
+                    "/id"),
+                Hash(
+                    "Multiple paths and components",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.title, 'energy'), FullTextScore(c.text, 'swim', 'run'))",
+                    "/id"),
+                Hash(
+                    "Fuzzy term distance",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, {'term': 'swim', 'distance': 2}, 'run')",
+                    "/id"),
+                Hash(
+                    "Duplicate terms and phrase",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, 'run', 'swim', 'run', 'United States')",
+                    "/id"),
+                Hash(
+                    "Resolved path and term parameters",
+                    new SqlQuerySpec(
+                        "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[@path], @term)",
+                        new SqlParameterCollection
+                        {
+                            new SqlParameter("@path", "text"),
+                            new SqlParameter("@term", "swim"),
+                        }),
+                    "/id"),
+            });
+        }
+
+        [TestMethod]
         [Owner("ndeshpan")]
         public void VectorSearch()
         {
@@ -1999,6 +2049,43 @@
             if (hybridsearchQueryInfo.GlobalStatisticsQuery != null)
             {
                 writer.WriteElementString(nameof(hybridsearchQueryInfo.GlobalStatisticsQuery), hybridsearchQueryInfo.GlobalStatisticsQuery);
+            }
+
+            if (hybridsearchQueryInfo.FullTextSearchTerms != null)
+            {
+                writer.WriteStartElement(nameof(hybridsearchQueryInfo.FullTextSearchTerms));
+
+                foreach (FullTextSearchTerms requirement in hybridsearchQueryInfo.FullTextSearchTerms)
+                {
+                    writer.WriteStartElement("Entry");
+                    writer.WriteStartElement("Path");
+
+                    foreach (string segment in requirement.Path)
+                    {
+                        writer.WriteElementString("Segment", segment);
+                    }
+
+                    writer.WriteEndElement();
+                    writer.WriteStartElement("Terms");
+
+                    foreach (FullTextSearchTerm term in requirement.Terms)
+                    {
+                        writer.WriteStartElement("Term");
+                        writer.WriteElementString("Text", term.Term);
+
+                        if (term.Distance.HasValue)
+                        {
+                            writer.WriteElementString("Distance", XmlConvert.ToString(term.Distance.Value));
+                        }
+
+                        writer.WriteEndElement();
+                    }
+
+                    writer.WriteEndElement();
+                    writer.WriteEndElement();
+                }
+
+                writer.WriteEndElement();
             }
 
             if (hybridsearchQueryInfo.ComponentQueryInfos != null)
