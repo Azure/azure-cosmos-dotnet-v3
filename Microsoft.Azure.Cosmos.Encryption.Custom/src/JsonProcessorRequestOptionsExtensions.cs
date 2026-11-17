@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos;
 
     /// <summary>
@@ -54,6 +55,59 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             return defaultJsonProcessor;
+        }
+
+        internal static TRequestOptions SelectAndSanitizeJsonProcessor<TRequestOptions>(
+            this TRequestOptions requestOptions,
+            JsonProcessor defaultJsonProcessor,
+            out JsonProcessor jsonProcessor,
+            out bool hasOverride)
+            where TRequestOptions : RequestOptions
+        {
+            hasOverride = requestOptions.TryReadJsonProcessorOverride(out jsonProcessor);
+            if (!hasOverride)
+            {
+                jsonProcessor = defaultJsonProcessor;
+            }
+
+            if (requestOptions?.Properties == null ||
+                !requestOptions.Properties.ContainsKey(JsonProcessorPropertyBagKey))
+            {
+                return requestOptions;
+            }
+
+            TRequestOptions sanitizedOptions = (TRequestOptions)requestOptions.ShallowCopy();
+            Dictionary<string, object> properties = new ();
+            foreach (KeyValuePair<string, object> property in requestOptions.Properties)
+            {
+                if (property.Key != JsonProcessorPropertyBagKey)
+                {
+                    properties[property.Key] = property.Value;
+                }
+            }
+
+            sanitizedOptions.Properties = properties.Count == 0 ? null : properties;
+            return sanitizedOptions;
+        }
+
+        internal static TRequestOptions CreateJsonProcessorRequestOptions<TRequestOptions>(
+            this TRequestOptions requestOptions,
+            JsonProcessor jsonProcessor)
+            where TRequestOptions : RequestOptions
+        {
+            TRequestOptions processorOptions = (TRequestOptions)requestOptions.ShallowCopy();
+            Dictionary<string, object> properties = new ();
+            if (requestOptions.Properties != null)
+            {
+                foreach (KeyValuePair<string, object> property in requestOptions.Properties)
+                {
+                    properties[property.Key] = property.Value;
+                }
+            }
+
+            properties[JsonProcessorPropertyBagKey] = jsonProcessor;
+            processorOptions.Properties = properties;
+            return processorOptions;
         }
     }
 }

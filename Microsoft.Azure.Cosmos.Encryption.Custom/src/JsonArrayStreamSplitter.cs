@@ -17,11 +17,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private const int DefaultBufferSize = 4096;
 
         /// <summary>
-        /// Splits a JSON array stream into separate objects, returning each as a Stream.
+        /// Splits the Documents array into separate streams, optionally retaining non-object items.
         /// </summary>
         /// <param name="jsonArrayStream">The input stream containing a Cosmos DB response object with a Documents array.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>An enumerable of Stream objects, each containing a single JSON object.</returns>
+        /// <param name="includeNonObjectItems">Whether to retain scalar, null, and array items in addition to objects.</param>
+        /// <returns>An enumerable of streams, each containing a single JSON item.</returns>
         /// <remarks>
         /// <para>
         /// Callers MUST dispose every yielded <see cref="Stream"/> instance. Each yielded stream is a
@@ -43,7 +44,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public static async IAsyncEnumerable<Stream> SplitIntoSubstreamsAsync(
             Stream jsonArrayStream,
             [EnumeratorCancellation]
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            bool includeNonObjectItems = false)
         {
             if (jsonArrayStream == null)
             {
@@ -77,7 +79,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         isFinalBlock,
                         ref readerState,
                         ref traversalState,
-                        writeSegment);
+                        writeSegment,
+                        includeNonObjectItems);
 
                     leftOver = dataLength - result.BytesConsumed;
                     buffer = JsonFeedStreamHelper.HandleLeftOver(
