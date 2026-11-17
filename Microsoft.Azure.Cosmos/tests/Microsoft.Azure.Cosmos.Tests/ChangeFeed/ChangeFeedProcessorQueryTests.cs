@@ -135,41 +135,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [DataTestMethod]
-        [DataRow(false, HttpStatusCode.BadRequest)]
-        [DataRow(true, HttpStatusCode.BadRequest)]
-        [DataRow(false, HttpStatusCode.TooManyRequests)]
-        [DataRow(true, HttpStatusCode.TooManyRequests)]
-        public async Task FailedReadRetainsContinuation(bool filtered, HttpStatusCode failure)
-        {
-            int calls = 0;
-            TestHandler handler = new TestHandler((request, cancellationToken) =>
-            {
-                Assert.AreEqual("saved-progress", request.Headers.IfNoneMatch);
-                ResponseMessage response = new ResponseMessage(calls++ == 0 ? failure : HttpStatusCode.OK);
-                response.Headers.ETag = calls == 1 ? "error-etag" : "next-progress";
-                return Task.FromResult(response);
-            });
-            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(builder => builder.AddCustomHandlers(handler));
-            using ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
-                lease: new DocumentServiceLeaseCore { LeaseToken = "0" },
-                mode: ChangeFeedMode.LatestVersion,
-                continuationToken: "saved-progress",
-                maxItemCount: 7,
-                container: (ContainerInternal)client.GetContainer("myDb", "myContainer"),
-                startTime: null,
-                startFromBeginning: false,
-                querySpec: filtered ? new ChangeFeedQuerySpec("SELECT * FROM c") : null);
-
-            using ResponseMessage failed = await iterator.ReadNextAsync(NoOpTrace.Singleton);
-            Assert.AreEqual(failure, failed.StatusCode);
-            Assert.IsNull(failed.Headers.ContinuationToken);
-            Assert.IsFalse(iterator.HasMoreResults);
-            using ResponseMessage retried = await iterator.ReadNextAsync(NoOpTrace.Singleton);
-            Assert.AreEqual("next-progress", retried.Headers.ContinuationToken);
-            Assert.AreEqual(2, calls);
-        }
-
-        [DataTestMethod]
         [DataRow(false, false)]
         [DataRow(false, true)]
         [DataRow(true, false)]

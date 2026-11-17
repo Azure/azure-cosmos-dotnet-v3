@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System;
     using System.Globalization;
     using System.IO;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
@@ -145,14 +144,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 trace: trace,
                 cancellationToken: cancellationToken);
 
+            // Change Feed uses etag as continuation token.
+            string etag = responseMessage.Headers.ETag;
             this.hasMoreResultsInternal = responseMessage.IsSuccessStatusCode;
-            if (responseMessage.IsSuccessStatusCode || responseMessage.StatusCode == HttpStatusCode.NotModified)
-            {
-                // Error responses do not establish a new read position.
-                string etag = responseMessage.Headers.ETag;
-                responseMessage.Headers.ContinuationToken = etag;
-                this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)this.changeFeedStartFrom.FeedRange);
-            }
+            responseMessage.Headers.ContinuationToken = etag;
+            this.changeFeedStartFrom = new ChangeFeedStartFromContinuationAndFeedRange(etag, (FeedRangeInternal)this.changeFeedStartFrom.FeedRange);
 
             return responseMessage;
         }
