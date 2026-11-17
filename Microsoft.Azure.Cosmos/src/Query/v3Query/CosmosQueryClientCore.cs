@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -52,6 +53,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Action<IQueryable> OnExecuteScalarQueryCallback => this.documentClient.OnExecuteScalarQueryCallback;
+
+        public override HybridSearchStatisticsCacheFactory HybridSearchStatisticsCacheFactory => this.clientContext.HybridSearchStatisticsCacheFactory;
 
         public override async Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(
             string containerLink,
@@ -93,6 +96,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new ContainerQueryProperties(
                 containerProperties.ResourceId,
+                containerProperties.ETag,
                 effectivePartitionKeyRange,
                 containerProperties.PartitionKey,
                 containerProperties.VectorEmbeddingPolicy,
