@@ -135,18 +135,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         {
             try
             {
-                Snapshot snapshot = await this.CreateSnapshotAsync(
+                return await this.CreateSnapshotAsync(
                     source,
                     trace,
                     cancellationToken,
                     forceCollectionRefresh: true);
-                return snapshot;
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
-                // The sentinel lets every caller coalesced on this refresh observe the same failure.
-                // ThrowIfRefreshFailed removes it so the next lookup performs normal cache-miss discovery.
-                return Snapshot.CreateRefreshFailure(exception);
+                return new Snapshot(exception);
             }
         }
 
@@ -175,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 this.CreatedUtc = createdUtc;
             }
 
-            private Snapshot(Exception refreshException)
+            public Snapshot(Exception refreshException)
             {
                 this.RefreshException = refreshException;
             }
@@ -185,7 +182,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             public Exception RefreshException { get; }
 
             /// <summary>
-            /// GSI resource identifiers in source order, concatenated as "&lt;character-count&gt;:&lt;value&gt;".
+            /// GSI resource identifiers in source order, each prefixed by its character count and a colon
+            /// (for example, "3:abc4:wxyz").
             /// </summary>
             public string MembershipFingerprint { get; }
 
@@ -194,11 +192,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             public bool IsExpired(DateTime utcNow)
             {
                 return utcNow - this.CreatedUtc >= SnapshotTimeToLive;
-            }
-
-            public static Snapshot CreateRefreshFailure(Exception exception)
-            {
-                return new Snapshot(exception);
             }
         }
     }
