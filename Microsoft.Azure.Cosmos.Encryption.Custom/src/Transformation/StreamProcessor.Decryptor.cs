@@ -351,7 +351,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             int encryptedPathCount = properties.EncryptedPaths is ICollection<string> ec ? ec.Count : properties.EncryptedPaths.Count();
             using ArrayPoolManager arrayPoolManager = new (initialRentCapacity: (encryptedPathCount * 2) + 4);
 
-            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(properties.DataEncryptionKeyId, properties.EncryptionAlgorithm, cancellationToken);
+            if (encryptor is not IDataEncryptionKeyAccessor keyAccessor)
+            {
+                return await DecryptWithPublicArraysAsync(
+                    inputStream,
+                    outputBufferWriter,
+                    encryptor,
+                    properties,
+                    diagnosticsContext,
+                    cancellationToken);
+            }
+
+            DataEncryptionKey encryptionKey = await keyAccessor.GetEncryptionKeyAsync(
+                properties.DataEncryptionKeyId,
+                properties.EncryptionAlgorithm,
+                cancellationToken) ?? throw new InvalidOperationException(
+                    $"{nameof(IDataEncryptionKeyAccessor)} returned null {nameof(DataEncryptionKey)}.");
 
             List<string> pathsDecrypted = new (encryptedPathCount);
             using Utf8JsonWriter writer = new (outputBufferWriter);
@@ -392,6 +407,37 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             writer.Flush();
 
             return EncryptionProcessor.CreateDecryptionContext(pathsDecrypted, properties.DataEncryptionKeyId);
+        }
+
+        private static async Task<DecryptionContext> DecryptWithPublicArraysAsync(
+            Stream inputStream,
+            IBufferWriter<byte> outputBufferWriter,
+            Encryptor encryptor,
+            EncryptionProperties properties,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            Newtonsoft.Json.Linq.JObject document = EncryptionProcessor.BaseSerializer.FromStream<Newtonsoft.Json.Linq.JObject>(inputStream);
+            MdeJObjectEncryptionProcessor processor = new ();
+            DecryptionContext context = await processor.DecryptObjectAsync(
+                document,
+                encryptor,
+                properties,
+                diagnosticsContext,
+                cancellationToken);
+
+            using Stream decryptedStream = EncryptionProcessor.BaseSerializer.ToStream(document);
+            while (true)
+            {
+                Memory<byte> destination = outputBufferWriter.GetMemory(PooledStreamConfiguration.Current.StreamProcessorBufferSize);
+                int bytesRead = await decryptedStream.ReadAsync(destination, cancellationToken).ConfigureAwait(false);
+                if (bytesRead == 0)
+                {
+                    return context;
+                }
+
+                outputBufferWriter.Advance(bytesRead);
+            }
         }
 
         internal static byte[] HandleReadBuffer(
