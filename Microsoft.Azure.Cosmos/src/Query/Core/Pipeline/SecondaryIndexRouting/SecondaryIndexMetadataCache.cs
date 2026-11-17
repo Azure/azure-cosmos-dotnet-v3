@@ -75,8 +75,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 return currentSnapshot?.Metadata;
             }
 
-            // Supplying the stale snapshot as the obsolete value coalesces concurrent refreshes
-            // without returning stale metadata while the replacement is being discovered.
+            // Refresh this snapshot only if it is still cached; concurrent callers await the same replacement.
             Snapshot refreshedSnapshot = await this.cache.GetAsync(
                 sourceCollectionRid,
                 obsoleteValue: currentSnapshot,
