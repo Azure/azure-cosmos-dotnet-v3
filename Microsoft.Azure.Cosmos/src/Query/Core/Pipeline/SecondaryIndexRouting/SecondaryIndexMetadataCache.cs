@@ -101,17 +101,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             StringBuilder fingerprint = new StringBuilder();
             foreach (MaterializedViewProperties materializedView in source.MaterializedViews)
             {
-                string resourceId = materializedView?.ResourceId;
-                if (resourceId == null)
-                {
-                    fingerprint.Append("-1:");
-                }
-                else
-                {
-                    fingerprint.Append(resourceId.Length);
-                    fingerprint.Append(':');
-                    fingerprint.Append(resourceId);
-                }
+                string resourceId = materializedView.ResourceId;
+                fingerprint.Append(resourceId.Length);
+                fingerprint.Append(':');
+                fingerprint.Append(resourceId);
             }
 
             return fingerprint.ToString();
@@ -193,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             public Exception RefreshException { get; }
 
             /// <summary>
-            /// Ordered GSI resource identifiers encoded as "&lt;length&gt;:&lt;value&gt;", with null encoded as "-1:".
+            /// GSI resource identifiers in source order, concatenated as "&lt;character-count&gt;:&lt;value&gt;".
             /// </summary>
             public string MembershipFingerprint { get; }
 
