@@ -8706,6 +8706,11 @@
           "Attributes": [],
           "MethodInfo": "System.String MexicoCentral;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String NetherlandsNortheast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String NetherlandsNortheast;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String NewZealandNorth": {
           "Type": "Field",
           "Attributes": [],
