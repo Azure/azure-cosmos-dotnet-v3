@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- Change Feed: Acquire a continuation token for all ranges in an iterator's scope without returning documents by enabling `ChangeFeedRequestOptions.EnableContinuationTokenOnly` with a `Now` starting position and explicitly setting `PageSizeHint` to zero. Any documents returned by the service are suppressed from the SDK response.
+
 #### Breaking Changes
 
 #### Bugs Fixed

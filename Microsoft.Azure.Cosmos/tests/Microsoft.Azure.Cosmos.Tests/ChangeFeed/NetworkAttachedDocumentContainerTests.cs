@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -23,6 +24,70 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
     [TestClass]
     public class NetworkAttachedDocumentContainerTests
     {
+        [DataTestMethod]
+        [DataRow(false, true, 0, false)]
+        [DataRow(true, true, 0, false)]
+        [DataRow(false, true, 0, true)]
+        [DataRow(true, true, 0, true)]
+        [DataRow(false, false, 42, false)]
+        [DataRow(true, false, null, true)]
+        public async Task TokenOnlyWirePageSizeAndStartHeaders(bool fullFidelity, bool tokenOnly, int? pageSize, bool continuation)
+        {
+            Mock<CosmosClientContext> context = new Mock<CosmosClientContext>();
+            Mock<ContainerInternal> container = new Mock<ContainerInternal>();
+            container.Setup(c => c.ClientContext).Returns(context.Object);
+            bool enriched = false;
+            Func<Action<RequestMessage>, bool> validate = enricher =>
+            {
+                using RequestMessage request = new RequestMessage();
+                enricher(request);
+                Assert.AreEqual(tokenOnly ? "0" : pageSize?.ToString(), request.Headers.PageSize);
+                Assert.AreEqual(continuation ? "etag" : "*", request.Headers.IfNoneMatch);
+                Assert.AreEqual(
+                    fullFidelity ? HttpConstants.A_IMHeaderValues.FullFidelityFeed : HttpConstants.A_IMHeaderValues.IncrementalFeed,
+                    request.Headers[HttpConstants.HttpHeaders.A_IM]);
+                enriched = true;
+                return true;
+            };
+            ResponseMessage response = new ResponseMessage(System.Net.HttpStatusCode.NotModified);
+            response.Headers.ETag = "next-etag";
+            response.Headers.ActivityId = "activity";
+            response.Headers.RequestCharge = 1;
+            response.Headers[HttpConstants.HttpHeaders.ItemCount] = "0";
+            context.Setup(c => c.ProcessResourceOperationStreamAsync(
+                It.IsAny<string>(), It.IsAny<ResourceType>(), It.IsAny<OperationType>(),
+                It.IsAny<RequestOptions>(), It.IsAny<ContainerInternal>(),
+                It.IsAny<FeedRangeInternal>(), It.IsAny<Stream>(),
+                It.Is<Action<RequestMessage>>(enricher => validate(enricher)),
+                It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(response);
+            NetworkAttachedDocumentContainer documentContainer = new NetworkAttachedDocumentContainer(
+                container.Object, Mock.Of<CosmosQueryClient>(), Guid.NewGuid());
+            TryCatch<Microsoft.Azure.Cosmos.ChangeFeed.Pagination.ChangeFeedPage> page = await documentContainer.MonadicChangeFeedAsync(
+                new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange,
+                    continuation ? ChangeFeedState.Continuation(CosmosString.Create("etag")) : ChangeFeedState.Now()),
+                new ChangeFeedExecutionOptions(
+                    fullFidelity ? ChangeFeedMode.AllVersionsAndDeletes : ChangeFeedMode.LatestVersion,
+                    pageSizeHint: pageSize, enableContinuationTokenOnly: tokenOnly),
+                NoOpTrace.Singleton, default);
+            Assert.IsTrue(enriched);
+            Assert.IsTrue(page.Succeeded);
+            Assert.IsInstanceOfType<ChangeFeedStateContinuation>(page.Result.State);
+        }
+
+        [DataTestMethod]
+        [DataRow(null)]
+        [DataRow(-1)]
+        [DataRow(1)]
+        public void TokenOnlyExecutionOptionsRejectMissingOrNonzeroPageSize(int? pageSize)
+        {
+            foreach (ChangeFeedMode mode in new[] { ChangeFeedMode.LatestVersion, ChangeFeedMode.AllVersionsAndDeletes })
+            {
+                Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                    new ChangeFeedExecutionOptions(mode, pageSizeHint: pageSize, enableContinuationTokenOnly: true));
+            }
+        }
+
         [TestMethod]
         public async Task TestKeyRangeCacheRefresh()
         {

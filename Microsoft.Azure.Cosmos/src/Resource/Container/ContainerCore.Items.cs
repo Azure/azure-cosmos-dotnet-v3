@@ -612,6 +612,13 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = default)
         {
+            if (changeFeedRequestOptions?.EnableContinuationTokenOnly == true)
+            {
+                throw new ArgumentException(
+                    $"{nameof(ChangeFeedRequestOptions.EnableContinuationTokenOnly)} is supported only by change feed pull iterators.",
+                    nameof(changeFeedRequestOptions));
+            }
+
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,

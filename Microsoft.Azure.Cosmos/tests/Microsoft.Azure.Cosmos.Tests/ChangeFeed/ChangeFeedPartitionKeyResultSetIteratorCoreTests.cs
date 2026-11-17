@@ -21,6 +21,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class ChangeFeedPartitionKeyResultSetIteratorCoreTests
     {
+        [TestMethod]
+        public void ZeroPageSizeIsRejectedForProcessorIterator()
+        {
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() =>
+                ChangeFeedPartitionKeyResultSetIteratorCore.Create(
+                    lease: new DocumentServiceLeaseCore { LeaseToken = "0" },
+                    mode: ChangeFeedMode.LatestVersion,
+                    continuationToken: null,
+                    maxItemCount: 0,
+                    container: Mock.Of<ContainerInternal>(),
+                    startTime: null,
+                    startFromBeginning: false));
+        }
+
         /// <summary>
         /// Checks that Response's Etag is passed as caller Continuation
         /// </summary>
