@@ -3177,10 +3177,20 @@
           "Attributes": [],
           "MethodInfo": "Boolean LimitToEndpoint;CanRead:True;CanWrite:True;Boolean get_LimitToEndpoint();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_LimitToEndpoint(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Int32 FullTextStatisticsCacheMaxEntries": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Int32 FullTextStatisticsCacheMaxEntries;CanRead:True;CanWrite:True;Int32 get_FullTextStatisticsCacheMaxEntries();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_FullTextStatisticsCacheMaxEntries(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Int32 GatewayModeMaxConnectionLimit": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "Int32 GatewayModeMaxConnectionLimit;CanRead:True;CanWrite:True;Int32 get_GatewayModeMaxConnectionLimit();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_GatewayModeMaxConnectionLimit(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 get_FullTextStatisticsCacheMaxEntries()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Int32 get_FullTextStatisticsCacheMaxEntries();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Int32 get_GatewayModeMaxConnectionLimit()": {
           "Type": "Method",
@@ -3429,6 +3439,16 @@
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.Int32] ThroughputBucket;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_ThroughputBucket();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ThroughputBucket(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Nullable`1[System.TimeSpan] FullTextStatisticsCacheMaxAge": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] FullTextStatisticsCacheMaxAge;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_FullTextStatisticsCacheMaxAge();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_FullTextStatisticsCacheMaxAge(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.TimeSpan] get_FullTextStatisticsCacheMaxAge()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_FullTextStatisticsCacheMaxAge();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Nullable`1[System.TimeSpan] get_IdleTcpConnectionTimeout()": {
           "Type": "Method",
           "Attributes": [],
@@ -3601,6 +3621,16 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_FaultInjector(Microsoft.Azure.Cosmos.FaultInjection.IFaultInjector);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_FullTextStatisticsCacheMaxAge(System.Nullable`1[System.TimeSpan])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_FullTextStatisticsCacheMaxAge(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_FullTextStatisticsCacheMaxEntries(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_FullTextStatisticsCacheMaxEntries(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_GatewayModeMaxConnectionLimit(Int32)": {
           "Type": "Method",
