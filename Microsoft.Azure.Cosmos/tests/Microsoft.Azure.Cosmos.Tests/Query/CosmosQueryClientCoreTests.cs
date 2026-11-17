@@ -96,15 +96,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             cache.VerifyNoOtherCalls();
         }
 
-        [TestMethod]
-        public async Task SecondaryIndexRefreshFailurePropagates()
-        {
-            SecondaryIndexMetadataRefreshException exception =
-                new SecondaryIndexMetadataRefreshException(new InvalidOperationException("Refresh failed."));
-
-            await AssertDiscoveryFailureAsync(exception);
-        }
-
         private static async Task AssertDiscoveryFailureAsync<TException>(TException exception)
             where TException : Exception
         {

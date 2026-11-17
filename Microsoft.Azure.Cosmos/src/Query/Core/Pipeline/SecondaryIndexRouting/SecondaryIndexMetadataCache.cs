@@ -62,8 +62,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 sourceCollectionRid,
                 obsoleteValue: null,
                 () => this.CreateSnapshotAsync(source, trace, cancellationToken, forceCollectionRefresh: false),
-                cancellationToken);
-            this.ThrowIfRefreshFailed(sourceCollectionRid, currentSnapshot);
+                cancellationToken,
+                retryOnSharedInitializationFailure: false);
 
             if (currentSnapshot == null
                 || (!currentSnapshot.IsExpired(this.utcNowProvider())
@@ -79,9 +79,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             Snapshot refreshedSnapshot = await this.cache.GetAsync(
                 sourceCollectionRid,
                 obsoleteValue: currentSnapshot,
-                () => this.CreateRefreshSnapshotAsync(source, trace, cancellationToken),
-                cancellationToken);
-            this.ThrowIfRefreshFailed(sourceCollectionRid, refreshedSnapshot);
+                () => this.CreateSnapshotAsync(source, trace, cancellationToken, forceCollectionRefresh: true),
+                cancellationToken,
+                retryOnSharedInitializationFailure: false);
             return refreshedSnapshot?.Metadata;
         }
 
@@ -128,37 +128,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                     this.utcNowProvider());
         }
 
-        private async Task<Snapshot> CreateRefreshSnapshotAsync(
-            ContainerProperties source,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            try
-            {
-                return await this.CreateSnapshotAsync(
-                    source,
-                    trace,
-                    cancellationToken,
-                    forceCollectionRefresh: true);
-            }
-            catch (Exception exception) when (exception is not OperationCanceledException)
-            {
-                return new Snapshot(exception);
-            }
-        }
-
-        private void ThrowIfRefreshFailed(string sourceCollectionRid, Snapshot snapshot)
-        {
-            if (snapshot?.RefreshException != null)
-            {
-                this.cache.Remove(sourceCollectionRid);
-                throw new SecondaryIndexMetadataRefreshException(snapshot.RefreshException);
-            }
-        }
-
         /// <summary>
-        /// Represents either successfully discovered metadata and its freshness signals,
-        /// or a refresh failure shared by all callers coalesced on the same refresh.
+        /// Represents successfully discovered metadata and its freshness signals.
         /// </summary>
         private sealed class Snapshot
         {
@@ -172,14 +143,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 this.CreatedUtc = createdUtc;
             }
 
-            public Snapshot(Exception refreshException)
-            {
-                this.RefreshException = refreshException;
-            }
-
             public IEnumerable<ISecondaryIndexMetadata> Metadata { get; }
-
-            public Exception RefreshException { get; }
 
             /// <summary>
             /// GSI resource identifiers in source order, each prefixed by its character count and a colon
@@ -193,14 +157,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             {
                 return utcNow - this.CreatedUtc >= SnapshotTimeToLive;
             }
-        }
-    }
-
-    internal sealed class SecondaryIndexMetadataRefreshException : Exception
-    {
-        public SecondaryIndexMetadataRefreshException(Exception innerException)
-            : base("Secondary index metadata refresh failed.", innerException)
-        {
         }
     }
 }

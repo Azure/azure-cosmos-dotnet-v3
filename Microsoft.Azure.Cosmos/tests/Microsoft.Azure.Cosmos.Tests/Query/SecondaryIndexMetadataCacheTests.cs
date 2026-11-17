@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -156,12 +157,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         public async Task ExpiredRefreshFailureEvictsStaleSnapshotAndIsNotCached()
         {
             List<bool> forceRefreshes = new List<bool>();
+            CosmosException refreshException = new CosmosException(
+                "refresh failed",
+                HttpStatusCode.ServiceUnavailable,
+                0,
+                "activity",
+                requestCharge: 0);
             TestProvider provider = new TestProvider((_, _, _, forceRefresh) =>
             {
                 forceRefreshes.Add(forceRefresh);
                 if (forceRefresh && providerCallSequence++ == 0)
                 {
-                    throw new InvalidOperationException("refresh failed");
+                    throw refreshException;
                 }
 
                 return Task.FromResult<IReadOnlyList<ISecondaryIndexMetadata>>(new[] { CreateMetadata($"gsi{providerCallSequence}") });
@@ -175,15 +182,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 CancellationToken.None);
             clock.Advance(SecondaryIndexMetadataCache.SnapshotTimeToLive);
 
-            SecondaryIndexMetadataRefreshException exception =
-                await Assert.ThrowsExceptionAsync<SecondaryIndexMetadataRefreshException>(() =>
+            CosmosException exception =
+                await Assert.ThrowsExceptionAsync<CosmosException>(() =>
                     cache.GetSecondaryIndexMetadataAsync(CreateSource(), NoOpTrace.Singleton, CancellationToken.None));
             IEnumerable<ISecondaryIndexMetadata> recovered = await cache.GetSecondaryIndexMetadataAsync(
                 CreateSource(),
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
-            Assert.IsInstanceOfType(exception.InnerException, typeof(InvalidOperationException));
+            Assert.AreEqual(refreshException.StatusCode, exception.StatusCode);
+            Assert.AreEqual(refreshException.ActivityId, exception.ActivityId);
             Assert.AreEqual(3, provider.CallCount);
             Assert.AreNotSame(initial, recovered);
             CollectionAssert.AreEqual(new[] { false, true, false }, forceRefreshes);
@@ -194,13 +202,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         {
             TaskCompletionSource<bool> refreshStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource<bool> releaseRefresh = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            InvalidOperationException refreshException = new InvalidOperationException("refresh failed");
             TestProvider provider = new TestProvider(async (_, _, _, forceRefresh) =>
             {
                 if (forceRefresh)
                 {
                     refreshStarted.SetResult(true);
                     await releaseRefresh.Task;
-                    throw new InvalidOperationException("refresh failed");
+                    throw refreshException;
                 }
 
                 return new[] { CreateMetadata("gsi") };
@@ -222,9 +231,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 CancellationToken.None);
             releaseRefresh.SetResult(true);
 
-            await Assert.ThrowsExceptionAsync<SecondaryIndexMetadataRefreshException>(async () => await firstRefresh);
-            await Assert.ThrowsExceptionAsync<SecondaryIndexMetadataRefreshException>(async () => await concurrentRead);
-            Assert.AreEqual(2, provider.CallCount);
+            InvalidOperationException firstException =
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => await firstRefresh);
+            InvalidOperationException concurrentException =
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => await concurrentRead);
+            IEnumerable<ISecondaryIndexMetadata> recovered = await cache.GetSecondaryIndexMetadataAsync(
+                CreateSource(),
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreSame(refreshException, firstException);
+            Assert.AreSame(refreshException, concurrentException);
+            Assert.AreEqual("gsi", recovered.Single().Rid);
+            Assert.AreEqual(3, provider.CallCount);
         }
 
         [TestMethod]
