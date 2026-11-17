@@ -34,45 +34,66 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             return settings;
         }
 
-        [TestMethod]
-        public async Task EncryptPatchOperationsAsync_Increment_On_Encrypted_Path_Throws()
+        [DataTestMethod]
+        [DataRow(false, true)]
+        [DataRow(true, true)]
+        [DataRow(true, false)]
+        public async Task EncryptPatchOperationsAsync_Increment_On_Encrypted_Path_Throws(bool includePlain, bool encryptedFirst)
         {
-            // Arrange
             EncryptionContainer container = CreateUninitialized<EncryptionContainer>();
             EncryptionSettings settings = CreateEncryptionSettingsWithEncryptedProperty("Sensitive", container);
-            List<PatchOperation> ops = new List<PatchOperation>
+            PatchOperation encryptedOperation = PatchOperation.Increment("/Sensitive", 1);
+            PatchOperation plainOperation = PatchOperation.Increment("/Plain", 2);
+            List<PatchOperation> ops = new List<PatchOperation> { encryptedOperation };
+            if (includePlain)
             {
-                PatchOperation.Increment("/Sensitive", 1)
-            };
-
+                ops.Insert(encryptedFirst ? 1 : 0, plainOperation);
+            }
             EncryptionDiagnosticsContext diag = new EncryptionDiagnosticsContext();
 
-            // Act + Assert
             InvalidOperationException ex = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
                 async () => await container.EncryptPatchOperationsAsync(ops, settings, diag, CancellationToken.None));
 
             StringAssert.Contains(ex.Message, "Increment patch operation is not allowed for encrypted path");
             StringAssert.Contains(ex.Message, "/Sensitive");
+            Assert.AreEqual(includePlain ? 2 : 1, ops.Count);
+            Assert.AreSame(encryptedOperation, ops[includePlain && !encryptedFirst ? 1 : 0]);
+            if (includePlain)
+            {
+                Assert.AreSame(plainOperation, ops[encryptedFirst ? 1 : 0]);
+            }
         }
 
-        [TestMethod]
-        public async Task EncryptPatchOperationsAsync_Increment_On_NonEncrypted_Path_Passes_Through()
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task EncryptPatchOperationsAsync_Increment_On_NonEncrypted_Path_Passes_Through(bool includeSecondOperation)
         {
             // Arrange: No encrypted settings for this path
             EncryptionContainer container = CreateUninitialized<EncryptionContainer>();
             EncryptionSettings settings = CreateEncryptionSettingsWithEncryptedProperty("Sensitive", container); // different property than used below
 
-            PatchOperation op = PatchOperation.Increment("/Plain", 2);
-            List<PatchOperation> ops = new List<PatchOperation> { op };
+            PatchOperation firstOperation = PatchOperation.Increment("/Plain", 2);
+            PatchOperation secondOperation = PatchOperation.Increment("/OtherPlain", 3);
+            List<PatchOperation> ops = new List<PatchOperation> { firstOperation };
+            if (includeSecondOperation)
+            {
+                ops.Add(secondOperation);
+            }
             EncryptionDiagnosticsContext diag = new EncryptionDiagnosticsContext();
 
             // Act
             List<PatchOperation> result = await container.EncryptPatchOperationsAsync(ops, settings, diag, CancellationToken.None);
 
             // Assert: operation should be passed through unchanged
-            Assert.AreEqual(1, result.Count);
-            Assert.AreSame(op, result[0]);
+            Assert.AreEqual(includeSecondOperation ? 2 : 1, result.Count);
+            Assert.AreSame(firstOperation, result[0]);
             Assert.AreEqual(PatchOperationType.Increment, result[0].OperationType);
+            if (includeSecondOperation)
+            {
+                Assert.AreSame(secondOperation, result[1]);
+                Assert.AreEqual(PatchOperationType.Increment, result[1].OperationType);
+            }
         }
     }
 }
