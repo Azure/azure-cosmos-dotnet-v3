@@ -40,6 +40,12 @@ namespace Microsoft.Azure.Cosmos
                 {
                     operation.CollectionResourceId = containerResourceId;
                     operation.DatabaseResourceId = databaseResourceId;
+
+                    // PartitionKey.None serializes as [] by default, which the service rejects.
+                    if (operation.PartitionKey.IsNone)
+                    {
+                        operation.PartitionKeyJson = containerProperties.GetNoneValue().ToJsonString();
+                    }
                 }
             }
         }

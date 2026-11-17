@@ -12,8 +12,10 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using PartitionKey = Microsoft.Azure.Cosmos.PartitionKey;
 
     [TestClass]
@@ -279,6 +281,36 @@ namespace Microsoft.Azure.Cosmos.Tests.DistributedTransaction
                     container: "testContainer",
                     partitionKey: new PartitionKey("pk1")),
             };
+        }
+
+        [TestMethod]
+        public async Task PartitionKeyNone_IsSerializedAsContainerNoneValue()
+        {
+            OperationType operationType = OperationType.Read;
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwkDAAAAAAAAAA==");
+            containerProperties.Id = "container";
+            containerProperties.PartitionKeyPath = "/pk";
+
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext
+                .Setup(c => c.GetCachedContainerPropertiesAsync(It.IsAny<string>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(containerProperties);
+
+            DistributedTransactionOperation[] operations =
+            {
+                new DistributedTransactionOperation(operationType, 0, "db", "container", PartitionKey.None, "none-id"),
+                new DistributedTransactionOperation(operationType, 1, "db", "container", new PartitionKey("pk"), "regular-id"),
+            };
+
+            await DistributedTransactionCommitterUtils.ResolveCollectionRidsAsync(operations, mockContext.Object, CancellationToken.None);
+            DistributedTransactionServerRequest request = await DistributedTransactionServerRequest.CreateAsync(
+                operations, MockCosmosUtil.Serializer, CancellationToken.None, tracksDispatch: false);
+
+            using MemoryStream stream = request.CreateBodyStream();
+            using JsonDocument document = JsonDocument.Parse(stream);
+            JsonElement serializedOperations = document.RootElement.GetProperty("operations");
+            Assert.AreEqual("[{}]", serializedOperations[0].GetProperty("partitionKey").GetRawText());
+            Assert.AreEqual("[\"pk\"]", serializedOperations[1].GetProperty("partitionKey").GetRawText());
         }
     }
 }
