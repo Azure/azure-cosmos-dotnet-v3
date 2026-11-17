@@ -46,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 throw new ArgumentNullException(nameof(lease));
             }
 
+            this.VerifyQueryFilter(lease);
             // Older/rehydrated leases (e.g. restored from previously persisted in-memory lease
             // state) may not carry a FeedRange. Backfill it here, mirroring
             // DocumentServiceLeaseManagerCosmos.AcquireAsync, while the lease's
@@ -75,6 +76,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 Cosmos.PartitionKey.Null,
                 serverLease =>
                 {
+                    this.VerifyQueryFilter(serverLease);
+                    serverLease.FeedRange ??= lease.FeedRange;
                     serverLease.Properties = lease.Properties;
                     return serverLease;
                 });
@@ -95,7 +98,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 LeaseId = leaseToken,
                 LeaseToken = leaseToken,
                 ContinuationToken = continuationToken,
-                FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange())
+                FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange()),
+                QueryFilterHash = this.QueryFilterHash
             };
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
@@ -116,7 +120,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 LeaseId = leaseToken,
                 LeaseToken = leaseToken,
                 ContinuationToken = continuationToken,
-                FeedRange = feedRange
+                FeedRange = feedRange,
+                QueryFilterHash = this.QueryFilterHash
             };
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
@@ -127,6 +132,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (lease == null)
                 throw new ArgumentNullException(nameof(lease));
 
+            this.VerifyQueryFilter(lease);
             if (!this.container.TryGetValue(lease.CurrentLeaseToken, out DocumentServiceLease refreshedLease))
             {
                 DefaultTrace.TraceInformation("Lease with token {0} failed to release lease. The lease is gone already.", lease.CurrentLeaseToken);
@@ -139,6 +145,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 Cosmos.PartitionKey.Null,
                 serverLease =>
                 {
+                    this.VerifyQueryFilter(serverLease);
                     serverLease.Owner = null;
                     return serverLease;
                 });
@@ -160,6 +167,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (lease == null)
                 throw new ArgumentNullException(nameof(lease));
 
+            this.VerifyQueryFilterForLeaseRenewal(lease);
             // Get fresh lease. The assumption here is that checkpointing is done with higher frequency than lease renewal so almost
             // certainly the lease was updated in between.
             if (!this.container.TryGetValue(lease.CurrentLeaseToken, out DocumentServiceLease refreshedLease))
@@ -172,19 +180,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 refreshedLease,
                 refreshedLease.Id,
                 Cosmos.PartitionKey.Null,
-                serverLease => serverLease);
+                serverLease =>
+                {
+                    this.VerifyQueryFilterForLeaseRenewal(serverLease);
+                    return serverLease;
+                });
         }
 
         public override Task<DocumentServiceLease> UpdatePropertiesAsync(DocumentServiceLease lease)
         {
             if (lease == null) throw new ArgumentNullException(nameof(lease));
 
+            this.VerifyQueryFilter(lease);
             return this.leaseUpdater.UpdateLeaseAsync(
                 lease,
                 lease.Id,
                 Cosmos.PartitionKey.Null,
                 serverLease =>
                 {
+                    this.VerifyQueryFilter(serverLease);
                     serverLease.Properties = lease.Properties;
                     return serverLease;
                 });
@@ -199,6 +213,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             {
                 DefaultTrace.TraceInformation("Created lease with lease token {0}.", documentServiceLease.CurrentLeaseToken);
                 return Task.FromResult<DocumentServiceLease>(documentServiceLease);
+            }
+
+            if (this.container.TryGetValue(documentServiceLease.CurrentLeaseToken, out DocumentServiceLease existing))
+            {
+                this.VerifyQueryFilter(existing);
             }
 
             DefaultTrace.TraceInformation("Some other host created lease for {0}.", documentServiceLease.CurrentLeaseToken);

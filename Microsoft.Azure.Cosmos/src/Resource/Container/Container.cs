@@ -1491,6 +1491,71 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
+        /// Creates a stream iterator that filters changes using a SQL predicate.
+        /// </summary>
+        /// <param name="changeFeedStartFrom">Where to start reading changes.</param>
+        /// <param name="changeFeedMode">The change feed mode.</param>
+        /// <param name="queryText">A nonempty SELECT * FROM c query with an optional WHERE predicate.</param>
+        /// <param name="changeFeedRequestOptions">The required options for consuming changes. This value cannot be null.</param>
+        /// <remarks>
+        /// Filtering scans changes without using the index and can increase latency and request charges.
+        /// An empty successful page can advance the continuation; continue reading until NotModified.
+        /// A continuation can be resumed with a different query without replaying earlier changes.
+        /// Projections, parameters, joins, subqueries, ordering, grouping, and aggregations are not supported.
+        /// </remarks>
+        /// <returns>An iterator over matching changes.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// The start position, mode, query text, or request options are null.
+        /// </exception>
+        /// <exception cref="ArgumentException">The query text is empty or whitespace.</exception>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        virtual FeedIterator GetChangeFeedStreamIteratorWithQuery(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
+            string queryText,
+            ChangeFeedRequestOptions changeFeedRequestOptions)
+        {
+            throw new NotSupportedException("Deriving classes are expected to override this method with a valid implementation");
+        }
+
+        /// <summary>
+        /// Creates a typed iterator that filters changes using a SQL predicate.
+        /// </summary>
+        /// <typeparam name="T">The document type.</typeparam>
+        /// <param name="changeFeedStartFrom">Where to start reading changes.</param>
+        /// <param name="changeFeedMode">The change feed mode.</param>
+        /// <param name="queryText">A nonempty SELECT * FROM c query with an optional WHERE predicate.</param>
+        /// <param name="changeFeedRequestOptions">The required options for consuming changes. This value cannot be null.</param>
+        /// <remarks>
+        /// Filtering scans changes without using the index and can increase latency and request charges.
+        /// An empty successful page can advance the continuation; continue reading until NotModified.
+        /// A continuation can be resumed with a different query without replaying earlier changes.
+        /// Projections, parameters, joins, subqueries, ordering, grouping, and aggregations are not supported.
+        /// </remarks>
+        /// <returns>An iterator over matching changes.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// The start position, mode, query text, or request options are null.
+        /// </exception>
+        /// <exception cref="ArgumentException">The query text is empty or whitespace.</exception>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        virtual FeedIterator<T> GetChangeFeedIteratorWithQuery<T>(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
+            string queryText,
+            ChangeFeedRequestOptions changeFeedRequestOptions)
+        {
+            throw new NotSupportedException("Deriving classes are expected to override this method with a valid implementation");
+        }
+
+        /// <summary>
         /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
         /// </summary>
         /// <param name="context">The context related to the changes.</param>

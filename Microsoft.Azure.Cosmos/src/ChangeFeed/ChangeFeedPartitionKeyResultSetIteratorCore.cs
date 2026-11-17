@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Globalization;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
@@ -25,7 +26,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             int? maxItemCount,
             ContainerInternal container,
             DateTime? startTime,
-            bool startFromBeginning)
+            bool startFromBeginning,
+            ChangeFeedQuerySpec querySpec = null)
         {
             // If the lease represents a full partition (old schema) then use a FeedRangePartitionKeyRange
             // If the lease represents an EPK range (new schema) the use the FeedRange in the lease
@@ -59,13 +61,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 container: container,
                 mode: mode,
                 changeFeedStartFrom: startFrom,
-                options: requestOptions);
+                options: requestOptions,
+                querySpec: querySpec);
         }
 
         private readonly CosmosClientContext clientContext;
 
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private readonly ChangeFeedMode mode;
+        private readonly ChangeFeedQuerySpec changeFeedQuerySpec;
 
         private ChangeFeedStartFrom changeFeedStartFrom;
         private bool hasMoreResultsInternal;
@@ -74,13 +78,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ContainerInternal container,
             ChangeFeedMode mode,
             ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedRequestOptions options)
+            ChangeFeedRequestOptions options,
+            ChangeFeedQuerySpec querySpec)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.mode = mode;
             this.changeFeedStartFrom = changeFeedStartFrom ?? throw new ArgumentNullException(nameof(changeFeedStartFrom));
             this.clientContext = this.container.ClientContext;
             this.changeFeedOptions = options;
+            this.changeFeedQuerySpec = querySpec;
 
             this.operationName = OpenTelemetryConstants.Operations.QueryChangeFeed;
         }
@@ -107,6 +113,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
         {
+            using Stream streamPayload = this.changeFeedQuerySpec != null && this.changeFeedQuerySpec.ShouldSerializeQueryText()
+                ? this.clientContext.SerializerCore.ToStream(this.changeFeedQuerySpec)
+                : null;
+
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                 cosmosContainerCore: this.container,
                 resourceUri: this.container.LinkUri,
@@ -130,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     this.mode.Accept(requestMessage);
                 },
                 feedRange: this.changeFeedStartFrom.FeedRange,
-                streamPayload: default,
+                streamPayload: streamPayload,
                 trace: trace,
                 cancellationToken: cancellationToken);
 

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
@@ -43,6 +44,144 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void Cleanup()
         {
             this.endpointManager.Dispose();
+        }
+
+        [DataTestMethod]
+        [DataRow(false, true, false)]
+        [DataRow(true, true, false)]
+        [DataRow(false, false, false)]
+        [DataRow(true, false, false)]
+        [DataRow(false, true, true)]
+        [DataRow(true, true, true)]
+        [DataRow(false, false, true)]
+        public async Task PartitionChangesPreserveConfiguredQuery(bool epk, bool split, bool conflict)
+        {
+            ConcurrentDictionary<string, DocumentServiceLease> leases = new ConcurrentDictionary<string, DocumentServiceLease>();
+            DocumentServiceLeaseStoreManagerInMemory store = new DocumentServiceLeaseStoreManagerInMemory(leases);
+            string hash = ChangeFeedHelper.GetQueryFilterHash(new ChangeFeedQuerySpec("SELECT * FROM c WHERE c.state = 'WA'"));
+            store.LeaseManager.ConfigureQueryFilter(hash);
+            PartitionKeyRange parentRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "BB" };
+            FeedRangeEpk parentFeedRange = new FeedRangeEpk(parentRange.ToRange());
+            DocumentServiceLease parent = epk
+                ? await store.LeaseManager.CreateLeaseIfNotExistAsync(parentFeedRange, "saved-progress")
+                : await store.LeaseManager.CreateLeaseIfNotExistAsync(parentRange, "saved-progress");
+            List<PartitionKeyRange> ranges = split
+                ? new List<PartitionKeyRange>
+                {
+                    new PartitionKeyRange { Id = "1", MinInclusive = "", MaxExclusive = "AA" },
+                    new PartitionKeyRange { Id = "2", MinInclusive = "AA", MaxExclusive = "BB" }
+                }
+                : new List<PartitionKeyRange>
+                {
+                    new PartitionKeyRange { Id = "3", MinInclusive = "", MaxExclusive = "FF" }
+                };
+            DocumentServiceLease conflictingLease = null;
+            if (conflict)
+            {
+                DocumentServiceLeaseStoreManagerInMemory otherHost = new DocumentServiceLeaseStoreManagerInMemory(leases);
+                otherHost.LeaseManager.ConfigureQueryFilter("other-query");
+                conflictingLease = !split
+                    ? await otherHost.LeaseManager.CreateLeaseIfNotExistAsync(parentFeedRange, "other-progress")
+                    : epk
+                        ? await otherHost.LeaseManager.CreateLeaseIfNotExistAsync(new FeedRangeEpk(ranges[0].ToRange()), "other-progress")
+                        : await otherHost.LeaseManager.CreateLeaseIfNotExistAsync(ranges[0], "other-progress");
+            }
+
+            Mock<PartitionKeyRangeCache> cache = new Mock<PartitionKeyRangeCache>(
+                Mock.Of<ICosmosAuthorizationTokenProvider>(), Mock.Of<IStoreModel>(),
+                new Mock<Common.CollectionCache>(false).Object, this.endpointManager, false, false, null);
+            cache.Setup(c => c.TryGetOverlappingRangesAsync(
+                It.IsAny<string>(), It.IsAny<Documents.Routing.Range<string>>(), It.IsAny<ITrace>(), true))
+                .ReturnsAsync(ranges);
+            PartitionSynchronizerCore synchronizer = new PartitionSynchronizerCore(
+                Mock.Of<ContainerInternal>(), store.LeaseContainer, store.LeaseManager, 1, cache.Object, "rid");
+
+            if (conflict)
+            {
+                await Assert.ThrowsExceptionAsync<ArgumentException>(() => synchronizer.HandlePartitionGoneAsync(parent));
+                Assert.AreEqual("other-query", conflictingLease.QueryFilterHash);
+                Assert.AreEqual("other-progress", conflictingLease.ContinuationToken);
+            }
+            else
+            {
+                (IEnumerable<DocumentServiceLease> children, bool removeParent) = await synchronizer.HandlePartitionGoneAsync(parent);
+                Assert.AreEqual(!epk || split, removeParent);
+                Assert.AreEqual(split ? 2 : 1, children.Count());
+                foreach (DocumentServiceLease child in children)
+                {
+                    Assert.AreEqual(hash, child.QueryFilterHash);
+                    Assert.AreEqual("saved-progress", child.ContinuationToken);
+                    if (epk && !split)
+                    {
+                        Assert.AreSame(parent, child);
+                    }
+                }
+            }
+
+            Assert.AreSame(parent, leases[parent.Id]);
+            Assert.AreEqual(hash, parent.QueryFilterHash);
+            Assert.AreEqual("saved-progress", parent.ContinuationToken);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task BootstrapRechecksLeasesSkippedDuringCreation(bool compatible)
+        {
+            ConcurrentDictionary<string, DocumentServiceLease> leases = new ConcurrentDictionary<string, DocumentServiceLease>();
+            DocumentServiceLeaseStoreManagerInMemory store = new DocumentServiceLeaseStoreManagerInMemory(leases);
+            store.LeaseManager.ConfigureQueryFilter("configured-query");
+            DocumentServiceLease racedLease = new DocumentServiceLeaseCore
+            {
+                LeaseId = "1",
+                LeaseToken = "1",
+                QueryFilterHash = compatible ? "configured-query" : "other-query",
+                Owner = "other-host",
+                ContinuationToken = "other-progress"
+            };
+            Mock<PartitionKeyRangeCache> cache = new Mock<PartitionKeyRangeCache>(
+                Mock.Of<ICosmosAuthorizationTokenProvider>(), Mock.Of<IStoreModel>(),
+                new Mock<Common.CollectionCache>(false).Object, this.endpointManager, false, false, null);
+            cache.Setup(c => c.TryGetOverlappingRangesAsync(
+                It.IsAny<string>(), It.IsAny<Documents.Routing.Range<string>>(), It.IsAny<ITrace>(), false))
+                .ReturnsAsync(() =>
+                {
+                    Assert.IsTrue(leases.TryAdd(racedLease.Id, racedLease));
+                    return new List<PartitionKeyRange>
+                    {
+                        new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "AA" },
+                        new PartitionKeyRange { Id = "1", MinInclusive = "AA", MaxExclusive = "FF" }
+                    };
+                });
+            PartitionSynchronizerCore synchronizer = new PartitionSynchronizerCore(
+                Mock.Of<ContainerInternal>(), store.LeaseContainer, store.LeaseManager, 1, cache.Object, "rid");
+            int validations = 0;
+            BootstrapperCore bootstrapper = new BootstrapperCore(
+                synchronizer, store.LeaseStore, TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(1),
+                async () =>
+                {
+                    validations++;
+                    foreach (DocumentServiceLease lease in await store.LeaseContainer.GetAllLeasesAsync())
+                    {
+                        store.LeaseManager.VerifyQueryFilter(lease);
+                    }
+                });
+
+            if (compatible)
+            {
+                await bootstrapper.InitializeAsync();
+            }
+            else
+            {
+                await Assert.ThrowsExceptionAsync<ArgumentException>(() => bootstrapper.InitializeAsync());
+            }
+
+            Assert.AreEqual(2, validations);
+            Assert.AreEqual(compatible, await store.LeaseStore.IsInitializedAsync());
+            Assert.AreSame(racedLease, leases["1"]);
+            Assert.AreEqual("other-host", racedLease.Owner);
+            Assert.AreEqual("other-progress", racedLease.ContinuationToken);
+            Assert.AreEqual("configured-query", leases["0"].QueryFilterHash);
         }
 
         /// <summary>

@@ -76,6 +76,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// </summary>
         public abstract string Mode { get; set; }
 
+        [JsonProperty("QueryFilterHash", NullValueHandling = NullValueHandling.Ignore)]
+        public string QueryFilterHash { get; set; }
+
         internal DocumentServiceLease Clone()
         {
             // Preserve private persisted state, including legacy-schema migration metadata.

@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
@@ -17,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
@@ -559,7 +562,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             await processor.StopAsync();
             Mock.Get(leaseContainer.Object)
-                .Verify(store => store.GetAllLeasesAsync(), Times.Exactly(2));
+                .Verify(store => store.GetAllLeasesAsync(), Times.Exactly(3));
         }
 
         [TestMethod]
@@ -683,6 +686,485 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             // Assert — ShutdownAsync was still invoked
             leaseStoreManager.Verify(l => l.ShutdownAsync(), Times.Once);
+        }
+
+        [DataTestMethod]
+        [DataRow(true, false, "same", true)]
+        [DataRow(true, true, "same", true)]
+        [DataRow(true, false, "different", false)]
+        [DataRow(true, true, "different", false)]
+        [DataRow(true, false, null, false)]
+        [DataRow(true, true, null, false)]
+        [DataRow(true, false, "", false)]
+        [DataRow(false, false, null, true)]
+        [DataRow(false, true, null, true)]
+        [DataRow(false, false, "different", false)]
+        [DataRow(false, true, "different", false)]
+        [DataRow(false, true, "", false)]
+        public async Task StartAsyncChecksEveryQueryLease(bool filtered, bool epk, string storedIdentity, bool compatible)
+        {
+            ChangeFeedQuerySpec query = filtered ? new ChangeFeedQuerySpec("SELECT * FROM c WHERE c.state = 'WA'") : null;
+            string expectedHash = ChangeFeedHelper.GetQueryFilterHash(query);
+            DocumentServiceLease secondLease = epk
+                ? new DocumentServiceLeaseCoreEpk { LeaseId = "second", LeaseToken = "AA-BB" }
+                : new DocumentServiceLeaseCore { LeaseId = "second", LeaseToken = "1" };
+            secondLease.QueryFilterHash = storedIdentity == "same" ? expectedHash : storedIdentity;
+            List<DocumentServiceLease> leases = new List<DocumentServiceLease>
+            {
+                new DocumentServiceLeaseCore { LeaseId = "first", LeaseToken = "0", QueryFilterHash = expectedHash },
+                secondLease
+            };
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            int snapshots = 0;
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(
+                () => snapshots++ < 2 ? leases : new List<DocumentServiceLease>());
+            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).ReturnsAsync(Enumerable.Empty<DocumentServiceLease>());
+            Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(() =>
+            {
+                leaseManager.Object.VerifyQueryFilter(leases[0]);
+                return true;
+            });
+            Mock<DocumentServiceLeaseStoreManager> store = new Mock<DocumentServiceLeaseStoreManager>();
+            store.SetupGet(s => s.LeaseContainer).Returns(leaseContainer.Object);
+            store.SetupGet(s => s.LeaseManager).Returns(leaseManager.Object);
+            store.SetupGet(s => s.LeaseStore).Returns(leaseStore.Object);
+            store.SetupGet(s => s.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>());
+            ChangeFeedProcessorCore processor = CreateProcessor(out Mock<ChangeFeedObserverFactory> factory, out _);
+            processor.ApplyBuildConfiguration(
+                store.Object, null, "instance", new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions { QuerySpec = query }, GetMockedContainer("monitored"));
+
+            bool started = false;
+            try
+            {
+                if (compatible)
+                {
+                    await processor.StartAsync();
+                    started = true;
+                    leaseManager.Object.VerifyQueryFilter(leases[0]);
+                    leaseManager.Object.VerifyQueryFilter(secondLease);
+                }
+                else
+                {
+                    ArgumentException error = await Assert.ThrowsExceptionAsync<ArgumentException>(async () =>
+                    {
+                        await processor.StartAsync();
+                        started = true;
+                    });
+                    StringAssert.Contains(error.Message, "query filter");
+                    Assert.IsFalse(error.Message.Contains("SELECT"));
+                    leaseContainer.Verify(l => l.GetOwnedLeasesAsync(), Times.Never);
+                }
+
+                factory.Verify(f => f.CreateObserver(), Times.Never);
+                leaseManager.Verify(m => m.AcquireAsync(It.IsAny<DocumentServiceLease>()), Times.Never);
+            }
+            finally
+            {
+                if (started)
+                {
+                    await processor.StopAsync();
+                }
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false, "query")]
+        [DataRow(true, "query")]
+        [DataRow(false, "lease")]
+        [DataRow(true, "lease")]
+        [DataRow(false, "unchanged")]
+        [DataRow(true, "unchanged")]
+        public async Task RestartRevalidatesQueryIdentity(bool filtered, string change)
+        {
+            Mock<DocumentServiceLeaseStore> leaseStore = new Mock<DocumentServiceLeaseStore>();
+            leaseStore.Setup(l => l.IsInitializedAsync()).ReturnsAsync(true);
+            List<DocumentServiceLease> leases = new List<DocumentServiceLease>();
+            Mock<DocumentServiceLeaseContainer> leaseContainer = new Mock<DocumentServiceLeaseContainer>();
+            leaseContainer.Setup(l => l.GetAllLeasesAsync()).ReturnsAsync(leases);
+            leaseContainer.Setup(l => l.GetOwnedLeasesAsync()).ReturnsAsync(Enumerable.Empty<DocumentServiceLease>());
+            Mock<DocumentServiceLeaseStoreManager> store = new Mock<DocumentServiceLeaseStoreManager>();
+            store.SetupGet(s => s.LeaseContainer).Returns(leaseContainer.Object);
+            store.SetupGet(s => s.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>());
+            store.SetupGet(s => s.LeaseStore).Returns(leaseStore.Object);
+            store.SetupGet(s => s.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>());
+            ChangeFeedProcessorOptions options = new ChangeFeedProcessorOptions
+            {
+                QuerySpec = filtered ? new ChangeFeedQuerySpec("SELECT * FROM c WHERE c.state = 'WA'") : null
+            };
+            ChangeFeedProcessorCore processor = CreateProcessor(out Mock<ChangeFeedObserverFactory> factory, out _);
+            processor.ApplyBuildConfiguration(
+                store.Object, null, "instance", new ChangeFeedLeaseOptions(), options, GetMockedContainer("monitored"));
+            await processor.StartAsync();
+            await processor.StopAsync();
+
+            if (change == "query")
+            {
+                options.QuerySpec = new ChangeFeedQuerySpec("SELECT * FROM c WHERE c.state = 'OR'");
+            }
+            else if (change == "lease")
+            {
+                leases.Add(new DocumentServiceLeaseCore { LeaseId = "0", LeaseToken = "0", QueryFilterHash = "different" });
+            }
+
+            if (change == "unchanged")
+            {
+                await processor.StartAsync();
+                await processor.StopAsync();
+            }
+            else
+            {
+                await Assert.ThrowsExceptionAsync<ArgumentException>(() => processor.StartAsync());
+            }
+
+            leaseStore.Verify(s => s.IsInitializedAsync(), Times.Exactly(change == "query" ? 1 : 2));
+            leaseContainer.Verify(l => l.GetOwnedLeasesAsync(), Times.Exactly(change == "unchanged" ? 2 : 1));
+            factory.Verify(f => f.CreateObserver(), Times.Never);
+        }
+
+        [DataTestMethod]
+        [DataRow(false, false)]
+        [DataRow(false, true)]
+        [DataRow(true, false)]
+        [DataRow(true, true)]
+        public async Task RestoredQueryLeasesRejectIncompatibleStartup(bool epk, bool filtered)
+        {
+            string originalHash = ChangeFeedHelper.GetQueryFilterHash(new ChangeFeedQuerySpec("SELECT * FROM c"));
+            DocumentServiceLease lease = epk
+                ? new DocumentServiceLeaseCoreEpk { LeaseId = "AA-BB", LeaseToken = "AA-BB" }
+                : new DocumentServiceLeaseCore { LeaseId = "0", LeaseToken = "0" };
+            lease.QueryFilterHash = originalHash;
+            lease.ContinuationToken = "saved-progress";
+            lease.Owner = "original-owner";
+            lease.FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false));
+            ConcurrentDictionary<string, DocumentServiceLease> leases = new ConcurrentDictionary<string, DocumentServiceLease>();
+            Assert.IsTrue(leases.TryAdd(lease.Id, lease));
+            using MemoryStream state = new MemoryStream();
+            DocumentServiceLeaseStoreManagerInMemory original = new DocumentServiceLeaseStoreManagerInMemory(leases, state);
+            await original.ShutdownAsync();
+            byte[] savedState = state.ToArray();
+            DocumentServiceLeaseStoreManagerInMemory restored = new DocumentServiceLeaseStoreManagerInMemory(state);
+            ChangeFeedProcessorCore processor = CreateProcessor(out Mock<ChangeFeedObserverFactory> factory, out _);
+            processor.ApplyBuildConfiguration(
+                restored, null, "instance", new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions
+                {
+                    QuerySpec = filtered ? new ChangeFeedQuerySpec("SELECT * FROM c WHERE c.state = 'WA'") : null
+                },
+                GetMockedContainer("monitored"));
+
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() => processor.StartAsync());
+
+            DocumentServiceLease unchanged = (await restored.LeaseContainer.GetAllLeasesAsync()).Single();
+            Assert.AreEqual(originalHash, unchanged.QueryFilterHash);
+            Assert.AreEqual("saved-progress", unchanged.ContinuationToken);
+            Assert.AreEqual("original-owner", unchanged.Owner);
+            Assert.IsFalse(await restored.LeaseStore.IsInitializedAsync());
+            CollectionAssert.AreEqual(savedState, state.ToArray());
+            factory.Verify(f => f.CreateObserver(), Times.Never);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task IncompatibleHostCannotDeliverFromActiveQueryNamespace(bool unfiltered)
+        {
+            ChangeFeedQuerySpec query = new ChangeFeedQuerySpec("SELECT * FROM c WHERE c.state = 'WA'");
+            string hash = ChangeFeedHelper.GetQueryFilterHash(query);
+            ConcurrentDictionary<string, DocumentServiceLease> leases = new ConcurrentDictionary<string, DocumentServiceLease>();
+            DocumentServiceLeaseStoreManagerInMemory firstStore = new DocumentServiceLeaseStoreManagerInMemory(leases);
+            firstStore.LeaseManager.ConfigureQueryFilter(hash);
+            DocumentServiceLease lease = await firstStore.LeaseManager.CreateLeaseIfNotExistAsync(
+                new Documents.PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" }, "saved-progress");
+            await firstStore.LeaseStore.MarkInitializedAsync();
+            DocumentServiceLeaseStoreManagerInMemory secondStore = new DocumentServiceLeaseStoreManagerInMemory(leases);
+            await secondStore.LeaseStore.MarkInitializedAsync();
+            int requests = 0;
+            TestHandler handler = new TestHandler((request, cancellationToken) =>
+            {
+                ResponseMessage response = new ResponseMessage(
+                    Interlocked.Increment(ref requests) == 1 ? HttpStatusCode.OK : HttpStatusCode.NotModified)
+                {
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\":[{\"id\":\"1\"}],\"_count\":1}"))
+                };
+                response.Headers.ETag = "next-progress";
+                return Task.FromResult(response);
+            });
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(builder => builder.AddCustomHandlers(handler));
+            ContainerInternal container = (ContainerInternal)client.GetContainer("myDb", "myContainer");
+            ChangeFeedProcessorCore first = CreateProcessor(out _, out Mock<ChangeFeedObserver> firstObserver);
+            TaskCompletionSource<bool> delivered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            firstObserver.Setup(o => o.ProcessChangesAsync(
+                It.IsAny<ChangeFeedObserverContextCore>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .Callback(() => delivered.TrySetResult(true))
+                .Returns(Task.CompletedTask);
+            first.ApplyBuildConfiguration(
+                firstStore, null, "first", new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions { QuerySpec = query }, container);
+            ChangeFeedProcessorCore second = CreateProcessor(out Mock<ChangeFeedObserverFactory> secondFactory, out _);
+            second.ApplyBuildConfiguration(
+                secondStore, null, "second", new ChangeFeedLeaseOptions(),
+                new ChangeFeedProcessorOptions
+                {
+                    QuerySpec = unfiltered ? null : new ChangeFeedQuerySpec("SELECT * FROM c WHERE c.state = 'OR'")
+                },
+                container);
+
+            await first.StartAsync();
+            try
+            {
+                await delivered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                await Assert.ThrowsExceptionAsync<ArgumentException>(() => second.StartAsync());
+
+                secondFactory.Verify(f => f.CreateObserver(), Times.Never);
+                Assert.AreEqual(hash, lease.QueryFilterHash);
+                Assert.AreEqual("saved-progress", lease.ContinuationToken);
+            }
+            finally
+            {
+                await first.StopAsync();
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false, HttpStatusCode.BadRequest)]
+        [DataRow(true, HttpStatusCode.BadRequest)]
+        [DataRow(false, HttpStatusCode.TooManyRequests)]
+        [DataRow(true, HttpStatusCode.TooManyRequests)]
+        [DataRow(false, HttpStatusCode.ServiceUnavailable)]
+        [DataRow(true, HttpStatusCode.ServiceUnavailable)]
+        public async Task ReadErrorsNotifyAndRecoverAcrossAcquisitionCycles(bool filtered, HttpStatusCode status)
+        {
+            ChangeFeedQuerySpec query = filtered ? new ChangeFeedQuerySpec("SELECT * FROM c") : null;
+            DocumentServiceLeaseStoreManagerInMemory store = new DocumentServiceLeaseStoreManagerInMemory();
+            store.LeaseManager.ConfigureQueryFilter(ChangeFeedHelper.GetQueryFilterHash(query));
+            await store.LeaseManager.CreateLeaseIfNotExistAsync(
+                new Documents.PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" }, "saved-progress");
+            await store.LeaseStore.MarkInitializedAsync();
+            int requests = 0;
+            int notifications = 0;
+            int releases = 0;
+            int target = 2;
+            TaskCompletionSource<bool> notified = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TestHandler handler = new TestHandler((request, cancellationToken) =>
+            {
+                Interlocked.Increment(ref requests);
+                Assert.AreEqual("saved-progress", request.Headers.IfNoneMatch);
+                Assert.AreEqual(filtered, request.Content != null);
+                ResponseMessage response = new ResponseMessage(status);
+                response.Headers.ETag = "error-position";
+                response.Headers.ActivityId = "service-error";
+                return Task.FromResult(response);
+            });
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(builder => builder.AddCustomHandlers(handler));
+            ChangeFeedProcessorCore processor = CreateProcessor(out Mock<ChangeFeedObserverFactory> factory, out _);
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder(
+                "errors", (ContainerInternal)client.GetContainer("myDb", "myContainer"), processor,
+                (unused, leaseContainer, instance, leaseOptions, options, container) =>
+                {
+                    options.QuerySpec = query;
+                    processor.ApplyBuildConfiguration(store, null, instance, leaseOptions, options, container);
+                });
+            builder.WithInMemoryLeaseContainer()
+                .WithLeaseConfiguration(acquireInterval: TimeSpan.FromMilliseconds(10))
+                .WithErrorNotification((leaseToken, exception) =>
+                {
+                    Assert.AreEqual("0", leaseToken);
+                    Assert.IsInstanceOfType(exception, typeof(CosmosException));
+                    CosmosException error = (CosmosException)exception;
+                    Assert.AreEqual(status, error.StatusCode);
+                    Assert.AreEqual("service-error", error.ActivityId);
+                    if (Interlocked.Increment(ref notifications) >= target)
+                    {
+                        notified.TrySetResult(true);
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithLeaseReleaseNotification(leaseToken =>
+                {
+                    Interlocked.Increment(ref releases);
+                    return Task.CompletedTask;
+                })
+                .Build();
+
+            for (int run = 0; run < 2; run++)
+            {
+                await processor.StartAsync();
+                try
+                {
+                    await notified.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                }
+                finally
+                {
+                    await processor.StopAsync();
+                }
+
+                Assert.AreEqual(requests, notifications);
+                Assert.AreEqual(requests, releases);
+                DocumentServiceLease lease = (await store.LeaseContainer.GetAllLeasesAsync()).Single();
+                Assert.AreEqual("saved-progress", lease.ContinuationToken);
+                Assert.IsNull(lease.Owner);
+                target = notifications + 2;
+                notified = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+
+            factory.Verify(f => f.CreateObserver(), Times.AtLeast(4));
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task AllVersionsAndDeletesStartsAndRestartsWithFreshInMemoryLeases(bool filtered)
+        {
+            TaskCompletionSource<bool> read = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TestHandler handler = new TestHandler((request, cancellationToken) =>
+            {
+                Assert.AreEqual(
+                    Documents.HttpConstants.A_IMHeaderValues.FullFidelityFeed,
+                    request.Headers[Documents.HttpConstants.HttpHeaders.A_IM]);
+                Assert.AreEqual(filtered, request.Content != null);
+                ResponseMessage response = new ResponseMessage(HttpStatusCode.NotModified);
+                response.Headers.ETag = "progress";
+                read.TrySetResult(true);
+                return Task.FromResult(response);
+            });
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(builder => builder.AddCustomHandlers(handler));
+            ChangeFeedProcessorBuilder builder = client.GetContainer("myDb", "myContainer")
+                .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<MyDocument>(
+                    "avad", (context, changes, token) => Task.CompletedTask)
+                .WithInMemoryLeaseContainer()
+                .WithPollInterval(TimeSpan.FromMilliseconds(10))
+                .WithErrorNotification((lease, exception) =>
+                {
+                    read.TrySetException(exception);
+                    return Task.CompletedTask;
+                });
+            if (filtered)
+            {
+                builder.WithQuery("SELECT * FROM c");
+            }
+
+            ChangeFeedProcessor processor = builder.Build();
+            for (int run = 0; run < 2; run++)
+            {
+                await processor.StartAsync();
+                try
+                {
+                    await read.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                }
+                finally
+                {
+                    await processor.StopAsync();
+                }
+
+                read = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task StartAsyncRejectsExistingLeaseInDifferentMode(bool allVersionsAndDeletes)
+        {
+            DocumentServiceLeaseStoreManagerInMemory store = new DocumentServiceLeaseStoreManagerInMemory();
+            DocumentServiceLease lease = await store.LeaseManager.CreateLeaseIfNotExistAsync(
+                new Documents.PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" }, "saved-progress");
+            lease.Mode = allVersionsAndDeletes ? null : Documents.HttpConstants.A_IMHeaderValues.FullFidelityFeed;
+            await store.LeaseStore.MarkInitializedAsync();
+            ChangeFeedMode mode = allVersionsAndDeletes ? ChangeFeedMode.AllVersionsAndDeletes : ChangeFeedMode.LatestVersion;
+            ChangeFeedProcessorCore processor = CreateProcessor(out Mock<ChangeFeedObserverFactory> factory, out _);
+            processor.ApplyBuildConfiguration(
+                store, null, "instance",
+                new ChangeFeedLeaseOptions { Mode = mode },
+                new ChangeFeedProcessorOptions { Mode = mode },
+                GetMockedContainer("monitored"));
+
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() => processor.StartAsync());
+
+            factory.Verify(f => f.CreateObserver(), Times.Never);
+            Assert.AreEqual("saved-progress", lease.ContinuationToken);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ChangedQueryDuringRenewalStopsWorkerAndNotifiesWithoutCheckpoint(bool changedOwner)
+        {
+            const string query = "SELECT * FROM c";
+            ConcurrentDictionary<string, DocumentServiceLease> leases = new ConcurrentDictionary<string, DocumentServiceLease>();
+            DocumentServiceLeaseStoreManagerInMemory store = new DocumentServiceLeaseStoreManagerInMemory(leases);
+            store.LeaseManager.ConfigureQueryFilter(ChangeFeedHelper.GetQueryFilterHash(new ChangeFeedQuerySpec(query)));
+            DocumentServiceLease original = await store.LeaseManager.CreateLeaseIfNotExistAsync(
+                new Documents.PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" }, "saved-progress");
+            original.Owner = "original-owner";
+            await store.LeaseStore.MarkInitializedAsync();
+            int reads = 0;
+            TestHandler handler = new TestHandler((request, token) =>
+            {
+                ResponseMessage response = new ResponseMessage(
+                    Interlocked.Increment(ref reads) == 1 ? HttpStatusCode.OK : HttpStatusCode.NotModified)
+                {
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\":[{\"id\":\"1\"}],\"_count\":1}"))
+                };
+                response.Headers.ETag = "read-progress";
+                return Task.FromResult(response);
+            });
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(builder => builder.AddCustomHandlers(handler));
+            ChangeFeedProcessorCore processor = CreateProcessor(out _, out Mock<ChangeFeedObserver> observer);
+            TaskCompletionSource<bool> replaced = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            observer.Setup(o => o.ProcessChangesAsync(
+                It.IsAny<ChangeFeedObserverContextCore>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .Callback(() =>
+                {
+                    DocumentServiceLease replacement = JsonConvert.DeserializeObject<DocumentServiceLease>(
+                        JsonConvert.SerializeObject(original));
+                    replacement.QueryFilterHash = "different-query";
+                    replacement.Owner = changedOwner ? "replacement-owner" : original.Owner;
+                    leases[original.Id] = replacement;
+                    replaced.TrySetResult(true);
+                })
+                .Returns(Task.CompletedTask);
+            TaskCompletionSource<bool> closed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            observer.Setup(o => o.CloseAsync("0", ChangeFeedObserverCloseReason.LeaseLost))
+                .Callback(() => closed.TrySetResult(true))
+                .Returns(Task.CompletedTask);
+            TaskCompletionSource<Exception> notified = new TaskCompletionSource<Exception>(TaskCreationOptions.RunContinuationsAsynchronously);
+            ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder(
+                "renewal", (ContainerInternal)client.GetContainer("myDb", "myContainer"), processor,
+                (unused, container, instance, leaseOptions, options, monitored) =>
+                    processor.ApplyBuildConfiguration(store, null, instance, leaseOptions, options, monitored));
+            builder.WithInMemoryLeaseContainer()
+                .WithQuery(query)
+                .WithPollInterval(TimeSpan.FromMilliseconds(10))
+                .WithLeaseConfiguration(acquireInterval: TimeSpan.FromHours(1), renewInterval: TimeSpan.FromMilliseconds(20))
+                .WithErrorNotification((lease, exception) =>
+                {
+                    notified.TrySetResult(exception);
+                    return Task.CompletedTask;
+                })
+                .Build();
+
+            await processor.StartAsync();
+            try
+            {
+                await replaced.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                Exception error = await notified.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.IsInstanceOfType(error, typeof(ArgumentException));
+                StringAssert.Contains(error.Message, "query filter");
+                await closed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            }
+            finally
+            {
+                await processor.StopAsync();
+            }
+
+            Assert.AreEqual("different-query", leases[original.Id].QueryFilterHash);
+            Assert.AreEqual(changedOwner ? "replacement-owner" : "original-owner", leases[original.Id].Owner);
+            Assert.AreEqual("saved-progress", leases[original.Id].ContinuationToken);
+            observer.Verify(o => o.CloseAsync("0", ChangeFeedObserverCloseReason.LeaseLost), Times.Once);
         }
 
         private static ChangeFeedProcessorCore CreateProcessor(

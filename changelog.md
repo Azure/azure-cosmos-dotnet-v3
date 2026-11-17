@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [6195](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6195) Change Feed: Adds preview server-side SQL filtering for typed and stream readers and change feed processors, preserving read progress and preventing incompatible filters from sharing processor leases.
+
 #### Breaking Changes
 
 #### Bugs Fixed

@@ -55,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 throw new ArgumentNullException(nameof(lease));
             }
 
+            this.VerifyQueryFilter(lease);
             string oldOwner = lease.Owner;
 
             // We need to add the range information to any older leases
@@ -89,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 this.requestOptionsFactory.GetPartitionKey(lease.Id, lease.PartitionKey),
                 serverLease =>
                 {
+                    this.VerifyQueryFilter(serverLease);
                     if (serverLease.Owner != oldOwner)
                     {
                         DefaultTrace.TraceInformation("{0} lease token was taken over by owner '{1}'", lease.CurrentLeaseToken, serverLease.Owner);
@@ -127,7 +129,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 LeaseToken = leaseToken,
                 ContinuationToken = continuationToken,
                 FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange()),
-                Mode = this.GetChangeFeedMode()
+                Mode = this.GetChangeFeedMode(),
+                QueryFilterHash = this.QueryFilterHash
             };
 
             this.requestOptionsFactory.AddPartitionKeyIfNeeded(
@@ -154,7 +157,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 LeaseToken = leaseToken,
                 ContinuationToken = continuationToken,
                 FeedRange = feedRange,
-                Mode = this.GetChangeFeedMode()
+                Mode = this.GetChangeFeedMode(),
+                QueryFilterHash = this.QueryFilterHash
             };
 
             this.requestOptionsFactory.AddPartitionKeyIfNeeded(
@@ -185,6 +189,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 throw new ArgumentNullException(nameof(lease));
             }
 
+            this.VerifyQueryFilter(lease);
             DocumentServiceLease refreshedLease;
             try
             {
@@ -209,6 +214,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 this.requestOptionsFactory.GetPartitionKey(lease.Id, lease.PartitionKey),
                 serverLease =>
                 {
+                    this.VerifyQueryFilter(serverLease);
                     if (serverLease.Owner != lease.Owner)
                     {
                         DefaultTrace.TraceInformation("Lease with token {0} no need to release lease. The lease was already taken by another host '{1}'.", lease.CurrentLeaseToken, serverLease.Owner);
@@ -246,6 +252,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (lease == null)
                 throw new ArgumentNullException(nameof(lease));
 
+            this.VerifyQueryFilterForLeaseRenewal(lease);
             // Get fresh lease. The assumption here is that checkpointing is done with higher frequency than lease renewal so almost
             // certainly the lease was updated in between.
             DocumentServiceLease refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
@@ -261,6 +268,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 this.requestOptionsFactory.GetPartitionKey(lease.Id, lease.PartitionKey),
                 serverLease =>
                 {
+                    this.VerifyQueryFilterForLeaseRenewal(serverLease);
                     if (serverLease.Owner != lease.Owner)
                     {
                         DefaultTrace.TraceInformation("Lease with token {0} was taken over by owner '{1}'", lease.CurrentLeaseToken, serverLease.Owner);
@@ -284,6 +292,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             if (lease == null) throw new ArgumentNullException(nameof(lease));
 
+            this.VerifyQueryFilter(lease);
             if (lease.Owner != this.options.HostName)
             {
                 DefaultTrace.TraceInformation("Lease with token '{0}' was taken over by owner '{1}' before lease properties update", lease.CurrentLeaseToken, lease.Owner);
@@ -306,6 +315,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 this.requestOptionsFactory.GetPartitionKey(lease.Id, lease.PartitionKey),
                 serverLease =>
                 {
+                    this.VerifyQueryFilter(serverLease);
                     if (serverLease.Owner != lease.Owner)
                     {
                         DefaultTrace.TraceInformation("Lease with token '{0}' was taken over by owner '{1}'", lease.CurrentLeaseToken, serverLease.Owner);
@@ -338,6 +348,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             }
 
             DefaultTrace.TraceInformation("Some other host created lease for {0}.", documentServiceLease.CurrentLeaseToken);
+            try
+            {
+                DocumentServiceLease existing = await this.TryGetLeaseAsync(documentServiceLease).ConfigureAwait(false);
+                this.VerifyQueryFilter(existing);
+            }
+            catch (CosmosException exception)
+                when (exception.StatusCode == HttpStatusCode.NotFound && exception.SubStatusCode == (int)SubStatusCodes.Unknown)
+            {
+                DefaultTrace.TraceInformation("Conflicting lease with token {0} was deleted before compatibility could be checked.", documentServiceLease.CurrentLeaseToken);
+            }
+
             return null;
         }
 

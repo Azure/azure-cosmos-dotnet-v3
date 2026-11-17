@@ -19,8 +19,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         private readonly DocumentServiceLeaseStore leaseStore;
         private readonly TimeSpan lockTime;
         private readonly TimeSpan sleepTime;
+        private readonly Func<Task> validateLeasesAsync;
 
-        public BootstrapperCore(PartitionSynchronizer synchronizer, DocumentServiceLeaseStore leaseStore, TimeSpan lockTime, TimeSpan sleepTime)
+        public BootstrapperCore(
+            PartitionSynchronizer synchronizer,
+            DocumentServiceLeaseStore leaseStore,
+            TimeSpan lockTime,
+            TimeSpan sleepTime,
+            Func<Task> validateLeasesAsync)
         {
             if (synchronizer == null)
             {
@@ -46,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             this.leaseStore = leaseStore;
             this.lockTime = lockTime;
             this.sleepTime = sleepTime;
+            this.validateLeasesAsync = validateLeasesAsync ?? throw new ArgumentNullException(nameof(validateLeasesAsync));
         }
 
         public override async Task InitializeAsync()
@@ -55,6 +62,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 bool initialized = await this.leaseStore.IsInitializedAsync().ConfigureAwait(false);
                 if (initialized)
                 {
+                    await this.validateLeasesAsync().ConfigureAwait(false);
                     break;
                 }
 
@@ -70,7 +78,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                     }
 
                     DefaultTrace.TraceInformation("Initializing the store");
+                    await this.validateLeasesAsync().ConfigureAwait(false);
                     await this.synchronizer.CreateMissingLeasesAsync().ConfigureAwait(false);
+                    // Creation can skip leases written by another host, so validate the resulting store.
+                    await this.validateLeasesAsync().ConfigureAwait(false);
                     await this.leaseStore.MarkInitializedAsync().ConfigureAwait(false);
                 }
                 finally

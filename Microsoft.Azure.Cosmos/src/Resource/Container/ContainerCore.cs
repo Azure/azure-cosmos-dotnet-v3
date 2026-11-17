@@ -640,6 +640,46 @@ namespace Microsoft.Azure.Cosmos
               cancellationToken: cancellationToken);
         }
 
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        override FeedIterator GetChangeFeedStreamIteratorWithQuery(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
+            string queryText,
+            ChangeFeedRequestOptions changeFeedRequestOptions)
+        {
+            if (changeFeedRequestOptions == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedRequestOptions));
+            }
+
+            return this.GetChangeFeedStreamIteratorWithQuery(
+                changeFeedStartFrom, changeFeedMode, ChangeFeedHelper.CreateQuerySpec(queryText), changeFeedRequestOptions);
+        }
+
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        override FeedIterator<T> GetChangeFeedIteratorWithQuery<T>(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
+            string queryText,
+            ChangeFeedRequestOptions changeFeedRequestOptions)
+        {
+            if (changeFeedRequestOptions == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedRequestOptions));
+            }
+
+            return this.GetChangeFeedIteratorWithQuery<T>(
+                changeFeedStartFrom, changeFeedMode, ChangeFeedHelper.CreateQuerySpec(queryText), changeFeedRequestOptions);
+        }
+
         public override FeedIterator GetChangeFeedStreamIteratorWithQuery(
            ChangeFeedStartFrom changeFeedStartFrom,
            ChangeFeedMode changeFeedMode,

@@ -608,6 +608,22 @@ namespace Microsoft.Azure.Cosmos
                                                  this.ClientContext);
         }
 
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        override FeedIterator<T> GetChangeFeedIteratorWithQuery<T>(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
+            string queryText,
+            ChangeFeedRequestOptions changeFeedRequestOptions)
+        {
+            return new FeedIteratorInlineCore<T>(
+                base.GetChangeFeedIteratorWithQuery<T>(changeFeedStartFrom, changeFeedMode, queryText, changeFeedRequestOptions),
+                this.ClientContext);
+        }
+
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default)
