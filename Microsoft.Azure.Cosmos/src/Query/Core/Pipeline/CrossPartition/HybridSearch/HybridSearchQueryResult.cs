@@ -6,10 +6,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using ResourceId = Microsoft.Azure.Documents.ResourceId;
 
     internal readonly struct HybridSearchQueryResult
     {
         public CosmosString Rid { get; }
+
+        public ulong DocumentRid { get; }
 
         public CosmosArray ComponentScores { get; }
 
@@ -17,22 +20,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         public double Score { get; }
 
-        private HybridSearchQueryResult(CosmosString rid, CosmosArray componentScores, CosmosElement payload, double score)
+        private HybridSearchQueryResult(CosmosString rid, ulong documentRid, CosmosArray componentScores, CosmosElement payload, double score)
         {
             this.Rid = rid ?? throw new ArgumentNullException(nameof(rid));
+            this.DocumentRid = documentRid;
             this.ComponentScores = componentScores ?? throw new ArgumentNullException(nameof(componentScores));
             this.Payload = payload ?? throw new ArgumentNullException(nameof(payload));
             this.Score = score;
         }
 
-        private HybridSearchQueryResult(CosmosString rid, CosmosArray componentScores, CosmosElement payload)
-            : this(rid, componentScores, payload, 0)
-        {
-        }
-
         public HybridSearchQueryResult WithScore(double score)
         {
-            return new HybridSearchQueryResult(this.Rid, this.ComponentScores, this.Payload, score);
+            return new HybridSearchQueryResult(this.Rid, this.DocumentRid, this.ComponentScores, this.Payload, score);
         }
 
         public static HybridSearchQueryResult Create(CosmosElement document)
@@ -49,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 throw new ArgumentException($"{FieldNames.Rid} must exist.");
             }
 
+            ulong documentRid = ResourceId.Parse(rid.Value).Document;
             bool outerPayloadExists = cosmosObject.TryGetValue(FieldNames.Payload, out CosmosObject outerPayload);
 
             HybridSearchQueryResult result;
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     innerPayload = CosmosUndefined.Create();
                 }
 
-                result = new HybridSearchQueryResult(rid, componentScores, innerPayload);
+                result = new HybridSearchQueryResult(rid, documentRid, componentScores, innerPayload, 0);
             }
             else
             {
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     payload = CosmosUndefined.Create();
                 }
 
-                result = new HybridSearchQueryResult(rid, componentScores, payload);
+                result = new HybridSearchQueryResult(rid, documentRid, componentScores, payload, 0);
             }
 
             return result;

@@ -502,6 +502,7 @@
         }
 
         [TestMethod]
+        [TestCategory("LinuxQueryPlanInteropLive")]
         public async Task TestAggregateFunctionsWithMixedTypesAsync()
         {
             AggregateQueryMixedTypes args = new AggregateQueryMixedTypes()
@@ -736,8 +737,8 @@
             }
 
             Regex r = new Regex(">\\s+");
-            string normalizedBaseline = r.Replace(File.ReadAllText(baselinePath), ">");
-            string normalizedOutput = r.Replace(builder.ToString(), ">");
+            string normalizedBaseline = r.Replace(File.ReadAllText(baselinePath), ">").ReplaceLineEndings("\n");
+            string normalizedOutput = r.Replace(builder.ToString(), ">").ReplaceLineEndings("\n");
 
             Assert.AreEqual(normalizedBaseline, normalizedOutput);
         }

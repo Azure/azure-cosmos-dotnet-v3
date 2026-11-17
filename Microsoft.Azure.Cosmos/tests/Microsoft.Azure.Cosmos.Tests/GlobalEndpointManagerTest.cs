@@ -27,10 +27,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Tests for <see cref="GlobalEndpointManager"/>
         /// </summary>
-        [TestMethod]
+        [DataTestMethod]
+        [DataRow(0)]
+        [DataRow(3000)]
         [TestCategory("Flaky")]
         [Timeout(30000)]
-        public async Task EndpointFailureMockTest()
+        public async Task EndpointFailureMockTest(int accountRefreshDelayInMilliseconds)
         {
             Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", "100");
             Environment.SetEnvironmentVariable("UnavailableLocationsExpirationTimeInSeconds", "2");
@@ -73,7 +75,11 @@ namespace Microsoft.Azure.Cosmos
                 int getAccountInfoCount = 0;
                 mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
                     .Callback(() => getAccountInfoCount++)
-                    .ReturnsAsync(databaseAccount);
+                    .Returns(async () =>
+                    {
+                        await Task.Delay(accountRefreshDelayInMilliseconds);
+                        return databaseAccount;
+                    });
 
                 //Create connection policy and populate preferred locations
                 ConnectionPolicy connectionPolicy = new ConnectionPolicy();
@@ -85,13 +91,11 @@ namespace Microsoft.Azure.Cosmos
                     globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
                     Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
 
-                    //Mark each of the read locations as unavailable and validate that the read endpoint switches to the next preferred region / default endpoint.
+                    // Failover is synchronous; a metadata refresh can outlast the two-second test cache expiry.
                     globalEndpointManager.MarkEndpointUnavailableForRead(globalEndpointManager.ReadEndpoints[0]);
-                    await globalEndpointManager.RefreshLocationAsync();
                     Assert.AreEqual(new Uri(readLocation2.Endpoint), globalEndpointManager.ReadEndpoints[0], "Read endpoint did not switch to location 2 after marking location 1 as unavailable.");
 
                     globalEndpointManager.MarkEndpointUnavailableForRead(globalEndpointManager.ReadEndpoints[0]);
-                    await globalEndpointManager.RefreshLocationAsync();
                     Assert.AreEqual(globalEndpointManager.WriteEndpoints[0], globalEndpointManager.ReadEndpoints[0]);
 
                     getAccountInfoCount = 0;
