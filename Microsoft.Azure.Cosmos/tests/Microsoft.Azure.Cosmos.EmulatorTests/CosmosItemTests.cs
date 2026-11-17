@@ -142,6 +142,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DataRow(true, DisplayName = "Gateway mode")]
+        [DataRow(false, DisplayName = "Direct mode")]
+        public async Task PointOperationsWithSpecialCharactersInIdTest(bool useGateway)
+        {
+            using CosmosClient client = TestCommon.CreateCosmosClient(useGateway);
+            Container container = client.GetContainer(this.database.Id, this.Container.Id);
+
+            IReadOnlyList<SpecialCharacterIdScenarios.Result> results = await SpecialCharacterIdScenarios.RunAsync(container, "/pk");
+
+            List<SpecialCharacterIdScenarios.Result> unexpected = SpecialCharacterIdScenarios.GetUnexpected(results, isDirect: !useGateway);
+            Assert.AreEqual(0, unexpected.Count, SpecialCharacterIdScenarios.Describe(unexpected));
+
+            string expectedTransport = useGateway ? SpecialCharacterIdScenarios.Gateway : SpecialCharacterIdScenarios.Direct;
+            CollectionAssert.AreEquivalent(new[] { expectedTransport }, results.SelectMany(r => r.Transports).Distinct().ToList());
+        }
+        [TestMethod]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         public async Task CreateDropItemTest(bool binaryEncodingEnabledInClient)
