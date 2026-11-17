@@ -312,19 +312,38 @@ namespace Microsoft.Azure.Cosmos.Common
                     CancellationToken cancellationToken)
         {
             System.Diagnostics.Debug.Assert(request.IsNameBased);
-            InternalCache cache = this.GetCache(request.Headers[HttpConstants.HttpHeaders.Version]);
-            string resourceFullName = PathsHelper.GetCollectionPath(request.ResourceAddress);
+            await this.RefreshAsync(
+                request.Headers[HttpConstants.HttpHeaders.Version],
+                request.ResourceAddress,
+                request.RequestContext.ResolvedCollectionRid,
+                trace,
+                clientSideRequestStatistics,
+                cancellationToken);
 
-            if (request.RequestContext.ResolvedCollectionRid != null)
+            request.RequestContext.ResolvedCollectionRid = null;
+        }
+
+        protected async Task RefreshAsync(
+            string apiVersion,
+            string resourceAddress,
+            string previouslyResolvedCollectionRid,
+            ITrace trace,
+            IClientSideRequestStatistics clientSideRequestStatistics,
+            CancellationToken cancellationToken)
+        {
+            InternalCache cache = this.GetCache(apiVersion);
+            string resourceFullName = PathsHelper.GetCollectionPath(resourceAddress);
+
+            if (previouslyResolvedCollectionRid != null)
             {
-                // Here we will issue backend call only if cache wasn't already refreshed (if whatever is there corresponds to presiously resolved collection rid).
+                // Fetch metadata only if the cache still references the previously resolved container.
                 await cache.collectionInfoByName.GetAsync(
                    resourceFullName,
-                   ContainerProperties.CreateWithResourceId(request.RequestContext.ResolvedCollectionRid),
+                   ContainerProperties.CreateWithResourceId(previouslyResolvedCollectionRid),
                    async () =>
                    {
                        DateTime currentTime = DateTime.UtcNow;
-                       ContainerProperties collection = await this.GetByNameAsync(request.Headers[HttpConstants.HttpHeaders.Version], resourceFullName, trace, clientSideRequestStatistics, cancellationToken);
+                       ContainerProperties collection = await this.GetByNameAsync(apiVersion, resourceFullName, trace, clientSideRequestStatistics, cancellationToken);
                        cache.collectionInfoById.Set(collection.ResourceId, collection);
                        cache.collectionInfoByNameLastRefreshTime.AddOrUpdate(resourceFullName, currentTime,
                        (string currentKey, DateTime currentValue) => currentTime);
@@ -336,12 +355,9 @@ namespace Microsoft.Azure.Cosmos.Common
             }
             else
             {
-                // In case of ForceRefresh directive coming from client, there will be no ResolvedCollectionRid, so we 
-                // need to refresh unconditionally.
-                this.Refresh(request.ResourceAddress, request.Headers[HttpConstants.HttpHeaders.Version]);
+                // Without a previously resolved RID, invalidate the name entry unconditionally.
+                this.Refresh(resourceAddress, apiVersion);
             }
-
-            request.RequestContext.ResolvedCollectionRid = null;
         }
 
         /// <summary>

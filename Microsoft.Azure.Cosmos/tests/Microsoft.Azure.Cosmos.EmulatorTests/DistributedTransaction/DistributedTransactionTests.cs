@@ -56,6 +56,77 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // Happy path scenarios
 
+        [DataTestMethod]
+        [DataRow(false, ConnectionMode.Gateway)]
+        [DataRow(true, ConnectionMode.Gateway)]
+        [DataRow(false, ConnectionMode.Direct)]
+        [DataRow(true, ConnectionMode.Direct)]
+        public async Task RecreatedContainer_RefreshesCachedRidOnSameClient(bool readOnly, ConnectionMode connectionMode)
+        {
+            string currentRid = (await this.container.ReadContainerAsync()).Resource.ResourceId;
+            string originalRid = currentRid;
+            List<string> submittedRids = new List<string>();
+            List<string> submittedTokens = new List<string>();
+            ToDoActivity doc = ToDoActivity.CreateRandomToDoActivity();
+            DistributedTransactionMockHandler handler = new DistributedTransactionMockHandler(async request =>
+            {
+                using JsonDocument body = await JsonDocument.ParseAsync(request.Content);
+                string submittedRid = body.RootElement
+                    .GetProperty(DistributedTransactionSerializer.Operations)[0]
+                    .GetProperty(DistributedTransactionSerializer.CollectionResourceId).GetString();
+                submittedRids.Add(submittedRid);
+                submittedTokens.Add(request.Headers[HttpConstants.HttpHeaders.IdempotencyToken]);
+                if (submittedRid != currentRid)
+                {
+                    ResponseMessage stale = new ResponseMessage(HttpStatusCode.Gone);
+                    stale.Headers.SubStatusCode = SubStatusCodes.NameCacheIsStale;
+                    return stale;
+                }
+
+                return this.BuildMockResponse(HttpStatusCode.OK, readOnly
+                    ? BuildReadSuccessResponseJson(1, JsonSerializer.Serialize(doc))
+                    : BuildSuccessResponseJson(1));
+            });
+            using CosmosClient client = TestCommon.CreateCosmosClient(clientOptions: new CosmosClientOptions
+            {
+                CustomHandlers = { handler },
+                ConnectionMode = connectionMode
+            });
+            Container transactionContainer = this.GetContainerForClient(client, this.container);
+
+            async Task ExecuteAsync(bool expectSuccess = true)
+            {
+                using DistributedTransactionResponse response = readOnly
+                    ? await client.CreateDistributedReadTransaction()
+                        .ReadItem(transactionContainer, new PartitionKey(doc.pk), doc.id)
+                        .ExecuteTransactionAsync(this.cancellationToken)
+                    : await client.CreateDistributedWriteTransaction()
+                        .CreateItem(transactionContainer, new PartitionKey(doc.pk), doc.id, doc)
+                        .ExecuteTransactionAsync(this.cancellationToken);
+                Assert.AreEqual(expectSuccess, response.IsSuccessStatusCode);
+                if (!expectSuccess)
+                {
+                    Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
+                    Assert.AreEqual(SubStatusCodes.NameCacheIsStale, response.SubStatusCode);
+                }
+            }
+
+            await ExecuteAsync();
+            await this.container.DeleteContainerAsync(cancellationToken: this.cancellationToken);
+            ContainerResponse recreated = await this.database.CreateContainerAsync(
+                new ContainerProperties(this.container.Id, PartitionKeyPath),
+                cancellationToken: this.cancellationToken);
+            currentRid = recreated.Resource.ResourceId;
+            Assert.AreNotEqual(originalRid, currentRid);
+
+            await ExecuteAsync(expectSuccess: false);
+            await ExecuteAsync();
+
+            CollectionAssert.AreEqual(new[] { originalRid, originalRid, currentRid }, submittedRids);
+            Assert.AreNotEqual(submittedTokens[1], submittedTokens[2],
+                "The replacement container must be addressed under a new transaction token.");
+        }
+
         [TestMethod]
         [Description("Two creates against the same container both return 201 Created.")]
         public async Task CreateItems_SameContainer_AllReturnCreatedStatus()
