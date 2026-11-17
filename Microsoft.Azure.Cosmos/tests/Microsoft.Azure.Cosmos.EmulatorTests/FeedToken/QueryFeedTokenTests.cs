@@ -54,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                 ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
                     containerResponse.Resource.ResourceId,
+                    containerResponse.Resource.ETag,
                     effectivePartitionKeyRanges: null,
                     containerResponse.Resource.PartitionKey,
                     vectorEmbeddingPolicy: null,

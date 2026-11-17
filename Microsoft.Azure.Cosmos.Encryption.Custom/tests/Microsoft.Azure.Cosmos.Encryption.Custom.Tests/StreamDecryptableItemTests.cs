@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             };
 
             using MemoryStream encryptedBuffer = new ();
-            Mock<Encryptor> mdeEncryptor = TestEncryptorFactory.CreateMde(dekId, out _);
+            TestEncryptorFactory.MdeConcreteEncryptor mdeEncryptor = TestEncryptorFactory.CreateMde(dekId);
             await EncryptionProcessor.EncryptAsync(
                 originalDoc.ToStream(),
                 encryptedBuffer,
@@ -950,7 +950,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
             };
 
-            Mock<Encryptor> mdeEncryptor = TestEncryptorFactory.CreateMde(dekId, out _);
+            TestEncryptorFactory.MdeConcreteEncryptor mdeEncryptor = TestEncryptorFactory.CreateMde(dekId);
             PooledMemoryStream encryptedInput = new ();
             StreamDecryptableItem item = null;
 
