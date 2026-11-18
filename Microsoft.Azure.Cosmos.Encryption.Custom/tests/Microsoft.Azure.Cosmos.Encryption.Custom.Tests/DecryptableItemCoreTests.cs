@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Microsoft.Azure.Cosmos.Encryption.Custom.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
 #pragma warning disable CS0618 // Exercise the supported legacy read path.
@@ -108,6 +109,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 Assert.IsInstanceOfType(exception.InnerException, typeof(InvalidOperationException));
                 Assert.AreEqual(originalCiphertext, document.ToString());
             }
+        }
+
+        [DataTestMethod]
+        [DataRow("{}")]
+        [DataRow("[]")]
+        public async Task NonScalarDekId_PreservesOriginalEncryptedFailure(string keyIdJson)
+        {
+            const string algorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized;
+            Mock<Encryptor> encryptor = CreateEncryptor(algorithm);
+            JObject document = await CreateEncryptedDocumentAsync(encryptor.Object, algorithm);
+            document[Constants.EncryptedInfo][Constants.EncryptionDekId] = JToken.Parse(keyIdJson);
+            string originalCiphertext = document.ToString();
+            DecryptableItemCore item = new (document, encryptor.Object, new Mock<CosmosSerializer>(MockBehavior.Strict).Object);
+
+            EncryptionException exception = await Assert.ThrowsExceptionAsync<EncryptionException>(
+                () => item.GetItemAsync<JObject>());
+
+            Assert.IsInstanceOfType(exception.InnerException, typeof(JsonReaderException));
+            Assert.AreEqual($"{Constants.EncryptedInfo}.{Constants.EncryptionDekId}", ((JsonReaderException)exception.InnerException).Path);
+            Assert.AreEqual(string.Empty, exception.DataEncryptionKeyId);
+            Assert.AreEqual(originalCiphertext, exception.EncryptedContent);
+            Assert.AreEqual(originalCiphertext, document.ToString());
         }
 
         [DataTestMethod]
