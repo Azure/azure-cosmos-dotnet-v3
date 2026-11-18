@@ -39,22 +39,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 ErrorListener<IToken> listener = new ErrorListener<IToken>(parser, lexer, tokens);
                 parser.AddErrorListener(listener);
 
-                sqlParser.ProgramContext programContext;
+                SqlQuery sqlQuery;
                 try
                 {
-                    programContext = parser.program();
+                    sqlParser.ProgramContext programContext = parser.program();
+                    if (listener.parseException != null)
+                    {
+                        return TryCatch<SqlQuery>.FromException(listener.parseException);
+                    }
+
+                    // The grammar can accept inputs that are rejected when building the AST
+                    // (e.g. an OFFSET / LIMIT / TOP literal that is not an integer or overflows Int64).
+                    sqlQuery = (SqlQuery)CstToAstVisitor.Singleton.Visit(programContext);
                 }
                 catch (Exception ex)
                 {
                     return TryCatch<SqlQuery>.FromException(ex);
                 }
 
-                if (listener.parseException != null)
-                {
-                    return TryCatch<SqlQuery>.FromException(listener.parseException);
-                }
-
-                SqlQuery sqlQuery = (SqlQuery)CstToAstVisitor.Singleton.Visit(programContext);
                 return TryCatch<SqlQuery>.FromResult(sqlQuery);
             }
 

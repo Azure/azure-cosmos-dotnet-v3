@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         public static bool BypassQueryParsing()
         {
-            return Documents.CustomTypeExtensions.ByPassQueryParsing() || ConfigurationManager.ForceBypassQueryParsing();
+            return ConfigurationManager.ForceBypassQueryParsing() || QueryPlanInterop.Instance.BypassQueryParsing();
         }
 
         public static async Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(

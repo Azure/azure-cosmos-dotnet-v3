@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
@@ -340,8 +341,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         TransportAddressUri uri1 = new TransportAddressUri(new Uri("http://someUri1.com"));
                         TransportAddressUri uri2 = new TransportAddressUri(new Uri("http://someUri2.com"));
 
-                        datum.ContactedReplicas.Add(uri1);
-                        datum.ContactedReplicas.Add(uri2);
+                        datum.AppendContactedReplica(uri1);
+                        datum.AppendContactedReplica(uri2);
 
                         ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics mockStatistics = new ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics(
                             DateTime.MinValue,
@@ -351,11 +352,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf", mockStatistics);
                         TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf2", mockStatistics);
 
-                        datum.FailedReplicas.Add(uri1);
-                        datum.FailedReplicas.Add(uri2);
+                        datum.AppendFailedReplica(uri1);
+                        datum.AppendFailedReplica(uri2);
 
-                        datum.RegionsContacted.Add(("local", uri1.Uri));
-                        datum.RegionsContacted.Add(("local", uri2.Uri));
+                        datum.AppendRegionContacted("local", uri1.Uri);
+                        datum.AppendRegionContacted("local", uri2.Uri);
 
                         TraceWriterBaselineTests.SetEndRequestTime(datum, DateTime.MaxValue);
 
@@ -383,14 +384,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                     {
                         ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, rootTrace);
-                        datum.ContactedReplicas.Add(default);
+                        datum.AppendContactedReplica(default);
 
                         TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf", default);
                         TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf2", default);
 
-                        datum.FailedReplicas.Add(default);
+                        datum.AppendFailedReplica(default);
 
-                        datum.RegionsContacted.Add(default);
+                        datum.AppendRegionContacted(default, default);
 
                         TraceWriterBaselineTests.SetEndRequestTime(datum, default);
 
@@ -764,7 +765,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 isContinuationExpected: true,
                 maxConcurrency: 10,
                 fullTextScoreScope: FullTextScoreScope.Global,
-                requestContinuationToken: state);
+                requestContinuationToken: state,
+                statisticsCacheFactory: HybridSearchStatisticsCacheFactory.Create(null, 0));
 
             tryCreatePipeline.ThrowIfFailed();
 

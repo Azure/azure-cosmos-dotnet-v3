@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
@@ -28,10 +30,12 @@ namespace Microsoft.Azure.Cosmos
         private readonly BatchAsyncContainerExecutorCache batchExecutorCache;
         private readonly CosmosClient client;
         private readonly DocumentClient documentClient;
+        private readonly ISecondaryIndexMetadataCache secondaryIndexMetadataCache;
         private readonly CosmosSerializerCore serializerCore;
         private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly RequestInvokerHandler requestHandler;
         private readonly CosmosClientOptions clientOptions;
+        private readonly HybridSearchStatisticsCacheFactory hybridSearchStatisticsCacheFactory;
 
         private readonly string userAgent;
         private bool isDisposed = false;
@@ -45,16 +49,21 @@ namespace Microsoft.Azure.Cosmos
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             string userAgent,
-            BatchAsyncContainerExecutorCache batchExecutorCache)
+            BatchAsyncContainerExecutorCache batchExecutorCache,
+            HybridSearchStatisticsCacheFactory hybridSearchStatisticsCacheFactory)
         {
             this.client = client;
             this.clientOptions = clientOptions;
+            this.hybridSearchStatisticsCacheFactory = hybridSearchStatisticsCacheFactory;
             this.serializerCore = serializerCore;
             this.responseFactory = cosmosResponseFactory;
             this.requestHandler = requestHandler;
             this.documentClient = documentClient;
             this.userAgent = userAgent;
             this.batchExecutorCache = batchExecutorCache;
+
+            ISecondaryIndexMetadataProvider secondaryIndexMetadataProvider = new SecondaryIndexMetadataProvider(documentClient);
+            this.secondaryIndexMetadataCache = new SecondaryIndexMetadataCache(secondaryIndexMetadataProvider, clientOptions.EnableAsyncCacheExceptionNoSharing);
         }
 
         internal static CosmosClientContext Create(
@@ -144,6 +153,9 @@ namespace Microsoft.Azure.Cosmos
             clientOptions.SetSerializerIfNotConfigured(serializerCore.GetCustomOrDefaultSerializer());
 
             CosmosResponseFactoryInternal responseFactory = new CosmosResponseFactoryCore(serializerCore);
+            HybridSearchStatisticsCacheFactory hybridSearchStatisticsCacheFactory = HybridSearchStatisticsCacheFactory.Create(
+                clientOptions.FullTextStatisticsCacheMaxAge,
+                clientOptions.FullTextStatisticsCacheMaxEntries);
 
             return new ClientContextCore(
                 client: cosmosClient,
@@ -153,7 +165,8 @@ namespace Microsoft.Azure.Cosmos
                 requestHandler: requestInvokerHandler,
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
-                batchExecutorCache: new BatchAsyncContainerExecutorCache());
+                batchExecutorCache: new BatchAsyncContainerExecutorCache(),
+                hybridSearchStatisticsCacheFactory: hybridSearchStatisticsCacheFactory);
         }
 
         /// <summary>
@@ -162,6 +175,8 @@ namespace Microsoft.Azure.Cosmos
         internal override CosmosClient Client => this.ThrowIfDisposed(this.client);
 
         internal override DocumentClient DocumentClient => this.ThrowIfDisposed(this.documentClient);
+
+        internal override ISecondaryIndexMetadataCache SecondaryIndexMetadataCache => this.ThrowIfDisposed(this.secondaryIndexMetadataCache);
 
         internal override CosmosSerializerCore SerializerCore => this.ThrowIfDisposed(this.serializerCore);
 
@@ -172,6 +187,8 @@ namespace Microsoft.Azure.Cosmos
         internal override CosmosClientOptions ClientOptions => this.ThrowIfDisposed(this.clientOptions);
 
         internal override string UserAgent => this.ThrowIfDisposed(this.userAgent);
+
+        internal override HybridSearchStatisticsCacheFactory HybridSearchStatisticsCacheFactory => this.ThrowIfDisposed(this.hybridSearchStatisticsCacheFactory);
 
         /// <summary>
         /// Generates the URI link for the resource

@@ -452,6 +452,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
                 $"Expected ~1 second, got {elapsed.TotalSeconds} seconds");
         }
 
+        [DataTestMethod]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(2)]
+        public void ScopeRecord_Elapsed_UsesStopwatchFrequency(int seconds)
+        {
+            TestableCosmosDiagnosticsContext.ScopeRecord record = new TestableCosmosDiagnosticsContext.ScopeRecord(
+                "FrequencyControl",
+                0,
+                Stopwatch.Frequency * seconds);
+
+            Assert.AreEqual(TimeSpan.FromSeconds(seconds), record.Elapsed);
+        }
+
         [TestMethod]
         public void CreateScope_LongRunningScope_RecordsAccurateElapsedTime()
         {

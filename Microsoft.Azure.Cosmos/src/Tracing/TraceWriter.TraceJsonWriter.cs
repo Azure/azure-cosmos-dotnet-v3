@@ -199,10 +199,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("Id");
                 this.jsonWriter.WriteStringValue("AggregatedClientSideRequestStatistics");
 
-                this.WriteJsonUriArrayWithDuplicatesCounted("ContactedReplicas", clientSideRequestStatisticsTraceDatum.ContactedReplicas);
+                this.WriteJsonUriArrayWithDuplicatesCounted("ContactedReplicas", clientSideRequestStatisticsTraceDatum.ContactedReplicasSnapshot);
 
-                this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContacted);
-                this.WriteJsonUriArray("FailedReplicas", clientSideRequestStatisticsTraceDatum.FailedReplicas);
+                this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContactedSnapshot);
+                this.WriteJsonUriArray("FailedReplicas", clientSideRequestStatisticsTraceDatum.FailedReplicasSnapshot);
 
                 clientSideRequestStatisticsTraceDatum.WriteAddressCachRefreshContent(this.jsonWriter);
 
@@ -263,6 +263,18 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 jsonWriter.WriteFieldName("ActivityId");
                 this.WriteStringValueOrNull(stat.ActivityId);
+
+                if (!string.IsNullOrEmpty(stat.IsDtxRetry))
+                {
+                    jsonWriter.WriteFieldName("IsDtxRetry");
+                    jsonWriter.WriteStringValue(stat.IsDtxRetry);
+                }
+
+                if (!string.IsNullOrEmpty(stat.IsDtxCrossRegionRedirect))
+                {
+                    jsonWriter.WriteFieldName("IsDtxCrossRegionRedirect");
+                    jsonWriter.WriteStringValue(stat.IsDtxCrossRegionRedirect);
+                }
 
                 if (stat.Exception != null)
                 {

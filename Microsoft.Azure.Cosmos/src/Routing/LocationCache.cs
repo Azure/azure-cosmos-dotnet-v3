@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         public string GetLocation(Uri endpoint)
         {
-            string location = this.locationInfo.AvailableWriteEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key ?? this.locationInfo.AvailableReadEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key;
+            string location = this.GetExactLocation(endpoint);
 
             if (location == null
                 && endpoint == this.defaultEndpoint
@@ -191,6 +191,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             return location;
+        }
+
+        /// <summary>
+        /// Returns the region name only when the endpoint exactly matches a known regional endpoint.
+        /// </summary>
+        internal string GetExactLocation(Uri endpoint)
+        {
+            return this.locationInfo.AvailableWriteEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key
+                ?? this.locationInfo.AvailableReadEndpointByLocation.FirstOrDefault(uri => uri.Value == endpoint).Key;
         }
 
         /// <summary>

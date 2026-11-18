@@ -40,6 +40,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     return null;
                 }
 
+                // Delegates can return caller-owned state (for example, lease.Properties).
+                // Detach it before serialization and never apply a response ETag to shared state.
+                lease = lease.Clone();
                 lease.Timestamp = DateTime.UtcNow;
                 DocumentServiceLease leaseDocument = await this.TryReplaceLeaseAsync(lease, partitionKey, itemId).ConfigureAwait(false);
                 if (leaseDocument != null)
@@ -87,7 +90,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     partitionKey,
                     itemRequestOptions).ConfigureAwait(false);
 
-                return response.Resource;
+                if (string.IsNullOrWhiteSpace(response.ETag))
+                {
+                    DefaultTrace.TraceError("Lease with token {0} replace response did not contain an ETag.", lease.CurrentLeaseToken);
+                    throw new InvalidOperationException("The lease replace response did not contain an ETag.");
+                }
+
+                lease.ConcurrencyToken = response.ETag;
+                return lease;
             }
             catch (CosmosException ex)
             {

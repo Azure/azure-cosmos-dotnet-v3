@@ -104,7 +104,9 @@ namespace Microsoft.Azure.Cosmos
                 DistributedTransactionServerRequest serverRequest = await DistributedTransactionServerRequest.CreateAsync(
                     this.operations,
                     this.clientContext.SerializerCore,
-                    cancellationToken);
+                    cancellationToken,
+                    // Read transactions have no commit state requiring write-dispatch signals.
+                    tracksDispatch: this.operationType == OperationType.CommitDistributedTransaction);
 
                 return await this.ExecuteCommitWithRetryAsync(serverRequest, trace, cancellationToken);
             }
@@ -225,12 +227,15 @@ namespace Microsoft.Azure.Cosmos
                 // non-aborted retriable replays the current token. The serialized body is reused either way.
                 if (rotateIdempotencyToken)
                 {
-                    serverRequest.RotateIdempotencyToken();
+                    serverRequest.RotateIdempotencyToken(Guid.NewGuid());
                 }
+
+                DistributedTransactionDispatchTracker dispatchTracker = serverRequest.DispatchTracker;
+                Guid idempotencyToken = dispatchTracker?.IdempotencyToken ?? serverRequest.IdempotencyToken;
 
                 // Publish the dispatched token (spec §4.4) so the transaction exposes the latest attempt's
                 // token even after cancellation.
-                this.onDispatch?.Invoke(serverRequest.IdempotencyToken);
+                this.onDispatch?.Invoke(idempotencyToken);
 
                 using (MemoryStream bodyStream = serverRequest.CreateBodyStream())
                 {
@@ -243,7 +248,10 @@ namespace Microsoft.Azure.Cosmos
                         partitionKey: null,
                         itemId: null,
                         streamPayload: bodyStream,
-                        requestEnricher: requestMessage => DistributedTransactionCommitter.EnrichRequestMessage(requestMessage, serverRequest),
+                        requestEnricher: requestMessage => DistributedTransactionCommitter.EnrichRequestMessage(
+                            requestMessage,
+                            idempotencyToken,
+                            dispatchTracker),
                         trace: attemptTrace,
                         cancellationToken: cancellationToken);
 
@@ -267,13 +275,18 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private static void EnrichRequestMessage(RequestMessage requestMessage, DistributedTransactionServerRequest serverRequest)
+        private static void EnrichRequestMessage(
+            RequestMessage requestMessage,
+            Guid idempotencyToken,
+            DistributedTransactionDispatchTracker dispatchTracker)
         {
             // Set DTC-specific headers
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IdempotencyToken, serverRequest.IdempotencyToken.ToString());
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IdempotencyToken, idempotencyToken.ToString());
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.OperationType, requestMessage.OperationType.ToOperationTypeString());
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceType, requestMessage.ResourceType.ToResourceTypeString());
             requestMessage.UseGatewayMode = true;
+
+            requestMessage.DistributedTransactionDispatchTracker = dispatchTracker;
         }
 
         internal static void MergeSessionTokens(

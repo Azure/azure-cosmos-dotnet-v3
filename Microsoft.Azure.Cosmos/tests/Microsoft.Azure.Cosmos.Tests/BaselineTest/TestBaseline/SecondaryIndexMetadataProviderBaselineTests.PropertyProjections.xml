@@ -1,0 +1,282 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Aliased property</Description>
+      <Query>SELECT c.id AS _id FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"_id":["id"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Bracket property</Description>
+      <Query>SELECT c['category'] FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"category":["category"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Aliased nested dot path</Description>
+      <Query>SELECT c.address.zip AS postalCode FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"postalCode":["address","zip"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Aliased nested bracket path</Description>
+      <Query>SELECT c['address']['zip'] AS postalCode FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"postalCode":["address","zip"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Mixed dot and bracket path</Description>
+      <Query>SELECT c.address['zip'] FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"zip":["address","zip"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Explicit ROOT alias</Description>
+      <Query>SELECT item.id FROM ROOT item</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"id":["id"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Explicit collection alias</Description>
+      <Query>SELECT item.id FROM c AS item</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"id":["id"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Empty property name</Description>
+      <Query>SELECT c[''] AS empty FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"empty":[""]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Empty segment in nested path</Description>
+      <Query>SELECT c[''].zip FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"zip":["","zip"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Literal dot in property name</Description>
+      <Query>SELECT c['a.b'] FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"a.b":["a.b"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Literal space in property name</Description>
+      <Query>SELECT c['a b'] FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"a\u0020b":["a\u0020b"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Literal quote in property name</Description>
+      <Query>SELECT c['a"b'] FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"a\"b":["a\"b"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Multiple property paths</Description>
+      <Query>SELECT c.id AS _id, c.region, c.address.zip AS postalCode FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"_id":["id"],"postalCode":["address","zip"],"region":["region"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Equivalent dot and bracket paths</Description>
+      <Query>SELECT c.address.zip, c['address']['zip'] FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"zip":["address","zip"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Same source path with different aliases</Description>
+      <Query>SELECT c.address.zip AS postalCode, c.address.zip AS ZIP FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"ZIP":["address","zip"],"postalCode":["address","zip"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Case-sensitive projected names</Description>
+      <Query>SELECT c.id, c.otherId AS ID FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"ID":["otherId"],"id":["id"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Literal slash and tilde in property names</Description>
+      <Query>SELECT c["a/b"], c["a~1b"] FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"a/b":["a/b"],"a~1b":["a~1b"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Literal slash versus nested path</Description>
+      <Query>SELECT c["a/b"], c.a.b FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"a/b":["a/b"],"b":["a","b"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Literal star in property name</Description>
+      <Query>SELECT c['*'] FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"*":["*"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Unfiltered materialized view</Description>
+      <Query>SELECT c.id FROM c</Query>
+      <PartitionKeyPath>/tenantId</PartitionKeyPath>
+    </Input>
+    <Output>
+      <Candidates>
+        <Candidate>
+          <IncludedProperties>{"id":["id"]}</IncludedProperties>
+        </Candidate>
+      </Candidates>
+    </Output>
+  </Result>
+</Results>

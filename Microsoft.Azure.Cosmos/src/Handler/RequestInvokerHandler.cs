@@ -306,6 +306,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 return ex.ToCosmosResponseMessage(request);
                             }
 
+                            RequestInvokerHandler.PopulatePartialPartitionKeyHeader(
+                                request,
+                                requestOptions,
+                                collectionFromCache.PartitionKey);
+
                             PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
                             IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                                 collectionFromCache.ResourceId,
@@ -700,6 +705,28 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 && RequestInvokerHandler.IsItemNoRepsonseSet(clientOptions.EnableContentResponseOnWrite.Value, operationType);
         }
 
+        internal static void PopulatePartialPartitionKeyHeader(
+            RequestMessage request,
+            RequestOptions requestOptions,
+            PartitionKeyDefinition partitionKeyDefinition)
+        {
+            Cosmos.PartitionKey? partitionKey = (requestOptions as QueryRequestOptions)?.PartitionKey;
+
+            if (request.ResourceType == ResourceType.Document
+                && request.OperationType == OperationType.Query
+                && partitionKey.HasValue
+                && !partitionKey.Value.IsNone
+                && partitionKeyDefinition.Kind == PartitionKind.MultiHash
+                && partitionKey.Value.InternalKey.Components.Count > 0
+                && partitionKey.Value.InternalKey.Components.Count < partitionKeyDefinition.Paths.Count)
+            {
+                // The partition key and partial partition key headers are mutually exclusive.
+                Debug.Assert(string.IsNullOrEmpty(request.Headers.PartitionKey));
+
+                request.Headers["x-ms-documentdb-partialpartitionkey"] = partitionKey.Value.ToJsonString();
+            }
+        }
+
         internal static async Task<FeedRange> ResolveFeedRangeBasedOnPrefixContainerAsync(
             FeedRange feedRange,
             ContainerInternal cosmosContainerCore,
@@ -710,11 +737,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 PartitionKeyDefinition partitionKeyDefinition = await cosmosContainerCore
                     .GetPartitionKeyDefinitionAsync(cancellationToken)
                     .ConfigureAwait(false);
-
-                if (partitionKeyDefinition != null && partitionKeyDefinition.Kind == PartitionKind.MultiHash
-                    && feedRangePartitionKey.PartitionKey.InternalKey?.Components?.Count < partitionKeyDefinition.Paths?.Count)
+                if (FeedRangeEpk.TryCreateFromPartialPartitionKey(
+                        feedRangePartitionKey,
+                        partitionKeyDefinition,
+                        out FeedRangeEpk feedRangeEpk))
                 {
-                   feedRange = new FeedRangeEpk(feedRangePartitionKey.PartitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
+                    feedRange = feedRangeEpk;
                 }
             }
 

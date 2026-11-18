@@ -229,15 +229,15 @@ ORDER BY r.key]]></RewrittenQuery>
         </QueryInfo>
         <QueryRanges>
           <Range>
-            <Range>[[8.0],[8.0]]</Range>
-            <Range>[[3.0],[3.0]]</Range>
-            <Range>[[5.0],[5.0]]</Range>
-            <Range>[[7.0],[7.0]]</Range>
-            <Range>[[9.0],[9.0]]</Range>
-            <Range>[[2.0],[2.0]]</Range>
-            <Range>[[4.0],[4.0]]</Range>
-            <Range>[[6.0],[6.0]]</Range>
             <Range>[[1.0],[1.0]]</Range>
+            <Range>[[2.0],[2.0]]</Range>
+            <Range>[[3.0],[3.0]]</Range>
+            <Range>[[4.0],[4.0]]</Range>
+            <Range>[[5.0],[5.0]]</Range>
+            <Range>[[6.0],[6.0]]</Range>
+            <Range>[[7.0],[7.0]]</Range>
+            <Range>[[8.0],[8.0]]</Range>
+            <Range>[[9.0],[9.0]]</Range>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[SELECT r._rid, [{"item": r.key}] AS orderByItems, r AS payload

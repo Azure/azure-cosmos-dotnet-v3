@@ -2,6 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -20,6 +22,8 @@
             },
             Kind = PartitionKind.Hash,
         };
+
+        public TestContext TestContext { get; set; }
 
         [TestMethod]
         public void TestQueryPartitionProviderUpdate()
@@ -66,6 +70,96 @@
         }
 
         [TestMethod]
+        public void TestFullTextSearchTermsDeserialization()
+        {
+            List<MetadataTestCase> testCases = new List<MetadataTestCase>
+            {
+                new MetadataTestCase("Absent metadata", null, null),
+                new MetadataTestCase("Null metadata", "null", null),
+                new MetadataTestCase("Empty metadata", "[]", "[]"),
+                new MetadataTestCase("Empty entry", "[{}]", @"[{""path"":null,""terms"":null}]"),
+                new MetadataTestCase("Missing terms", @"[{""path"":[""text""]}]", @"[{""path"":[""text""],""terms"":null}]"),
+                new MetadataTestCase("Missing path and term text", @"[{""terms"":[{}]}]", @"[{""path"":null,""terms"":[{""term"":null}]}]"),
+                new MetadataTestCase("Null distance", @"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":null}]}]", @"[{""path"":[""text""],""terms"":[{""term"":""run""}]}]"),
+                new MetadataTestCase("Unknown fields", @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2}],""future"":true}]", @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2}]}]"),
+                new MetadataTestCase("Date-like strings", @"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00""}]}]", @"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00""}]}]"),
+            };
+
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                MetadataTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                this.VerifyFullTextSearchTermsDeserialization(testCase.Metadata, testCase.Expected);
+            }
+        }
+
+        private void VerifyFullTextSearchTermsDeserialization(string metadata, string expected)
+        {
+            const string statisticsQuery = "SELECT COUNT(1) AS documentCount FROM c";
+            string property = metadata == null ? string.Empty : $",\"fullTextSearchTerms\":{metadata}";
+            string queryPlan = $"{{\"hybridSearchQueryInfo\":{{\"globalStatisticsQuery\":\"{statisticsQuery}\",\"requiresGlobalStatistics\":true{property}}}}}";
+
+            Assert.IsTrue(PartitionedQueryExecutionInfo.TryParse(queryPlan, out PartitionedQueryExecutionInfo parsed));
+            using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(queryPlan));
+            PartitionedQueryExecutionInfo gatewayPlan = new CosmosSerializerCore().FromStream<PartitionedQueryExecutionInfo>(stream);
+            PartitionedQueryExecutionInfoInternal internalPlan = JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(queryPlan);
+
+            List<DeserializedPlanTestCase> testCases = new List<DeserializedPlanTestCase>
+            {
+                new DeserializedPlanTestCase("TryParse", parsed.HybridSearchQueryInfo),
+                new DeserializedPlanTestCase("Gateway serializer", gatewayPlan.HybridSearchQueryInfo),
+                new DeserializedPlanTestCase("Internal plan serializer", internalPlan.HybridSearchQueryInfo),
+            };
+
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                DeserializedPlanTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Deserializer case {index}: {testCase.Name}, Metadata={metadata ?? "<absent>"}, Expected={expected ?? "<null>"}");
+                HybridSearchQueryInfo hybridPlan = testCase.Plan;
+
+                Assert.AreEqual(statisticsQuery, hybridPlan.GlobalStatisticsQuery);
+                Assert.IsTrue(hybridPlan.RequiresGlobalStatistics);
+
+                if (metadata == null || metadata == "null")
+                {
+                    Assert.IsNull(hybridPlan.FullTextSearchTerms);
+                    Assert.IsFalse(JsonConvert.SerializeObject(hybridPlan).Contains("fullTextSearchTerms"));
+                }
+                else
+                {
+                    Assert.AreEqual(expected, JsonConvert.SerializeObject(hybridPlan.FullTextSearchTerms, Formatting.None));
+                    string serialized = JsonConvert.SerializeObject(hybridPlan);
+                    HybridSearchQueryInfo roundTripped = JsonConvert.DeserializeObject<HybridSearchQueryInfo>(serialized);
+                    Assert.AreEqual(expected, JsonConvert.SerializeObject(roundTripped.FullTextSearchTerms, Formatting.None));
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestInvalidFullTextSearchTermsUseNormalQueryPlanErrorHandling()
+        {
+            List<MetadataTestCase> testCases = new List<MetadataTestCase>
+            {
+                new MetadataTestCase("Numeric metadata", "42", null),
+                new MetadataTestCase("String metadata", @"""unsupported""", null),
+                new MetadataTestCase("Object metadata", @"{""future"":true}", null),
+                new MetadataTestCase("Non-array path", @"[{""path"":""not-an-array"",""terms"":null}]", null),
+                new MetadataTestCase("Non-object term", @"[{""path"":[""text""],""terms"":[""run""]}]", null),
+                new MetadataTestCase("Distance overflow", @"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":2147483648}]}]", null),
+                new MetadataTestCase("Non-numeric distance", @"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":""not-a-number""}]}]", null),
+            };
+
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                MetadataTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                string queryPlan = "{\"hybridSearchQueryInfo\":{\"requiresGlobalStatistics\":true,\"fullTextSearchTerms\":" + testCase.Metadata + "}}";
+                Assert.IsFalse(PartitionedQueryExecutionInfo.TryParse(queryPlan, out PartitionedQueryExecutionInfo plan));
+                Assert.IsNull(plan);
+            }
+        }
+
+        [TestMethod]
         public void TestPartitionedQueryExecutionInfoDeserialization()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
@@ -96,12 +190,37 @@
                     @"{""globalStatisticsQuery"":""SELECT COUNT(1) AS documentCount, [] AS fullTextStatistics\nFROM c"",""componentQueryInfos"":[{""distinctType"":""None"",""top"":120,""offset"":null,""limit"":null,""orderBy"":[""Descending""],""orderByExpressions"":[""_VectorScore(c.backup_image, [0.5, 0.2, 0.33])""],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, [{\""item\"": _VectorScore(c.backup_image, [0.5, 0.2, 0.33])}] AS orderByItems, {\""payload\"": c, \""componentScores\"": [_VectorScore(c.backup_image, [0.5, 0.2, 0.33]), _VectorScore(c.image, [1, 2, 3])]} AS payload\nFROM c\nWHERE ({documentdb-formattableorderbyquery-filter})\nORDER BY _VectorScore(c.backup_image, [0.5, 0.2, 0.33]) DESC"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":true},{""distinctType"":""None"",""top"":120,""offset"":null,""limit"":null,""orderBy"":[""Descending""],""orderByExpressions"":[""_VectorScore(c.image, [1, 2, 3])""],""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, [{\""item\"": _VectorScore(c.image, [1, 2, 3])}] AS orderByItems, {\""payload\"": c, \""componentScores\"": [_VectorScore(c.backup_image, [0.5, 0.2, 0.33]), _VectorScore(c.image, [1, 2, 3])]} AS payload\nFROM c\nWHERE ({documentdb-formattableorderbyquery-filter})\nORDER BY _VectorScore(c.image, [1, 2, 3]) DESC"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":true}],""componentWithoutPayloadQueryInfos"":[],""projectionQueryInfo"":null,""componentWeights"":null,""skip"":null,""take"":10,""requiresGlobalStatistics"":false}"),
 
                 // Query with embedding parameters (GenerateEmbeddings feature) - validates QueryInfo.EmbeddingParameterMap round-trip
-                (@"{""queryInfo"":{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":""hello""},""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT VALUE @documentdb-hybridsearchquery-embedding-0"",""hasSelectValue"":true,""dCountInfo"":null,""hasNonStreamingOrderBy"":false},""queryRanges"":[{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}]}",
-                    @"{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":""hello""},""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT VALUE @documentdb-hybridsearchquery-embedding-0"",""hasSelectValue"":true,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}"),
+                (@"{""queryInfo"":{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":{""path"":[""nested"",""vector""],""needle"":""hello""}},""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT VALUE @documentdb-hybridsearchquery-embedding-0"",""hasSelectValue"":true,""dCountInfo"":null,""hasNonStreamingOrderBy"":false},""queryRanges"":[{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}]}",
+                    @"{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":{""path"":[""nested"",""vector""],""needle"":""hello""}},""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT VALUE @documentdb-hybridsearchquery-embedding-0"",""hasSelectValue"":true,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}"),
 
                 // Hybrid search query with embedding parameters on each component QueryInfo - validates EmbeddingParameterMap round-trip inside HybridSearchQueryInfo.componentQueryInfos
-                (@"{""hybridSearchQueryInfo"":{""globalStatisticsQuery"":""SELECT COUNT(1) AS documentCount, [{\""totalWordCount\"": SUM(_FullTextWordCount(c.text)), \""hitCounts\"": [COUNTIF(FullTextContains(c.text, \""swim\"")), COUNTIF(FullTextContains(c.text, \""run\""))]}] AS fullTextStatistics\nFROM c"",""componentQueryInfos"":[{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":""red car""},""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_VectorScore(c.image, @documentdb-hybridsearchquery-embedding-0) ?? -1.79769e+308)] AS componentScores\nFROM c\nORDER BY _FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false},{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":""red car""},""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_VectorScore(c.image, @documentdb-hybridsearchquery-embedding-0) ?? -1.79769e+308)] AS componentScores\nFROM c\nORDER BY _VectorScore(c.image, @documentdb-hybridsearchquery-embedding-0)"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}],""componentWithoutPayloadQueryInfos"":[],""projectionQueryInfo"":null,""componentWeights"":[],""skip"":null,""take"":10,""requiresGlobalStatistics"":true},""queryRanges"":[{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}]}",
-                    @"{""globalStatisticsQuery"":""SELECT COUNT(1) AS documentCount, [{\""totalWordCount\"": SUM(_FullTextWordCount(c.text)), \""hitCounts\"": [COUNTIF(FullTextContains(c.text, \""swim\"")), COUNTIF(FullTextContains(c.text, \""run\""))]}] AS fullTextStatistics\nFROM c"",""componentQueryInfos"":[{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":""red car""},""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_VectorScore(c.image, @documentdb-hybridsearchquery-embedding-0) ?? -1.79769e+308)] AS componentScores\nFROM c\nORDER BY _FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false},{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":""red car""},""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_VectorScore(c.image, @documentdb-hybridsearchquery-embedding-0) ?? -1.79769e+308)] AS componentScores\nFROM c\nORDER BY _VectorScore(c.image, @documentdb-hybridsearchquery-embedding-0)"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}],""componentWithoutPayloadQueryInfos"":[],""projectionQueryInfo"":null,""componentWeights"":[],""skip"":null,""take"":10,""requiresGlobalStatistics"":true}"),
+                (@"{""hybridSearchQueryInfo"":{""globalStatisticsQuery"":""SELECT COUNT(1) AS documentCount, [{\""totalWordCount\"": SUM(_FullTextWordCount(c.text)), \""hitCounts\"": [COUNTIF(FullTextContains(c.text, \""swim\"")), COUNTIF(FullTextContains(c.text, \""run\""))]}] AS fullTextStatistics\nFROM c"",""componentQueryInfos"":[{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":{""path"":[""image""],""needle"":""red car""}},""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_VectorScore(c.image, @documentdb-hybridsearchquery-embedding-0) ?? -1.79769e+308)] AS componentScores\nFROM c\nORDER BY _FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false},{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":{""path"":[""image""],""needle"":""red car""}},""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_VectorScore(c.image, @documentdb-hybridsearchquery-embedding-0) ?? -1.79769e+308)] AS componentScores\nFROM c\nORDER BY _VectorScore(c.image, @documentdb-hybridsearchquery-embedding-0)"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}],""componentWithoutPayloadQueryInfos"":[],""projectionQueryInfo"":null,""componentWeights"":[],""skip"":null,""take"":10,""requiresGlobalStatistics"":true},""queryRanges"":[{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}]}",
+                    @"{""globalStatisticsQuery"":""SELECT COUNT(1) AS documentCount, [{\""totalWordCount\"": SUM(_FullTextWordCount(c.text)), \""hitCounts\"": [COUNTIF(FullTextContains(c.text, \""swim\"")), COUNTIF(FullTextContains(c.text, \""run\""))]}] AS fullTextStatistics\nFROM c"",""componentQueryInfos"":[{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":{""path"":[""image""],""needle"":""red car""}},""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_VectorScore(c.image, @documentdb-hybridsearchquery-embedding-0) ?? -1.79769e+308)] AS componentScores\nFROM c\nORDER BY _FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false},{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":[],""orderByExpressions"":[],""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":{""path"":[""image""],""needle"":""red car""}},""groupByExpressions"":[],""groupByAliases"":[],""aggregates"":[],""groupByAliasToAggregateType"":{},""rewrittenQuery"":""SELECT TOP 120 c._rid, c AS payload, [(_FullTextScore(c.text, [\""swim\"", \""run\""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) ?? -1), (_VectorScore(c.image, @documentdb-hybridsearchquery-embedding-0) ?? -1.79769e+308)] AS componentScores\nFROM c\nORDER BY _VectorScore(c.image, @documentdb-hybridsearchquery-embedding-0)"",""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}],""componentWithoutPayloadQueryInfos"":[],""projectionQueryInfo"":null,""componentWeights"":[],""skip"":null,""take"":10,""requiresGlobalStatistics"":true}"),
+                (@"{""queryInfo"":{""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":{""path"":[""nested"",""vector""],""needle"":""red car""},""@documentdb-hybridsearchquery-embedding-1"":{""path"":[""other/vector"",""quoted\""path"",""back\\slash""],""needle"":""red car""}}},""queryRanges"":[{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}]}",
+                    @"{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":null,""orderByExpressions"":null,""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":{""path"":[""nested"",""vector""],""needle"":""red car""},""@documentdb-hybridsearchquery-embedding-1"":{""path"":[""other/vector"",""quoted\""path"",""back\\slash""],""needle"":""red car""}},""groupByExpressions"":null,""groupByAliases"":null,""aggregates"":null,""groupByAliasToAggregateType"":null,""rewrittenQuery"":null,""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}"),
+                (@"{""hybridSearchQueryInfo"":{""componentQueryInfos"":[{""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":{""path"":[""nested"",""vector""],""needle"":""red car""},""@documentdb-hybridsearchquery-embedding-1"":{""path"":[""other/vector"",""quoted\""path"",""back\\slash""],""needle"":""red car""}}}],""componentWithoutPayloadQueryInfos"":[{""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":{""path"":[""nested"",""vector""],""needle"":""red car""},""@documentdb-hybridsearchquery-embedding-1"":{""path"":[""other/vector"",""quoted\""path"",""back\\slash""],""needle"":""red car""}}}],""projectionQueryInfo"":{""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":{""path"":[""nested"",""vector""],""needle"":""red car""},""@documentdb-hybridsearchquery-embedding-1"":{""path"":[""other/vector"",""quoted\""path"",""back\\slash""],""needle"":""red car""}}}},""queryRanges"":[{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}]}",
+                    @"{""globalStatisticsQuery"":null,""componentQueryInfos"":[{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":null,""orderByExpressions"":null,""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":{""path"":[""nested"",""vector""],""needle"":""red car""},""@documentdb-hybridsearchquery-embedding-1"":{""path"":[""other/vector"",""quoted\""path"",""back\\slash""],""needle"":""red car""}},""groupByExpressions"":null,""groupByAliases"":null,""aggregates"":null,""groupByAliasToAggregateType"":null,""rewrittenQuery"":null,""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}],""componentWithoutPayloadQueryInfos"":[{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":null,""orderByExpressions"":null,""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":{""path"":[""nested"",""vector""],""needle"":""red car""},""@documentdb-hybridsearchquery-embedding-1"":{""path"":[""other/vector"",""quoted\""path"",""back\\slash""],""needle"":""red car""}},""groupByExpressions"":null,""groupByAliases"":null,""aggregates"":null,""groupByAliasToAggregateType"":null,""rewrittenQuery"":null,""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}],""projectionQueryInfo"":{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":null,""orderByExpressions"":null,""embeddingParameterMap"":{""@documentdb-hybridsearchquery-embedding-0"":{""path"":[""nested"",""vector""],""needle"":""red car""},""@documentdb-hybridsearchquery-embedding-1"":{""path"":[""other/vector"",""quoted\""path"",""back\\slash""],""needle"":""red car""}},""groupByExpressions"":null,""groupByAliases"":null,""aggregates"":null,""groupByAliasToAggregateType"":null,""rewrittenQuery"":null,""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false},""componentWeights"":null,""skip"":null,""take"":null,""requiresGlobalStatistics"":false}"),
+
+                (@"{""queryInfo"":{},""queryRanges"":[{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}]}",
+                    @"{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":null,""orderByExpressions"":null,""groupByExpressions"":null,""groupByAliases"":null,""aggregates"":null,""groupByAliasToAggregateType"":null,""rewrittenQuery"":null,""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}"),
+                (@"{""queryInfo"":{""embeddingParameterMap"":null},""queryRanges"":[{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}]}",
+                    @"{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":null,""orderByExpressions"":null,""groupByExpressions"":null,""groupByAliases"":null,""aggregates"":null,""groupByAliasToAggregateType"":null,""rewrittenQuery"":null,""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}"),
+                (@"{""queryInfo"":{""embeddingParameterMap"":{}},""queryRanges"":[{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}]}",
+                    @"{""distinctType"":""None"",""top"":null,""offset"":null,""limit"":null,""orderBy"":null,""orderByExpressions"":null,""embeddingParameterMap"":{},""groupByExpressions"":null,""groupByAliases"":null,""aggregates"":null,""groupByAliasToAggregateType"":null,""rewrittenQuery"":null,""hasSelectValue"":false,""dCountInfo"":null,""hasNonStreamingOrderBy"":false}"),
+
+                (@"{""hybridSearchQueryInfo"":{},""queryRanges"":[{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}]}",
+                    @"{""globalStatisticsQuery"":null,""componentQueryInfos"":null,""componentWithoutPayloadQueryInfos"":null,""projectionQueryInfo"":null,""componentWeights"":null,""skip"":null,""take"":null,""requiresGlobalStatistics"":false}"),
+                (@"{""hybridSearchQueryInfo"":{""scoreCombinationKind"":null},""queryRanges"":[{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}]}",
+                    @"{""globalStatisticsQuery"":null,""componentQueryInfos"":null,""componentWithoutPayloadQueryInfos"":null,""projectionQueryInfo"":null,""componentWeights"":null,""skip"":null,""take"":null,""requiresGlobalStatistics"":false}"),
+                (@"{""hybridSearchQueryInfo"":{""scoreCombinationKind"":""Rrf""},""queryRanges"":[{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}]}",
+                    @"{""globalStatisticsQuery"":null,""componentQueryInfos"":null,""componentWithoutPayloadQueryInfos"":null,""projectionQueryInfo"":null,""componentWeights"":null,""skip"":null,""take"":null,""requiresGlobalStatistics"":false,""scoreCombinationKind"":""Rrf""}"),
+                (@"{""hybridSearchQueryInfo"":{""scoreCombinationKind"":""CombinedScore""},""queryRanges"":[{""min"":[],""max"":""Infinity"",""isMinInclusive"":true,""isMaxInclusive"":false}]}",
+                    @"{""globalStatisticsQuery"":null,""componentQueryInfos"":null,""componentWithoutPayloadQueryInfos"":null,""projectionQueryInfo"":null,""componentWeights"":null,""skip"":null,""take"":null,""requiresGlobalStatistics"":false,""scoreCombinationKind"":""CombinedScore""}"),
+
+                // A null expected payload denotes a schema that must be rejected.
+                (@"{""queryInfo"":{""embeddingParameterMap"":{""@embedding"":""red car""}}}", null),
+                (@"{""queryInfo"":{""embeddingParameterMap"":{""@embedding"":{""path"":""/vector"",""needle"":""red car""}}}}", null),
+                (@"{""hybridSearchQueryInfo"":{""scoreCombinationKind"":""Unknown""}}", null),
             };
 
             IDictionary<string, object> configuration = new Dictionary<string, object>() { { "maxSqlQueryInputLength", 524288 } };
@@ -110,6 +229,15 @@
 
             foreach ((string queryPlan, string expected)in testCases)
             {
+                if (expected == null)
+                {
+                    Assert.ThrowsException<JsonSerializationException>(
+                        () => JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(queryPlan));
+                    Assert.IsFalse(PartitionedQueryExecutionInfo.TryParse(queryPlan, out PartitionedQueryExecutionInfo result));
+                    Assert.IsNull(result);
+                    continue;
+                }
+
                 PartitionedQueryExecutionInfoInternal queryInfoInternal =
                    JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(
                        queryPlan,
@@ -140,7 +268,42 @@
                 }
 
                 Assert.AreEqual(expected, actual);
+
+                string serializedQueryPlan = queryInfo.ToString();
+                Assert.IsTrue(PartitionedQueryExecutionInfo.TryParse(serializedQueryPlan, out PartitionedQueryExecutionInfo parsedQueryPlan));
+                Assert.AreEqual(serializedQueryPlan, parsedQueryPlan.ToString());
             }
+        }
+
+        private readonly struct MetadataTestCase
+        {
+            public MetadataTestCase(string name, string metadata, string expected)
+            {
+                this.Name = name;
+                this.Metadata = metadata;
+                this.Expected = expected;
+            }
+
+            public string Name { get; }
+
+            public string Metadata { get; }
+
+            public string Expected { get; }
+
+            public override string ToString() => $"{this.Name}: Metadata={this.Metadata ?? "<absent>"}, Expected={this.Expected ?? "<null>"}";
+        }
+
+        private readonly struct DeserializedPlanTestCase
+        {
+            public DeserializedPlanTestCase(string name, HybridSearchQueryInfo plan)
+            {
+                this.Name = name;
+                this.Plan = plan;
+            }
+
+            public string Name { get; }
+
+            public HybridSearchQueryInfo Plan { get; }
         }
     }
 }
