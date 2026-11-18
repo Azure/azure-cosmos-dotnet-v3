@@ -17,8 +17,8 @@ stages:
         BuildConfiguration: '${{ variables.BuildConfiguration }}'
         VmImage: '${{ variables.VmImage }}'
 
-    # Build + unit tests + pack validation, then the live multi-region
-    # integration suite. The same template runs on every PR with
+    # Build + unit tests + pack validation, then the live multi-region and
+    # ThinClient integration suites. The same template runs on every PR with
     # IncludeIntegration=false, so a Direct version bump is caught long before
     # this pipeline is triggered.
     - template:  templates/build-fault-injection.yml
@@ -28,6 +28,7 @@ stages:
         VmImage: '${{ variables.VmImage }}'
         IncludeIntegration: true
         MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
+        ThinClientConnectionString: $(COSMOSDB_THINCLIENT)
 
 - stage:
   displayName: Publish 

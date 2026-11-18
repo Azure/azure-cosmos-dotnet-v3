@@ -116,7 +116,7 @@ required to exercise region-scoped and failover faults), not the emulator.
 | `FaultInjectionDirectModeTests` | Yes (multi-region) | `COSMOSDB_MULTI_REGION` |
 | `FaultInjectionGatewayModeTests` | Yes (multi-region) | `COSMOSDB_MULTI_REGION` |
 | `FaultInjectionMetadataTests` | Yes (multi-region) | `COSMOSDB_MULTI_REGION` |
-| `FaultInjectionProxyTests` | Yes (ThinClient proxy) | `COSMOSDB_THIN_CLIENT` |
+| `FaultInjectionProxyTests` | Yes (ThinClient proxy, at least two readable regions) | `COSMOSDB_THIN_CLIENT` |
 
 `COSMOSDB_MULTI_REGION` and `COSMOSDB_THIN_CLIENT` are **connection strings**.
 The integration tests create (if missing) a `faultInjectionDatabase` with
@@ -146,8 +146,18 @@ If a required variable is missing, the affected tests fail fast with
 ### How CI runs them
 
 `azure-pipelines-faultinjection.yml` runs the integration tests on the internal
-`OneES` pool with the `COSMOSDB_MULTI_REGION` secret wired in, via
-`templates/build-fault-injection.yml` with `IncludeIntegration: true`.
+`OneES` pool via `templates/build-fault-injection.yml` with
+`IncludeIntegration: true`. Configure these secrets on the
+`dotnet-fault-injection-release` pipeline:
+
+| Pipeline secret | Test-process environment variable |
+| --------------- | --------------------------------- |
+| `COSMOSDB_MULTI_REGION` | `COSMOSDB_MULTI_REGION` |
+| `COSMOSDB_THINCLIENT` | `COSMOSDB_THIN_CLIENT` |
+
+The regular integration suite runs with `AZURE_COSMOS_THIN_CLIENT_ENABLED=False`.
+`FaultInjectionProxyTests` runs separately with `AZURE_COSMOS_THIN_CLIENT_ENABLED=True`.
+Failures in either suite block package publication.
 
 The **same template** runs on every PR from `azure-pipelines.yml` with
 `IncludeIntegration: false` — it builds `src` + `tests`, runs the account-free
@@ -300,7 +310,8 @@ These combine into the NuGet version (e.g. `1.0.0-beta.1`). High-level steps:
 3. **Run the release pipeline** `azure-pipelines-faultinjection.yml` (it is
    manually triggered — `trigger: none` / `pr: none`). It:
    - runs static analysis (`templates/static-tools.yml`),
-   - runs the integration tests on `OneES` with `COSMOSDB_MULTI_REGION`,
+   - runs regular integration tests on `OneES` with `COSMOSDB_MULTI_REGION`,
+     and a separate proxy suite with `COSMOSDB_THIN_CLIENT`,
    - packs the NuGet + symbols package and stages artifacts via
      `templates/fault-injection-nuget-pack.yml`, publishing to the
      `azuresdkpartnerdrops` blob under
@@ -321,7 +332,7 @@ These combine into the NuGet version (e.g. `1.0.0-beta.1`). High-level steps:
 | Symptom | Cause / fix |
 | ------- | ----------- |
 | Test fails with `Set environment variable COSMOSDB_MULTI_REGION to run the tests` | An integration test ran without a live multi-region account. Set the `COSMOSDB_MULTI_REGION` connection string (or filter to the unit tests). |
-| Proxy test fails with `Set environment variable COSMOSDB_THIN_CLIENT` | `FaultInjectionProxyTests` needs a ThinClient/proxy connection string in `COSMOSDB_THIN_CLIENT`. |
+| Proxy test fails with `Set environment variable COSMOSDB_THIN_CLIENT` | Set the connection string in `COSMOSDB_THIN_CLIENT` locally or the pipeline secret `COSMOSDB_THINCLIENT` (mapped to `COSMOSDB_THIN_CLIENT`). |
 | `InvalidOperationException: Delay is not applicable for server error type ...` | `WithDelay` was called for a non-delay error type. It is only valid for `SendDelay`, `ResponseDelay`, and `ConnectionDelay`. |
 | `ArgumentNullException: Argument 'delay' required for server error type ...` on `Build()` | A delay error type (`SendDelay`/`ResponseDelay`/`ConnectionDelay`) was built without calling `WithDelay(...)`. |
 | `ArgumentException: Gone error type is not supported for Gateway connection type.` | `Gone` is Direct-mode only. Use a Direct-mode condition or a different error type for Gateway. |
