@@ -102,6 +102,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             QueryUnderConstruction query = context.CurrentQuery;
             query = query.FlattenAsPossible();
+            query = query.NormalizeExistsSubqueriesForRank();
             SqlQuery result = query.GetSqlQuery();
             clientOperation = context.ClientOperation;
 

@@ -168,6 +168,25 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string Pk;
         }
 
+        private class Product
+        {
+            [JsonProperty(PropertyName = "id")]
+            public string Id { get; set; }
+
+            public string Pk { get; set; }
+
+            public string Name { get; set; }
+
+            public List<Tag> Tags { get; set; }
+
+            public float[] Embedding { get; set; }
+        }
+
+        private class Tag
+        {
+            public string Name { get; set; }
+        }
+
         internal class SimpleObject
         {
             public string Field { get; set; }
@@ -548,6 +567,40 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 input.skipVerification = true;
                 input.serializeOutput = true;
             }
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestOrderByRankCollectionFilter()
+        {
+            const int Records = 2;
+            static Product createDataObj(Random random)
+            {
+                Product obj = new Product
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Name = LinqTestsCommon.RandomString(random, 5),
+                    Pk = "Test",
+                    Embedding = new float[] { 1.0f, 2.0f, 3.0f },
+                    Tags = new List<Tag>
+                    {
+                        new Tag { Name = "Electronics" }
+                    }
+                };
+                return obj;
+            }
+            Func<bool, IQueryable<Product>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("Any() collection filter + Order By Rank", b => getQuery(b)
+                    .Where(doc => doc.Tags.Any(tag => tag.Name == "Electronics"))
+                    .OrderByRank(doc => doc.Embedding.VectorDistance(new float[] { 1.0f, 2.0f, 3.0f }, false, null))
+                    .Select(doc => doc.Pk),
+                    skipVerification: true,
+                    serializeOutput: true)
+            };
 
             this.ExecuteTestSuite(inputs);
         }
