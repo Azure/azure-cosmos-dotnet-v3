@@ -10,12 +10,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Data.Encryption.Cryptography;
+    using Microsoft.Extensions.Caching.Distributed;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests.LegacyEncryptionTests;
     using EncryptionKeyWrapMetadata = EncryptionKeyWrapMetadata;
@@ -83,6 +86,114 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             }
 
             client?.Dispose();
+        }
+
+        [DataTestMethod]
+        [DataRow(true, false)]
+        [DataRow(true, true)]
+        [DataRow(false, false)]
+        [DataRow(false, true)]
+        public async Task EncryptionDistributedCacheReadFailureFallsBack(bool useGateway, bool internalCancellation)
+        {
+            string keyId = Guid.NewGuid().ToString();
+            await CreateDekAsync(MdeCustomEncryptionTests.dekProvider, keyId);
+            Mock<IDistributedCache> cache = CreateDistributedCache();
+            cache.Setup(value => value.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns<string, CancellationToken>((key, token) => Task.FromException<byte[]>(
+                    internalCancellation
+                        ? new OperationCanceledException("simulated internal cache cancellation")
+                        : new TimeoutException("simulated cache timeout")));
+
+            KeyReadObserver observer = new KeyReadObserver(keyId);
+            using CosmosClient testClient = CreateCacheTestClient(useGateway, observer);
+            Container plainContainer = testClient.GetContainer(database.Id, itemContainer.Id);
+            LegacyEncryptionTests.TestDoc document = LegacyEncryptionTests.TestDoc.Create();
+
+            await using (CosmosDataEncryptionKeyProvider provider = CreateCacheTestProvider(testClient, cache.Object, keyId))
+            {
+                Container encryptedContainer = plainContainer.WithEncryptor(new CosmosEncryptor(provider));
+                ItemResponse<LegacyEncryptionTests.TestDoc> created = await encryptedContainer.CreateItemAsync(
+                    document,
+                    new PartitionKey(document.PK),
+                    GetRequestOptions(keyId, LegacyEncryptionTests.TestDoc.PathsToEncrypt));
+
+                Assert.AreEqual(HttpStatusCode.Created, created.StatusCode);
+                Assert.AreEqual(document, created.Resource);
+                Assert.AreEqual(1, observer.KeyReadCount, "The cold provider must read the real key item.");
+            }
+
+            ItemResponse<JObject> stored = await plainContainer.ReadItemAsync<JObject>(document.Id, new PartitionKey(document.PK));
+            Assert.AreEqual(HttpStatusCode.OK, stored.StatusCode);
+            Assert.AreEqual(document.Id, stored.Resource.Value<string>("id"));
+            Assert.AreEqual(document.PK, stored.Resource.Value<string>(nameof(document.PK)));
+            Assert.AreEqual(document.NonSensitive, stored.Resource.Value<string>(nameof(document.NonSensitive)));
+            JToken encryptedSensitive = stored.Resource[nameof(document.Sensitive)];
+            Assert.IsNotNull(encryptedSensitive, "MDE must preserve the encrypted property.");
+            Assert.AreEqual(JTokenType.String, encryptedSensitive.Type);
+            string encryptedValue = encryptedSensitive.Value<string>();
+            Assert.AreNotEqual(document.Sensitive, encryptedValue, "The independent stored-item read must not expose plaintext.");
+            Assert.IsTrue(Convert.FromBase64String(encryptedValue).Length > 0, "The stored property must contain encrypted bytes.");
+            Assert.IsNotNull(stored.Resource["_ei"], "The stored item must contain encryption metadata.");
+
+            await using (CosmosDataEncryptionKeyProvider provider = CreateCacheTestProvider(testClient, cache.Object, keyId))
+            {
+                Container encryptedContainer = plainContainer.WithEncryptor(new CosmosEncryptor(provider));
+                ItemResponse<LegacyEncryptionTests.TestDoc> read = await encryptedContainer.ReadItemAsync<LegacyEncryptionTests.TestDoc>(
+                    document.Id,
+                    new PartitionKey(document.PK));
+
+                Assert.AreEqual(HttpStatusCode.OK, read.StatusCode);
+                Assert.AreEqual(document, read.Resource);
+                Assert.AreEqual(2, observer.KeyReadCount, "A second cold provider must independently fetch the real key to decrypt.");
+            }
+
+            cache.Verify(value => value.GetAsync(It.IsAny<string>(), CancellationToken.None), Times.Exactly(2));
+            cache.Verify(value => value.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        }
+
+        [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task EncryptionDistributedCacheCallerCancellation(bool useGateway)
+        {
+            string keyId = Guid.NewGuid().ToString();
+            await CreateDekAsync(MdeCustomEncryptionTests.dekProvider, keyId);
+            Mock<IDistributedCache> cache = CreateDistributedCache();
+            KeyReadObserver observer = new KeyReadObserver(keyId);
+            using CosmosClient testClient = CreateCacheTestClient(useGateway, observer);
+            Container plainContainer = testClient.GetContainer(database.Id, itemContainer.Id);
+            await using CosmosDataEncryptionKeyProvider provider = CreateCacheTestProvider(testClient, cache.Object, keyId);
+            Container encryptedContainer = plainContainer.WithEncryptor(new CosmosEncryptor(provider));
+            LegacyEncryptionTests.TestDoc document = LegacyEncryptionTests.TestDoc.Create();
+            EncryptionItemRequestOptions options = GetRequestOptions(keyId, LegacyEncryptionTests.TestDoc.PathsToEncrypt);
+            using CancellationTokenSource caller = new CancellationTokenSource();
+            caller.Cancel();
+
+            try
+            {
+                await encryptedContainer.CreateItemAsync(document, new PartitionKey(document.PK), options, caller.Token);
+                Assert.Fail("A pre-cancelled caller must not create the encrypted item.");
+            }
+            catch (OperationCanceledException)
+            {
+                Assert.IsTrue(caller.IsCancellationRequested);
+            }
+
+            cache.Verify(value => value.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+            Assert.AreEqual(0, observer.KeyReadCount);
+            using (ResponseMessage absent = await plainContainer.ReadItemStreamAsync(document.Id, new PartitionKey(document.PK)))
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, absent.StatusCode);
+            }
+
+            ItemResponse<LegacyEncryptionTests.TestDoc> created = await encryptedContainer.CreateItemAsync(document, new PartitionKey(document.PK), options);
+            Assert.AreEqual(HttpStatusCode.Created, created.StatusCode);
+            Assert.AreEqual(document, created.Resource);
+            ItemResponse<LegacyEncryptionTests.TestDoc> read = await encryptedContainer.ReadItemAsync<LegacyEncryptionTests.TestDoc>(document.Id, new PartitionKey(document.PK));
+            Assert.AreEqual(HttpStatusCode.OK, read.StatusCode);
+            Assert.AreEqual(document, read.Resource);
+            cache.Verify(value => value.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+            Assert.AreEqual(1, observer.KeyReadCount, "The uncancelled control must activate the real key-read observer.");
         }
 
         [TestMethod]
@@ -791,10 +902,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             encryptor = new TestEncryptor(dekProvider);
             encryptionContainer = itemContainer.WithEncryptor(encryptor);
             for (int i = 0; i < 2; i++)
+            {
                 await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
 
-            testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
-            Assert.AreEqual(4, unwrapcount);
+                // The public TestEncryptor fallback fetches the key for every populated path on both
+                // the encrypt request and the decrypt response; zero TTL retains none between fetches.
+                testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
+                Assert.AreEqual((i + 1) * 2 * TestDoc.PathsToEncrypt.Count, unwrapcount);
+            }
 
             // 2 hours default
             testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
@@ -811,13 +926,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             Assert.AreEqual(1, unwrapcount);
         }
 
-        [TestMethod]
-        public async Task ValidateCachingIsolationAcrossCoexistingProviders()
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ValidateCachingIsolationAcrossCoexistingProviders(bool usePublicFallback)
         {
-            // Two providers coexisting in one process must each honor their own DataEncryptionKeyCacheTimeToLive: a
-            // provider set to TimeSpan.Zero keeps unwrapping on every operation while another with a positive
-            // lifetime caches. Each gets its own key store provider so unwrap calls are counted independently.
-            string dekId = "coexistDek";
+            // The public TestEncryptor wrapper uses the per-property fallback, while CosmosEncryptor
+            // fetches the key once per encrypt/decrypt direction through its internal accessor.
+            string dekId = $"coexistDek-{usePublicFallback}";
             await CreateDekAsync(dualDekProvider, dekId);
 
             TestEncryptionKeyStoreProvider cachingStoreProvider = new()
@@ -834,22 +950,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             CosmosDataEncryptionKeyProvider noRetentionProvider = new(noRetentionStoreProvider);
             await noRetentionProvider.InitializeAsync(database, keyContainer.Id);
 
-            Container cachingContainer = itemContainer.WithEncryptor(new TestEncryptor(cachingProvider));
-            Container noRetentionContainer = itemContainer.WithEncryptor(new TestEncryptor(noRetentionProvider));
+            Encryptor cachingEncryptor = usePublicFallback ? new TestEncryptor(cachingProvider) : new CosmosEncryptor(cachingProvider);
+            Encryptor noRetentionEncryptor = usePublicFallback ? new TestEncryptor(noRetentionProvider) : new CosmosEncryptor(noRetentionProvider);
+            Container cachingContainer = itemContainer.WithEncryptor(cachingEncryptor);
+            Container noRetentionContainer = itemContainer.WithEncryptor(noRetentionEncryptor);
 
             // Interleave operations so both providers stay active throughout.
             for (int i = 0; i < 2; i++)
             {
                 await CreateItemAsync(cachingContainer, dekId, TestDoc.PathsToEncrypt);
+                cachingStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int cachingUnwrapCount);
+                Assert.AreEqual(1, cachingUnwrapCount, "Caching provider (30 min TTL) should reuse its own unwrapped key.");
+
                 await CreateItemAsync(noRetentionContainer, dekId, TestDoc.PathsToEncrypt);
+                noRetentionStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int noRetentionUnwrapCount);
+
+                // Each create encrypts all populated paths and decrypts the response; only the built-in
+                // accessor fetches the key once per direction rather than once per path.
+                int unwrapsPerCreate = usePublicFallback ? 2 * TestDoc.PathsToEncrypt.Count : 2;
+                Assert.AreEqual((i + 1) * unwrapsPerCreate, noRetentionUnwrapCount, "Zero-TTL provider should unwrap for every required key fetch.");
+                cachingStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out cachingUnwrapCount);
+                Assert.AreEqual(1, cachingUnwrapCount, "Interleaved zero-TTL operations must not evict the caching provider's key.");
             }
-
-            cachingStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int cachingUnwrapCount);
-            noRetentionStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int noRetentionUnwrapCount);
-
-            // Each create performs one encrypt plus one decrypt of the response, so the uncached provider unwraps four times.
-            Assert.AreEqual(1, cachingUnwrapCount, "Caching provider (30 min TTL) should unwrap the key exactly once.");
-            Assert.AreEqual(4, noRetentionUnwrapCount, "No-retention provider (TimeSpan.Zero) should unwrap on every operation, independently of the caching provider.");
         }
 
         [TestMethod]
@@ -2350,6 +2472,77 @@ cancellationToken) =>
             return deleteResponse;
         }
 
+        private static CosmosClient CreateCacheTestClient(bool useGateway, RequestHandler observer)
+        {
+            return TestCommon.CreateCosmosClient(builder =>
+            {
+                if (useGateway)
+                {
+                    builder.WithConnectionModeGateway();
+                }
+                else
+                {
+                    builder.WithConnectionModeDirect();
+                }
+
+                builder.AddCustomHandlers(observer);
+            });
+        }
+
+        private static Mock<IDistributedCache> CreateDistributedCache()
+        {
+            Mock<IDistributedCache> cache = new Mock<IDistributedCache>(MockBehavior.Strict);
+            cache.Setup(value => value.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((byte[])null);
+            cache.Setup(value => value.SetAsync(
+                It.IsAny<string>(),
+                It.IsAny<byte[]>(),
+                It.IsAny<DistributedCacheEntryOptions>(),
+                It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+            return cache;
+        }
+
+        private static CosmosDataEncryptionKeyProvider CreateCacheTestProvider(CosmosClient testClient, IDistributedCache cache, string keyPrefix)
+        {
+            CosmosDataEncryptionKeyProvider provider = new CosmosDataEncryptionKeyProvider(
+                new TestEncryptionKeyStoreProvider(),
+                new DekCacheOptions
+                {
+                    DistributedCache = new DistributedCacheOptions
+                    {
+                        Cache = cache,
+                        KeyPrefix = keyPrefix,
+                    },
+                });
+            provider.Initialize(testClient.GetContainer(database.Id, keyContainer.Id));
+            return provider;
+        }
+
+        private sealed class KeyReadObserver : RequestHandler
+        {
+            private readonly string keyPath;
+            private int keyReadCount;
+
+            public KeyReadObserver(string keyId)
+            {
+                this.keyPath = $"dbs/{database.Id}/colls/{keyContainer.Id}/docs/{keyId}";
+            }
+
+            public int KeyReadCount => Volatile.Read(ref this.keyReadCount);
+
+            public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+            {
+                if (request.Method == HttpMethod.Get
+                    && request.RequestUri.OriginalString.EndsWith(this.keyPath, StringComparison.Ordinal))
+                {
+                    Interlocked.Increment(ref this.keyReadCount);
+                }
+
+                return base.SendAsync(request, cancellationToken);
+            }
+        }
+
         private static EncryptionItemRequestOptions GetRequestOptions(
             string dekId,
             List<string> pathsToEncrypt,
@@ -3219,4 +3412,3 @@ cancellationToken) =>
         #endregion
     }
 }
-
