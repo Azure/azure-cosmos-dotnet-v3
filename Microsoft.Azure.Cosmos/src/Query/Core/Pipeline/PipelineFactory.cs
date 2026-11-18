@@ -264,11 +264,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     monadicCreateSourceStage);
             }
 
-            // Hybrid component plans can carry uint-sized over-fetch counts despite int-bounded user limits.
-            // Keep TOP/LIMIT counters wide; per-page materialization still uses int.
             if (queryInfo.HasLimit)
             {
-                long limitCount = queryInfo.Limit.Value;
+                // A hybrid search component query can carry an internal over-fetch limit above int.MaxValue
+                // (for example uint.MaxValue for OFFSET 10 LIMIT 2147483647). No query can return more than
+                // int.MaxValue documents, so saturate instead of letting the cast wrap to a negative value.
+                int limitCount = (int)Math.Min(queryInfo.Limit.Value, int.MaxValue);
 
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateLimitStage(
@@ -279,7 +280,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (queryInfo.HasTop)
             {
-                long topCount = queryInfo.Top.Value;
+                Debug.Assert(queryInfo.Top.Value <= int.MaxValue, "PipelineFactory Assert!", "Top value must be <= int.MaxValue");
+
+                int topCount = (int)queryInfo.Top.Value;
 
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateTopStage(
@@ -321,18 +324,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             long optimalPageSize = maxItemCount;
             if (queryInfo.HasOrderBy)
             {
-                long top;
+                uint top;
                 if (queryInfo.HasTop && (queryInfo.Top.Value > 0))
                 {
                     top = queryInfo.Top.Value;
                 }
                 else if (queryInfo.HasLimit && (queryInfo.Limit.Value > 0))
                 {
-                    top = Math.Min((long)(queryInfo.Offset ?? 0) + queryInfo.Limit.Value, int.MaxValue);
+                    top = Math.Min((queryInfo.Offset ?? 0) + queryInfo.Limit.Value, int.MaxValue);
                 }
                 else
                 {
                     top = 0;
+                }
+
+                if (top > int.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(queryInfo.Top.Value));
                 }
 
                 if (top > 0)

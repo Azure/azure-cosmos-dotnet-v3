@@ -25,8 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
-- Query: Prevents failures when hybrid-search query planning expands internal TOP or LIMIT counts beyond the signed 32-bit range.
-
 #### Other Changes
 
 - Direct: Builds and bundles the managed transport implementation from SDK source instead of the separate Direct package, and obtains Windows native query planning from Microsoft.Azure.Cosmos.ServiceInterop 1.0.6. Existing Linux query-planning support is unchanged.

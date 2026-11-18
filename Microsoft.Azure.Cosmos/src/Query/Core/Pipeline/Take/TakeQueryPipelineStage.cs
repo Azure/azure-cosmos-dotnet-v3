@@ -9,20 +9,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
     internal abstract partial class TakeQueryPipelineStage : QueryPipelineStageBase
     {
-        private long takeCount;
+        private int takeCount;
 
         private bool ReturnedFinalPage => this.takeCount <= 0;
 
         protected TakeQueryPipelineStage(
             IQueryPipelineStage source,
-            long takeCount)
+            int takeCount)
             : base(source)
         {
             this.takeCount = takeCount;
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreateLimitStage(
-            long limitCount,
+            int limitCount,
             CosmosElement requestContinuationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage)
         {
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreateTopStage(
-            long limitCount,
+            int limitCount,
             CosmosElement requestContinuationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage)
         {

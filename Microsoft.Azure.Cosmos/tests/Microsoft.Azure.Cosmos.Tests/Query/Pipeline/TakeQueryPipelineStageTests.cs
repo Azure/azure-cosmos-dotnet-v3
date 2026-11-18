@@ -79,15 +79,11 @@
         }
 
         [DataTestMethod]
-        [DataRow(false, 3L)]
-        [DataRow(true, 3L)]
-        [DataRow(false, 2147483647L)]
-        [DataRow(true, 2147483647L)]
-        [DataRow(false, 2147483648L)]
-        [DataRow(true, 2147483648L)]
-        [DataRow(false, 4294967295L)]
-        [DataRow(true, 4294967295L)]
-        public async Task CountsSurvivePagingAndContinuation(bool isTop, long takeCount)
+        [DataRow(false, 3)]
+        [DataRow(true, 3)]
+        [DataRow(false, int.MaxValue)]
+        [DataRow(true, int.MaxValue)]
+        public async Task Int32CountsSurvivePagingAndContinuation(bool isTop, int takeCount)
         {
             PageList pages = new IReadOnlyList<CosmosElement>[]
             {
@@ -116,7 +112,7 @@
             CosmosElement continuationToken = stage.Current.Result.State.Value;
             CosmosObject continuation = (CosmosObject)continuationToken;
             Assert.AreEqual(
-                takeCount - 2,
+                takeCount - 2L,
                 Number64.ToLong(((CosmosNumber)continuation[isTop ? "top" : "limit"]).Value));
 
             TryCatch<IQueryPipelineStage> resumed = CreateStage(continuationToken);
@@ -135,7 +131,7 @@
         [DataRow(true)]
         public void InvalidCountsAreRejected(bool isTop)
         {
-            const long TakeCount = uint.MaxValue;
+            const int TakeCount = int.MaxValue;
             MonadicCreatePipelineStage createSource = _ =>
                 throw new AssertFailedException("Invalid counts must be rejected before creating the source.");
 
@@ -151,7 +147,7 @@
                 }
             });
 
-            foreach (long remaining in new[] { TakeCount + 1, long.MaxValue })
+            foreach (long remaining in new[] { (long)TakeCount + 1, long.MaxValue })
             {
                 string propertyName = isTop ? "top" : "limit";
                 CosmosElement token = CosmosElement.Parse(

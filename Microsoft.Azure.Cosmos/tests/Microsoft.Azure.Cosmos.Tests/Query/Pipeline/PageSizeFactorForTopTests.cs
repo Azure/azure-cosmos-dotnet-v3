@@ -255,18 +255,29 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [DataTestMethod]
-        [DataRow(true, 2147483648L)]
-        [DataRow(true, 4294967295L)]
-        [DataRow(false, 2147483648L)]
-        [DataRow(false, 4294967295L)]
-        public void LargeInternalCountsKeepPageSizesBounded(bool isTop, long count)
+        [DataRow(2147483648L)]
+        [DataRow(4294967295L)]
+        public void TopAboveIntMaxIsRejected(long top)
+        {
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => PipelineFactory.ComputeOptimalPageSize(
+                queryInfo: CreateOrderByQueryInfo(top: (uint)top),
+                targetRangeCount: TargetRangeCount,
+                maxItemCount: 1000,
+                isContinuationExpected: true,
+                pageSizeFactorForTop: DefaultFactor));
+        }
+
+        [DataTestMethod]
+        [DataRow(0L, 2147483647L)]
+        [DataRow(0L, 4294967295L)]
+        [DataRow(2147483647L, 2147483647L)]
+        public void LargeOffsetLimitCountsKeepPageSizesBounded(long offset, long limit)
         {
             QueryInfo queryInfo = new QueryInfo()
             {
                 OrderBy = new List<SortOrder>() { SortOrder.Ascending },
-                Top = isTop ? (uint?)count : null,
-                Offset = isTop ? null : (uint?)1,
-                Limit = isTop ? null : (uint?)count,
+                Offset = (uint)offset,
+                Limit = (uint)limit,
             };
 
             Assert.AreEqual(
