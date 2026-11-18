@@ -503,7 +503,6 @@
 
         [TestMethod]
         [TestCategory("LinuxQueryPlanInteropLive")]
-        [TestCategory("ServiceInteropLive")]
         public async Task TestAggregateFunctionsWithMixedTypesAsync()
         {
             AggregateQueryMixedTypes args = new AggregateQueryMixedTypes()

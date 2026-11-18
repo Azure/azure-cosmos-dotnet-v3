@@ -513,6 +513,38 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 new Expected { Offset = 10, Limit = 20, OrderBy = Asc, OrderByExpressions = new[] { "c.blah" } });
         }
 
+        [DataTestMethod]
+        [TestCategory("Windows")]
+        [TestCategory("ServiceInterop")]
+        [DataRow("SELECT TOP 2147483647 c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim')", true, 4294967294L)]
+        [DataRow("SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') OFFSET 10 LIMIT 2147483647", false, 4294967295L)]
+        public void HybridComponentCountsCanExceedPublicQueryLimit(string query, bool isTop, long expectedComponentCount)
+        {
+            EnsureWindowsServiceInterop();
+
+            HybridSearchQueryInfo hybrid = Plan(query).HybridSearchQueryInfo;
+            Assert.IsNotNull(hybrid);
+            Assert.AreEqual((uint)int.MaxValue, hybrid.Take.Value);
+
+            QueryInfo component = hybrid.ComponentQueryInfos.Single();
+            Assert.AreEqual(expectedComponentCount, (long)(isTop ? component.Top.Value : component.Limit.Value));
+        }
+
+        [DataTestMethod]
+        [DataRow("SELECT TOP 2147483648 * FROM c", "QueryInfo.Top")]
+        [DataRow("SELECT * FROM c OFFSET 2147483648 LIMIT 10", "QueryInfo.Offset")]
+        [DataRow("SELECT * FROM c OFFSET 10 LIMIT 2147483648", "QueryInfo.Limit")]
+        [DataRow("SELECT TOP 2147483648 c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim')", "HybridSearchQueryInfo.Take")]
+        [DataRow("SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') OFFSET 2147483648 LIMIT 10", "HybridSearchQueryInfo.Skip")]
+        [DataRow("SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, 'swim') OFFSET 10 LIMIT 2147483648", "HybridSearchQueryInfo.Take")]
+        public void PublicQueryCountsAboveIntMaxAreStillRejected(string query, string expectedParameter)
+        {
+            TryCatch<PartitionedQueryExecutionInfoInternal> result = TryPlan(query, Key, PartitionKind.Hash, null);
+            Assert.IsTrue(result.Failed);
+            Assert.IsInstanceOfType(result.InnerMostException, typeof(ArgumentOutOfRangeException));
+            Assert.AreEqual(expectedParameter, ((ArgumentOutOfRangeException)result.InnerMostException).ParamName);
+        }
+
         // ORDER BY
 
         [TestMethod]

@@ -264,6 +264,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     monadicCreateSourceStage);
             }
 
+            // Hybrid component plans can carry uint-sized over-fetch counts despite int-bounded user limits.
+            // Keep TOP/LIMIT counters wide; per-page materialization still uses int.
             if (queryInfo.HasLimit)
             {
                 long limitCount = queryInfo.Limit.Value;

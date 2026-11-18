@@ -49,7 +49,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         [TestMethod]
         [TestCategory("LinuxQueryPlanInteropLive")]
-        [TestCategory("ServiceInteropLive")]
         public async Task TestQueryUnicodeDocumentHttpsGateway()
         {
             // Reuse the assertions without QueryTests' account-wide setup/cleanup.
@@ -58,7 +57,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         [TestMethod]
         [TestCategory("LinuxQueryPlanInteropLive")]
-        [TestCategory("ServiceInteropLive")]
         public async Task CityCaseFoldingMatchesGatewayAsync()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)

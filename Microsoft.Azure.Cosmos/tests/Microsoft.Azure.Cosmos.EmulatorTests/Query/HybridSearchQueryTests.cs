@@ -83,7 +83,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         [TestMethod]
         [TestCategory("LinuxQueryPlanInteropLive")]
-        [TestCategory("ServiceInteropLive")]
         public async Task SanityTests()
         {
             List<SanityTestCase> testCases = new List<SanityTestCase>
@@ -172,7 +171,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         [TestMethod]
         [TestCategory("LinuxQueryPlanInteropLive")]
-        [TestCategory("ServiceInteropLive")]
         public async Task FullTextScoreProjectionAndFilterPredicateTests()
         {
             List<SanityTestCase> testCases = new List<SanityTestCase>
@@ -269,7 +267,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         [TestMethod]
         [TestCategory("LinuxQueryPlanInteropLive")]
-        [TestCategory("ServiceInteropLive")]
         public async Task FullTextScoreProjectionAndFilterPredicateWeightedRRFTests()
         {
             List<SanityTestCase> testCases = new List<SanityTestCase>
@@ -309,7 +306,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         [TestMethod]
         [TestCategory("LinuxQueryPlanInteropLive")]
-        [TestCategory("ServiceInteropLive")]
         public async Task WeightedRankFusionTests()
         {
             List<SanityTestCase> testCases = new List<SanityTestCase>
