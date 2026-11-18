@@ -409,6 +409,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
                 throw new NotSupportedException();
             }
         }
+
+        private sealed class FailingKeyAccessEncryptor : Encryptor, IDataEncryptionKeyAccessor
+        {
+            public override Task<DataEncryptionKey> GetEncryptionKeyAsync(
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                throw new InvalidOperationException("key-unwrap failure");
+            }
+
+            public override Task<byte[]> EncryptAsync(
+                byte[] plainText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override Task<byte[]> DecryptAsync(
+                byte[] cipherText,
+                string dataEncryptionKeyId,
+                string encryptionAlgorithm,
+                CancellationToken cancellationToken = default)
+            {
+                throw new NotSupportedException();
+            }
+        }
     }
 }
 #endif

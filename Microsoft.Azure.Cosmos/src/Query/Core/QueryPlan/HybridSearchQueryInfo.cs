@@ -66,6 +66,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             set;
         }
 
+        [JsonProperty("fullTextSearchTerms", NullValueHandling = NullValueHandling.Ignore)]
+        public List<FullTextSearchTerms> FullTextSearchTerms
+        {
+            get;
+            set;
+        }
+
         // An absent discriminator denotes a legacy RRF plan.
         [JsonProperty("scoreCombinationKind", NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(StringEnumConverter))]
