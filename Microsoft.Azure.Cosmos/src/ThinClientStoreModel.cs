@@ -115,8 +115,10 @@ namespace Microsoft.Azure.Cosmos
         /// Replaces a compound session token with the progress of the request's target partition key range (merged
         /// with its parents' progress), as the gateway does for the token it tracks. If the token names a range the
         /// cached routing map doesn't know (e.g. a split the client hasn't seen), the map is refreshed once so child
-        /// progress isn't silently dropped in favour of a stale parent. A token that still can't be scoped is omitted
-        /// with a warning; a malformed token is rejected with <see cref="BadRequestException"/>.
+        /// progress isn't silently dropped in favour of a stale parent. A token that still can't be scoped is dropped
+        /// with a warning and the request is sent as if no token was supplied, leaving topology changes (a split or
+        /// recreated container) to the service response and the existing retry policies. A malformed token is rejected
+        /// with <see cref="BadRequestException"/>.
         /// </summary>
         private async Task ScopeCompoundSessionTokenAsync(
             DocumentServiceRequest request,
@@ -137,37 +139,35 @@ namespace Microsoft.Azure.Cosmos
                 collection.ResourceId,
                 previousValue: null,
                 request,
-                NoOpTrace.Singleton)
-                ?? throw new NotFoundException($"Routing map for collection {collection.ResourceId} could not be resolved.");
-            if (ThinClientStoreModel.TryApplyScopedSessionToken(request, compoundSessionToken, collection, routingMap, out _))
+                NoOpTrace.Singleton);
+            if (routingMap != null
+                && ThinClientStoreModel.TryApplyScopedSessionToken(request, compoundSessionToken, collection, routingMap, out _))
             {
                 return;
             }
 
-            // The token names a range the cached map doesn't know, so the map may predate a split the token has seen.
-            routingMap = await this.partitionKeyRangeCache.TryLookupAsync(
-                collection.ResourceId,
-                previousValue: routingMap,
-                request,
-                NoOpTrace.Singleton)
-                ?? throw new NotFoundException($"Routing map for collection {collection.ResourceId} could not be refreshed.");
-            if (ThinClientStoreModel.TryApplyScopedSessionToken(request, compoundSessionToken, collection, routingMap, out PartitionKeyRange targetRange))
+            PartitionKeyRange targetRange = null;
+            if (routingMap != null)
             {
-                return;
-            }
-
-            if (targetRange == null && request.PartitionKeyRangeIdentity != null)
-            {
-                throw new Documents.Routing.PartitionKeyRangeGoneException(
-                    $"Partition key range {request.PartitionKeyRangeIdentity.PartitionKeyRangeId} of collection {collection.ResourceId} no longer exists.");
+                // The token names a range the cached map doesn't know, so the map may predate a split the token has seen.
+                routingMap = await this.partitionKeyRangeCache.TryLookupAsync(
+                    collection.ResourceId,
+                    previousValue: routingMap,
+                    request,
+                    NoOpTrace.Singleton);
+                if (routingMap != null
+                    && ThinClientStoreModel.TryApplyScopedSessionToken(request, compoundSessionToken, collection, routingMap, out targetRange))
+                {
+                    return;
+                }
             }
 
             request.Headers.Remove(HttpConstants.HttpHeaders.SessionToken);
             DefaultTrace.TraceWarning(
-                "compound_session_token_scope_unresolved_after_refresh: the session token names partition key ranges that are unknown even after refreshing partition key range metadata; "
+                "compound_session_token_scope_unresolved: the session token could not be scoped to the request's partition key range; "
                     + "the request is sent through the thin client proxy without a session token, so the supplied session progress is not enforced. "
                     + "Verify that the token belongs to this container. Reason={0}; CollectionRid={1}; PartitionKeyRangeId={2}; ActivityId={3}",
-                targetRange == null ? "unresolved_target" : "unknown_range_or_ancestry",
+                routingMap == null ? "routing_map_unavailable" : targetRange == null ? "unresolved_target" : "unknown_range_or_ancestry",
                 collection.ResourceId,
                 targetRange?.Id ?? "unresolved",
                 System.Diagnostics.Trace.CorrelationManager.ActivityId);

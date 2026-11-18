@@ -601,11 +601,11 @@ namespace Microsoft.Azure.Cosmos
 
         [TestMethod]
         [Owner("aavasthy")]
-        public async Task ProcessMessageAsync_CompoundSessionTokenForSplitTargetRange_ThrowsPartitionKeyRangeGone()
+        public async Task ProcessMessageAsync_CompoundSessionTokenForSplitTargetRange_SendsRequestWithoutToken()
         {
             ThinClientStoreModel storeModel = this.BuildSessionScopingStoreModel(
                 out Uri thinClientEndpoint,
-                out _,
+                out Mock<PartitionKeyRangeCache> partitionKeyRangeCache,
                 cachedRoutingMap: CreateRoutingMap(CreateRange("0", "", "FF")),
                 refreshedRoutingMap: CreateRoutingMap(CreateRange("1", "", "80", "0"), CreateRange("2", "80", "FF", "0")));
             MockThinClientStoreClient thinClientStoreClient = CreateSuccessfulThinClientStoreClient(storeModel);
@@ -614,11 +614,34 @@ namespace Microsoft.Azure.Cosmos
             request.Headers[HttpConstants.HttpHeaders.SessionToken] = "1:1#40,2:1#50";
             request.RequestContext.RouteToLocation(thinClientEndpoint);
 
-            DocumentClientException exception = await Assert.ThrowsExceptionAsync<Documents.Routing.PartitionKeyRangeGoneException>(
-                () => storeModel.ProcessMessageAsync(request));
+            await storeModel.ProcessMessageAsync(request);
 
-            Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, exception.GetSubStatus(), "The split must surface as 410/1002 so the query pipeline retargets the children.");
-            Assert.AreEqual(0, thinClientStoreClient.InvocationCount);
+            VerifyRoutingMapRefreshes(partitionKeyRangeCache, Times.Once());
+            Assert.AreEqual(1, thinClientStoreClient.InvocationCount, "Token scoping must not fail the request; the service reports the split.");
+            Assert.IsNull(thinClientStoreClient.LastAttemptSessionToken);
+            Assert.AreEqual("0", thinClientStoreClient.LastAttemptPartitionKeyRangeId, "The request must be routed exactly as it would be without a session token.");
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ProcessMessageAsync_CompoundSessionTokenWhenRoutingMapUnavailable_SendsRequestWithoutToken()
+        {
+            // A null routing map means the partition key ranges couldn't be read (e.g. the container was recreated).
+            ThinClientStoreModel storeModel = this.BuildSessionScopingStoreModel(
+                out Uri thinClientEndpoint,
+                out Mock<PartitionKeyRangeCache> partitionKeyRangeCache,
+                cachedRoutingMap: null);
+            MockThinClientStoreClient thinClientStoreClient = CreateSuccessfulThinClientStoreClient(storeModel);
+
+            DocumentServiceRequest request = CreatePartitionedDocumentRequest();
+            request.Headers[HttpConstants.HttpHeaders.SessionToken] = "1:1#40,2:1#50";
+            request.RequestContext.RouteToLocation(thinClientEndpoint);
+
+            await storeModel.ProcessMessageAsync(request);
+
+            VerifyRoutingMapRefreshes(partitionKeyRangeCache, Times.Never());
+            Assert.AreEqual(1, thinClientStoreClient.InvocationCount, "Token scoping must not fail the request; the service response drives the existing retries.");
+            Assert.IsNull(thinClientStoreClient.LastAttemptSessionToken);
         }
 
         [DataTestMethod]
@@ -764,7 +787,7 @@ namespace Microsoft.Azure.Cosmos
                         currentRoutingMap = refreshedRoutingMap ?? currentRoutingMap;
                     }
 
-                    return currentRoutingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId);
+                    return currentRoutingMap?.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId);
                 });
 
             storeModel.SetCaches(partitionKeyRangeCache.Object, mockCollectionCache.Object);
