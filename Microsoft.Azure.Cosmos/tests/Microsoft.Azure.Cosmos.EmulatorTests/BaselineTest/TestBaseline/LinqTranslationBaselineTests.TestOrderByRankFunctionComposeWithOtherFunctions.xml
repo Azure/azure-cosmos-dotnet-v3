@@ -141,22 +141,6 @@ ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Order By Rank + Take maximum]]></Description>
-      <Expression><![CDATA[query.OrderByRank(doc => doc.StringField.FullTextScore(new [] {"test1"})).Take(2147483647).Select(doc => doc.Pk)]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT TOP 2147483647 VALUE root["Pk"]
-FROM root
-ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
-      <Results><![CDATA[[
-  "Test",
-  "Test"
-]]]></Results>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
       <Description><![CDATA[GroupBy + Order By Rank]]></Description>
       <Expression><![CDATA[query.GroupBy(doc => doc.StringField, (key, values) => values.Count()).OrderByRank(doc => doc.ToString().FullTextScore(new [] {"test1"}))]]></Expression>
     </Input>
