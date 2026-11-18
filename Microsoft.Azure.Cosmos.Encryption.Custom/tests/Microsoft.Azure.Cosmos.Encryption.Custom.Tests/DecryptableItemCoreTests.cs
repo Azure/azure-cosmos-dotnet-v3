@@ -28,8 +28,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DataRow(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)]
         public async Task SerializerFailure_PreservesCiphertextAndAllowsRepeatedReads(string algorithm)
         {
-            Mock<Encryptor> encryptor = CreateEncryptor(algorithm);
-            JObject document = await CreateEncryptedDocumentAsync(encryptor.Object, algorithm);
+            Encryptor encryptor = CreateEncryptor(algorithm);
+            JObject document = await CreateEncryptedDocumentAsync(encryptor, algorithm);
             string originalCiphertext = document.ToString();
             Assert.IsFalse(originalCiphertext.Contains(Secret, StringComparison.Ordinal));
             Assert.IsInstanceOfType(document[Constants.EncryptedInfo], typeof(JObject));
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
                     return plaintext;
                 });
-            DecryptableItemCore item = new (document, encryptor.Object, serializer.Object);
+            DecryptableItemCore item = new (document, encryptor, serializer.Object);
 
             for (int attempt = 0; attempt < 2; attempt++)
             {
@@ -86,8 +86,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DataRow(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, true)]
         public async Task MissingOrNullDekId_PreservesOriginalEncryptedFailure(string algorithm, bool explicitNull)
         {
-            Mock<Encryptor> encryptor = CreateEncryptor(algorithm);
-            JObject document = await CreateEncryptedDocumentAsync(encryptor.Object, algorithm);
+            Encryptor encryptor = CreateEncryptor(algorithm);
+            JObject document = await CreateEncryptedDocumentAsync(encryptor, algorithm);
             JObject metadata = (JObject)document[Constants.EncryptedInfo];
             if (explicitNull)
             {
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
 
             string originalCiphertext = document.ToString();
-            DecryptableItemCore item = new (document, encryptor.Object, new Mock<CosmosSerializer>(MockBehavior.Strict).Object);
+            DecryptableItemCore item = new (document, encryptor, new Mock<CosmosSerializer>(MockBehavior.Strict).Object);
             for (int attempt = 0; attempt < 2; attempt++)
             {
                 EncryptionException exception = await Assert.ThrowsExceptionAsync<EncryptionException>(
@@ -117,11 +117,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task NonScalarDekId_PreservesOriginalEncryptedFailure(string keyIdJson)
         {
             const string algorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized;
-            Mock<Encryptor> encryptor = CreateEncryptor(algorithm);
-            JObject document = await CreateEncryptedDocumentAsync(encryptor.Object, algorithm);
+            Encryptor encryptor = CreateEncryptor(algorithm);
+            JObject document = await CreateEncryptedDocumentAsync(encryptor, algorithm);
             document[Constants.EncryptedInfo][Constants.EncryptionDekId] = JToken.Parse(keyIdJson);
             string originalCiphertext = document.ToString();
-            DecryptableItemCore item = new (document, encryptor.Object, new Mock<CosmosSerializer>(MockBehavior.Strict).Object);
+            DecryptableItemCore item = new (document, encryptor, new Mock<CosmosSerializer>(MockBehavior.Strict).Object);
 
             EncryptionException exception = await Assert.ThrowsExceptionAsync<EncryptionException>(
                 () => item.GetItemAsync<JObject>());
@@ -207,11 +207,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
 
-        private static Mock<Encryptor> CreateEncryptor(string algorithm)
+        private static Encryptor CreateEncryptor(string algorithm)
         {
             return algorithm == CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized
-                ? TestEncryptorFactory.CreateMde(DekId, out _)
-                : TestEncryptorFactory.CreateLegacy(DekId);
+                ? TestEncryptorFactory.CreateMde(DekId)
+                : TestEncryptorFactory.CreateLegacy(DekId).Object;
         }
 
         private static JObject CreatePlaintext()
