@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics.Tracing;
     using System.IO;
     using System.Net;
+    using System.Reflection;
+    using System.Runtime.CompilerServices;
     using System.Security.Cryptography;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -610,6 +612,18 @@ namespace Microsoft.Azure.Cosmos
             exception.Headers.RetryAfterLiteral = retryAfter.ToString();
             Assert.AreEqual(TimeSpan.FromMilliseconds(retryAfter), exception.RetryAfter);
             Assert.AreEqual(TimeSpan.FromMilliseconds(retryAfter), exception.Headers.RetryAfter);
+        }
+
+        [TestMethod]
+        public void MessageDoesNotThrowAfterDeserialization()
+        {
+            CosmosException uninitialized = (CosmosException)RuntimeHelpers.GetUninitializedObject(typeof(CosmosException));
+            Assert.IsNotNull(uninitialized.Message);
+
+            CosmosException rehydrated = (CosmosException)RuntimeHelpers.GetUninitializedObject(typeof(CosmosException));
+            FieldInfo messageField = typeof(Exception).GetField("_message", BindingFlags.Instance | BindingFlags.NonPublic);
+            messageField.SetValue(rehydrated, "Request rate is large");
+            Assert.AreEqual("Request rate is large", rehydrated.Message);
         }
     }
 

@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override string Message => this.lazyMessage.Value;
+        public override string Message => this.lazyMessage?.Value ?? base.Message;
 
         /// <summary>
         /// The body of the cosmos response message as a string
