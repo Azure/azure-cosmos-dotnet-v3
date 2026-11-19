@@ -595,7 +595,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]) AS v2 
     WHERE (LENGTH(v2["FamilyName"]) > 10) 
-    ORDER BY v2["GivenName"]["Length"] ASC
+    ORDER BY LENGTH(v2["GivenName"]) ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
@@ -614,7 +614,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]) AS v2 
     WHERE (LENGTH(v2["FamilyName"]) > 10) 
-    ORDER BY v2["GivenName"]["Length"] ASC
+    ORDER BY LENGTH(v2["GivenName"]) ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
