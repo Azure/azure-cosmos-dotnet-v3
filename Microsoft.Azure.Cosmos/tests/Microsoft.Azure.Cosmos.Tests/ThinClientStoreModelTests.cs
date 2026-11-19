@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos
             // A fully-mocked routing setup is required because the thin-client path always
             // pre-resolves PKR for partitioned, non-master requests.
             Mock<ClientCollectionCache> mockCollectionCache = new(
-                Mock.Of<ISessionContainer>(), storeModel, null, null, null, false, null);
+                Mock.Of<ISessionContainer>(), storeModel, null, null, false, null);
             ContainerProperties containerProperties = new("test", "/pk");
             typeof(ContainerProperties)
                 .GetProperty("ResourceId", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
@@ -454,7 +454,7 @@ namespace Microsoft.Azure.Cosmos
             // The thin-client path always pre-resolves PKR for partitioned, non-master requests,
             // independent of PPAF, so a full routing mock setup is required.
             Mock<ClientCollectionCache> mockCollectionCache = new(
-                Mock.Of<ISessionContainer>(), storeModel, null, null, null, false, null);
+                Mock.Of<ISessionContainer>(), storeModel, null, null, false, null);
             ContainerProperties containerProperties = new("test", "/pk");
             typeof(ContainerProperties)
                 .GetProperty("ResourceId", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
@@ -574,7 +574,7 @@ namespace Microsoft.Azure.Cosmos
                 userAgentContainer);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
-                sessionContainer, storeModel, null, null, null, false, null).Object;
+                sessionContainer, storeModel, null, null, false, null).Object;
             PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
                 null, storeModel, clientCollectionCache, endpointManager, false, false, null).Object;
             storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);

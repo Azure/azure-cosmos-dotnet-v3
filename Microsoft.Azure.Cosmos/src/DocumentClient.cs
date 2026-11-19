@@ -210,8 +210,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosAccountServiceConfiguration accountServiceConfiguration { get; private set; }
 
-        internal TelemetryToServiceHelper telemetryToServiceHelper { get; set; }
-
         private ClientCollectionCache collectionCache;
 
         private PartitionKeyRangeCache partitionKeyRangeCache;
@@ -770,7 +768,6 @@ namespace Microsoft.Azure.Cosmos
                     storeModel: this.GatewayStoreModel, 
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
-                    telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
                     metadataHedgingStrategy: this.metadataHedgingStrategy);
                 this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing, this.metadataHedgingStrategy);
@@ -1089,16 +1086,6 @@ namespace Microsoft.Azure.Cosmos
                 CosmosDbOperationMeter.AddInstanceCount(this.ServiceEndpoint);
             }
 
-            // Starting ClientTelemetry Job
-            this.telemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob(this.clientId,
-                                                                 this.ConnectionPolicy,
-                                                                 this.cosmosAuthorization,
-                                                                 this.httpClient,
-                                                                 this.ServiceEndpoint,
-                                                                 this.GlobalEndpointManager,
-                                                                 this.cancellationTokenSource,
-                                                                 this.chaosInterceptor is not null);
-
             if (sessionContainer != null)
             {
                 this.sessionContainer = sessionContainer;
@@ -1256,7 +1243,6 @@ namespace Microsoft.Azure.Cosmos
                     storeModel: this.GatewayStoreModel, 
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
-                    telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
                     metadataHedgingStrategy: this.metadataHedgingStrategy);
             this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing, this.metadataHedgingStrategy);
@@ -1522,12 +1508,6 @@ namespace Microsoft.Azure.Cosmos
             // This prevents race conditions where in-flight requests 
             // could proceed while fields are being nulled
             this.isDisposing = true;
-
-            if (this.telemetryToServiceHelper != null)
-            {
-                this.telemetryToServiceHelper.Dispose();
-                this.telemetryToServiceHelper = null;
-            }
 
             if (!this.cancellationTokenSource.IsCancellationRequested)
             {

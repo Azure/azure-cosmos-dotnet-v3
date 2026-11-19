@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -79,14 +78,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<IStoreModel> storeModelMock = new Mock<IStoreModel>();
             Mock<ICosmosAuthorizationTokenProvider> tokenProviderMock = new Mock<ICosmosAuthorizationTokenProvider>();
             Mock<IRetryPolicyFactory> retryPolicyFactoryMock = new Mock<IRetryPolicyFactory>();
-            TelemetryToServiceHelper telemetry = null;
 
             Mock<ClientCollectionCache> clientCollectionCacheMock = new Mock<ClientCollectionCache>(
                 sessionContainerMock.Object,
                 storeModelMock.Object,
                 tokenProviderMock.Object,
                 retryPolicyFactoryMock.Object,
-                telemetry,
                 true,
                 null)
             {
@@ -146,13 +143,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<IStoreModel> storeModelMock = new Mock<IStoreModel>();
             Mock<ICosmosAuthorizationTokenProvider> tokenProviderMock = new Mock<ICosmosAuthorizationTokenProvider>();
             Mock<IRetryPolicyFactory> retryPolicyFactoryMock = new Mock<IRetryPolicyFactory>();
-            TelemetryToServiceHelper telemetry = null;
             Mock<ClientCollectionCache> clientCollectionCacheMock = new Mock<ClientCollectionCache>(
                 sessionContainerMock.Object,
                 storeModelMock.Object,
                 tokenProviderMock.Object,
                 retryPolicyFactoryMock.Object,
-                telemetry,
                 true,
                 null)
             {
@@ -242,13 +237,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<IStoreModel> storeModelMock = new Mock<IStoreModel>();
             Mock<ICosmosAuthorizationTokenProvider> tokenProviderMock = new Mock<ICosmosAuthorizationTokenProvider>();
             Mock<IRetryPolicyFactory> retryPolicyFactoryMock = new Mock<IRetryPolicyFactory>();
-            TelemetryToServiceHelper telemetry = null;
             Mock<ClientCollectionCache> clientCollectionCacheMock = new Mock<ClientCollectionCache>(
                 sessionContainerMock.Object,
                 storeModelMock.Object,
                 tokenProviderMock.Object,
                 retryPolicyFactoryMock.Object,
-                telemetry,
                 true,
                 null)
             {
@@ -337,13 +330,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<IStoreModel> storeModelMock = new Mock<IStoreModel>();
             Mock<ICosmosAuthorizationTokenProvider> tokenProviderMock = new Mock<ICosmosAuthorizationTokenProvider>();
             Mock<IRetryPolicyFactory> retryPolicyFactoryMock = new Mock<IRetryPolicyFactory>();
-            TelemetryToServiceHelper telemetry = null;
             Mock<ClientCollectionCache> clientCollectionCacheMock = new Mock<ClientCollectionCache>(
                 sessionContainerMock.Object,
                 storeModelMock.Object,
                 tokenProviderMock.Object,
                 retryPolicyFactoryMock.Object,
-                telemetry,
                 true,
                 null)
             {

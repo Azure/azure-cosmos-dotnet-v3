@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 if (response.Diagnostics != null)
                 {
-                    scope.AddAttribute(AppInsightClassicAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));
+                    scope.AddAttribute(AppInsightClassicAttributeKeys.Region, OpenTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));
                 }
             }
         }

@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Telemetry;
 
     internal class ClientPipelineBuilder
     {
@@ -20,7 +19,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly DiagnosticsHandler diagnosticsHandler;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
-        private readonly TelemetryHandler telemetryHandler;
         private readonly int? requestedClientThroughputBucket;
 
         private IReadOnlyCollection<RequestHandler> customHandlers;
@@ -32,7 +30,6 @@ namespace Microsoft.Azure.Cosmos
             Cosmos.ReadConsistencyStrategy? requestedClientReadConsistencyStrategy,
             PriorityLevel? requestedClientPriorityLevel,
             IReadOnlyCollection<RequestHandler> customHandlers,
-            TelemetryToServiceHelper telemetryToServiceHelper,
             int? requestedClientThroughputBucket)
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
@@ -57,9 +54,6 @@ namespace Microsoft.Azure.Cosmos
 #else
             this.diagnosticsHandler = null;
 #endif
-            this.telemetryHandler = new TelemetryHandler(telemetryToServiceHelper);
-            Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
-
             this.UseRetryPolicy();
             this.AddCustomHandlers(customHandlers);
         }
@@ -102,14 +96,6 @@ namespace Microsoft.Azure.Cosmos
         ///                                    +-----------------------------+
         ///                                    |                             |
         ///                                    |       DiagnosticHandler     |
-        ///                                    |                             |
-        ///                                    +-----------------------------+
-        ///                                                 |
-        ///                                                 |
-        ///                                                 |
-        ///                                    +-----------------------------+
-        ///                                    |                             |
-        ///                                    |       TelemetryHandler      |-> Trigger a thread to monitor system usage/operation information and sends to an API
         ///                                    |                             |
         ///                                    +-----------------------------+
         ///                                                 |
@@ -180,12 +166,6 @@ namespace Microsoft.Azure.Cosmos
             if (this.diagnosticsHandler != null)
             {
                 current.InnerHandler = this.diagnosticsHandler;
-                current = current.InnerHandler;
-            }
-
-            if (this.telemetryHandler != null)
-            {
-                current.InnerHandler = this.telemetryHandler;
                 current = current.InnerHandler;
             }
 
