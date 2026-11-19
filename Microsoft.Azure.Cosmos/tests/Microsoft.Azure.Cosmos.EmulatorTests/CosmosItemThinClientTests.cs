@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -17,8 +19,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using global::Azure;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
+    using Documents = Microsoft.Azure.Documents;
     using TestObject = MultiRegionSetupHelpers.CosmosIntegrationTestObject;
 
     [TestClass]
@@ -28,6 +35,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private const string EastUs2 = "East US 2";
         private static readonly IReadOnlyList<string> PreferredRegions = new List<string> { CentralUs, EastUs2 };
         private static readonly IReadOnlyList<string> ExcludeRegions = new List<string> { CentralUs };
+
+        private static readonly VectorDataType[] VectorTypes =
+        {
+            VectorDataType.Float32,
+            VectorDataType.Float16,
+            VectorDataType.Int8,
+            VectorDataType.Uint8,
+        };
+
+        // Each column is a permutation of ranks 1..8. Omitting any column changes the top-five RRF order.
+        private static readonly int[][] ComponentRanks =
+        {
+            new[] { 8, 3, 1, 3 },
+            new[] { 2, 6, 2, 7 },
+            new[] { 1, 7, 6, 8 },
+            new[] { 4, 1, 3, 2 },
+            new[] { 6, 8, 4, 6 },
+            new[] { 7, 2, 7, 1 },
+            new[] { 3, 4, 5, 5 },
+            new[] { 5, 5, 8, 4 },
+        };
 
         private string connectionString;
         private CosmosClient client;
@@ -157,6 +185,158 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsFalse(
                     diagnostics.Contains(excludedHost),
                     $"Operation with ExcludeRegions=[{string.Join(",", ExcludeRegions)}] must not route to '{excludedHost}'. Diagnostics: {diagnostics}");
+            }
+        }
+
+        [DataTestMethod]
+        [DoNotParallelize]
+        [TestCategory("ThinClient")]
+        [DataRow(ConnectionMode.Gateway, false, DisplayName = "Mixed vector RRF - Gateway")]
+        [DataRow(ConnectionMode.Direct, false, DisplayName = "Mixed vector RRF - Direct")]
+        [DataRow(ConnectionMode.Gateway, true, DisplayName = "Mixed vector RRF - ThinClient")]
+        public async Task MixedVectorEmbeddingTypesRankFusionTest(ConnectionMode connectionMode, bool thinClientEnabled)
+        {
+            string originalThinClient = Environment.GetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled);
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, thinClientEnabled.ToString());
+
+                using CancellationTokenSource timeout = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+                CancellationToken cancellationToken = timeout.Token;
+                using DocumentTransportRecorder recorder = new DocumentTransportRecorder();
+                using HttpClient httpClient = new HttpClient(recorder);
+                using CosmosClient client = new CosmosClient(this.connectionString, new CosmosClientOptions
+                {
+                    ConnectionMode = connectionMode,
+                    HttpClientFactory = () => httpClient,
+                });
+
+                await client.ReadAccountAsync();
+                if (thinClientEnabled)
+                {
+                    // Probe the transport without warming the target container's document metadata.
+                    for (int attempt = 0; attempt < 30; attempt++)
+                    {
+                        await client.DocumentClient.GlobalEndpointManager.RunThinClientProbeCycleAsync().WaitAsync(cancellationToken);
+                        if (client.DocumentClient.GlobalEndpointManager.AreAllThinClientReadEndpointsHealthy
+                            && client.DocumentClient.GlobalEndpointManager.ThinClientWriteEndpoints.Count > 0
+                            && client.DocumentClient.GlobalEndpointManager.ThinClientWriteEndpoints.All(
+                                client.DocumentClient.GlobalEndpointManager.IsProxyEndpointHealthy))
+                        {
+                            break;
+                        }
+
+                        await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+                    }
+
+                    Assert.IsTrue(
+                        client.DocumentClient.GlobalEndpointManager.AreAllThinClientReadEndpointsHealthy
+                        && client.DocumentClient.GlobalEndpointManager.ThinClientWriteEndpoints.Count > 0
+                        && client.DocumentClient.GlobalEndpointManager.ThinClientWriteEndpoints.All(
+                            client.DocumentClient.GlobalEndpointManager.IsProxyEndpointHealthy),
+                        "The live account must advertise healthy ThinClient read and write endpoints; Gateway fallback does not cover this regression.");
+                }
+
+                Database database = client.GetDatabase(this.database.Id);
+                ContainerProperties properties = new ContainerProperties("vectors", "/pk")
+                {
+                    VectorEmbeddingPolicy = new VectorEmbeddingPolicy(new Collection<Embedding>(
+                        VectorTypes.Select(type => new Embedding
+                        {
+                            Path = "/vector" + type,
+                            DataType = type,
+                            Dimensions = 3,
+                            DistanceFunction = DistanceFunction.Euclidean,
+                        }).ToList())),
+                    IndexingPolicy = new IndexingPolicy
+                    {
+                        VectorIndexes = new Collection<VectorIndexPath>(VectorTypes.Select(type => new VectorIndexPath
+                        {
+                            Path = "/vector" + type,
+                            Type = VectorIndexType.DiskANN,
+                        }).ToList()),
+                        ExcludedPaths = new Collection<ExcludedPath>(VectorTypes.Select(type => new ExcludedPath
+                        {
+                            Path = "/vector" + type + "/*",
+                        }).ToList()),
+                    },
+                };
+
+                await database.CreateContainerAsync(properties, throughput: 1000, cancellationToken: cancellationToken);
+                Container container = client.GetContainer(database.Id, properties.Id);
+                ContainerResponse metadata = await container.ReadContainerAsync(cancellationToken: cancellationToken);
+                CollectionAssert.AreEquivalent(
+                    VectorTypes,
+                    metadata.Resource.VectorEmbeddingPolicy.Embeddings.Select(embedding => embedding.DataType).ToArray());
+                Assert.AreEqual(4, metadata.Resource.IndexingPolicy.VectorIndexes.Count);
+                Assert.IsTrue(metadata.Resource.IndexingPolicy.VectorIndexes.All(index => index.Type == VectorIndexType.DiskANN));
+
+                recorder.Responses.Clear();
+                ItemResponse<JObject> created = await container.CreateItemAsync(
+                    new JObject { ["id"] = "no-vector", ["pk"] = "0" },
+                    new PartitionKey("0"),
+                    cancellationToken: cancellationToken);
+                Assert.AreEqual(HttpStatusCode.Created, created.StatusCode, created.Diagnostics.ToString());
+                AssertVectorSearchTransport(connectionMode, thinClientEnabled, recorder, new[] { created.Diagnostics });
+
+                recorder.Responses.Clear();
+                ItemResponse<JObject> read = await container.ReadItemAsync<JObject>(
+                    "no-vector",
+                    new PartitionKey("0"),
+                    cancellationToken: cancellationToken);
+                Assert.AreEqual(HttpStatusCode.OK, read.StatusCode, read.Diagnostics.ToString());
+                Assert.AreEqual("no-vector", read.Resource.Value<string>("id"));
+                AssertVectorSearchTransport(connectionMode, thinClientEnabled, recorder, new[] { read.Diagnostics });
+
+                // More than 1,000 distant vectors avoid limiting the fixture to a tiny, untrainable index.
+                foreach (int[] batch in Enumerable.Range(0, ComponentRanks.Length + 1100).Chunk(16))
+                {
+                    recorder.Responses.Clear();
+                    CosmosDiagnostics[] writeDiagnostics = await Task.WhenAll(batch.Select(async index =>
+                    {
+                        JObject document = CreateVectorSearchDocument(index);
+                        ItemResponse<JObject> response = await container.CreateItemAsync(
+                            document,
+                            new PartitionKey(document.Value<string>("pk")),
+                            cancellationToken: cancellationToken);
+                        Assert.AreEqual(HttpStatusCode.Created, response.StatusCode, response.Diagnostics.ToString());
+                        return response.Diagnostics;
+                    }));
+                    AssertVectorSearchTransport(connectionMode, thinClientEnabled, recorder, writeDiagnostics);
+                }
+
+                QueryDefinition query = new QueryDefinition(
+                    @"SELECT TOP 5 VALUE c.id FROM c
+                      ORDER BY RANK RRF(
+                          VectorDistance(c.vectorFloat32, @queryVector),
+                          VectorDistance(c.vectorFloat16, @queryVector),
+                          VectorDistance(c.vectorInt8, @queryVector),
+                          VectorDistance(c.vectorUint8, @queryVector))")
+                    .WithParameter("@queryVector", new[] { 0, 2, 3 });
+
+                recorder.Responses.Clear();
+                using FeedIterator<string> iterator = container.GetItemQueryIterator<string>(
+                    query,
+                    requestOptions: new QueryRequestOptions { MaxItemCount = 2, EnableOptimisticDirectExecution = false });
+                List<string> results = new List<string>();
+                List<CosmosDiagnostics> diagnostics = new List<CosmosDiagnostics>();
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<string> page = await iterator.ReadNextAsync(cancellationToken);
+                    Assert.AreEqual(HttpStatusCode.OK, page.StatusCode, page.Diagnostics.ToString());
+                    results.AddRange(page);
+                    diagnostics.Add(page.Diagnostics);
+                }
+
+                AssertVectorSearchTransport(connectionMode, thinClientEnabled, recorder, diagnostics);
+                CollectionAssert.AreEqual(
+                    new[] { "3", "0", "5", "1", "6" },
+                    results,
+                    "Unexpected four-component RRF ordering. " + string.Join(Environment.NewLine, diagnostics));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, originalThinClient);
             }
         }
 
@@ -2398,6 +2578,94 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             [JsonPropertyName("userId")]
             public string UserId { get; set; }
+        }
+
+        private static JObject CreateVectorSearchDocument(int index)
+        {
+            JObject document = new JObject
+            {
+                ["id"] = index.ToString(CultureInfo.InvariantCulture),
+                ["pk"] = (index % 4).ToString(CultureInfo.InvariantCulture),
+            };
+
+            for (int component = 0; component < VectorTypes.Length; component++)
+            {
+                document["vector" + VectorTypes[component]] = index < ComponentRanks.Length
+                    ? new JArray(ComponentRanks[index][component], 2, 3)
+                    : new JArray(64 + (index % 32), 32 + ((index / 32) % 32), 32 + (index / 1024));
+            }
+
+            return document;
+        }
+
+        private static void AssertVectorSearchTransport(
+            ConnectionMode connectionMode,
+            bool thinClientEnabled,
+            DocumentTransportRecorder recorder,
+            IEnumerable<CosmosDiagnostics> diagnostics)
+        {
+            CosmosDiagnostics[] traces = diagnostics.ToArray();
+            string message = string.Join(Environment.NewLine, traces.Select(trace => trace.ToString()));
+            if (connectionMode == ConnectionMode.Direct)
+            {
+                Assert.IsTrue(
+                    traces.OfType<CosmosTraceDiagnostics>().Any(trace => HasSuccessfulDirectResponse(trace.Value)),
+                    "Expected a successful direct/TCP document response. " + message);
+                Assert.AreEqual(0, recorder.Responses.Count, "Direct document operations must not use an HTTP data-plane fallback. " + message);
+            }
+            else
+            {
+                Assert.IsTrue(
+                    recorder.Responses.Any(response => (int)response.Status >= 200 && (int)response.Status < 300),
+                    "No successful HTTP document response was observed. " + message);
+                Assert.IsTrue(
+                    recorder.Responses.All(response => response.Proxy == thinClientEnabled),
+                    "Document operations used the wrong transport or fell back from ThinClient to Gateway. " + message);
+                if (thinClientEnabled)
+                {
+                    Assert.IsTrue(
+                        recorder.Responses.All(response => response.Version.Major == 2),
+                        "ThinClient document responses must use HTTP/2. " + message);
+                }
+            }
+        }
+
+        private static bool HasSuccessfulDirectResponse(ITrace trace)
+        {
+            return trace.Data.Values.OfType<ClientSideRequestStatisticsTraceDatum>()
+                .SelectMany(statistics => statistics.StoreResponseStatisticsList)
+                .Any(response => response.RequestResourceType == Documents.ResourceType.Document
+                    && response.StoreResult?.StorePhysicalAddress?.Scheme == "rntbd"
+                    && (int)response.StoreResult.StatusCode >= 200
+                    && (int)response.StoreResult.StatusCode < 300)
+                || trace.Children.Any(HasSuccessfulDirectResponse);
+        }
+
+        private sealed class DocumentTransportRecorder : DelegatingHandler
+        {
+            public DocumentTransportRecorder()
+                : base(new HttpClientHandler())
+            {
+            }
+
+            public ConcurrentQueue<(bool Proxy, HttpStatusCode Status, Version Version)> Responses { get; } =
+                new ConcurrentQueue<(bool, HttpStatusCode, Version)>();
+
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                HttpResponseMessage response = await base.SendAsync(request, cancellationToken);
+                // Proxy headers are serialized into the body and cleared before HTTP dispatch.
+                bool proxyDocument = request.RequestUri.Port == ThinClientProxyPort
+                    && !string.Equals(request.RequestUri.AbsolutePath, "/connectivity-probe", StringComparison.OrdinalIgnoreCase);
+                bool gatewayDocument = request.RequestUri.AbsolutePath.Split('/').Contains("docs")
+                    && !request.Headers.Contains(Documents.HttpConstants.HttpHeaders.IsQueryPlanRequest);
+                if (proxyDocument || gatewayDocument)
+                {
+                    this.Responses.Enqueue((proxyDocument, response.StatusCode, response.Version));
+                }
+
+                return response;
+            }
         }
 
         private sealed class BodyCapturingHandler : DelegatingHandler
