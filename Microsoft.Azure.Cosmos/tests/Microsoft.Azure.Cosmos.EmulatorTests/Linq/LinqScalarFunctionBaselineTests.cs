@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             /////////////////
 
             // ISSUE-TODO-adityasa-2024/1/26 - Support FirstOrDefault overloads.
-            // Please note, this requires potential support for user code invocation in context of rest of the client code (except maybe some simple cases).
+            // Please note, this requires potential support for user code invocation in context of rest of the client code (except maybe some Simple cases).
             // We do not currently do this for any other scenarios.
 
             // Unsupported
