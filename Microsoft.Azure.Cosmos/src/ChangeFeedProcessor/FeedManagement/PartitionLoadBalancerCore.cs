@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private readonly PartitionController partitionController;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly LoadBalancingStrategy partitionLoadBalancingStrategy;
+        private readonly ChangeFeedProcessorHealthMonitor monitor;
         private readonly TimeSpan leaseAcquireInterval;
         private CancellationTokenSource cancellationTokenSource;
         private Task runTask;
@@ -24,7 +25,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             PartitionController partitionController,
             DocumentServiceLeaseContainer leaseContainer,
             LoadBalancingStrategy partitionLoadBalancingStrategy,
-            TimeSpan leaseAcquireInterval)
+            TimeSpan leaseAcquireInterval,
+            ChangeFeedProcessorHealthMonitor monitor)
         {
             if (partitionController == null)
             {
@@ -41,10 +43,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 throw new ArgumentNullException(nameof(partitionLoadBalancingStrategy));
             }
 
+            if (monitor == null)
+            {
+                throw new ArgumentNullException(nameof(monitor));
+            }
+
             this.partitionController = partitionController;
             this.leaseContainer = leaseContainer;
             this.partitionLoadBalancingStrategy = partitionLoadBalancingStrategy;
             this.leaseAcquireInterval = leaseAcquireInterval;
+            this.monitor = monitor;
         }
 
         public override void Start()
@@ -90,6 +98,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                             {
                                 Extensions.TraceException(e);
                                 DefaultTrace.TraceError("Failed to acquire lease: Id={0}, Owner={1}, Timestamp={2}", lease.Id, lease.Owner, lease.Timestamp);
+                                await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, e).ConfigureAwait(false);
                             }
                         }
                     }
@@ -97,6 +106,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                     {
                         Extensions.TraceException(e);
                         DefaultTrace.TraceError("Partition load balancer iteration failed - LeaseAcquireInterval: {0}", this.leaseAcquireInterval);
+                        await this.monitor.NotifyErrorAsync("PartitionLoadBalancer", e).ConfigureAwait(false);
                     }
 
                     await Task.Delay(this.leaseAcquireInterval, this.cancellationTokenSource.Token).ConfigureAwait(false);
