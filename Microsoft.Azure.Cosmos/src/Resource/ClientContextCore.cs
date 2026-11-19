@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
 
             ISecondaryIndexMetadataProvider secondaryIndexMetadataProvider = new SecondaryIndexMetadataProvider(documentClient);
             this.secondaryIndexMetadataCache = new SecondaryIndexMetadataCache(secondaryIndexMetadataProvider);
-            this.documentClient.RegisterSecondaryIndexMetadataInvalidationCallback(this.secondaryIndexMetadataCache.Invalidate);
+            this.documentClient.SecondaryIndexMetadataInvalidator.Register(this.secondaryIndexMetadataCache);
         }
 
         internal static CosmosClientContext Create(

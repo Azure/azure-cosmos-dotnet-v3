@@ -424,7 +424,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             TestProvider provider = new TestProvider((_, _, _) =>
                 Task.FromResult<IReadOnlyList<ISecondaryIndexMetadata>>(new[] { CreateMetadata($"gsi{providerCallSequence++}") }));
             SecondaryIndexMetadataCache cache = new SecondaryIndexMetadataCache(provider);
-            TestClientCollectionCache collectionCache = new TestClientCollectionCache(source, cache.Invalidate);
+            SecondaryIndexMetadataInvalidator invalidator = new SecondaryIndexMetadataInvalidator();
+            TestClientCollectionCache collectionCache = new TestClientCollectionCache(source, invalidator);
+            invalidator.Register(cache);
 
             IEnumerable<ISecondaryIndexMetadata> initial = await cache.GetSecondaryIndexMetadataAsync(
                 source,
@@ -569,7 +571,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 
             public TestClientCollectionCache(
                 ContainerProperties source,
-                Action<string> secondaryIndexMetadataInvalidationCallback)
+                SecondaryIndexMetadataInvalidator secondaryIndexMetadataInvalidator)
                 : base(
                     new SessionContainer("testhost"),
                     new ServerStoreModel(null),
@@ -578,7 +580,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                     telemetryToServiceHelper: null,
                     enableAsyncCacheExceptionNoSharing: true,
                     metadataHedgingStrategy: null,
-                    secondaryIndexMetadataInvalidationCallback: secondaryIndexMetadataInvalidationCallback)
+                    secondaryIndexMetadataInvalidator: secondaryIndexMetadataInvalidator)
             {
                 this.source = source;
             }

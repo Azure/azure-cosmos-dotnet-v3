@@ -37,8 +37,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             TelemetryToServiceHelper telemetryToServiceHelper,
             bool enableAsyncCacheExceptionNoSharing = true,
             MetadataHedgingStrategy metadataHedgingStrategy = null,
-            Action<string> secondaryIndexMetadataInvalidationCallback = null)
-            : base(enableAsyncCacheExceptionNoSharing, secondaryIndexMetadataInvalidationCallback)
+            SecondaryIndexMetadataInvalidator secondaryIndexMetadataInvalidator = null)
+            : base(enableAsyncCacheExceptionNoSharing, secondaryIndexMetadataInvalidator)
         {
             this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
             this.tokenProvider = tokenProvider;
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IClientSideRequestStatistics clientSideRequestStatistics,
             CancellationToken cancellationToken)
         {
-            if (forceRefesh && (this.sessionContainer != null || this.HasSecondaryIndexMetadataInvalidationCallback))
+            if (forceRefesh && (this.sessionContainer != null || this.HasSecondaryIndexMetadataInvalidationTarget))
             {
                 return TaskHelper.InlineIfPossible(
                     async () =>

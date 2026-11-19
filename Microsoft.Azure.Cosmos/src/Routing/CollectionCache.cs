@@ -54,16 +54,16 @@ namespace Microsoft.Azure.Cosmos.Common
         /// for a collection, but this handles the situation if customer is using multiple API versions from different applications
         /// </summary>
         protected readonly InternalCache[] cacheByApiList;
-        private Action<string> secondaryIndexMetadataInvalidationCallback;
+        private readonly SecondaryIndexMetadataInvalidator secondaryIndexMetadataInvalidator;
 
         protected CollectionCache(
             bool enableAsyncCacheExceptionNoSharing = true,
-            Action<string> secondaryIndexMetadataInvalidationCallback = null)
+            SecondaryIndexMetadataInvalidator secondaryIndexMetadataInvalidator = null)
         {
             this.cacheByApiList = new InternalCache[2];
             this.cacheByApiList[0] = new InternalCache(enableAsyncCacheExceptionNoSharing); // for API version < 2018-12-31
             this.cacheByApiList[1] = new InternalCache(enableAsyncCacheExceptionNoSharing); // for API version >= 2018-12-31
-            this.secondaryIndexMetadataInvalidationCallback = secondaryIndexMetadataInvalidationCallback;
+            this.secondaryIndexMetadataInvalidator = secondaryIndexMetadataInvalidator;
         }
 
         /// <summary>
@@ -216,18 +216,9 @@ namespace Microsoft.Azure.Cosmos.Common
             }
         }
 
-        internal void SetSecondaryIndexMetadataInvalidationCallback(
-            Action<string> secondaryIndexMetadataInvalidationCallback)
-        {
-            this.secondaryIndexMetadataInvalidationCallback = secondaryIndexMetadataInvalidationCallback;
-        }
-
         internal void InvalidateSecondaryIndexMetadata(string sourceCollectionRid)
         {
-            if (sourceCollectionRid != null)
-            {
-                this.secondaryIndexMetadataInvalidationCallback?.Invoke(sourceCollectionRid);
-            }
+            this.secondaryIndexMetadataInvalidator?.Invalidate(sourceCollectionRid);
         }
 
         protected abstract Task<ContainerProperties> GetByRidAsync(string apiVersion, 
@@ -382,8 +373,8 @@ namespace Microsoft.Azure.Cosmos.Common
             return this.cacheByApiList[0];
         }
 
-        protected bool HasSecondaryIndexMetadataInvalidationCallback =>
-            this.secondaryIndexMetadataInvalidationCallback != null;
+        protected bool HasSecondaryIndexMetadataInvalidationTarget =>
+            this.secondaryIndexMetadataInvalidator?.HasTarget == true;
 
         private sealed class CollectionRidComparer : IEqualityComparer<ContainerProperties>
         {

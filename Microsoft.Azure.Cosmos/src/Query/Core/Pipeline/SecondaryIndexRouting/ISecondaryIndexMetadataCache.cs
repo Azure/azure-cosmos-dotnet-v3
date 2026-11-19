@@ -7,12 +7,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Caches normalized secondary index metadata by source collection resource identifier.
     /// </summary>
-    internal interface ISecondaryIndexMetadataCache
+    internal interface ISecondaryIndexMetadataCache : ISecondaryIndexMetadataInvalidationTarget
     {
         /// <summary>
         /// Gets secondary index metadata cached by the source resource identifier or discovers it using
@@ -26,10 +27,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             ITrace trace,
             CancellationToken cancellationToken,
             bool forceRefresh = false);
-
-        /// <summary>
-        /// Invalidates all cached secondary index metadata for a source collection.
-        /// </summary>
-        void Invalidate(string sourceCollectionRid);
     }
 }
