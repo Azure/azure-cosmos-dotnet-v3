@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- [MMMM](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/MMMM) LINQ: Fixes `Nullable<T>.HasValue` returning true for properties stored as `null`. Such documents no longer match `HasValue`, now match `!HasValue`, and project `false`. Missing properties and values are unchanged. See [#4864](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4864).
+
 #### Bugs Fixed
 
 #### Other Changes
