@@ -731,8 +731,8 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false, null);
-            mockCollectionCahce
+            Mock<CollectionCache> mockCollectionCache = new(MockBehavior.Strict, false, null);
+            mockCollectionCache
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
@@ -747,7 +747,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
                 protocol: Documents.Client.Protocol.Tcp,
                 tokenProvider: this.mockTokenProvider.Object,
-                collectionCache: mockCollectionCahce.Object,
+                collectionCache: mockCollectionCache.Object,
                 routingMapProvider: this.partitionKeyRangeCache.Object,
                 serviceConfigReader: this.mockServiceConfigReader.Object,
                 connectionPolicy: connectionPolicy,
@@ -810,8 +810,8 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false, null);
-            mockCollectionCahce
+            Mock<CollectionCache> mockCollectionCache = new(MockBehavior.Strict, false, null);
+            mockCollectionCache
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
@@ -826,7 +826,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
                 protocol: Documents.Client.Protocol.Tcp,
                 tokenProvider: this.mockTokenProvider.Object,
-                collectionCache: mockCollectionCahce.Object,
+                collectionCache: mockCollectionCache.Object,
                 routingMapProvider: this.partitionKeyRangeCache.Object,
                 serviceConfigReader: this.mockServiceConfigReader.Object,
                 connectionPolicy: connectionPolicy,
@@ -889,8 +889,8 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false, null);
-            mockCollectionCahce
+            Mock<CollectionCache> mockCollectionCache = new(MockBehavior.Strict, false, null);
+            mockCollectionCache
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
@@ -916,7 +916,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
                 protocol: Documents.Client.Protocol.Tcp,
                 tokenProvider: this.mockTokenProvider.Object,
-                collectionCache: mockCollectionCahce.Object,
+                collectionCache: mockCollectionCache.Object,
                 routingMapProvider: partitionKeyRangeCache.Object,
                 serviceConfigReader: this.mockServiceConfigReader.Object,
                 connectionPolicy: connectionPolicy,
@@ -977,8 +977,8 @@ namespace Microsoft.Azure.Cosmos
                 RequestTimeout = TimeSpan.FromSeconds(120)
             };
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false, null);
-            mockCollectionCahce
+            Mock<CollectionCache> mockCollectionCache = new(MockBehavior.Strict, false, null);
+            mockCollectionCache
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
@@ -993,7 +993,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
                 protocol: Documents.Client.Protocol.Tcp,
                 tokenProvider: this.mockTokenProvider.Object,
-                collectionCache: mockCollectionCahce.Object,
+                collectionCache: mockCollectionCache.Object,
                 routingMapProvider: this.partitionKeyRangeCache.Object,
                 serviceConfigReader: this.mockServiceConfigReader.Object,
                 connectionPolicy: connectionPolicy,
@@ -1740,8 +1740,8 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false, null);
-            mockCollectionCahce
+            Mock<CollectionCache> mockCollectionCache = new(MockBehavior.Strict, false, null);
+            mockCollectionCache
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
@@ -1756,7 +1756,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
                 protocol: Protocol.Tcp,
                 tokenProvider: this.mockTokenProvider.Object,
-                collectionCache: mockCollectionCahce.Object,
+                collectionCache: mockCollectionCache.Object,
                 routingMapProvider: this.partitionKeyRangeCache.Object,
                 serviceConfigReader: this.mockServiceConfigReader.Object,
                 connectionPolicy: connectionPolicy,

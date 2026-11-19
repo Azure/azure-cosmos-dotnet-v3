@@ -46,50 +46,66 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             }
 
             string sourceCollectionRid = source.ResourceId;
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
+            cancellationToken.ThrowIfCancellationRequested();
 
-                if (!this.entries.TryGetValue(sourceCollectionRid, out CacheEntry entry))
-                {
-                    CacheEntry newEntry = this.CreateInitializationEntry(
-                        sourceCollectionRid,
-                        source,
-                        trace,
-                        cancellationToken,
-                        forceCollectionRefresh: forceRefresh);
-                    entry = this.entries.GetOrAdd(sourceCollectionRid, newEntry);
-                }
-
-                if (entry.Initialization != null)
-                {
-                    Snapshot initializedSnapshot = await entry.Initialization.Value;
-                    return initializedSnapshot?.Metadata;
-                }
-
-                Snapshot currentSnapshot = entry.Snapshot;
-                if (!forceRefresh
-                    && !currentSnapshot.IsExpired(this.utcNowProvider())
-                    && string.Equals(
-                        currentSnapshot.MembershipFingerprint,
-                        CreateMembershipFingerprint(source),
-                        StringComparison.Ordinal))
-                {
-                    return currentSnapshot.Metadata;
-                }
-
-                CacheEntry refreshEntry = this.CreateInitializationEntry(
+            // Atomically select the entry for this read. Concurrent callers either reuse the current
+            // snapshot or await the same discovery/refresh entry; only one entry is stored per source RID.
+            CacheEntry entry = this.entries.AddOrUpdate(
+                sourceCollectionRid,
+                _ => this.CreateInitializationEntry(
                     sourceCollectionRid,
                     source,
                     trace,
                     cancellationToken,
-                    forceCollectionRefresh: true);
-                if (this.entries.TryUpdate(sourceCollectionRid, refreshEntry, entry))
-                {
-                    Snapshot refreshedSnapshot = await refreshEntry.Initialization.Value;
-                    return refreshedSnapshot?.Metadata;
-                }
+                    forceCollectionRefresh: forceRefresh),
+                (_, currentEntry) => this.SelectEntry(
+                    currentEntry,
+                    sourceCollectionRid,
+                    source,
+                    trace,
+                    cancellationToken,
+                    forceRefresh));
+
+            Snapshot snapshot = entry.Initialization == null
+                ? entry.Snapshot
+                : await entry.Initialization.Value;
+            return snapshot?.Metadata;
+        }
+
+        private CacheEntry SelectEntry(
+            CacheEntry currentEntry,
+            string sourceCollectionRid,
+            ContainerProperties source,
+            ITrace trace,
+            CancellationToken cancellationToken,
+            bool forceRefresh)
+        {
+            // A discovery or refresh is already running. Reusing this entry coalesces concurrent reads.
+            if (currentEntry.Initialization != null)
+            {
+                return currentEntry;
             }
+
+            Snapshot currentSnapshot = currentEntry.Snapshot;
+            bool sourceMembershipIsUnchanged = string.Equals(
+                currentSnapshot.MembershipFingerprint,
+                CreateMembershipFingerprint(source),
+                StringComparison.Ordinal);
+            if (!forceRefresh
+                && !currentSnapshot.IsExpired(this.utcNowProvider())
+                && sourceMembershipIsUnchanged)
+            {
+                return currentEntry;
+            }
+
+            // Expiration, changed source membership, and explicit refresh all require fresh source and
+            // referenced collection metadata. AddOrUpdate installs only one of these refresh entries.
+            return this.CreateInitializationEntry(
+                sourceCollectionRid,
+                source,
+                trace,
+                cancellationToken,
+                forceCollectionRefresh: true);
         }
 
         public void Invalidate(string sourceCollectionRid)
@@ -153,10 +169,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                     forceCollectionRefresh);
                 if (snapshot == null)
                 {
+                    // Null results are not cached, so the next read performs normal discovery again.
                     this.TryRemoveEntry(sourceCollectionRid, initializingEntry);
                 }
                 else
                 {
+                    // Publish the completed snapshot only if this initialization is still the current entry.
+                    // Explicit invalidation or a newer entry must not be overwritten by an older completion.
                     this.entries.TryUpdate(
                         sourceCollectionRid,
                         new CacheEntry(snapshot),
@@ -167,6 +186,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             }
             catch
             {
+                // Remove only this failed initialization. A snapshot populated after invalidation is preserved.
                 this.TryRemoveEntry(sourceCollectionRid, initializingEntry);
                 throw;
             }

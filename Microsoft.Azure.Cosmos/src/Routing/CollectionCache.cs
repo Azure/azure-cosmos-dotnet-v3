@@ -221,6 +221,9 @@ namespace Microsoft.Azure.Cosmos.Common
             this.secondaryIndexMetadataInvalidator?.Invalidate(sourceCollectionRid);
         }
 
+        protected bool HasSecondaryIndexMetadataInvalidationTarget =>
+            this.secondaryIndexMetadataInvalidator?.HasTarget == true;
+
         protected abstract Task<ContainerProperties> GetByRidAsync(string apiVersion, 
                                 string collectionRid, 
                                 ITrace trace, 
@@ -372,9 +375,6 @@ namespace Microsoft.Azure.Cosmos.Common
 
             return this.cacheByApiList[0];
         }
-
-        protected bool HasSecondaryIndexMetadataInvalidationTarget =>
-            this.secondaryIndexMetadataInvalidator?.HasTarget == true;
 
         private sealed class CollectionRidComparer : IEqualityComparer<ContainerProperties>
         {
