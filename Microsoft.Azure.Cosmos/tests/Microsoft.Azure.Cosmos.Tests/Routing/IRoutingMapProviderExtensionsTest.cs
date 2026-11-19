@@ -81,13 +81,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         /// </summary>
         [TestMethod]
         [Owner("padmaa")]
-        [ExpectedException(typeof(ArgumentException))]
         public async Task TestOverlappingRanges1()
         {
-            await this.routingMapProvider.TryGetOverlappingRangesAsync(
+            ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(() => this.routingMapProvider.TryGetOverlappingRangesAsync(
                 "dbs/db1/colls/coll1",
                 new[] { new Range<string>("0A", "0D", true, true), new Range<string>("0B", "0E", true, true) },
-                NoOpTrace.Singleton);
+                NoOpTrace.Singleton));
+
+            AssertOverlapMessage(exception, "[0A,0D]", "[0B,0E]");
         }
 
         /// <summary>
@@ -95,13 +96,119 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         /// </summary>
         [TestMethod]
         [Owner("padmaa")]
-        [ExpectedException(typeof(ArgumentException))]
         public async Task TestOverlappingRanges2()
         {
-            await this.routingMapProvider.TryGetOverlappingRangesAsync(
+            ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(() => this.routingMapProvider.TryGetOverlappingRangesAsync(
                 "dbs/db1/colls/coll1",
                 new[] { new Range<string>("0A", "0D", true, true), new Range<string>("0D", "0E", true, true) },
+                NoOpTrace.Singleton));
+
+            AssertOverlapMessage(exception, "[0A,0D]", "[0D,0E]");
+        }
+
+        [DataTestMethod]
+        [DataRow(true, true, "[000A,0020]")]
+        [DataRow(true, false, "[000A,0020)")]
+        [DataRow(false, true, "(000A,0020]")]
+        [DataRow(false, false, "(000A,0020)")]
+        public async Task TestContainedPointIncludesConflictingRanges(bool isMinInclusive, bool isMaxInclusive, string expectedOuterRange)
+        {
+            ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(() => this.routingMapProvider.TryGetOverlappingRangesAsync(
+                "dbs/db1/colls/coll1",
+                new[]
+                {
+                    Range<string>.GetPointRange("0040"),
+                    Range<string>.GetPointRange("0010"),
+                    new Range<string>("000A", "0020", isMinInclusive, isMaxInclusive),
+                },
+                NoOpTrace.Singleton));
+
+            AssertOverlapMessage(exception, expectedOuterRange, "[0010,0010]");
+            Assert.IsFalse(exception.Message.Contains("0040"), "Only the first conflicting pair should be reported.");
+        }
+
+        [DataTestMethod]
+        [DataRow(true, false)]
+        [DataRow(false, true)]
+        [DataRow(false, false)]
+        public async Task TestTouchingRangesWithoutSharedInclusivePoint(bool isFirstMaxInclusive, bool isSecondMinInclusive)
+        {
+            List<PartitionKeyRange> ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
+                "dbs/db1/colls/coll1",
+                new[]
+                {
+                    new Range<string>("000B", "000D", true, isFirstMaxInclusive),
+                    new Range<string>("000D", "0010", isSecondMinInclusive, false),
+                },
                 NoOpTrace.Singleton);
+
+            Assert.AreEqual("1,2", string.Join(",", ranges.Select(range => range.Id)));
+        }
+
+        [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task TestPointAtRangeMaximum(bool isMaxInclusive)
+        {
+            Range<string>[] queryRanges =
+            {
+                new Range<string>("000B", "000D", true, isMaxInclusive),
+                Range<string>.GetPointRange("000D"),
+            };
+            if (isMaxInclusive)
+            {
+                ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(() => this.routingMapProvider.TryGetOverlappingRangesAsync(
+                    "dbs/db1/colls/coll1", queryRanges, NoOpTrace.Singleton));
+
+                AssertOverlapMessage(exception, "[000B,000D]", "[000D,000D]");
+            }
+            else
+            {
+                List<PartitionKeyRange> ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
+                    "dbs/db1/colls/coll1", queryRanges, NoOpTrace.Singleton);
+
+                Assert.AreEqual("1,2", string.Join(",", ranges.Select(range => range.Id)));
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task TestInputIsEnumeratedOnce(bool hasOverlap)
+        {
+            int enumerationCount = 0;
+            IEnumerable<Range<string>> EnumerateOnce()
+            {
+                Assert.AreEqual(0, enumerationCount++, "The input ranges must not be enumerated a second time.");
+                yield return new Range<string>("000B", "000D", true, false);
+                yield return hasOverlap
+                    ? Range<string>.GetPointRange("000C")
+                    : new Range<string>("0021", "0030", true, false);
+            }
+
+            if (hasOverlap)
+            {
+                ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(() => this.routingMapProvider.TryGetOverlappingRangesAsync(
+                    "dbs/db1/colls/coll1", EnumerateOnce(), NoOpTrace.Singleton));
+
+                AssertOverlapMessage(exception, "[000B,000D)", "[000C,000C]");
+            }
+            else
+            {
+                List<PartitionKeyRange> ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
+                    "dbs/db1/colls/coll1", EnumerateOnce(), NoOpTrace.Singleton);
+
+                Assert.AreEqual("1,5", string.Join(",", ranges.Select(range => range.Id)));
+            }
+
+            Assert.AreEqual(1, enumerationCount);
+        }
+
+        private static void AssertOverlapMessage(ArgumentException exception, string firstRange, string secondRange)
+        {
+            StringAssert.StartsWith(exception.Message, "sortedRanges had overlaps.");
+            StringAssert.Contains(exception.Message, firstRange);
+            StringAssert.Contains(exception.Message, secondRange);
         }
 
         /// <summary>
