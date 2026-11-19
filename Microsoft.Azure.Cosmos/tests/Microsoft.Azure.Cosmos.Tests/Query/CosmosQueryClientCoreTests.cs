@@ -42,6 +42,36 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             };
             MultiHashQueryPlanTestHelper.WriteRanges(injectedRanges, this.TestContext);
             using MockDocumentClient documentClient = new MockDocumentClient();
+            (CosmosQueryClientCore queryClient, PartitionedQueryExecutionInfo plan) =
+                await GetInjectedGatewayPlanAsync(documentClient, injectedRanges);
+
+            await Pipeline.FactoryTests.VerifyOverlappingQueryPlanExecutionAsync(queryClient, plan);
+        }
+
+        [TestMethod]
+        public async Task OverlappingQueryPlan_InjectedPartialOverlapStillFailsAsync()
+        {
+            List<Range<string>> injectedRanges = new List<Range<string>>
+            {
+                new Range<string>("10", "30", true, false),
+                new Range<string>("20", "40", true, false),
+            };
+            using MockDocumentClient documentClient = new MockDocumentClient();
+            (CosmosQueryClientCore queryClient, PartitionedQueryExecutionInfo plan) =
+                await GetInjectedGatewayPlanAsync(documentClient, injectedRanges);
+
+            CollectionAssert.AreEqual(injectedRanges, plan.QueryRanges);
+            ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                Pipeline.FactoryTests.VerifyOverlappingQueryPlanExecutionAsync(queryClient, plan));
+            StringAssert.StartsWith(exception.Message, "sortedRanges had overlaps.");
+            StringAssert.Contains(exception.Message, "[10,30)");
+            StringAssert.Contains(exception.Message, "[20,40)");
+        }
+
+        private static async Task<(CosmosQueryClientCore QueryClient, PartitionedQueryExecutionInfo Plan)> GetInjectedGatewayPlanAsync(
+            MockDocumentClient documentClient,
+            List<Range<string>> injectedRanges)
+        {
             Mock<CosmosClientContext> context = MultiHashQueryPlanTestHelper.CreateContext(documentClient);
             const string supportedFeatures = "NonValueAggregate";
             Guid correlationId = Guid.NewGuid();
@@ -76,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 null, null, (Cosmos.FeedRange)null, It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
                 NoOpTrace.Singleton, CancellationToken.None), Times.Once);
 
-            await Pipeline.FactoryTests.VerifyOverlappingQueryPlanExecutionAsync(queryClient, plan);
+            return (queryClient, plan);
         }
 
         [DataTestMethod]

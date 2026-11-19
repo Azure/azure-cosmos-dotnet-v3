@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class FactoryTests
@@ -57,8 +58,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         internal static async Task VerifyOverlappingQueryPlanExecutionAsync(
             CosmosQueryClientCore queryClient,
             PartitionedQueryExecutionInfo queryPlan,
-            SqlQuerySpec query = null)
+            SqlQuerySpec query = null,
+            FullTextScoreScope scope = FullTextScoreScope.Global)
         {
+            bool hybrid = queryPlan.HybridSearchQueryInfo != null;
             List<Range<string>> requestedRanges = new List<Range<string>>();
             Mock<IMonadicDocumentContainer> source = new Mock<IMonadicDocumentContainer>(MockBehavior.Strict);
             source.Setup(container => container.MonadicQueryAsync(
@@ -67,9 +70,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 .Returns<SqlQuerySpec, FeedRangeState<QueryState>, QueryExecutionOptions, ITrace, CancellationToken>(
                     (sql, state, options, trace, cancellationToken) =>
                     {
+                        bool statisticsQuery = hybrid && sql.QueryText == queryPlan.HybridSearchQueryInfo.GlobalStatisticsQuery;
+                        if (hybrid)
+                        {
+                            Assert.IsTrue(statisticsQuery || sql.QueryText == "SELECT * FROM c");
+                        }
+
                         requestedRanges.Add(((FeedRangeEpk)state.FeedRange).Range);
+                        CosmosElement[] documents = hybrid && !statisticsQuery
+                            ? Array.Empty<CosmosElement>()
+                            : new[] { CosmosElement.Parse(hybrid
+                                ? @"{""documentCount"":1,""fullTextStatistics"":[]}"
+                                : @"{""id"":""routing-reached""}") };
                         return Task.FromResult(TryCatch<QueryPage>.FromResult(new QueryPage(
-                            new[] { CosmosElement.Parse(@"{""id"":""routing-reached""}") },
+                            documents,
                             requestCharge: 1, activityId: "overlap-repro",
                             cosmosQueryExecutionInfo: null, distributionPlanSpec: null,
                             disallowContinuationTokenMessage: null, additionalHeaders: null,
@@ -82,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 partitionKey: null, properties: null, partitionedQueryExecutionInfo: queryPlan,
                 returnResultsInDeterministicOrder: true, enableOptimisticDirectExecution: false,
                 isHybridSearchQueryPlanOptimizationDisabled: false, enableDistributedQueryGatewayMode: false,
-                fullTextScoreScope: FullTextScoreScope.Global, testInjections: null);
+                fullTextScoreScope: scope, testInjections: null);
             CosmosQueryContextCore context = new CosmosQueryContextCore(
                 queryClient, ResourceType.Document, OperationType.Query, typeof(object),
                 MultiHashQueryPlanTestHelper.ContainerLink, Guid.NewGuid(), isContinuationExpected: false,
@@ -92,11 +106,113 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 new DocumentContainer(source.Object), context, input, NoOpTrace.Singleton);
             Assert.IsTrue(await pipeline.MoveNextAsync(NoOpTrace.Singleton, CancellationToken.None));
             Assert.IsTrue(pipeline.Current.Succeeded, pipeline.Current.Failed ? pipeline.Current.Exception.ToString() : string.Empty);
-            Assert.AreEqual(1, pipeline.Current.Result.Documents.Count);
-            Assert.AreEqual(@"{""id"":""routing-reached""}", pipeline.Current.Result.Documents[0].ToString());
-            Assert.IsFalse(await pipeline.MoveNextAsync(NoOpTrace.Singleton, CancellationToken.None));
+            Assert.AreEqual(hybrid ? 0 : 1, pipeline.Current.Result.Documents.Count);
+            Assert.AreEqual(1d, pipeline.Current.Result.RequestCharge);
+            if (!hybrid)
+            {
+                Assert.AreEqual(@"{""id"":""routing-reached""}", pipeline.Current.Result.Documents[0].ToString());
+                Assert.IsFalse(await pipeline.MoveNextAsync(NoOpTrace.Singleton, CancellationToken.None));
+            }
+            else
+            {
+                double requestCharge = pipeline.Current.Result.RequestCharge;
+                while (await pipeline.MoveNextAsync(NoOpTrace.Singleton, CancellationToken.None))
+                {
+                    Assert.IsTrue(pipeline.Current.Succeeded, pipeline.Current.Failed ? pipeline.Current.Exception.ToString() : string.Empty);
+                    Assert.AreEqual(0, pipeline.Current.Result.Documents.Count);
+                    requestCharge += pipeline.Current.Result.RequestCharge;
+                }
+
+                Assert.AreEqual(2d, requestCharge);
+            }
+
             CollectionAssert.AreEqual(
-                new[] { new Range<string>("", "FF", true, false) }, requestedRanges);
+                Enumerable.Repeat(new Range<string>("", "FF", true, false), hybrid ? 2 : 1).ToArray(), requestedRanges);
+        }
+
+        [DataTestMethod]
+        [DataRow("TryParse")]
+        [DataRow("GatewaySerializer")]
+        [DataRow("LegacyContinuation")]
+        public async Task OverlappingQueryPlan_RehydratedPlanExecutesAsync(string source)
+        {
+            string json = JsonConvert.SerializeObject(new
+            {
+                queryInfo = new QueryInfo(),
+                queryRanges = new[]
+                {
+                    Range<string>.GetPointRange("15"),
+                    new Range<string>("10", "20", true, false),
+                },
+            });
+            PartitionedQueryExecutionInfo plan = PartitionedQueryExecutionInfoTests.DeserializePlan(source, json);
+            using MockDocumentClient documentClient = new MockDocumentClient();
+            CosmosQueryClientCore queryClient = new CosmosQueryClientCore(
+                MultiHashQueryPlanTestHelper.CreateContext(documentClient).Object, null);
+
+            await VerifyOverlappingQueryPlanExecutionAsync(queryClient, plan);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task OverlappingQueryPlan_HybridWithoutOrdinaryQueryInfoExecutesAsync(bool localScope)
+        {
+            HybridSearchQueryInfo hybrid = new HybridSearchQueryInfo
+            {
+                RequiresGlobalStatistics = true,
+                GlobalStatisticsQuery = "SELECT COUNT(1) AS documentCount FROM c",
+                ComponentQueryInfos = new List<QueryInfo> { new QueryInfo { RewrittenQuery = "SELECT * FROM c" } },
+            };
+            PartitionedQueryExecutionInfo plan = new PartitionedQueryExecutionInfo
+            {
+                HybridSearchQueryInfo = hybrid,
+                QueryRanges = new List<Range<string>>
+                {
+                    new Range<string>("10", "20", true, false),
+                    Range<string>.GetPointRange("15"),
+                },
+            };
+            using MockDocumentClient documentClient = new MockDocumentClient();
+            CosmosQueryClientCore queryClient = new CosmosQueryClientCore(
+                MultiHashQueryPlanTestHelper.CreateContext(documentClient).Object, null);
+
+            await VerifyOverlappingQueryPlanExecutionAsync(queryClient, plan,
+                scope: localScope ? FullTextScoreScope.Local : FullTextScoreScope.Global);
+
+            Assert.IsNull(plan.QueryInfo);
+            Assert.AreSame(hybrid, plan.HybridSearchQueryInfo);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task OverlappingQueryPlan_ExplicitRoutingDoesNotUsePlanRangesAsync(bool usePartitionKey)
+        {
+            PartitionedQueryExecutionInfo plan = new PartitionedQueryExecutionInfo
+            {
+                QueryRanges = new List<Range<string>>
+                {
+                    new Range<string>("10", "30", true, false),
+                    new Range<string>("20", "40", true, false),
+                },
+            };
+            using MockDocumentClient documentClient = new MockDocumentClient();
+            CosmosQueryClientCore queryClient = new CosmosQueryClientCore(
+                MultiHashQueryPlanTestHelper.CreateContext(documentClient).Object, null);
+            Cosmos.PartitionKey? partitionKey = usePartitionKey ? new PartitionKeyBuilder().Add("tenant-1").Build() : null;
+            ContainerQueryProperties properties = await queryClient.GetCachedContainerQueryPropertiesAsync(
+                MultiHashQueryPlanTestHelper.ContainerLink, partitionKey, NoOpTrace.Singleton, CancellationToken.None);
+
+            List<PartitionKeyRange> ranges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
+                queryClient, MultiHashQueryPlanTestHelper.ContainerLink, plan, properties,
+                properties: null,
+                feedRangeInternal: usePartitionKey ? null : new FeedRangeEpk(new Range<string>("10", "20", true, false)),
+                trace: NoOpTrace.Singleton);
+
+            Assert.AreEqual(1, ranges.Count);
+            Assert.AreEqual("0", ranges[0].Id);
+            Assert.AreEqual(2, plan.QueryRanges.Count, "Genuine partial overlaps must not be repaired.");
         }
 
         [TestMethod]

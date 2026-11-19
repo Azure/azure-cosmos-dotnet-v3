@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- Query: Prevents hierarchical-partition-key queries from failing when a query plan contains redundant ranges fully covered by another range. Errors for remaining invalid overlaps now identify the conflicting ranges.
 - [6210](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6210) Partition routing: Resumes partition-key range cache initialization from the last successfully read change-feed page after throttling retries are exhausted, avoiding redundant rereads from the beginning.
 
 #### Other Changes
