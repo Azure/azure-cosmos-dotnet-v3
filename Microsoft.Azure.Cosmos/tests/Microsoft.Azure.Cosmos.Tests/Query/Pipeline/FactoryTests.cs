@@ -35,6 +35,70 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     {
         public TestContext TestContext { get; set; }
 
+        [DataTestMethod]
+        [DataRow("HighHigh")]
+        [DataRow("LowLow")]
+        [DataRow("Mixed")]
+        [DataRow("MixedReversed")]
+        [DataRow("Concat")]
+        [DataRow("CaseSensitive")]
+        [DataRow("FiveSixLetters")]
+        public async Task OverlappingQueryPlan_NativePlanExecutesAsync(string name)
+        {
+            using QueryPartitionProvider provider = MultiHashQueryPlanTestHelper.CreateProvider();
+            SqlQuerySpec query = MultiHashQueryPlanTestHelper.CreateQuery(name);
+            PartitionedQueryExecutionInfo plan = MultiHashQueryPlanTestHelper.GetNativePlan(provider, query, this.TestContext);
+            using MockDocumentClient documentClient = new MockDocumentClient();
+            CosmosQueryClientCore queryClient = new CosmosQueryClientCore(
+                MultiHashQueryPlanTestHelper.CreateContext(documentClient).Object, null);
+            await VerifyOverlappingQueryPlanExecutionAsync(queryClient, plan, query);
+        }
+
+        internal static async Task VerifyOverlappingQueryPlanExecutionAsync(
+            CosmosQueryClientCore queryClient,
+            PartitionedQueryExecutionInfo queryPlan,
+            SqlQuerySpec query = null)
+        {
+            List<Range<string>> requestedRanges = new List<Range<string>>();
+            Mock<IMonadicDocumentContainer> source = new Mock<IMonadicDocumentContainer>(MockBehavior.Strict);
+            source.Setup(container => container.MonadicQueryAsync(
+                It.IsAny<SqlQuerySpec>(), It.IsAny<FeedRangeState<QueryState>>(), It.IsAny<QueryExecutionOptions>(),
+                It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .Returns<SqlQuerySpec, FeedRangeState<QueryState>, QueryExecutionOptions, ITrace, CancellationToken>(
+                    (sql, state, options, trace, cancellationToken) =>
+                    {
+                        requestedRanges.Add(((FeedRangeEpk)state.FeedRange).Range);
+                        return Task.FromResult(TryCatch<QueryPage>.FromResult(new QueryPage(
+                            new[] { CosmosElement.Parse(@"{""id"":""routing-reached""}") },
+                            requestCharge: 1, activityId: "overlap-repro",
+                            cosmosQueryExecutionInfo: null, distributionPlanSpec: null,
+                            disallowContinuationTokenMessage: null, additionalHeaders: null,
+                            state: null, streaming: false)));
+                    });
+            CosmosQueryExecutionContextFactory.InputParameters input = CosmosQueryExecutionContextFactory.InputParameters.Create(
+                sqlQuerySpec: query ?? new SqlQuerySpec("SELECT * FROM c"),
+                initialUserContinuationToken: null, initialFeedRange: null,
+                maxConcurrency: 1, maxItemCount: 10, maxBufferedItemCount: 10,
+                partitionKey: null, properties: null, partitionedQueryExecutionInfo: queryPlan,
+                returnResultsInDeterministicOrder: true, enableOptimisticDirectExecution: false,
+                isHybridSearchQueryPlanOptimizationDisabled: false, enableDistributedQueryGatewayMode: false,
+                fullTextScoreScope: FullTextScoreScope.Global, testInjections: null);
+            CosmosQueryContextCore context = new CosmosQueryContextCore(
+                queryClient, ResourceType.Document, OperationType.Query, typeof(object),
+                MultiHashQueryPlanTestHelper.ContainerLink, Guid.NewGuid(), isContinuationExpected: false,
+                allowNonValueAggregateQuery: true, useSystemPrefix: false);
+
+            await using IQueryPipelineStage pipeline = CosmosQueryExecutionContextFactory.Create(
+                new DocumentContainer(source.Object), context, input, NoOpTrace.Singleton);
+            Assert.IsTrue(await pipeline.MoveNextAsync(NoOpTrace.Singleton, CancellationToken.None));
+            Assert.IsTrue(pipeline.Current.Succeeded, pipeline.Current.Failed ? pipeline.Current.Exception.ToString() : string.Empty);
+            Assert.AreEqual(1, pipeline.Current.Result.Documents.Count);
+            Assert.AreEqual(@"{""id"":""routing-reached""}", pipeline.Current.Result.Documents[0].ToString());
+            Assert.IsFalse(await pipeline.MoveNextAsync(NoOpTrace.Singleton, CancellationToken.None));
+            CollectionAssert.AreEqual(
+                new[] { new Range<string>("", "FF", true, false) }, requestedRanges);
+        }
+
         [TestMethod]
         public void TestCreate()
         {
