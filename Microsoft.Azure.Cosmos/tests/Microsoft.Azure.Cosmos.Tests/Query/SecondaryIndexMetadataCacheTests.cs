@@ -247,6 +247,51 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         }
 
         [TestMethod]
+        public async Task FailedRefreshDoesNotRemoveSnapshotPopulatedAfterInvalidation()
+        {
+            TaskCompletionSource<bool> refreshStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> releaseRefresh = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TestProvider provider = new TestProvider(async (_, _, _, forceRefresh) =>
+            {
+                if (forceRefresh)
+                {
+                    refreshStarted.SetResult(true);
+                    await releaseRefresh.Task;
+                    throw new InvalidOperationException("refresh failed");
+                }
+
+                return new[] { CreateMetadata($"gsi{providerCallSequence++}") };
+            });
+            TestClock clock = new TestClock();
+            SecondaryIndexMetadataCache cache = new SecondaryIndexMetadataCache(provider, utcNowProvider: clock.GetUtcNow);
+            ContainerProperties source = CreateSource();
+
+            await cache.GetSecondaryIndexMetadataAsync(source, NoOpTrace.Singleton, CancellationToken.None);
+            clock.Advance(SecondaryIndexMetadataCache.SnapshotTimeToLive);
+            Task<IEnumerable<ISecondaryIndexMetadata>> failedRefresh = cache.GetSecondaryIndexMetadataAsync(
+                source,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+            await refreshStarted.Task;
+
+            cache.Invalidate(source.ResourceId);
+            IEnumerable<ISecondaryIndexMetadata> replacement = await cache.GetSecondaryIndexMetadataAsync(
+                source,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+            releaseRefresh.SetResult(true);
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => await failedRefresh);
+            IEnumerable<ISecondaryIndexMetadata> cached = await cache.GetSecondaryIndexMetadataAsync(
+                source,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.AreSame(replacement, cached);
+            Assert.AreEqual("gsi1", cached.Single().Rid);
+            Assert.AreEqual(3, provider.CallCount);
+        }
+
+        [TestMethod]
         public async Task ForceRefreshAndInvalidationReplaceWholeSnapshot()
         {
             ContainerProperties source = CreateSource();

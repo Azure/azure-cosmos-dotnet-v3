@@ -457,14 +457,16 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ClearSessionTokenCache(collectionLink);
 
-            ClientCollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
-            await collectionCache.ResolveByNameAsync(
-                HttpConstants.Versions.CurrentVersion,
-                collectionLink,
-                forceRefesh: true,
-                trace: NoOpTrace.Singleton,
-                clientSideRequestStatistics: null,
-                cancellationToken);
+            CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
+            using (Documents.DocumentServiceRequest request = Documents.DocumentServiceRequest.Create(
+               Documents.OperationType.Query,
+               Documents.ResourceType.Collection,
+               collectionLink,
+               Documents.AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
+            {
+                request.ForceNameCacheRefresh = true;
+                await collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
+            }
         }
 
         public override async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(

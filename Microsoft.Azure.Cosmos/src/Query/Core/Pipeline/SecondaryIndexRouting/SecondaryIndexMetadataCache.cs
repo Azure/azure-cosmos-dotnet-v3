@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Text;
     using System.Threading;
@@ -17,16 +18,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         internal static readonly TimeSpan SnapshotTimeToLive = TimeSpan.FromMinutes(3);
 
         private readonly ISecondaryIndexMetadataProvider provider;
-        private readonly AsyncCache<string, Snapshot> cache;
+        private readonly ConcurrentDictionary<string, CacheEntry> entries = new ConcurrentDictionary<string, CacheEntry>();
         private readonly Func<DateTime> utcNowProvider;
 
         public SecondaryIndexMetadataCache(
             ISecondaryIndexMetadataProvider indexMetadataProvider,
-            bool enableAsyncCacheExceptionNoSharing = true,
             Func<DateTime> utcNowProvider = null)
         {
             this.provider = indexMetadataProvider ?? throw new ArgumentNullException(nameof(indexMetadataProvider));
-            this.cache = new AsyncCache<string, Snapshot>(enableAsyncCacheExceptionNoSharing);
             this.utcNowProvider = utcNowProvider ?? (() => DateTime.UtcNow);
         }
 
@@ -47,42 +46,50 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             }
 
             string sourceCollectionRid = source.ResourceId;
-            if (forceRefresh)
+            while (true)
             {
-                Snapshot forcedSnapshot = await this.cache.GetAsync(
-                    sourceCollectionRid,
-                    obsoleteValue: null,
-                    () => this.CreateSnapshotAsync(source, trace, cancellationToken, forceCollectionRefresh: true),
-                    cancellationToken,
-                    forceRefresh: true);
-                return forcedSnapshot?.Metadata;
-            }
+                cancellationToken.ThrowIfCancellationRequested();
 
-            Snapshot currentSnapshot = await this.cache.GetAsync(
-                sourceCollectionRid,
-                obsoleteValue: null,
-                () => this.CreateSnapshotAsync(source, trace, cancellationToken, forceCollectionRefresh: false),
-                cancellationToken,
-                retryOnSharedInitializationFailure: false);
+                if (!this.entries.TryGetValue(sourceCollectionRid, out CacheEntry entry))
+                {
+                    CacheEntry newEntry = this.CreateInitializationEntry(
+                        sourceCollectionRid,
+                        source,
+                        trace,
+                        cancellationToken,
+                        forceCollectionRefresh: forceRefresh);
+                    entry = this.entries.GetOrAdd(sourceCollectionRid, newEntry);
+                }
 
-            if (currentSnapshot == null
-                || (!currentSnapshot.IsExpired(this.utcNowProvider())
+                if (entry.Initialization != null)
+                {
+                    Snapshot initializedSnapshot = await entry.Initialization.Value;
+                    return initializedSnapshot?.Metadata;
+                }
+
+                Snapshot currentSnapshot = entry.Snapshot;
+                if (!forceRefresh
+                    && !currentSnapshot.IsExpired(this.utcNowProvider())
                     && string.Equals(
                         currentSnapshot.MembershipFingerprint,
                         CreateMembershipFingerprint(source),
-                        StringComparison.Ordinal)))
-            {
-                return currentSnapshot?.Metadata;
-            }
+                        StringComparison.Ordinal))
+                {
+                    return currentSnapshot.Metadata;
+                }
 
-            // Refresh this snapshot only if it is still cached; concurrent callers await the same replacement.
-            Snapshot refreshedSnapshot = await this.cache.GetAsync(
-                sourceCollectionRid,
-                obsoleteValue: currentSnapshot,
-                () => this.CreateSnapshotAsync(source, trace, cancellationToken, forceCollectionRefresh: true),
-                cancellationToken,
-                retryOnSharedInitializationFailure: false);
-            return refreshedSnapshot?.Metadata;
+                CacheEntry refreshEntry = this.CreateInitializationEntry(
+                    sourceCollectionRid,
+                    source,
+                    trace,
+                    cancellationToken,
+                    forceCollectionRefresh: true);
+                if (this.entries.TryUpdate(sourceCollectionRid, refreshEntry, entry))
+                {
+                    Snapshot refreshedSnapshot = await refreshEntry.Initialization.Value;
+                    return refreshedSnapshot?.Metadata;
+                }
+            }
         }
 
         public void Invalidate(string sourceCollectionRid)
@@ -92,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 throw new ArgumentNullException(nameof(sourceCollectionRid));
             }
 
-            this.cache.Remove(sourceCollectionRid);
+            this.entries.TryRemove(sourceCollectionRid, out _);
         }
 
         private static string CreateMembershipFingerprint(ContainerProperties source)
@@ -107,6 +114,68 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             }
 
             return fingerprint.ToString();
+        }
+
+        private CacheEntry CreateInitializationEntry(
+            string sourceCollectionRid,
+            ContainerProperties source,
+            ITrace trace,
+            CancellationToken cancellationToken,
+            bool forceCollectionRefresh)
+        {
+            CacheEntry entry = null;
+            entry = new CacheEntry(new AsyncLazy<Snapshot>(
+                () => this.InitializeEntryAsync(
+                    sourceCollectionRid,
+                    entry,
+                    source,
+                    trace,
+                    cancellationToken,
+                    forceCollectionRefresh),
+                CancellationToken.None));
+            return entry;
+        }
+
+        private async Task<Snapshot> InitializeEntryAsync(
+            string sourceCollectionRid,
+            CacheEntry initializingEntry,
+            ContainerProperties source,
+            ITrace trace,
+            CancellationToken cancellationToken,
+            bool forceCollectionRefresh)
+        {
+            try
+            {
+                Snapshot snapshot = await this.CreateSnapshotAsync(
+                    source,
+                    trace,
+                    cancellationToken,
+                    forceCollectionRefresh);
+                if (snapshot == null)
+                {
+                    this.TryRemoveEntry(sourceCollectionRid, initializingEntry);
+                }
+                else
+                {
+                    this.entries.TryUpdate(
+                        sourceCollectionRid,
+                        new CacheEntry(snapshot),
+                        initializingEntry);
+                }
+
+                return snapshot;
+            }
+            catch
+            {
+                this.TryRemoveEntry(sourceCollectionRid, initializingEntry);
+                throw;
+            }
+        }
+
+        private bool TryRemoveEntry(string sourceCollectionRid, CacheEntry entry)
+        {
+            ICollection<KeyValuePair<string, CacheEntry>> entries = this.entries;
+            return entries.Remove(new KeyValuePair<string, CacheEntry>(sourceCollectionRid, entry));
         }
 
         private async Task<Snapshot> CreateSnapshotAsync(
@@ -126,6 +195,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                     metadata,
                     CreateMembershipFingerprint(source),
                     this.utcNowProvider());
+        }
+
+        private sealed class CacheEntry
+        {
+            public CacheEntry(Snapshot snapshot)
+            {
+                this.Snapshot = snapshot;
+            }
+
+            public CacheEntry(AsyncLazy<Snapshot> initialization)
+            {
+                this.Initialization = initialization;
+            }
+
+            public AsyncLazy<Snapshot> Initialization { get; }
+
+            public Snapshot Snapshot { get; }
         }
 
         /// <summary>

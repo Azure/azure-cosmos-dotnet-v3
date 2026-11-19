@@ -84,8 +84,7 @@ namespace Microsoft.Azure.Cosmos.Common
         /// it is equal to <paramref name="obsoleteValue"/>, in which case new initialization function will be started.
         /// </para>
         /// <para>
-        /// If previous initialization function failed - new one will be launched when
-        /// <paramref name="retryOnSharedInitializationFailure"/> is true.
+        /// If previous initialization function failed - new one will be launched.
         /// </para>
         /// </summary>
         /// <param name="key">Key for which to get a value.</param>
@@ -93,18 +92,13 @@ namespace Microsoft.Azure.Cosmos.Common
         /// <param name="singleValueInitFunc">Initialization function.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <param name="forceRefresh">Skip cached value and generate new value.</param>
-        /// <param name="retryOnSharedInitializationFailure">
-        /// Whether a caller awaiting another caller's initialization should retry after it fails.
-        /// Canceled initializations are always retried with the current caller's initializer.
-        /// </param>
         /// <returns>Cached value or value returned by initialization function.</returns>
         public async Task<TValue> GetAsync(
            TKey key,
            TValue obsoleteValue,
            Func<Task<TValue>> singleValueInitFunc,
            CancellationToken cancellationToken,
-           bool forceRefresh = false,
-           bool retryOnSharedInitializationFailure = true)
+           bool forceRefresh = false)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -120,10 +114,10 @@ namespace Microsoft.Azure.Cosmos.Common
                         return await initialLazyValue.Value;
                     }
 
-                    // Retry canceled shared initializations or, when enabled, other shared failures.
-                    catch (Exception exception) when (
-                        exception is OperationCanceledException
-                        || retryOnSharedInitializationFailure)
+                    // It does not matter to us if this instance of the task throws - the lambda that failed was provided by a different caller.
+                    // The exception that we see here will be handled/logged by whatever caller provided the failing lambda, if any. Our part is catching and observing it.
+                    // As such, we discard this exception and will retry with our own lambda below, for which we will let exception bubble up.
+                    catch
                     {
                     }
                 }

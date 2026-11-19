@@ -288,55 +288,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task TestFailureOnOneThreadCanBeSharedWithoutRetry()
-        {
-            AsyncCache<int, int> cache = new AsyncCache<int, int>();
-            TaskCompletionSource<bool> generatorStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            TaskCompletionSource<bool> releaseGenerator = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            InvalidOperationException expectedException = new InvalidOperationException("shared failure");
-            bool retryGeneratorCalled = false;
-
-            Task<int> first = cache.GetAsync(
-                key: 1,
-                obsoleteValue: -1,
-                singleValueInitFunc: async () =>
-                {
-                    generatorStarted.SetResult(true);
-                    await releaseGenerator.Task;
-                    throw expectedException;
-                },
-                cancellationToken: CancellationToken.None);
-            await generatorStarted.Task;
-            Task<int> concurrent = cache.GetAsync(
-                key: 1,
-                obsoleteValue: -1,
-                singleValueInitFunc: () =>
-                {
-                    retryGeneratorCalled = true;
-                    return Task.FromResult(2);
-                },
-                cancellationToken: CancellationToken.None,
-                retryOnSharedInitializationFailure: false);
-
-            releaseGenerator.SetResult(true);
-
-            InvalidOperationException firstException =
-                await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => await first);
-            InvalidOperationException concurrentException =
-                await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => await concurrent);
-            int replacement = await cache.GetAsync(
-                key: 1,
-                obsoleteValue: -1,
-                singleValueInitFunc: () => Task.FromResult(2),
-                cancellationToken: CancellationToken.None);
-
-            Assert.AreSame(expectedException, firstException);
-            Assert.AreSame(expectedException, concurrentException);
-            Assert.IsFalse(retryGeneratorCalled);
-            Assert.AreEqual(2, replacement);
-        }
-
-        [TestMethod]
         [Timeout(60000)]
         public async Task TestAsyncDeadlock()
         {
