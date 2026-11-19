@@ -41,24 +41,33 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the token usage information for the rerank operation.
         /// </summary>
-        public Dictionary<string, object> TokenUseage { get; }
+        public Dictionary<string, object> TokenUsage { get; }
+
+        /// <summary>
+        /// Gets the token usage information for the rerank operation.
+        /// </summary>
+        /// <remarks>
+        /// This property is obsolete. Use <see cref="TokenUsage"/> instead.
+        /// </remarks>
+        [System.Obsolete("Use TokenUsage instead.")]
+        public Dictionary<string, object> TokenUseage => this.TokenUsage;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SemanticRerankResult"/> class.
         /// </summary>
         /// <param name="rerankScores">The list of rerank scores.</param>
         /// <param name="latency">The latency information.</param>
-        /// <param name="tokenUseage">The token usage information.</param>
+        /// <param name="tokenUsage">The token usage information.</param>
         /// <param name="headers">The HTTP response headers.</param>
         private SemanticRerankResult(
             IReadOnlyList<RerankScore> rerankScores,
             Dictionary<string, object> latency,
-            Dictionary<string, object> tokenUseage,
+            Dictionary<string, object> tokenUsage,
             HttpResponseHeaders headers)
         {
             this.RerankScores = rerankScores;
             this.Latency = latency;
-            this.TokenUseage = tokenUseage;
+            this.TokenUsage = tokenUsage;
             this.Headers = headers;
         }
 
