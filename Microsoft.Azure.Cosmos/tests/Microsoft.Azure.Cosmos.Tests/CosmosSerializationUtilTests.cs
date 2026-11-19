@@ -4,7 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
+    using System;
     using System.IO;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
@@ -16,6 +18,73 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class CosmosSerializationUtilTests
     {
+        [TestMethod]
+        [DataRow(0)]
+        [DataRow(1)]
+        [DataRow(2)]
+        public void ToStreamForTextJson_PreservesSettingsAndBinarySerializerConfiguration(int wrapperCount)
+        {
+            CosmosSerializer serializer = new CosmosJsonDotNetSerializer(
+                new Newtonsoft.Json.JsonSerializerSettings
+                {
+                    ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver(),
+                    Converters = { new CosmosSerializerHelper.FormatNumbersAsTextConverter() },
+                },
+                binaryEncodingEnabled: true);
+            for (int i = 0; i < wrapperCount; i++)
+            {
+                serializer = new CosmosJsonSerializerWrapper(serializer);
+            }
+
+            var value = new { OriginalName = 42 };
+            using (Stream binary = serializer.ToStream(value))
+            {
+                Assert.AreEqual((int)JsonSerializationFormat.Binary, binary.ReadByte());
+            }
+
+            using (Stream text = CosmosSerializationUtil.ToStreamForTextJson(serializer, value))
+            using (StreamReader reader = new StreamReader(text))
+            {
+                Assert.AreEqual("{\"originalName\":\"42\"}", reader.ReadToEnd());
+            }
+
+            using (Stream binary = serializer.ToStream(value))
+            {
+                Assert.AreEqual((int)JsonSerializationFormat.Binary, binary.ReadByte(), "Text preference must not mutate the configured serializer.");
+            }
+        }
+
+        [TestMethod]
+        public void ToStreamForTextJson_RejectsNullSerializer()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() => CosmosSerializationUtil.ToStreamForTextJson<object>(null, null));
+        }
+
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void ReadStreamAsTextJson_PreservesOwnershipAndReadsFromCurrentPosition(bool binaryInput)
+        {
+            const string json = "\"value\"";
+            using Stream encoded = CosmosSerializationUtil.ConvertToStreamUsingJsonSerializationFormat(
+                Encoding.UTF8.GetBytes(json),
+                binaryInput ? JsonSerializationFormat.Binary : JsonSerializationFormat.Text);
+            using MemoryStream stream = new MemoryStream();
+            stream.WriteByte(0);
+            encoded.CopyTo(stream);
+            stream.Position = 1;
+
+            Assert.AreEqual(json, CosmosSerializationUtil.ReadStreamAsTextJson(stream));
+            Assert.IsTrue(stream.CanRead);
+            Assert.AreEqual(stream.Length, stream.Position);
+        }
+
+        [TestMethod]
+        public void ReadStreamAsTextJson_RejectsNullStream()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() => CosmosSerializationUtil.ReadStreamAsTextJson(null));
+        }
+
         [TestMethod]
         public void GetStringWithPropertyNamingPolicy_CamelCase()
         {
