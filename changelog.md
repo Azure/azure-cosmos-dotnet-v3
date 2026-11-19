@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
-- [NNNN](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/NNNN) LINQ: Fixes `string.Length`, the `Count` of supported collection types and seven `DateTime` parts translating to undefined document paths; they now translate to `LENGTH`, `ARRAY_LENGTH` and `DateTimePart`, and C# one-dimensional array `Length` (which threw) to `ARRAY_LENGTH`. Ordering by one of these members can now fail with error 2206. `DateTime` parts of `Local` values are UTC parts, and `LENGTH` counts code points. See [#2387](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2387) and [#2837](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2837).
+- [6223](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6223) LINQ: Fixes `string.Length`, the `Count` of supported collection types and seven `DateTime` parts translating to undefined document paths; they now translate to `LENGTH`, `ARRAY_LENGTH` and `DateTimePart`, and C# one-dimensional array `Length` (which threw) to `ARRAY_LENGTH`. Ordering by one of these members can now fail with error 2206. `DateTime` parts of `Local` values are UTC parts, and `LENGTH` counts code points. See [#2387](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2387) and [#2837](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2837).
 
 #### Bugs Fixed
 
