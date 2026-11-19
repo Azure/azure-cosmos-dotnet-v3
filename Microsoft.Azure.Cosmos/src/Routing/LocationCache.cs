@@ -252,13 +252,13 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Invoked when <see cref="AccountProperties"/> is read
         /// </summary>
         /// <param name="databaseAccount">Read DatabaseAccoaunt </param>
-        public void OnDatabaseAccountRead(AccountProperties databaseAccount)
+        /// <param name="preferredLocations">Optional effective preferred locations to publish with the account topology.</param>
+        public void OnDatabaseAccountRead(
+            AccountProperties databaseAccount,
+            ReadOnlyCollection<string> preferredLocations = null)
         {
             lock (this.lockObject)
             {
-                // Refresh the per-direction thin-client availability signals on every account read
-                // so dispatch falls back to gateway mode on the next request when the service stops
-                // advertising thin-client endpoints.
                 this.hasThinClientReadLocations = databaseAccount.ThinClientReadableLocationsInternal?.Count > 0;
                 this.hasThinClientWriteLocations = databaseAccount.ThinClientWritableLocationsInternal?.Count > 0;
 
@@ -267,7 +267,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     databaseAccount.ReadableRegions,
                     thinClientWriteLocations: databaseAccount.ThinClientWritableLocationsInternal,
                     thinClientReadLocations: databaseAccount.ThinClientReadableLocationsInternal,
-                    preferenceList: null,
+                    preferenceList: preferredLocations,
                     enableMultipleWriteLocations: databaseAccount.EnableMultipleWriteLocations);
             }
         }
@@ -790,12 +790,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 nextLocationInfo.WriteEndpoints = this.GetPreferredAvailableEndpoints(
+                    locationsInfo: nextLocationInfo,
                     endpointsByLocation: nextLocationInfo.AvailableWriteEndpointByLocation,
                     orderedLocations: nextLocationInfo.AvailableWriteLocations,
                     expectedAvailableOperation: OperationType.Write,
                     fallbackEndpoint: this.defaultEndpoint);
 
                 nextLocationInfo.ReadEndpoints = this.GetPreferredAvailableEndpoints(
+                    locationsInfo: nextLocationInfo,
                     endpointsByLocation: nextLocationInfo.AvailableReadEndpointByLocation,
                     orderedLocations: nextLocationInfo.AvailableReadLocations,
                     expectedAvailableOperation: OperationType.Read,
@@ -804,12 +806,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 nextLocationInfo.EffectivePreferredLocations = nextLocationInfo.PreferredLocations;
 
                 nextLocationInfo.ThinClientWriteEndpoints = this.GetPreferredAvailableEndpoints(
+                    locationsInfo: nextLocationInfo,
                     endpointsByLocation: nextLocationInfo.ThinClientWriteEndpointByLocation,
                     orderedLocations: nextLocationInfo.ThinClientWriteLocations,
                     expectedAvailableOperation: OperationType.Write,
                     fallbackEndpoint: this.defaultEndpoint);
 
                 nextLocationInfo.ThinClientReadEndpoints = this.GetPreferredAvailableEndpoints(
+                    locationsInfo: nextLocationInfo,
                     endpointsByLocation: nextLocationInfo.ThinClientReadEndpointByLocation,
                     orderedLocations: nextLocationInfo.ThinClientReadLocations,
                     expectedAvailableOperation: OperationType.Read,
@@ -844,10 +848,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        private ReadOnlyCollection<Uri> GetPreferredAvailableEndpoints(ReadOnlyDictionary<string, Uri> endpointsByLocation, ReadOnlyCollection<string> orderedLocations, OperationType expectedAvailableOperation, Uri fallbackEndpoint)
+        private ReadOnlyCollection<Uri> GetPreferredAvailableEndpoints(
+            DatabaseAccountLocationsInfo locationsInfo,
+            ReadOnlyDictionary<string, Uri> endpointsByLocation,
+            ReadOnlyCollection<string> orderedLocations,
+            OperationType expectedAvailableOperation,
+            Uri fallbackEndpoint)
         {
             List<Uri> endpoints = new List<Uri>();
-            DatabaseAccountLocationsInfo currentLocationInfo = this.locationInfo;
 
             // if enableEndpointDiscovery is false, we always use the defaultEndpoint that user passed in during documentClient init
             if (this.enableEndpointDiscovery)
@@ -861,9 +869,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                     // If client can use multiple write locations, preferred locations list should be used for determining
                     // both read and write endpoints order.
 
-                    if (currentLocationInfo.PreferredLocations != null && currentLocationInfo.PreferredLocations.Count >= 1)
+                    if (locationsInfo.PreferredLocations != null && locationsInfo.PreferredLocations.Count >= 1)
                     {
-                        foreach (string location in currentLocationInfo.PreferredLocations)
+                        foreach (string location in locationsInfo.PreferredLocations)
                         {
                             if (endpointsByLocation.TryGetValue(location, out Uri endpoint))
                             {
@@ -971,7 +979,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             return this.useMultipleWriteLocations && this.enableMultipleWriteLocations;
         }
-
         internal Uri ResolveThinClientEndpoint(DocumentServiceRequest request, bool isReadRequest)
         {
             if (request.RequestContext != null && request.RequestContext.LocationEndpointToRoute != null)
@@ -984,7 +991,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             request.RequestContext.RouteToLocation(chosenEndpoint);
             return chosenEndpoint;
         }
-
         /// <summary>
         /// Computes the thin client regional endpoint that would be chosen for <paramref name="request"/>
         /// <b>without</b> pinning it onto the request context, so the routing layer can evaluate the candidate
@@ -1040,7 +1046,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <summary>
         /// Returns the set of thin client regional endpoints (read and write) from the most recent
-        /// topology refresh, used by the connectivity probe. 
+        /// topology refresh, used by the connectivity probe.
         /// </summary>
         internal HashSet<Uri> GetThinClientRegionalEndpoints()
         {
@@ -1106,7 +1112,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.AccountReadEndpoints = new List<Uri>() { defaultEndpoint }.AsReadOnly();
                 this.ReadEndpoints = new List<Uri>() { defaultEndpoint }.AsReadOnly();
                 this.EffectivePreferredLocations = new List<string>().AsReadOnly();
-                
+
                 this.ThinClientWriteLocations = new List<string>().AsReadOnly();
                 this.ThinClientReadLocations = new List<string>().AsReadOnly();
                 this.ThinClientWriteEndpointByLocation =
@@ -1135,7 +1141,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.AccountReadEndpoints = other.AccountReadEndpoints;
                 this.ReadEndpoints = other.ReadEndpoints;
                 this.EffectivePreferredLocations = other.EffectivePreferredLocations;
-                
+
                 this.ThinClientWriteLocations = other.ThinClientWriteLocations;
                 this.ThinClientReadLocations = other.ThinClientReadLocations;
                 this.ThinClientWriteEndpointByLocation = other.ThinClientWriteEndpointByLocation;

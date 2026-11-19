@@ -198,6 +198,81 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(validAuth);
         }
 
+        [DataTestMethod]
+        [DataRow("East US", true)]
+        [DataRow(null, false)]
+        public async Task GetDatabaseAccountInternalAsync_UsesSameUriForAuthorizationAndDispatch(
+            string applicationRegion,
+            bool expectRegionProximityQuery)
+        {
+            const string accountPropertiesJson = "{\"id\":\"testaccount\",\"_rid\":\"testrid\",\"_self\":\"\",\"_etag\":\"etag\",\"writableLocations\":[],\"readableLocations\":[],\"userConsistencyPolicy\":{\"defaultConsistencyLevel\":\"Session\"},\"enableMultipleWriteLocations\":false,\"queryEngineConfiguration\":\"{}\"}";
+            Uri authorizedRefreshUri = null;
+            Uri dispatchedRefreshUri = null;
+
+            Mock<AuthorizationTokenProvider> mockAuth = new Mock<AuthorizationTokenProvider>(MockBehavior.Strict);
+            mockAuth.Setup(x => x.Dispose());
+            mockAuth.Setup(x => x.AddAuthorizationHeaderAsync(
+                    It.IsAny<INameValueCollection>(),
+                    It.IsAny<Uri>(),
+                    It.IsAny<string>(),
+                    It.IsAny<Documents.AuthorizationTokenType>()))
+                .Callback<INameValueCollection, Uri, string, Documents.AuthorizationTokenType>(
+                    (headers, uri, _, _) =>
+                    {
+                        if (uri.Query.Contains("existing=value"))
+                        {
+                            authorizedRefreshUri = uri;
+                        }
+
+                        headers.Add(Documents.HttpConstants.HttpHeaders.Authorization, "MockAuthKey");
+                    })
+                .Returns(() => new ValueTask());
+
+            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
+            mockHttpHandler.Setup(x => x.SendAsync(
+                    It.IsAny<HttpRequestMessage>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<HttpRequestMessage, CancellationToken>(
+                    (request, _) =>
+                    {
+                        if (request.RequestUri.Query.Contains("existing=value"))
+                        {
+                            dispatchedRefreshUri = request.RequestUri;
+                        }
+                    })
+                .Returns<HttpRequestMessage, CancellationToken>(
+                    (_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = new StringContent(accountPropertiesJson)
+                    }));
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions
+            {
+                ApplicationRegion = applicationRegion,
+                ConnectionMode = ConnectionMode.Gateway,
+                HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object))
+            };
+
+            using CosmosClient client = new CosmosClient(
+                CosmosClientTests.AccountEndpoint,
+                authorizationTokenProvider: mockAuth.Object,
+                clientOptions);
+
+            Uri refreshEndpoint = expectRegionProximityQuery
+                ? new Uri($"{CosmosClientTests.AccountEndpoint}?existing=value&regionproximitysourceregion=westus")
+                : new Uri($"{CosmosClientTests.AccountEndpoint}?existing=value");
+
+            await ((IDocumentClientInternal)client.DocumentClient).GetDatabaseAccountInternalAsync(refreshEndpoint);
+
+            Assert.IsNotNull(authorizedRefreshUri);
+            Assert.IsNotNull(dispatchedRefreshUri);
+            Assert.AreEqual(authorizedRefreshUri, dispatchedRefreshUri);
+            Assert.AreEqual("value", HttpUtility.ParseQueryString(dispatchedRefreshUri.Query)["existing"]);
+            Assert.AreEqual(
+                expectRegionProximityQuery ? "eastus" : null,
+                HttpUtility.ParseQueryString(dispatchedRefreshUri.Query)["regionproximitysourceregion"]);
+        }
+
         [TestMethod]
         public void Builder_InvalidConnectionString()
         {

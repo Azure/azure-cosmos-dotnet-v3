@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
     {
         private static Uri Location1Endpoint = new Uri("https://location1.documents.azure.com");
         private static Uri Location2Endpoint = new Uri("https://location2.documents.azure.com");
+        private static Uri Location3Endpoint = new Uri("https://location3.documents.azure.com");
 
         // An account-level endpoint that CreateDatabaseAccount never advertises as a read or write location.
         private static Uri NonTopologyEndpoint = new Uri("https://account.documents.azure.com");
@@ -583,6 +584,382 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         public async Task ClientRetryPolicy_NoRetry_MultiMaster_Write_NoPreferredLocationsAsync()
         {
             await this.ValidateConnectTimeoutTriggersClientRetryPolicyAsync(isReadRequest: false, useMultipleWriteLocations: true, usesPreferredLocations: false, true);
+        }
+
+        [TestMethod]
+        [DataRow(1, false)]
+        [DataRow(2, true)]
+        public async Task ClientRetryPolicy_UsesReconciledRegionCountForServiceUnavailableRetry(
+            int accountRegionCount,
+            bool shouldRetry)
+        {
+            Collection<AccountRegion> readableRegions = new Collection<AccountRegion>
+            {
+                new AccountRegion { Name = Regions.EastUS, Endpoint = ClientRetryPolicyTests.Location1Endpoint.ToString() }
+            };
+            if (accountRegionCount > 1)
+            {
+                readableRegions.Add(
+                    new AccountRegion { Name = Regions.WestUS, Endpoint = ClientRetryPolicyTests.Location2Endpoint.ToString() });
+            }
+
+            AccountProperties databaseAccount = new AccountProperties
+            {
+                WriteLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = Regions.EastUS, Endpoint = ClientRetryPolicyTests.Location1Endpoint.ToString() }
+                },
+                ReadLocationsInternal = readableRegions
+            };
+            Mock<IDocumentClientInternal> owner = new Mock<IDocumentClientInternal>();
+            owner.Setup(client => client.ServiceEndpoint).Returns(ClientRetryPolicyTests.Location1Endpoint);
+            owner.Setup(client => client.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+            connectionPolicy.SetCurrentLocation(Regions.EastUS);
+
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(owner.Object, connectionPolicy);
+            endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
+            Assert.AreEqual(accountRegionCount, endpointManager.PreferredLocationCount);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: false);
+            using DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey);
+            retryPolicy.OnBeforeSendRequest(request);
+
+            ShouldRetryResult result = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "Service unavailable",
+                    innerException: null,
+                    statusCode: HttpStatusCode.ServiceUnavailable,
+                    substatusCode: SubStatusCodes.Unknown,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+
+            Assert.AreEqual(shouldRetry, result.ShouldRetry);
+            if (shouldRetry)
+            {
+                retryPolicy.OnBeforeSendRequest(request);
+                ShouldRetryResult exhaustedResult = await retryPolicy.ShouldRetryAsync(
+                    new DocumentClientException(
+                        message: "Service unavailable",
+                        innerException: null,
+                        statusCode: HttpStatusCode.ServiceUnavailable,
+                        substatusCode: SubStatusCodes.Unknown,
+                        requestUri: request.RequestContext.LocationEndpointToRoute,
+                        responseHeaders: new DictionaryNameValueCollection()),
+                    CancellationToken.None);
+                Assert.IsFalse(exhaustedResult.ShouldRetry);
+            }
+        }
+
+        [TestMethod]
+        public async Task ClientRetryPolicy_RepeatedBeforeSendDoesNotSkipSelectedRetryEndpoint()
+        {
+            AccountProperties databaseAccount = new AccountProperties
+            {
+                WriteLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = Regions.EastUS, Endpoint = ClientRetryPolicyTests.Location1Endpoint.ToString() }
+                },
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = Regions.EastUS, Endpoint = ClientRetryPolicyTests.Location1Endpoint.ToString() },
+                    new AccountRegion { Name = Regions.WestUS, Endpoint = ClientRetryPolicyTests.Location2Endpoint.ToString() },
+                    new AccountRegion { Name = Regions.NorthEurope, Endpoint = ClientRetryPolicyTests.Location3Endpoint.ToString() }
+                }
+            };
+            Mock<IDocumentClientInternal> owner = new Mock<IDocumentClientInternal>();
+            owner.Setup(client => client.ServiceEndpoint).Returns(ClientRetryPolicyTests.Location1Endpoint);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+            connectionPolicy.SetPreferredLocations(
+                new[] { Regions.EastUS, Regions.WestUS, Regions.NorthEurope });
+
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(owner.Object, connectionPolicy);
+            endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: false);
+            using DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey);
+
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(ClientRetryPolicyTests.Location1Endpoint, request.RequestContext.LocationEndpointToRoute);
+
+            ShouldRetryResult retryResult = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "Service unavailable",
+                    innerException: null,
+                    statusCode: HttpStatusCode.ServiceUnavailable,
+                    substatusCode: SubStatusCodes.Unknown,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+            Assert.IsTrue(retryResult.ShouldRetry);
+
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(ClientRetryPolicyTests.Location2Endpoint, request.RequestContext.LocationEndpointToRoute);
+
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(ClientRetryPolicyTests.Location2Endpoint, request.RequestContext.LocationEndpointToRoute);
+        }
+
+        [TestMethod]
+        public async Task ClientRetryPolicy_PartialRankingRetriesHealthyUnrankedRegion()
+        {
+            AccountProperties databaseAccount = new AccountProperties
+            {
+                WriteLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = Regions.EastUS, Endpoint = ClientRetryPolicyTests.Location1Endpoint.ToString() }
+                },
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = Regions.EastUS, Endpoint = ClientRetryPolicyTests.Location1Endpoint.ToString() },
+                    new AccountRegion { Name = Regions.WestUS, Endpoint = ClientRetryPolicyTests.Location2Endpoint.ToString() }
+                },
+                AdditionalProperties = new Dictionary<string, Newtonsoft.Json.Linq.JToken>
+                {
+                    { Constants.Properties.RegionProximity, Newtonsoft.Json.Linq.JArray.FromObject(new[] { "westus" }) }
+                }
+            };
+            Mock<IDocumentClientInternal> owner = new Mock<IDocumentClientInternal>();
+            owner.Setup(client => client.ServiceEndpoint).Returns(ClientRetryPolicyTests.Location1Endpoint);
+            owner.Setup(client => client.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+            connectionPolicy.SetCurrentLocation(Regions.EastUS);
+
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(
+                owner.Object,
+                connectionPolicy);
+            endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
+            CollectionAssert.AreEqual(
+                new[] { Regions.WestUS, Regions.EastUS },
+                endpointManager.GetEffectivePreferredLocations().ToList());
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: false);
+            using DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey);
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(ClientRetryPolicyTests.Location2Endpoint, request.RequestContext.LocationEndpointToRoute);
+
+            ShouldRetryResult retryResult = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "Service unavailable",
+                    innerException: null,
+                    statusCode: HttpStatusCode.ServiceUnavailable,
+                    substatusCode: SubStatusCodes.Unknown,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+            Assert.IsTrue(retryResult.ShouldRetry);
+
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(ClientRetryPolicyTests.Location1Endpoint, request.RequestContext.LocationEndpointToRoute);
+
+            ShouldRetryResult exhaustedResult = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "Service unavailable",
+                    innerException: null,
+                    statusCode: HttpStatusCode.ServiceUnavailable,
+                    substatusCode: SubStatusCodes.Unknown,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+            Assert.IsFalse(exhaustedResult.ShouldRetry);
+        }
+
+        [TestMethod]
+        public async Task ClientRetryPolicy_RankingRefreshDoesNotRetryFailedEndpoint()
+        {
+            AccountProperties initialAccount = new AccountProperties
+            {
+                WriteLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = Regions.EastUS, Endpoint = ClientRetryPolicyTests.Location1Endpoint.ToString() }
+                },
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = Regions.EastUS, Endpoint = ClientRetryPolicyTests.Location1Endpoint.ToString() },
+                    new AccountRegion { Name = Regions.WestUS, Endpoint = ClientRetryPolicyTests.Location2Endpoint.ToString() }
+                },
+                AdditionalProperties = new Dictionary<string, Newtonsoft.Json.Linq.JToken>
+                {
+                    { Constants.Properties.RegionProximity, Newtonsoft.Json.Linq.JArray.FromObject(new[] { "eastus", "westus" }) }
+                }
+            };
+            AccountProperties refreshedAccount = new AccountProperties
+            {
+                WriteLocationsInternal = initialAccount.WriteLocationsInternal,
+                ReadLocationsInternal = initialAccount.ReadLocationsInternal,
+                AdditionalProperties = new Dictionary<string, Newtonsoft.Json.Linq.JToken>
+                {
+                    { Constants.Properties.RegionProximity, Newtonsoft.Json.Linq.JArray.FromObject(new[] { "westus", "eastus" }) }
+                }
+            };
+            Mock<IDocumentClientInternal> owner = new Mock<IDocumentClientInternal>();
+            owner.Setup(client => client.ServiceEndpoint).Returns(ClientRetryPolicyTests.Location1Endpoint);
+            owner.Setup(client => client.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(refreshedAccount);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+            connectionPolicy.SetCurrentLocation(Regions.EastUS);
+
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(
+                owner.Object,
+                connectionPolicy);
+            endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(initialAccount);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: false);
+            using DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey);
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(ClientRetryPolicyTests.Location1Endpoint, request.RequestContext.LocationEndpointToRoute);
+
+            await endpointManager.RefreshLocationAsync(forceRefresh: true);
+            CollectionAssert.AreEqual(
+                new[] { Regions.WestUS, Regions.EastUS },
+                endpointManager.GetEffectivePreferredLocations().ToList());
+
+            ShouldRetryResult retryResult = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "Service unavailable",
+                    innerException: null,
+                    statusCode: HttpStatusCode.ServiceUnavailable,
+                    substatusCode: SubStatusCodes.Unknown,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+            Assert.IsTrue(retryResult.ShouldRetry);
+
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(ClientRetryPolicyTests.Location2Endpoint, request.RequestContext.LocationEndpointToRoute);
+        }
+
+        [TestMethod]
+        public async Task ClientRetryPolicy_RankingRefreshRetriesUnattemptedRegionForSessionFailure()
+        {
+            AccountProperties initialAccount = new AccountProperties
+            {
+                EnableMultipleWriteLocations = true,
+                WriteLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = Regions.EastUS, Endpoint = ClientRetryPolicyTests.Location1Endpoint.ToString() },
+                    new AccountRegion { Name = Regions.WestUS, Endpoint = ClientRetryPolicyTests.Location2Endpoint.ToString() },
+                    new AccountRegion { Name = Regions.NorthEurope, Endpoint = ClientRetryPolicyTests.Location3Endpoint.ToString() }
+                },
+                ReadLocationsInternal = new Collection<AccountRegion>
+                {
+                    new AccountRegion { Name = Regions.EastUS, Endpoint = ClientRetryPolicyTests.Location1Endpoint.ToString() },
+                    new AccountRegion { Name = Regions.WestUS, Endpoint = ClientRetryPolicyTests.Location2Endpoint.ToString() },
+                    new AccountRegion { Name = Regions.NorthEurope, Endpoint = ClientRetryPolicyTests.Location3Endpoint.ToString() }
+                },
+                AdditionalProperties = new Dictionary<string, Newtonsoft.Json.Linq.JToken>
+                {
+                    { Constants.Properties.RegionProximity, Newtonsoft.Json.Linq.JArray.FromObject(new[] { "eastus", "westus", "northeurope" }) }
+                }
+            };
+            AccountProperties refreshedAccount = new AccountProperties
+            {
+                EnableMultipleWriteLocations = true,
+                WriteLocationsInternal = initialAccount.WriteLocationsInternal,
+                ReadLocationsInternal = initialAccount.ReadLocationsInternal,
+                AdditionalProperties = new Dictionary<string, Newtonsoft.Json.Linq.JToken>
+                {
+                    { Constants.Properties.RegionProximity, Newtonsoft.Json.Linq.JArray.FromObject(new[] { "eastus", "northeurope", "westus" }) }
+                }
+            };
+            Mock<IDocumentClientInternal> owner = new Mock<IDocumentClientInternal>();
+            owner.Setup(client => client.ServiceEndpoint).Returns(ClientRetryPolicyTests.Location1Endpoint);
+            owner.Setup(client => client.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(refreshedAccount);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy
+            {
+                UseMultipleWriteLocations = true
+            };
+            connectionPolicy.SetCurrentLocation(Regions.EastUS);
+
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(
+                owner.Object,
+                connectionPolicy);
+            endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(initialAccount);
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(
+                endpointManager,
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                new RetryOptions(),
+                enableEndpointDiscovery: true,
+                isThinClientEnabled: false);
+            using DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey);
+
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(ClientRetryPolicyTests.Location1Endpoint, request.RequestContext.LocationEndpointToRoute);
+
+            ShouldRetryResult retryResult = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "Session unavailable",
+                    innerException: null,
+                    statusCode: HttpStatusCode.NotFound,
+                    substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+            Assert.IsTrue(retryResult.ShouldRetry);
+
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(ClientRetryPolicyTests.Location2Endpoint, request.RequestContext.LocationEndpointToRoute);
+
+            await endpointManager.RefreshLocationAsync(forceRefresh: true);
+
+            retryResult = await retryPolicy.ShouldRetryAsync(
+                new DocumentClientException(
+                    message: "Session unavailable",
+                    innerException: null,
+                    statusCode: HttpStatusCode.NotFound,
+                    substatusCode: SubStatusCodes.ReadSessionNotAvailable,
+                    requestUri: request.RequestContext.LocationEndpointToRoute,
+                    responseHeaders: new DictionaryNameValueCollection()),
+                CancellationToken.None);
+            Assert.IsTrue(retryResult.ShouldRetry);
+
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(ClientRetryPolicyTests.Location3Endpoint, request.RequestContext.LocationEndpointToRoute);
         }
 
         /// <summary>
@@ -3539,7 +3916,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 ResourceType.DistributedTransactionBatch,
                 AuthorizationTokenType.PrimaryMasterKey);
         }
-
         private static GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo GetPartitionKeyRangeFailoverInfoUsingReflection(
             GlobalPartitionEndpointManager globalPartitionEndpointManager,
             PartitionKeyRange pkRange,
