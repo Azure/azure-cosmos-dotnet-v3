@@ -13,26 +13,26 @@
     using Newtonsoft.Json;
 
     // ----------------------------------------------------------------------------------------------------------
-    // Prerequisites - 
-    // 
-    // 1. An Azure Cosmos account - 
+    // Prerequisites -
+    //
+    // 1. An Azure Cosmos account -
     //    https://docs.microsoft.com/azure/cosmos-db/create-cosmosdb-resources-portal
     //
-    // 2. Microsoft.Azure.Cosmos NuGet package - 
-    //    http://www.nuget.org/packages/Microsoft.Azure.Cosmos/ 
+    // 2. Microsoft.Azure.Cosmos NuGet package -
+    //    http://www.nuget.org/packages/Microsoft.Azure.Cosmos/
     // ----------------------------------------------------------------------------------------------------------
-    // Sample - demonstrates the basic CRUD operations on a Item resource for Azure Cosmos
+    // Sample - demonstrates the basic CRUD operations on an Item resource for Azure Cosmos
     //
-    // 1. Basic CRUD operations on a item using regular POCOs
-    // 1.1 - Create a item
-    // 1.2 - Read a item by its Id
+    // 1. Basic CRUD operations on an item using regular POCOs
+    // 1.1 - Create an item
+    // 1.2 - Read an item by its Id
     // 1.3 - Read all items in a container
     // 1.4 - Query for items by a property other than Id
     // 1.5 - Read Many items using Id and PartitionKey values.
-    // 1.6 - Replace a item
-    // 1.7 - Patch a item
-    // 1.8 - Upsert a item
-    // 1.9 - Delete a item
+    // 1.6 - Replace an item
+    // 1.7 - Patch an item
+    // 1.8 - Upsert an item
+    // 1.9 - Delete an item
     //
     // 2. Work with dynamic objects
     //
@@ -42,17 +42,17 @@
     //
     // 4 - Access items system defined properties
     //-----------------------------------------------------------------------------------------------------------
-    // See Also - 
+    // See Also -
     //
     // Cosmos.Samples.Queries -           We only included a VERY basic query here for completeness,
-    //                                        For a detailed exploration of how to query for Items, 
+    //                                        For a detailed exploration of how to query for Items,
     //                                        including how to paginate results of queries.
     //
     // Cosmos.Samples.ServerSideScripts - In these examples we do simple loops to create small numbers
     //                                        of items. For insert operations where you are creating many
     //                                        items we recommend using a Stored Procedure and pass batches
     //                                        of new items to this sproc. Consult this sample for an example
-    //                                        of a BulkInsert stored procedure. 
+    //                                        of a BulkInsert stored procedure.
     // ----------------------------------------------------------------------------------------------------------
 
     public class Program
@@ -134,16 +134,16 @@
         // </RunItemsDemo>
 
         /// <summary>
-        /// 1. Basic CRUD operations on a item
-        /// 1.1 - Create a item
-        /// 1.2 - Read a item by its Id
+        /// 1. Basic CRUD operations on an item
+        /// 1.1 - Create an item
+        /// 1.2 - Read an item by its Id
         /// 1.3 - Read all items in a Collection
         /// 1.4 - Query for items by a property other than Id
         /// 1.5 - Read Many items using Id and PartitionKey values.
-        /// 1.6 - Replace a item
-        /// 1.7 - Patch a item
-        /// 1.8 - Upsert a item
-        /// 1.9 - Delete a item
+        /// 1.6 - Replace an item
+        /// 1.7 - Patch an item
+        /// 1.8 - Upsert an item
+        /// 1.9 - Delete an item
         /// </summary>
         // <RunBasicOperationsOnStronglyTypedObjects>
         private static async Task RunBasicOperationsOnStronglyTypedObjects()
@@ -180,7 +180,7 @@
             SalesOrder salesOrder1 = response;
             Console.WriteLine($"\n1.1.1 - Item created {salesOrder1.Id}");
 
-            // As your app evolves, let's say your object has a new schema. You can insert SalesOrderV2 objects without any 
+            // As your app evolves, let's say your object has a new schema. You can insert SalesOrderV2 objects without any
             // changes to the database tier.
             SalesOrder2 salesOrder2 = GetSalesOrderV2Sample("SalesOrder2");
             ItemResponse<SalesOrder2> response2 = await container.CreateItemAsync(
@@ -188,7 +188,7 @@
                 new PartitionKey(salesOrder2.AccountNumber),
                 new ItemRequestOptions()
                 {
-                    // The response will have a null resource. This avoids the overhead of 
+                    // The response will have a null resource. This avoids the overhead of
                     // sending the item back over the network and serializing it.
                     EnableContentResponseOnWrite = false
                 });
@@ -200,7 +200,7 @@
 
             Console.WriteLine($"\n1.1.2 - Item created {salesOrder2.Id}");
 
-            // For better performance create a SalesOrder object from a stream. 
+            // For better performance create a SalesOrder object from a stream.
             SalesOrder salesOrderV3 = GetSalesOrderSample("SalesOrderV3");
             using (Stream stream = Program.ToStream<SalesOrder>(salesOrderV3))
             {
@@ -238,7 +238,7 @@
 
             // You can measure the throughput consumed by any operation by inspecting the RequestCharge property
             Console.WriteLine("Item read by Id {0}", response.Resource);
-            Console.WriteLine("Request Units Charge for reading a Item by Id {0}", response.RequestCharge);
+            Console.WriteLine("Request Units Charge for reading an Item by Id {0}", response.RequestCharge);
 
             SalesOrder readOrder = (SalesOrder)response;
 
@@ -271,8 +271,8 @@
             // 1.3 - Read all items in a container
             //
             // NOTE: Operations like AsEnumerable(), ToList(), ToArray() will make as many trips to the database
-            //       as required to fetch the entire result-set. Even if you set MaxItemCount to a smaller number. 
-            //       MaxItemCount just controls how many results to fetch each trip. 
+            //       as required to fetch the entire result-set. Even if you set MaxItemCount to a smaller number.
+            //       MaxItemCount just controls how many results to fetch each trip.
             //******************************************************************************************************************
             Console.WriteLine("\n1.3 - Read all items with query using a specific partition key");
 
@@ -298,7 +298,7 @@
                 }
             }
 
-              
+
 
             Console.WriteLine($"\n1.3.2 Read all items found {allSalesForAccount1.Count} items.");
 
@@ -347,10 +347,10 @@
             // 1.4 - Query for items by a property other than Id
             //
             // NOTE: Operations like AsEnumerable(), ToList(), ToArray() will make as many trips to the database
-            //       as required to fetch the entire result-set. Even if you set MaxItemCount to a smaller number. 
-            //       MaxItemCount just controls how many results to fetch each trip. 
+            //       as required to fetch the entire result-set. Even if you set MaxItemCount to a smaller number.
+            //       MaxItemCount just controls how many results to fetch each trip.
             //******************************************************************************************************************
-            Console.WriteLine("\n1.4 - Querying for a item using its AccountNumber property");
+            Console.WriteLine("\n1.4 - Querying for an item using its AccountNumber property");
 
             QueryDefinition query = new QueryDefinition(
                 "select * from sales s where s.AccountNumber = @AccountInput ")
@@ -477,11 +477,11 @@
         private static async Task ReplaceItemAsync(SalesOrder order)
         {
             //******************************************************************************************************************
-            // 1.6 - Replace a item
+            // 1.6 - Replace an item
             //
             // Just update a property on an existing item and issue a Replace command
             //******************************************************************************************************************
-            Console.WriteLine("\n1.6 - Replacing a item using its Id");
+            Console.WriteLine("\n1.6 - Replacing an item using its Id");
 
             order.ShippedDate = DateTime.UtcNow;
             ItemResponse<SalesOrder> response = await container.ReplaceItemAsync(
@@ -520,11 +520,11 @@
         private static async Task PatchItemAsync(SalesOrder order)
         {
             //******************************************************************************************************************
-            // 1.7 - Patch a item
+            // 1.7 - Patch an item
             //
             // Just update a property of an existing item and issue a Patch command
             //******************************************************************************************************************
-            Console.WriteLine("\n1.6 - Patching a item using its Id");
+            Console.WriteLine("\n1.6 - Patching an item using its Id");
 
             ItemResponse<SalesOrder> response = await container.PatchItemAsync<SalesOrder>(
                 id: order.Id,
@@ -573,22 +573,22 @@
         // <UpsertItemAsync>
         private static async Task UpsertItemAsync()
         {
-            Console.WriteLine("\n1.8 - Upserting a item");
+            Console.WriteLine("\n1.8 - Upserting an item");
 
             SalesOrder upsertOrder = GetSalesOrderSample("SalesOrder3");
-            
-            //creates the initial SalesOrder document. 
+
+            //creates the initial SalesOrder document.
             //notice the response.StatusCode returned indicates a Create operation was performed
             ItemResponse<SalesOrder> response = await container.UpsertItemAsync(
                 partitionKey: new PartitionKey(upsertOrder.AccountNumber),
                 item: upsertOrder);
-            
+
             SalesOrder upserted = response.Resource;
             Console.WriteLine($"Request charge of upsert operation: {response.RequestCharge}");
             Console.WriteLine($"StatusCode of this operation: { response.StatusCode}");
             Console.WriteLine($"Id of upserted item: {upserted.Id}");
             Console.WriteLine($"Shipped Date of upserted item: {upserted.ShippedDate}");
-            
+
             //update any field (other than the id, and the partitionKey, as these cannot be changed
             //notice the response.StatusCode from the Upsert operation now indicates that an Update was performed
             upserted.ShippedDate = DateTime.UtcNow;
@@ -600,7 +600,7 @@
             Console.WriteLine($"Id of upserted item: {upserted.Id}");
             Console.WriteLine($"ShippedDate of upserted item: {upserted.ShippedDate}");
 
-            // For better performance upsert a SalesOrder object from a stream. 
+            // For better performance upsert a SalesOrder object from a stream.
             SalesOrder salesOrderV4 = GetSalesOrderSample("SalesOrder4");
             using (Stream stream = Program.ToStream<SalesOrder>(salesOrderV4))
             {
@@ -626,7 +626,7 @@
         // <DeleteItemAsync>
         private static async Task DeleteItemAsync()
         {
-            Console.WriteLine("\n1.9 - Deleting a item");
+            Console.WriteLine("\n1.9 - Deleting an item");
             ItemResponse<SalesOrder> response = await container.DeleteItemAsync<SalesOrder>(
                 partitionKey: new PartitionKey("Account1"),
                 id: "SalesOrder3");
@@ -697,7 +697,7 @@
                 },
             };
 
-            // Set the "ttl" property to auto-expire sales orders in 30 days 
+            // Set the "ttl" property to auto-expire sales orders in 30 days
             salesOrder.TimeToLive = 60 * 60 * 24 * 30;
 
             return salesOrder;
@@ -724,10 +724,10 @@
                     {
                         OrderQty = 3,
                         ProductCode = "A-123",      // notice how in SalesOrderDetail2 we no longer reference a ProductId
-                        ProductName = "Product 1",  // instead we have decided to denormalize our schema and include 
+                        ProductName = "Product 1",  // instead we have decided to denormalize our schema and include
                         CurrencySymbol = "$",       // the Product details relevant to the Order on to the Order directly
                         CurrencyCode = "USD",       // this is a typical refactor that happens in the course of an application
-                        UnitPrice = 17.1m,          // that would have previously required schema changes and data migrations etc. 
+                        UnitPrice = 17.1m,          // that would have previously required schema changes and data migrations etc.
                         LineTotal = 5.7m
                     }
                 }
@@ -736,7 +736,7 @@
 
         /// <summary>
         /// 2. Basic CRUD operations using dynamics instead of strongly typed objects
-        /// Cosmos does not require objects to be typed. Applications that merge data from different data sources, or 
+        /// Cosmos does not require objects to be typed. Applications that merge data from different data sources, or
         /// need to handle evolving schemas can write data directly as JSON or dynamic objects.
         /// </summary>
         // <RunBasicOperationsOnDynamicObjects>
@@ -776,7 +776,7 @@
             salesOrder.foo = "bar";
 
             //now do a replace using this dynamic item
-            //everything that is needed is contained in the readDynOrder object 
+            //everything that is needed is contained in the readDynOrder object
             //it has a .self Property
             Console.WriteLine("\nReplacing item");
 
@@ -801,16 +801,16 @@
             // 3.1 - Use ETag to control if a replace should succeed, or not, based on whether the ETag on the request matches
             //       the current ETag value of the persisted Item
             //
-            // All items in Cosmos have an _etag field. This gets set on the server every time a item is updated.
-            // 
-            // When doing a replace of a item you can opt-in to having the server only apply the Replace if the ETag 
+            // All items in Cosmos have an _etag field. This gets set on the server every time an item is updated.
+            //
+            // When doing a replace of an item you can opt-in to having the server only apply the Replace if the ETag
             // on the request matches the ETag of the item on the server.
             // If someone did an update to the same item since you read it, then the ETag on the server will not match
-            // and the Replace operation can be rejected. 
+            // and the Replace operation can be rejected.
             //******************************************************************************************************************
             Console.WriteLine("\n3.1 - Using optimistic concurrency when doing a ReplaceItemAsync");
 
-            //read a item
+            //read an item
             ItemResponse<SalesOrder> itemResponse = await container.ReadItemAsync<SalesOrder>(
                 partitionKey: new PartitionKey("Account1"),
                 id: "SalesOrder1");
@@ -829,7 +829,7 @@
 
             Console.WriteLine("ETag of item now that is has been updated - {0}", updatedDoc.ETag);
 
-            //now, using the originally retrieved item do another update 
+            //now, using the originally retrieved item do another update
             //but set the AccessCondition class with the ETag of the originally read item and also set the AccessConditionType
             //this tells the service to only do this operation if ETag on the request matches the current ETag on the item
             //in our case it won't, because we updated the item and therefore gave it a new ETag
@@ -840,7 +840,7 @@
             }
             catch (CosmosException cre)
             {
-                //   now notice the failure when attempting the update 
+                //   now notice the failure when attempting the update
                 //   this is because the ETag on the server no longer matches the ETag of doc (b/c it was changed in step 2)
                 if (cre.StatusCode == HttpStatusCode.PreconditionFailed)
                 {
@@ -857,7 +857,7 @@
 
             Console.WriteLine("\n3.2 - Using ETag to do a conditional ReadItemAsync");
 
-            // Get a item
+            // Get an item
             ItemResponse<SalesOrder> response = await container.ReadItemAsync<SalesOrder>(partitionKey: new PartitionKey("Account2"), id: "SalesOrder2");
 
             item = response;
@@ -898,12 +898,12 @@
             // Timestamp : Gets the last modified timestamp associated with the item from the Azure Cosmos DB service.
             // Etag : Gets the entity tag associated with the item from the Azure Cosmos DB service.
             // TimeToLive : Gets the time to live in seconds of the item in the Azure Cosmos DB service.
-            // 
+            //
             // See also: https://docs.microsoft.com/azure/cosmos-db/databases-containers-items#azure-cosmos-containers
             //******************************************************************************************************************
             Console.WriteLine("\n4 - Accessing system defined properties");
 
-            //read a item's metadata
+            //read an item's metadata
 
             Metadata itemResponse = await container.ReadItemAsync<Metadata>(
                 partitionKey: new PartitionKey("Account1"),
@@ -951,7 +951,7 @@
             // single partition collections that store up to 10 GB of data.
             // For this demo, we create a collection to store SalesOrders. We set the partition key to the account
             // number so that we can retrieve all sales orders for an account efficiently from a single partition,
-            // and perform transactions across multiple sales order for a single account number. 
+            // and perform transactions across multiple sales order for a single account number.
             ContainerProperties containerProperties = new ContainerProperties(containerId, partitionKeyPath: "/AccountNumber");
 
             // Create with a throughput of 1000 RU/s
