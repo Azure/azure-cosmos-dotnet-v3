@@ -456,7 +456,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 // This can only happen if collection is deleted/created with same name and client was not restarted
                 // inbetween.
                 CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
-                collectionCache.Refresh(this.ResourceLink, sourceCollectionRid: collectionResourceId);
+                collectionCache.InvalidateSecondaryIndexMetadata(collectionResourceId);
+                collectionCache.Refresh(this.ResourceLink);
             }
 
             if (range == null)
@@ -499,7 +500,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 // This can only happen if collection is deleted/created with same name and client was not restarted
                 // in between.
                 CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
-                collectionCache.Refresh(this.ResourceLink, sourceCollectionRid: collectionResourceId);
+                collectionCache.InvalidateSecondaryIndexMetadata(collectionResourceId);
+                collectionCache.Refresh(this.ResourceLink);
             }
 
             if (ranges == null)

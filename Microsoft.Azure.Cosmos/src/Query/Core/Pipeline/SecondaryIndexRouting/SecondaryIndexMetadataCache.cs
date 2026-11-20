@@ -66,10 +66,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                     cancellationToken,
                     forceRefresh));
 
-            Snapshot snapshot = entry.Initialization == null
-                ? entry.Snapshot
+            CacheEntry completedEntry = entry.Initialization == null
+                ? entry
                 : await entry.Initialization.Value;
-            return snapshot?.Metadata;
+            return completedEntry?.Metadata;
         }
 
         private CacheEntry SelectEntry(
@@ -86,13 +86,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 return currentEntry;
             }
 
-            Snapshot currentSnapshot = currentEntry.Snapshot;
             bool sourceMembershipIsUnchanged = string.Equals(
-                currentSnapshot.MembershipFingerprint,
+                currentEntry.MembershipFingerprint,
                 CreateMembershipFingerprint(source),
                 StringComparison.Ordinal);
             if (!forceRefresh
-                && !currentSnapshot.IsExpired(this.utcNowProvider())
+                && !currentEntry.IsExpired(this.utcNowProvider())
                 && sourceMembershipIsUnchanged)
             {
                 return currentEntry;
@@ -140,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             bool forceCollectionRefresh)
         {
             CacheEntry entry = null;
-            entry = new CacheEntry(new AsyncLazy<Snapshot>(
+            entry = new CacheEntry(new AsyncLazy<CacheEntry>(
                 () => this.InitializeEntryAsync(
                     sourceCollectionRid,
                     entry,
@@ -152,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             return entry;
         }
 
-        private async Task<Snapshot> InitializeEntryAsync(
+        private async Task<CacheEntry> InitializeEntryAsync(
             string sourceCollectionRid,
             CacheEntry initializingEntry,
             ContainerProperties source,
@@ -162,12 +161,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         {
             try
             {
-                Snapshot snapshot = await this.CreateSnapshotAsync(
+                CacheEntry completedEntry = await this.CreateCompletedEntryAsync(
                     source,
                     trace,
                     cancellationToken,
                     forceCollectionRefresh);
-                if (snapshot == null)
+                if (completedEntry == null)
                 {
                     // Null results are not cached, so the next read performs normal discovery again.
                     this.TryRemoveEntry(sourceCollectionRid, initializingEntry);
@@ -178,11 +177,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                     // Explicit invalidation or a newer entry must not be overwritten by an older completion.
                     this.entries.TryUpdate(
                         sourceCollectionRid,
-                        new CacheEntry(snapshot),
+                        completedEntry,
                         initializingEntry);
                 }
 
-                return snapshot;
+                return completedEntry;
             }
             catch
             {
@@ -198,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             return entries.Remove(new KeyValuePair<string, CacheEntry>(sourceCollectionRid, entry));
         }
 
-        private async Task<Snapshot> CreateSnapshotAsync(
+        private async Task<CacheEntry> CreateCompletedEntryAsync(
             ContainerProperties source,
             ITrace trace,
             CancellationToken cancellationToken,
@@ -211,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 forceCollectionRefresh);
             return metadata == null
                 ? null
-                : new Snapshot(
+                : new CacheEntry(
                     metadata,
                     CreateMembershipFingerprint(source),
                     this.utcNowProvider());
@@ -219,27 +218,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 
         private sealed class CacheEntry
         {
-            public CacheEntry(Snapshot snapshot)
-            {
-                this.Snapshot = snapshot;
-            }
-
-            public CacheEntry(AsyncLazy<Snapshot> initialization)
+            public CacheEntry(AsyncLazy<CacheEntry> initialization)
             {
                 this.Initialization = initialization;
             }
 
-            public AsyncLazy<Snapshot> Initialization { get; }
-
-            public Snapshot Snapshot { get; }
-        }
-
-        /// <summary>
-        /// Represents successfully discovered metadata and its freshness signals.
-        /// </summary>
-        private sealed class Snapshot
-        {
-            public Snapshot(
+            public CacheEntry(
                 IEnumerable<ISecondaryIndexMetadata> metadata,
                 string membershipFingerprint,
                 DateTime createdUtc)
@@ -248,6 +232,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 this.MembershipFingerprint = membershipFingerprint;
                 this.CreatedUtc = createdUtc;
             }
+
+            public AsyncLazy<CacheEntry> Initialization { get; }
 
             public IEnumerable<ISecondaryIndexMetadata> Metadata { get; }
 

@@ -200,13 +200,8 @@ namespace Microsoft.Azure.Cosmos.Common
         /// <summary>
         /// This method is only used in client SDK in retry policy as it doesn't have request handy.
         /// </summary>
-        public void Refresh(
-            string resourceAddress,
-            string apiVersion = null,
-            string sourceCollectionRid = null)
+        public void Refresh(string resourceAddress, string apiVersion = null)
         {
-            this.InvalidateSecondaryIndexMetadata(sourceCollectionRid);
-
             InternalCache cache = this.GetCache(apiVersion);
             if (PathsHelper.IsNameBased(resourceAddress))
             {
