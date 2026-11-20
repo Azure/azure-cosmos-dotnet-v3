@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Xml;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -1197,7 +1198,9 @@
                 @"/key")
             };
 
-            this.ExecuteTestSuite(testVariations);
+            this.ExecuteTestSuite(
+                testVariations,
+                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Top.Linux" : nameof(this.Top));
         }
 
         [TestMethod]
@@ -1359,7 +1362,9 @@
                     @"/key"),
             };
 
-            this.ExecuteTestSuite(testVariations);
+            this.ExecuteTestSuite(
+                testVariations,
+                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "OffsetLimit.Linux" : nameof(this.OffsetLimit));
         }
 
         [TestMethod]
@@ -1511,6 +1516,56 @@
                 .ToList();
 
             this.ExecuteTestSuite(testVariations);
+        }
+
+        [TestMethod]
+        public void FullTextSearchTerms()
+        {
+            this.ExecuteTestSuite(new[]
+            {
+                Hash(
+                    "Ordered terms",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, 'swim', 'run')",
+                    "/id"),
+                Hash(
+                    "Nested string indexers",
+                    @"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[""author""][""bio""], 'energy')",
+                    "/id"),
+                Hash(
+                    "Path segment containing a separator",
+                    @"SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[""a/b""], 'energy')",
+                    "/id"),
+                Hash(
+                    "Numeric indexer",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.tags[0], 'energy')",
+                    "/id"),
+                Hash(
+                    "Repeated path with different terms",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.text, 'swim'), FullTextScore(c.text, 'run'))",
+                    "/id"),
+                Hash(
+                    "Multiple paths and components",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK RRF(FullTextScore(c.title, 'energy'), FullTextScore(c.text, 'swim', 'run'))",
+                    "/id"),
+                Hash(
+                    "Fuzzy term distance",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, {'term': 'swim', 'distance': 2}, 'run')",
+                    "/id"),
+                Hash(
+                    "Duplicate terms and phrase",
+                    "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c.text, 'run', 'swim', 'run', 'United States')",
+                    "/id"),
+                Hash(
+                    "Resolved path and term parameters",
+                    new SqlQuerySpec(
+                        "SELECT TOP 10 * FROM c ORDER BY RANK FullTextScore(c[@path], @term)",
+                        new SqlParameterCollection
+                        {
+                            new SqlParameter("@path", "text"),
+                            new SqlParameter("@term", "swim"),
+                        }),
+                    "/id"),
+            });
         }
 
         [TestMethod]
@@ -1843,7 +1898,14 @@
             Exception ex = this.Exception;
             while (ex != null)
             {
-                stringBuilder.AppendLine($"{ex.GetType()} : {ex.Message}");
+                // Compare HRESULTs instead of platform-specific error messages.
+                string message = ex is COMException ? $"0x{ex.HResult:X8}" : ex.Message;
+
+                // Normalize optional fields before comparing error baselines.
+                message = message
+                    .Replace(",\"embeddingParameterMap\":null", string.Empty)
+                    .Replace(",\"requiresExtendedQueryPlan\":0", string.Empty);
+                stringBuilder.AppendLine($"{ex.GetType()} : {message}");
                 ex = ex.InnerException;
             }
 
@@ -1929,7 +1991,11 @@
         {
             writer.WriteStartElement("QueryRanges");
             writer.WriteStartElement("Range");
-            foreach (Range<PartitionKeyInternal> range in queryRanges)
+            // Keep range ordering deterministic in baselines.
+            IEnumerable<Range<PartitionKeyInternal>> sortedRanges = queryRanges
+                .OrderBy(range => range, Range<PartitionKeyInternal>.MinComparer.Instance)
+                .ThenBy(range => range, Range<PartitionKeyInternal>.MaxComparer.Instance);
+            foreach (Range<PartitionKeyInternal> range in sortedRanges)
             {
                 string minBound = range.IsMinInclusive ? "[" : "(";
                 string maxBound = range.IsMaxInclusive ? "]" : ")";
@@ -1983,6 +2049,43 @@
             if (hybridsearchQueryInfo.GlobalStatisticsQuery != null)
             {
                 writer.WriteElementString(nameof(hybridsearchQueryInfo.GlobalStatisticsQuery), hybridsearchQueryInfo.GlobalStatisticsQuery);
+            }
+
+            if (hybridsearchQueryInfo.FullTextSearchTerms != null)
+            {
+                writer.WriteStartElement(nameof(hybridsearchQueryInfo.FullTextSearchTerms));
+
+                foreach (FullTextSearchTerms requirement in hybridsearchQueryInfo.FullTextSearchTerms)
+                {
+                    writer.WriteStartElement("Entry");
+                    writer.WriteStartElement("Path");
+
+                    foreach (string segment in requirement.Path)
+                    {
+                        writer.WriteElementString("Segment", segment);
+                    }
+
+                    writer.WriteEndElement();
+                    writer.WriteStartElement("Terms");
+
+                    foreach (FullTextSearchTerm term in requirement.Terms)
+                    {
+                        writer.WriteStartElement("Term");
+                        writer.WriteElementString("Text", term.Term);
+
+                        if (term.Distance.HasValue)
+                        {
+                            writer.WriteElementString("Distance", XmlConvert.ToString(term.Distance.Value));
+                        }
+
+                        writer.WriteEndElement();
+                    }
+
+                    writer.WriteEndElement();
+                    writer.WriteEndElement();
+                }
+
+                writer.WriteEndElement();
             }
 
             if (hybridsearchQueryInfo.ComponentQueryInfos != null)

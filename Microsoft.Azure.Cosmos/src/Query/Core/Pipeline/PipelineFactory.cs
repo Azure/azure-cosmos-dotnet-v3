@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             int maxConcurrency,
             FullTextScoreScope fullTextScoreScope,
             CosmosElement requestContinuationToken,
-            bool isHybridSearchCompetitionRankingEnabled)
+            HybridSearchStatisticsCacheFactory statisticsCacheFactory)
         {
             if (documentContainer == null)
             {
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     isContinuationExpected: isContinuationExpected,
                     maxConcurrency: maxConcurrency,
                     fullTextScoreScope: fullTextScoreScope,
-                    isHybridSearchCompetitionRankingEnabled: isHybridSearchCompetitionRankingEnabled);
+                    statisticsCacheFactory: statisticsCacheFactory);
 
                 if (hybridSearchQueryInfo.Skip != null)
                 {
@@ -266,9 +266,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (queryInfo.HasLimit)
             {
-                Debug.Assert(queryInfo.Limit.Value <= int.MaxValue, "PipelineFactory Assert!", "Limit value must be <= int.MaxValue");
-
-                int limitCount = (int)queryInfo.Limit.Value;
+                // A hybrid search component query can carry an internal over-fetch limit above int.MaxValue
+                // (for example uint.MaxValue for OFFSET 10 LIMIT 2147483647). No query can return more than
+                // int.MaxValue documents, so saturate instead of letting the cast wrap to a negative value.
+                int limitCount = (int)Math.Min(queryInfo.Limit.Value, int.MaxValue);
 
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateLimitStage(

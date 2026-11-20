@@ -123,6 +123,17 @@ jobs:
       arguments: -p:Optimize=true -p:SdkProjectRef=true -p:DefineSdkProjectRefSymbol=false
       versioningScheme: OFF
 
+  - task: DotNetCoreCLI@2
+    displayName: PREVIEW Microsoft.Azure.Cosmos.Encryption.Tests
+    condition: succeeded()
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos.Encryption/tests/Microsoft.Azure.Cosmos.Encryption.Tests/*.csproj'
+      arguments: ${{ parameters.Arguments }} --configuration ${{ coalesce(parameters.BuildConfiguration, 'Debug') }} /p:IsPreview=true /p:SdkProjectRef=false /p:OS=${{ parameters.OS }}
+      publishTestResults: true
+      nugetConfigPath: NuGet.config
+      testRunTitle: PREVIEW Microsoft.Azure.Cosmos.Encryption.Tests
+
 # This is the only job in this template that needs the Cosmos DB Emulator, and
 # therefore the only one that requires the pipeline definition to supply the
 # EMULATORMSIURL variable (it is set per-pipeline in the Azure DevOps UI, not in
@@ -194,8 +205,21 @@ jobs:
       configuration: $(parameters.BuildConfiguration)
       nugetConfigPath: NuGet.config
       projects: Microsoft.Azure.Cosmos.sln 
-      arguments: -p:Optimize=true -p:IsPreview=true;SdkProjectRef=true
+      arguments: -p:Optimize=true -p:IsPreview=true;SdkProjectRef=true --configuration ${{ parameters.BuildConfiguration }}
       versioningScheme: OFF
+
+  # The solution build compiles both test frameworks. Avoid another multi-target
+  # outer Build, which has no TargetDir for the compatibility-fixture Copy target.
+  - task: DotNetCoreCLI@2
+    displayName: PREVIEW Microsoft.Azure.Cosmos.Encryption.Custom.Tests
+    condition: succeeded()
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj'
+      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} --no-build /p:IsPreview=true /p:SdkProjectRef=true /p:OS=${{ parameters.OS }}
+      nugetConfigPath: NuGet.config
+      publishTestResults: true
+      testRunTitle: PREVIEW Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
   # Parity check: build Microsoft.Azure.Cosmos.Encryption.Custom against main
   # SDK source WITHOUT defining SDKPROJECTREF. This matches the exact
@@ -221,6 +245,17 @@ jobs:
   # unconditionally (no IsPreview-gated alternative reference), so the
   # shipped Custom NuGet is always built against a preview SDK surface and
   # has no GA NuGet surface to validate.
+
+  - task: DotNetCoreCLI@2
+    displayName: PREVIEW Microsoft.Azure.Cosmos.Encryption.Custom.Tests
+    condition: succeeded()
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/*.csproj'
+      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:IsPreview=true /p:SdkProjectRef=false /p:OS=${{ parameters.OS }}
+      publishTestResults: true
+      nugetConfigPath: NuGet.config
+      testRunTitle: Microsoft.Azure.Cosmos.Encryption.Custom.Tests
 
 - job:
   displayName: Preview Tests ${{ parameters.BuildConfiguration }}

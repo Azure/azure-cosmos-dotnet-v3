@@ -239,6 +239,7 @@ namespace Microsoft.Azure.Cosmos
         /// <para>
         /// When set to <see cref="FullTextScoreScope.Global"/>, BM25 statistics (term frequency, inverse document frequency,
         /// and document length) are computed across all documents in the container, including all physical and logical partitions.
+        /// These statistics can be reused across queries by setting <see cref="CosmosClientOptions.FullTextStatisticsCacheMaxAge"/>.
         /// </para>
         /// <para>
         /// When set to <see cref="FullTextScoreScope.Local"/>, statistics are computed only over the subset of documents
@@ -273,8 +274,6 @@ namespace Microsoft.Azure.Cosmos
         internal FeedRange FeedRange { get; set; }
 
         internal bool IsHybridSearchQueryPlanOptimizationDisabled { get; set; } = ConfigurationManager.IsHybridSearchQueryPlanOptimizationDisabled(defaultValue: false);
-
-        internal bool IsHybridSearchCompetitionRankingEnabled { get; set; } = ConfigurationManager.IsHybridSearchCompetitionRankingEnabled(defaultValue: false);
 
         // This is a temporary flag to enable the distributed query gateway mode.
         // This flag will be removed once we have a way for the client to determine

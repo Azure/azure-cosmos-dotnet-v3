@@ -14,6 +14,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -137,7 +138,6 @@
                 returnResultsInDeterministicOrder: null,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
-                isHybridSearchCompetitionRankingEnabled: queryRequestOptions.IsHybridSearchCompetitionRankingEnabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
                 fullTextScoreScope: queryRequestOptions.FullTextScoreScope,
                 testInjections: queryRequestOptions.TestSettings);
@@ -283,6 +283,8 @@
 
             public override Action<IQueryable> OnExecuteScalarQueryCallback => throw new NotImplementedException();
 
+            public override HybridSearchStatisticsCacheFactory HybridSearchStatisticsCacheFactory => HybridSearchStatisticsCacheFactory.Create(null, 0);
+
             public override bool BypassQueryParsing()
             {
                 return false;
@@ -327,6 +329,7 @@
                 string max = min + "-FF";
                 return Task.FromResult(new ContainerQueryProperties(
                     "test",
+                    null,
                     new List<Documents.Routing.Range<string>>
                     {
                         new Documents.Routing.Range<string>(

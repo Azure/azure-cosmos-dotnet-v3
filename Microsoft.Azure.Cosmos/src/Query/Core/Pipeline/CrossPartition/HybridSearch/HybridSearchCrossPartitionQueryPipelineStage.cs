@@ -34,13 +34,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private readonly static QueryState Continuation = new QueryState(CosmosString.Create("HybridSearchInProgress"));
 
+        private readonly string containerResourceId;
+
+        private readonly string containerETag;
+
+        private readonly HybridSearchStatisticsCache statisticsCache;
+
         private readonly HybridSearchQueryInfo hybridSearchQueryInfo;
 
         private readonly int pageSize;
 
         private readonly int maxConcurrency;
-
-        private readonly bool isHybridSearchCompetitionRankingEnabled;
 
         private readonly HybridSearchComponentPipelineFactory pipelineFactory;
 
@@ -67,20 +71,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         }
 
         private HybridSearchCrossPartitionQueryPipelineStage(
+            string containerResourceId,
+            string containerETag,
+            HybridSearchStatisticsCache statisticsCache,
             HybridSearchQueryInfo hybridSearchQueryInfo,
             HybridSearchComponentPipelineFactory pipelineFactory,
             int pageSize,
             int maxConcurrency,
-            bool isHybridSearchCompetitionRankingEnabled,
             State state,
             IQueryPipelineStage globalStatisticsPipeline,
             IReadOnlyList<IQueryPipelineStage> queryPipelineStages)
         {
+            this.containerResourceId = containerResourceId;
+            this.containerETag = containerETag;
+            this.statisticsCache = statisticsCache ?? throw new ArgumentNullException(nameof(statisticsCache));
             this.hybridSearchQueryInfo = hybridSearchQueryInfo ?? throw new ArgumentNullException(nameof(hybridSearchQueryInfo));
             this.pipelineFactory = pipelineFactory ?? throw new ArgumentNullException(nameof(pipelineFactory));
             this.pageSize = pageSize;
             this.maxConcurrency = maxConcurrency;
-            this.isHybridSearchCompetitionRankingEnabled = isHybridSearchCompetitionRankingEnabled;
             this.state = state;
             this.globalStatisticsPipeline = globalStatisticsPipeline;
             this.queryPipelineStages = queryPipelineStages;
@@ -98,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             bool isContinuationExpected,
             int maxConcurrency,
             Cosmos.FullTextScoreScope fullTextScoreScope,
-            bool isHybridSearchCompetitionRankingEnabled)
+            HybridSearchStatisticsCacheFactory statisticsCacheFactory)
         {
             TryCatch<IQueryPipelineStage> ComponentPipelineFactory(QueryInfo rewrittenQueryInfo)
             {
@@ -178,11 +186,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             return TryCatch<IQueryPipelineStage>.FromResult(
                 new HybridSearchCrossPartitionQueryPipelineStage(
+                    containerQueryProperties.ResourceId,
+                    containerQueryProperties.ETag,
+                    statisticsCacheFactory.GetCache(fullTextScoreScope, queryInfo),
                     queryInfo,
                     ComponentPipelineFactory,
                     pageSize,
                     maxConcurrency,
-                    isHybridSearchCompetitionRankingEnabled,
                     state,
                     globalStatisticsPipeline,
                     queryPipelineStages));
@@ -222,6 +232,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private async ValueTask<bool> MoveNextAsync_GatherGlobalStatisticsAsync(ITrace trace, CancellationToken cancellationToken)
         {
+            if (this.statisticsCache.TryGet(this.containerResourceId, this.containerETag, this.hybridSearchQueryInfo, trace, out GlobalFullTextSearchStatistics cachedStatistics))
+            {
+                // The statistics pipeline is never moved on a hit, so no statistics request is issued.
+                if (!this.TryCreateComponentPipelines(cachedStatistics))
+                {
+                    return true;
+                }
+
+                return await this.MoveNextAsync_RunComponentQueriesAsync(trace, cancellationToken);
+            }
+
+            // Capture the start before any statistics request so a slow fan-out does not appear fresher than it is.
+            TimeSpan collectionStartedAt = this.statisticsCache.GetElapsedTime();
+
             TryCatch<(GlobalFullTextSearchStatistics, QueryPage)> tryGatherStatistics = await GatherStatisticsAsync(
                 this.globalStatisticsPipeline,
                 trace,
@@ -234,7 +258,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             }
 
             (GlobalFullTextSearchStatistics statistics, QueryPage queryPage) = tryGatherStatistics.Result;
+            this.statisticsCache.TryAdd(this.containerResourceId, this.containerETag, this.hybridSearchQueryInfo, statistics, collectionStartedAt);
 
+            if (!this.TryCreateComponentPipelines(statistics))
+            {
+                return true;
+            }
+
+            this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+            return true;
+        }
+
+        private bool TryCreateComponentPipelines(GlobalFullTextSearchStatistics statistics)
+        {
             TryCatch<List<IQueryPipelineStage>> tryCreateQueryPipelineStages = CreateQueryPipelineStages(
                 this.hybridSearchQueryInfo.ComponentQueryInfos,
                 statistics,
@@ -243,12 +279,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             {
                 this.Current = TryCatch<QueryPage>.FromException(tryCreateQueryPipelineStages.Exception);
                 this.state = State.Done;
-                return true;
+                return false;
             }
 
             this.queryPipelineStages = tryCreateQueryPipelineStages.Result;
             this.state = State.Initialized;
-            this.Current = TryCatch<QueryPage>.FromResult(queryPage);
             return true;
         }
 
@@ -265,7 +300,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 this.queryPipelineStages,
                 componentRankingInfos,
                 this.maxConcurrency,
-                this.isHybridSearchCompetitionRankingEnabled,
                 trace,
                 cancellationToken);
             if (tryCollateSortedPipelineStageResults.Failed)
@@ -435,7 +469,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             IReadOnlyList<IQueryPipelineStage> queryPipelineStages,
             IReadOnlyList<ComponentRankingInfo> componentRankingInfos,
             int maxConcurrency,
-            bool isHybridSearchCompetitionRankingEnabled,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -479,6 +512,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             IReadOnlyList<List<ScoreTuple>> componentScores = tryGetComponentScores.Result;
 
+            Debug.Assert(
+                componentRankingInfos.Count == componentScores.Count,
+                "The number of component ranking infos should match the number of score components.");
+
             for (int index = 0; index < componentScores.Count; ++index)
             {
                 ComponentRankingInfo component = componentRankingInfos[index];
@@ -487,7 +524,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     : ScoreTupleComparer.Descending);
             }
 
-            int[,] ranks = ComputeRanks(componentScores, isHybridSearchCompetitionRankingEnabled);
+            int[,] ranks = ComputeRanks(componentScores);
 
             ComputeRrfScores(ranks, componentRankingInfos, queryResults);
 
@@ -618,23 +655,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             return TryCatch<IReadOnlyList<List<ScoreTuple>>>.FromResult(componentScores);
         }
 
-        private static int[,] ComputeRanks(
-            IReadOnlyList<List<ScoreTuple>> componentScores,
-            bool isHybridSearchCompetitionRankingEnabled)
+        private static int[,] ComputeRanks(IReadOnlyList<List<ScoreTuple>> componentScores)
         {
             int[,] ranks = new int[componentScores.Count, componentScores[0].Count];
             for (int componentIndex = 0; componentIndex < componentScores.Count; ++componentIndex)
             {
-                int rank = 1; // ranks are 1 based
                 for (int index = 0; index < componentScores[componentIndex].Count; ++index)
                 {
-                    if (!isHybridSearchCompetitionRankingEnabled ||
-                        (index > 0 && componentScores[componentIndex][index].Score != componentScores[componentIndex][index - 1].Score))
-                    {
-                        rank = index + 1;
-                    }
-
-                    ranks[componentIndex, componentScores[componentIndex][index].ResultIndex] = rank;
+                    ranks[componentIndex, componentScores[componentIndex][index].ResultIndex] = index + 1;
                 }
             }
 
