@@ -213,7 +213,10 @@ namespace Microsoft.Azure.Cosmos.Common
 
         internal void InvalidateSecondaryIndexMetadata(string sourceCollectionRid)
         {
-            this.secondaryIndexMetadataInvalidator?.Invalidate(sourceCollectionRid);
+            if (sourceCollectionRid != null)
+            {
+                this.secondaryIndexMetadataInvalidator?.Invalidate(sourceCollectionRid);
+            }
         }
 
         protected bool HasSecondaryIndexMetadataInvalidationTarget =>

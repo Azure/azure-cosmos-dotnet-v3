@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class SecondaryIndexMetadataCache : ISecondaryIndexMetadataCache
@@ -48,63 +47,53 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             string sourceCollectionRid = source.ResourceId;
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Atomically select the entry for this read. Concurrent callers either reuse the current
-            // snapshot or await the same discovery/refresh entry; only one entry is stored per source RID.
-            CacheEntry entry = this.entries.AddOrUpdate(
-                sourceCollectionRid,
-                _ => this.CreateInitializationEntry(
-                    sourceCollectionRid,
-                    source,
-                    trace,
-                    cancellationToken,
-                    forceCollectionRefresh: forceRefresh),
-                (_, currentEntry) => this.SelectEntry(
-                    currentEntry,
-                    sourceCollectionRid,
-                    source,
-                    trace,
-                    cancellationToken,
-                    forceRefresh));
-
-            CacheEntry completedEntry = entry.Initialization == null
-                ? entry
-                : await entry.Initialization.Value;
-            return completedEntry?.Metadata;
-        }
-
-        private CacheEntry SelectEntry(
-            CacheEntry currentEntry,
-            string sourceCollectionRid,
-            ContainerProperties source,
-            ITrace trace,
-            CancellationToken cancellationToken,
-            bool forceRefresh)
-        {
-            // A discovery or refresh is already running. Reusing this entry coalesces concurrent reads.
-            if (currentEntry.Initialization != null)
-            {
-                return currentEntry;
-            }
-
-            bool sourceMembershipIsUnchanged = string.Equals(
-                currentEntry.MembershipFingerprint,
-                CreateMembershipFingerprint(source),
-                StringComparison.Ordinal);
-            if (!forceRefresh
+            this.entries.TryGetValue(sourceCollectionRid, out CacheEntry currentEntry);
+            if (currentEntry != null
+                && !forceRefresh
                 && !currentEntry.IsExpired(this.utcNowProvider())
-                && sourceMembershipIsUnchanged)
+                && string.Equals(
+                    currentEntry.MembershipFingerprint,
+                    CreateMembershipFingerprint(source),
+                    StringComparison.Ordinal))
             {
-                return currentEntry;
+                return currentEntry.Metadata;
             }
 
-            // Expiration, changed source membership, and explicit refresh all require fresh source and
-            // referenced collection metadata. AddOrUpdate installs only one of these refresh entries.
-            return this.CreateInitializationEntry(
-                sourceCollectionRid,
-                source,
-                trace,
-                cancellationToken,
-                forceCollectionRefresh: true);
+            IEnumerable<ISecondaryIndexMetadata> metadata;
+            try
+            {
+                metadata = await this.provider.GetSecondaryIndexMetadataAsync(
+                    source,
+                    trace,
+                    cancellationToken,
+                    forceRefresh: forceRefresh || currentEntry != null);
+            }
+            catch
+            {
+                this.TryRemoveEntry(sourceCollectionRid, currentEntry);
+                throw;
+            }
+
+            if (metadata == null)
+            {
+                this.TryRemoveEntry(sourceCollectionRid, currentEntry);
+                return null;
+            }
+
+            CacheEntry refreshedEntry = new CacheEntry(
+                metadata,
+                CreateMembershipFingerprint(source),
+                this.utcNowProvider());
+            if (currentEntry == null)
+            {
+                this.entries.TryAdd(sourceCollectionRid, refreshedEntry);
+            }
+            else
+            {
+                this.entries.TryUpdate(sourceCollectionRid, refreshedEntry, currentEntry);
+            }
+
+            return metadata;
         }
 
         public void Invalidate(string sourceCollectionRid)
@@ -131,98 +120,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
             return fingerprint.ToString();
         }
 
-        private CacheEntry CreateInitializationEntry(
-            string sourceCollectionRid,
-            ContainerProperties source,
-            ITrace trace,
-            CancellationToken cancellationToken,
-            bool forceCollectionRefresh)
-        {
-            CacheEntry entry = null;
-            entry = new CacheEntry(new AsyncLazy<CacheEntry>(
-                () => this.InitializeEntryAsync(
-                    sourceCollectionRid,
-                    entry,
-                    source,
-                    trace,
-                    cancellationToken,
-                    forceCollectionRefresh),
-                CancellationToken.None));
-            return entry;
-        }
-
-        private async Task<CacheEntry> InitializeEntryAsync(
-            string sourceCollectionRid,
-            CacheEntry initializingEntry,
-            ContainerProperties source,
-            ITrace trace,
-            CancellationToken cancellationToken,
-            bool forceCollectionRefresh)
-        {
-            try
-            {
-                CacheEntry completedEntry = await this.CreateCompletedEntryAsync(
-                    source,
-                    trace,
-                    cancellationToken,
-                    forceCollectionRefresh);
-                if (completedEntry == null)
-                {
-                    // Null results are not cached, so the next read performs normal discovery again.
-                    this.TryRemoveEntry(sourceCollectionRid, initializingEntry);
-                }
-                else
-                {
-                    // Publish the completed snapshot only if this initialization is still the current entry.
-                    // Explicit invalidation or a newer entry must not be overwritten by an older completion.
-                    this.entries.TryUpdate(
-                        sourceCollectionRid,
-                        completedEntry,
-                        initializingEntry);
-                }
-
-                return completedEntry;
-            }
-            catch
-            {
-                // Remove only this failed initialization. A snapshot populated after invalidation is preserved.
-                this.TryRemoveEntry(sourceCollectionRid, initializingEntry);
-                throw;
-            }
-        }
-
         private bool TryRemoveEntry(string sourceCollectionRid, CacheEntry entry)
         {
+            if (entry == null)
+            {
+                return false;
+            }
+
             ICollection<KeyValuePair<string, CacheEntry>> entries = this.entries;
             return entries.Remove(new KeyValuePair<string, CacheEntry>(sourceCollectionRid, entry));
         }
 
-        private async Task<CacheEntry> CreateCompletedEntryAsync(
-            ContainerProperties source,
-            ITrace trace,
-            CancellationToken cancellationToken,
-            bool forceCollectionRefresh)
-        {
-            IEnumerable<ISecondaryIndexMetadata> metadata = await this.provider.GetSecondaryIndexMetadataAsync(
-                source,
-                trace,
-                cancellationToken,
-                forceCollectionRefresh);
-            return metadata == null
-                ? null
-                : new CacheEntry(
-                    metadata,
-                    CreateMembershipFingerprint(source),
-                    this.utcNowProvider());
-        }
-
         private sealed class CacheEntry
         {
-            public CacheEntry(AsyncLazy<CacheEntry> initialization)
-            {
-                this.Initialization = initialization;
-            }
-
             public CacheEntry(
                 IEnumerable<ISecondaryIndexMetadata> metadata,
                 string membershipFingerprint,
@@ -232,8 +142,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                 this.MembershipFingerprint = membershipFingerprint;
                 this.CreatedUtc = createdUtc;
             }
-
-            public AsyncLazy<CacheEntry> Initialization { get; }
 
             public IEnumerable<ISecondaryIndexMetadata> Metadata { get; }
 

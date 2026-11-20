@@ -24,10 +24,12 @@ namespace Microsoft.Azure.Cosmos.Common
 
         public void Invalidate(string sourceCollectionRid)
         {
-            if (sourceCollectionRid != null)
+            if (sourceCollectionRid == null)
             {
-                this.target?.Invalidate(sourceCollectionRid);
+                throw new ArgumentNullException(nameof(sourceCollectionRid));
             }
+
+            this.target?.Invalidate(sourceCollectionRid);
         }
     }
 }
