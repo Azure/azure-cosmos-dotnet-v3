@@ -691,7 +691,7 @@
                 {
                     string formattedQuery = string.Join(
                         Environment.NewLine,
-                        query.Trim().Split(
+                        query.Trim().ReplaceLineEndings(Environment.NewLine).Split(
                             new[] { Environment.NewLine },
                             StringSplitOptions.None)
                             .Select(x => x.Trim()));
