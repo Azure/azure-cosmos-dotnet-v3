@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
+- [6175](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6175) Binary serialization: Advertises support for Base64-encoded strings, typed number arrays, and unsigned 64-bit integers so the service can use these encodings in binary responses.
+
 ### <a name="3.65.0-preview.0"/> [3.65.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.65.0-preview.0) - 2026-11-06
 
 #### Bugs Fixed

@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             if (ConfigurationManager.IsBinaryEncodingEnabled() && IsPointOperationSupportedForBinaryEncoding(dsr))
             {
-                dsr.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = SupportedSerializationFormats.CosmosBinary.ToString();
+                dsr.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = CosmosSerializationUtil.SupportedBinarySerializationFormat;
             }
 
             return true;

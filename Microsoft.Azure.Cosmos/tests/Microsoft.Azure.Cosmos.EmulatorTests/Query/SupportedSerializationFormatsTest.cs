@@ -1,13 +1,18 @@
 ﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
+    using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
+    using RequestHandlerHelper = Microsoft.Azure.Cosmos.SDK.EmulatorTests.RequestHandlerHelper;
+    using TestCommon = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon;
 
     [TestClass]
     [TestCategory("Query")]
@@ -36,6 +41,151 @@
                 inputDocuments,
                 this.TestSupportedSerializationFormatsHelper,
                 "/id");
+        }
+
+        [TestMethod]
+        [Ignore("Requires an emulator build that supports binary serialization feature negotiation.")]
+        [DoNotParallelize]
+        [DataRow(ConnectionMode.Direct, null)]
+        [DataRow(ConnectionMode.Gateway, null)]
+        [DataRow(ConnectionMode.Direct, "CosmosBinary")]
+        [DataRow(ConnectionMode.Gateway, "CosmosBinary")]
+        [DataRow(ConnectionMode.Direct, "JsonText")]
+        [DataRow(ConnectionMode.Gateway, "JsonText")]
+        public async Task TestSupportedSerializationFeatures(ConnectionMode connectionMode, string formatsOverride)
+        {
+            string previousBinaryEncoding = Environment.GetEnvironmentVariable(Cosmos.ConfigurationManager.BinaryEncodingEnabled);
+            try
+            {
+                Environment.SetEnvironmentVariable(Cosmos.ConfigurationManager.BinaryEncodingEnabled, bool.FalseString);
+                byte[] binary = Enumerable.Range(0, 193).Select(index => (byte)((index * 73 + 19) % 256)).ToArray();
+                JObject document = new JObject
+                {
+                    ["id"] = "binary-features",
+                    ["base64"] = Convert.ToBase64String(binary),
+                    ["numbers"] = new JArray(Enumerable.Range(1000, 128)),
+                    ["uint64"] = ulong.MaxValue,
+                };
+
+                RequestHandlerHelper handler = new RequestHandlerHelper
+                {
+                    UpdateRequestMessage = request =>
+                    {
+                        if (request.ResourceType == ResourceType.Document
+                            && (request.OperationType == OperationType.Read || request.OperationType == OperationType.Query))
+                        {
+                            StringAssert.Contains(request.Headers.CosmosMessageHeaders.SupportedSerializationFormats, CosmosSerializationUtil.SupportedBinarySerializationFormat);
+                            if (formatsOverride != null)
+                            {
+                                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = formatsOverride;
+                            }
+                        }
+                    },
+                    CallBackOnResponse = (request, response) =>
+                    {
+                        if (request.ResourceType == ResourceType.Document
+                            && (request.OperationType == OperationType.Read || request.OperationType == OperationType.Query)
+                            && response.IsSuccessStatusCode)
+                        {
+                            // Inspect the service payload before the SDK rewrites it.
+                            using MemoryStream copy = new MemoryStream();
+                            response.Content.CopyTo(copy);
+                            byte[] content = copy.ToArray();
+                            response.Content.Dispose();
+                            response.Content = new MemoryStream(content);
+                            AssertSerializationFeatures(content, request.OperationType, formatsOverride, document);
+                        }
+
+                        return response;
+                    },
+                };
+
+                CosmosClientOptions clientOptions = new CosmosClientOptions
+                {
+                    ConnectionMode = connectionMode,
+                    EnableStreamPassThrough = true,
+                };
+                clientOptions.CustomHandlers.Add(handler);
+                using CosmosClient client = TestCommon.CreateCosmosClient(clientOptions);
+                Container container = await client.GetDatabase(this.database.Id).CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+                await container.CreateItemAsync(document, new Cosmos.PartitionKey("binary-features"));
+
+                Environment.SetEnvironmentVariable(Cosmos.ConfigurationManager.BinaryEncodingEnabled, bool.TrueString);
+                using (ResponseMessage read = await container.ReadItemStreamAsync(
+                    "binary-features",
+                    new Cosmos.PartitionKey("binary-features")))
+                {
+                    read.EnsureSuccessStatusCode();
+                }
+
+                using (FeedIterator iterator = container.GetItemQueryStreamIterator(
+                    "SELECT * FROM c",
+                    requestOptions: new QueryRequestOptions { PartitionKey = new Cosmos.PartitionKey("binary-features") }))
+                {
+                    while (iterator.HasMoreResults)
+                    {
+                        using ResponseMessage page = await iterator.ReadNextAsync();
+                        page.EnsureSuccessStatusCode();
+                    }
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(Cosmos.ConfigurationManager.BinaryEncodingEnabled, previousBinaryEncoding);
+            }
+        }
+
+        private static void AssertSerializationFeatures(
+            ReadOnlyMemory<byte> content,
+            OperationType operation,
+            string formatsOverride,
+            JObject expected)
+        {
+            Assert.IsFalse(content.IsEmpty);
+            bool expectBinary = formatsOverride != "JsonText";
+            bool expectFeatures = formatsOverride == null;
+            Assert.AreEqual(expectBinary, content.Span[0] == (byte)JsonSerializationFormat.Binary);
+            string text;
+            if (expectBinary)
+            {
+                int documentOffset = 1;
+                if (operation == OperationType.Query)
+                {
+                    int documentsOffset = GetPropertyOffset(content, documentOffset, "Documents");
+                    documentOffset = JsonBinaryEncoding.Enumerator.GetArrayItems(content, documentsOffset, null).Single().Offset;
+                }
+
+                byte base64Marker = content.Span[GetPropertyOffset(content, documentOffset, "base64")];
+                byte numbersMarker = content.Span[GetPropertyOffset(content, documentOffset, "numbers")];
+                byte uint64Marker = content.Span[GetPropertyOffset(content, documentOffset, "uint64")];
+                Assert.AreEqual(expectFeatures, JsonBinaryEncoding.TypeMarker.IsBase64String(base64Marker), $"Base64 marker: 0x{base64Marker:X2}");
+                Assert.AreEqual(expectFeatures, JsonBinaryEncoding.IsUniformArrayTypeMarker(numbersMarker), $"Array marker: 0x{numbersMarker:X2}");
+                Assert.AreEqual(expectFeatures, uint64Marker == JsonBinaryEncoding.TypeMarker.NumberUInt64, $"Number marker: 0x{uint64Marker:X2}");
+
+                IJsonWriter writer = JsonWriter.Create(JsonSerializationFormat.Text);
+                JsonReader.Create(content).WriteAll(writer);
+                text = Encoding.UTF8.GetString(writer.GetResult().Span);
+            }
+            else
+            {
+                text = Encoding.UTF8.GetString(content.Span);
+            }
+
+            JObject root = JObject.Parse(text);
+            JObject actual = operation == OperationType.Query ? (JObject)root["Documents"].Single() : root;
+            Assert.AreEqual((string)expected["base64"], (string)actual["base64"]);
+            CollectionAssert.AreEqual(expected["numbers"].Values<int>().ToArray(), actual["numbers"].Values<int>().ToArray());
+            if (expectFeatures || !expectBinary)
+            {
+                Assert.AreEqual(expected["uint64"].ToString(), actual["uint64"].ToString());
+            }
+        }
+
+        private static int GetPropertyOffset(ReadOnlyMemory<byte> content, int objectOffset, string name)
+        {
+            return JsonBinaryEncoding.Enumerator.GetObjectProperties(content, objectOffset)
+                .Single(property => JsonBinaryEncoding.GetStringValue(content, content.Slice(property.NameOffset), null) == name)
+                .ValueOffset;
         }
 
         private async Task TestSupportedSerializationFormatsHelper(Container container, IReadOnlyList<CosmosObject> documents)
