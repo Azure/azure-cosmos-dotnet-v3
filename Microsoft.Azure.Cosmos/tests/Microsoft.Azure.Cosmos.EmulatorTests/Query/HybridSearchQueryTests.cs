@@ -562,7 +562,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         provider.Update(queryEngineConfiguration);
                     }
 
-                    await RunTests(container, testCases, provider, queryEngineConfiguration, isEmulator);
+                    await RunTests(container, testCases, provider, queryEngineConfiguration);
                 },
                 partitionKey: "/index",
                 indexingPolicy: CompositeIndexPolicy);
@@ -572,8 +572,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             Container container,
             IEnumerable<SanityTestCase> testCases,
             QueryPartitionProvider provider,
-            IDictionary<string, object> queryEngineConfiguration,
-            bool isEmulator)
+            IDictionary<string, object> queryEngineConfiguration)
         {
             foreach (FullTextScoreScope fullTextScoreScope in new[]{ FullTextScoreScope.Local, FullTextScoreScope.Global })
             {
@@ -591,7 +590,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }
 
                     Dictionary<int, double> expectedScores = null;
-                    if (testCase.ComputeExpectedOrderingOnLiveAccount && !isEmulator)
+                    if (testCase.ComputeExpectedOrdering)
                     {
                         HybridSearchQueryInfo queryInfo = await GetHybridSearchQueryInfoAsync(container, provider, testCase.Query, testRequestOptions);
                         IDictionary<string, object> referenceConfiguration = new Dictionary<string, object>(queryEngineConfiguration)
@@ -845,7 +844,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 ExpectedOrderings = expectedOrderings,
                 ValidationMode = validationMode,
                 PartitionKey = partitionKey,
-                ComputeExpectedOrderingOnLiveAccount = SqlQueryParser.Parse(query).OrderByClause.OrderByItems.Single().Expression
+                ComputeExpectedOrdering = SqlQueryParser.Parse(query).OrderByClause.OrderByItems.Single().Expression
                     is SqlFunctionCallScalarExpression function && function.Name.Value == "RRF",
             };
         }
@@ -856,7 +855,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             public IReadOnlyList<IReadOnlyList<int>> ExpectedOrderings { get; init; }
 
-            public bool ComputeExpectedOrderingOnLiveAccount { get; init; }
+            public bool ComputeExpectedOrdering { get; init; }
 
             public PartitionKey? PartitionKey { get; init; }
 
