@@ -492,6 +492,18 @@ System.Runtime.InteropServices.COMException : 0x800A0B00
         <HybridSearchQueryInfo>
           <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "swim"))]}] AS fullTextStatistics
 FROM c</GlobalStatisticsQuery>
+          <FullTextSearchTerms>
+            <Entry>
+              <Path>
+                <Segment>text</Segment>
+              </Path>
+              <Terms>
+                <Term>
+                  <Text>swim</Text>
+                </Term>
+              </Terms>
+            </Entry>
+          </FullTextSearchTerms>
           <componentQueryInfo>
             <DistinctType>None</DistinctType>
             <Top>120</Top>
@@ -538,6 +550,18 @@ ORDER BY _FullTextScore(c.text, ["swim"], {documentdb-formattablehybridsearchque
         <HybridSearchQueryInfo>
           <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "swim"))]}] AS fullTextStatistics
 FROM c</GlobalStatisticsQuery>
+          <FullTextSearchTerms>
+            <Entry>
+              <Path>
+                <Segment>text</Segment>
+              </Path>
+              <Terms>
+                <Term>
+                  <Text>swim</Text>
+                </Term>
+              </Terms>
+            </Entry>
+          </FullTextSearchTerms>
           <componentQueryInfo>
             <DistinctType>None</DistinctType>
             <Top>4294967294</Top>
