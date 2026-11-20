@@ -19,9 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- [6191](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6191) Query: Adds `CosmosClientOptions.FullTextStatisticsCacheMaxAge` to opt in to caching the full-text statistics used by Global-scoped hybrid search queries. While the cached document, word, and term counts are younger than the configured age (at least two minutes), queries skip the cross-partition statistics request, reducing latency and request charge. Reused statistics may not reflect recent writes. The cache is disabled by default. `CosmosClientOptions.FullTextStatisticsCacheMaxEntries` (default 256) limits the number of cached counts per client.
+
 #### Breaking Changes
 
 #### Bugs Fixed
+
+- [6214](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6214) Gateway V2 (thin client): Fixes requests that set an explicit session token covering multiple partition key ranges failing with 400 "Session token specified is invalid.". The token is now narrowed to the target partition key range.
+- [6210](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6210) Partition routing: Resumes partition-key range cache initialization from the last successfully read change-feed page after throttling retries are exhausted, avoiding redundant rereads from the beginning.
 
 #### Other Changes
 

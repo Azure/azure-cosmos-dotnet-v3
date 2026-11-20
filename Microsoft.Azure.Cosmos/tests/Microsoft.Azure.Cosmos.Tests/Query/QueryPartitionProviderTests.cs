@@ -2,6 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -20,6 +22,8 @@
             },
             Kind = PartitionKind.Hash,
         };
+
+        public TestContext TestContext { get; set; }
 
         [TestMethod]
         public void TestQueryPartitionProviderUpdate()
@@ -63,6 +67,96 @@
                             geospatialType: Cosmos.GeospatialType.Geography);
 
             Assert.IsTrue(tryGetQueryPlan.Succeeded);
+        }
+
+        [TestMethod]
+        public void TestFullTextSearchTermsDeserialization()
+        {
+            List<MetadataTestCase> testCases = new List<MetadataTestCase>
+            {
+                new MetadataTestCase("Absent metadata", null, null),
+                new MetadataTestCase("Null metadata", "null", null),
+                new MetadataTestCase("Empty metadata", "[]", "[]"),
+                new MetadataTestCase("Empty entry", "[{}]", @"[{""path"":null,""terms"":null}]"),
+                new MetadataTestCase("Missing terms", @"[{""path"":[""text""]}]", @"[{""path"":[""text""],""terms"":null}]"),
+                new MetadataTestCase("Missing path and term text", @"[{""terms"":[{}]}]", @"[{""path"":null,""terms"":[{""term"":null}]}]"),
+                new MetadataTestCase("Null distance", @"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":null}]}]", @"[{""path"":[""text""],""terms"":[{""term"":""run""}]}]"),
+                new MetadataTestCase("Unknown fields", @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2}],""future"":true}]", @"[{""path"":[""text""],""terms"":[{""term"":""swim"",""distance"":2}]}]"),
+                new MetadataTestCase("Date-like strings", @"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00""}]}]", @"[{""path"":[""2026-10-20T12:00:00Z""],""terms"":[{""term"":""2026-10-20T12:00:00+01:00""}]}]"),
+            };
+
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                MetadataTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                this.VerifyFullTextSearchTermsDeserialization(testCase.Metadata, testCase.Expected);
+            }
+        }
+
+        private void VerifyFullTextSearchTermsDeserialization(string metadata, string expected)
+        {
+            const string statisticsQuery = "SELECT COUNT(1) AS documentCount FROM c";
+            string property = metadata == null ? string.Empty : $",\"fullTextSearchTerms\":{metadata}";
+            string queryPlan = $"{{\"hybridSearchQueryInfo\":{{\"globalStatisticsQuery\":\"{statisticsQuery}\",\"requiresGlobalStatistics\":true{property}}}}}";
+
+            Assert.IsTrue(PartitionedQueryExecutionInfo.TryParse(queryPlan, out PartitionedQueryExecutionInfo parsed));
+            using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(queryPlan));
+            PartitionedQueryExecutionInfo gatewayPlan = new CosmosSerializerCore().FromStream<PartitionedQueryExecutionInfo>(stream);
+            PartitionedQueryExecutionInfoInternal internalPlan = JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(queryPlan);
+
+            List<DeserializedPlanTestCase> testCases = new List<DeserializedPlanTestCase>
+            {
+                new DeserializedPlanTestCase("TryParse", parsed.HybridSearchQueryInfo),
+                new DeserializedPlanTestCase("Gateway serializer", gatewayPlan.HybridSearchQueryInfo),
+                new DeserializedPlanTestCase("Internal plan serializer", internalPlan.HybridSearchQueryInfo),
+            };
+
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                DeserializedPlanTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Deserializer case {index}: {testCase.Name}, Metadata={metadata ?? "<absent>"}, Expected={expected ?? "<null>"}");
+                HybridSearchQueryInfo hybridPlan = testCase.Plan;
+
+                Assert.AreEqual(statisticsQuery, hybridPlan.GlobalStatisticsQuery);
+                Assert.IsTrue(hybridPlan.RequiresGlobalStatistics);
+
+                if (metadata == null || metadata == "null")
+                {
+                    Assert.IsNull(hybridPlan.FullTextSearchTerms);
+                    Assert.IsFalse(JsonConvert.SerializeObject(hybridPlan).Contains("fullTextSearchTerms"));
+                }
+                else
+                {
+                    Assert.AreEqual(expected, JsonConvert.SerializeObject(hybridPlan.FullTextSearchTerms, Formatting.None));
+                    string serialized = JsonConvert.SerializeObject(hybridPlan);
+                    HybridSearchQueryInfo roundTripped = JsonConvert.DeserializeObject<HybridSearchQueryInfo>(serialized);
+                    Assert.AreEqual(expected, JsonConvert.SerializeObject(roundTripped.FullTextSearchTerms, Formatting.None));
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestInvalidFullTextSearchTermsUseNormalQueryPlanErrorHandling()
+        {
+            List<MetadataTestCase> testCases = new List<MetadataTestCase>
+            {
+                new MetadataTestCase("Numeric metadata", "42", null),
+                new MetadataTestCase("String metadata", @"""unsupported""", null),
+                new MetadataTestCase("Object metadata", @"{""future"":true}", null),
+                new MetadataTestCase("Non-array path", @"[{""path"":""not-an-array"",""terms"":null}]", null),
+                new MetadataTestCase("Non-object term", @"[{""path"":[""text""],""terms"":[""run""]}]", null),
+                new MetadataTestCase("Distance overflow", @"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":2147483648}]}]", null),
+                new MetadataTestCase("Non-numeric distance", @"[{""path"":[""text""],""terms"":[{""term"":""run"",""distance"":""not-a-number""}]}]", null),
+            };
+
+            for (int index = 0; index < testCases.Count; index++)
+            {
+                MetadataTestCase testCase = testCases[index];
+                this.TestContext.WriteLine($"Case {index}: {testCase}");
+                string queryPlan = "{\"hybridSearchQueryInfo\":{\"requiresGlobalStatistics\":true,\"fullTextSearchTerms\":" + testCase.Metadata + "}}";
+                Assert.IsFalse(PartitionedQueryExecutionInfo.TryParse(queryPlan, out PartitionedQueryExecutionInfo plan));
+                Assert.IsNull(plan);
+            }
         }
 
         [TestMethod]
@@ -179,6 +273,37 @@
                 Assert.IsTrue(PartitionedQueryExecutionInfo.TryParse(serializedQueryPlan, out PartitionedQueryExecutionInfo parsedQueryPlan));
                 Assert.AreEqual(serializedQueryPlan, parsedQueryPlan.ToString());
             }
+        }
+
+        private readonly struct MetadataTestCase
+        {
+            public MetadataTestCase(string name, string metadata, string expected)
+            {
+                this.Name = name;
+                this.Metadata = metadata;
+                this.Expected = expected;
+            }
+
+            public string Name { get; }
+
+            public string Metadata { get; }
+
+            public string Expected { get; }
+
+            public override string ToString() => $"{this.Name}: Metadata={this.Metadata ?? "<absent>"}, Expected={this.Expected ?? "<null>"}";
+        }
+
+        private readonly struct DeserializedPlanTestCase
+        {
+            public DeserializedPlanTestCase(string name, HybridSearchQueryInfo plan)
+            {
+                this.Name = name;
+                this.Plan = plan;
+            }
+
+            public string Name { get; }
+
+            public HybridSearchQueryInfo Plan { get; }
         }
     }
 }
