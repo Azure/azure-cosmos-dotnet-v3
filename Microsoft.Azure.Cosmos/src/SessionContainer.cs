@@ -54,6 +54,11 @@ namespace Microsoft.Azure.Cosmos.Common
             return SessionContainer.ResolvePartitionLocalSessionTokenForGateway(this.state, request, partitionKeyRangeId);
         }
 
+        internal string ResolvePartitionLocalSessionTokenForGateway(string collectionRid, PartitionKeyRange range)
+        {
+            return SessionContainer.ResolvePartitionLocalSessionTokenForGateway(this.state, collectionRid, range);
+        }
+
         public void ClearTokenByCollectionFullname(string collectionFullname)
         {
             SessionContainer.ClearTokenByCollectionFullname(this.state, collectionFullname);
@@ -149,18 +154,45 @@ namespace Microsoft.Azure.Cosmos.Common
                                                                           string partitionKeyRangeId)
         {
             ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap = SessionContainer.GetPartitionKeyRangeIdToTokenMap(self, request);
+            return SessionContainer.ResolvePartitionLocalSessionTokenForGateway(
+                partitionKeyRangeIdToTokenMap, partitionKeyRangeId, request.RequestContext.ResolvedPartitionKeyRange);
+        }
+
+        private static string ResolvePartitionLocalSessionTokenForGateway(
+            SessionContainerState self,
+            string collectionRid,
+            PartitionKeyRange range)
+        {
+            if (string.IsNullOrEmpty(collectionRid) || range == null)
+            {
+                return null;
+            }
+
+            ResourceId resourceId = ResourceId.Parse(collectionRid);
+            self.sessionTokensRIDBased.TryGetValue(
+                resourceId.UniqueDocumentCollectionId,
+                out ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap);
+            return SessionContainer.ResolvePartitionLocalSessionTokenForGateway(
+                partitionKeyRangeIdToTokenMap, range.Id, range);
+        }
+
+        private static string ResolvePartitionLocalSessionTokenForGateway(
+            ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap,
+            string partitionKeyRangeId,
+            PartitionKeyRange range)
+        {
             if (partitionKeyRangeIdToTokenMap != null)
             {
                 if (partitionKeyRangeIdToTokenMap.TryGetValue(partitionKeyRangeId, out ISessionToken sessionToken))
                 {
                     return partitionKeyRangeId + SessionContainer.sessionTokenSeparator + sessionToken.ConvertToString();
                 }
-                else if (request.RequestContext.ResolvedPartitionKeyRange.Parents != null)
+                else if (range?.Parents != null)
                 {
                     ISessionToken parentSessionToken = null;
-                    for (int parentIndex = request.RequestContext.ResolvedPartitionKeyRange.Parents.Count - 1; parentIndex >= 0; parentIndex--)
+                    for (int parentIndex = range.Parents.Count - 1; parentIndex >= 0; parentIndex--)
                     {
-                        if (partitionKeyRangeIdToTokenMap.TryGetValue(request.RequestContext.ResolvedPartitionKeyRange.Parents[parentIndex], 
+                        if (partitionKeyRangeIdToTokenMap.TryGetValue(range.Parents[parentIndex],
                                                                       out sessionToken))
                         {
                             // A partition can have more than 1 parent (merge). In that case, we apply Merge to generate a token with both parent's max LSNs

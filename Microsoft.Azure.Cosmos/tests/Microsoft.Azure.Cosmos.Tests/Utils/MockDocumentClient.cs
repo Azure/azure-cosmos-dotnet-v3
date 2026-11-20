@@ -69,6 +69,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public Mock<GlobalEndpointManager> MockGlobalEndpointManager { get; private set; }
 
+        /// <summary>
+        /// The partition key range cache mock backing <see cref="GetPartitionKeyRangeCacheAsync"/>, exposed
+        /// so tests can stub or verify routing lookups.
+        /// </summary>
+        public Mock<PartitionKeyRangeCache> MockPartitionKeyRangeCache => this.partitionKeyRangeCache;
+
         internal MockDocumentClient(
             Uri serviceEndpoint,
             string authKeyOrResourceToken,
