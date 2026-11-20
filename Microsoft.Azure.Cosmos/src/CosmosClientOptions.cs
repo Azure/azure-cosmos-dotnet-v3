@@ -56,6 +56,8 @@ namespace Microsoft.Azure.Cosmos
 
         private const ApiType DefaultApiType = ApiType.None;
 
+        private static readonly TimeSpan FullTextStatisticsCacheMaxAgeLowerBound = TimeSpan.FromMinutes(2);
+
         /// <summary>
         /// Default request timeout
         /// </summary>
@@ -65,6 +67,8 @@ namespace Microsoft.Azure.Cosmos
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializerInternal;
         private System.Text.Json.JsonSerializerOptions stjSerializerOptions;
+        private int fullTextStatisticsCacheMaxEntries = 256;
+        private TimeSpan? fullTextStatisticsCacheMaxAge;
 
         private ConnectionMode connectionMode;
         private Protocol connectionProtocol;
@@ -633,6 +637,66 @@ namespace Microsoft.Azure.Cosmos
         /// When enabled, eligible queries can use a secondary index to reduce source-container fan-out.
         /// </summary>
         internal bool EnableSecondaryIndexRouting { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the maximum age of cached full-text statistics that hybrid search queries using this client can reuse.
+        /// </summary>
+        /// <value>
+        /// The default is <see langword="null"/>, which disables the statistics cache. Other values must be at least two minutes.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// The cache is most effective for workloads that repeat searches over the same full-text paths and terms.
+        /// </para>
+        /// <para>
+        /// Age is measured from the start of statistics collection and applies independently to each cached document,
+        /// word, and term-hit count. The cache applies only to
+        /// <see cref="FullTextScoreScope.Global"/>. Changes after the client is created have no effect.
+        /// </para>
+        /// <para>
+        /// Reused statistics may not reflect recent writes, regardless of the consistency level or session token,
+        /// which can affect FullTextScore values and ranking.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">The value is less than two minutes.</exception>
+        public TimeSpan? FullTextStatisticsCacheMaxAge
+        {
+            get => this.fullTextStatisticsCacheMaxAge;
+            set
+            {
+                if (value.HasValue && value.Value < FullTextStatisticsCacheMaxAgeLowerBound)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.FullTextStatisticsCacheMaxAge), value, "The maximum statistics cache age must be at least two minutes.");
+                }
+
+                this.fullTextStatisticsCacheMaxAge = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the maximum number of cached full-text statistics per client when <see cref="FullTextStatisticsCacheMaxAge"/> is set.
+        /// </summary>
+        /// <value>
+        /// The default is 256. Each query path uses one entry for its word count and one for each search term,
+        /// and each container revision uses one entry for its document count.
+        /// </value>
+        /// <remarks>
+        /// When the limit is exceeded, the oldest statistics are evicted first. Concurrent queries can briefly exceed the limit.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>
+        public int FullTextStatisticsCacheMaxEntries
+        {
+            get => this.fullTextStatisticsCacheMaxEntries;
+            set
+            {
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.FullTextStatisticsCacheMaxEntries), value, "The maximum entry count must be positive.");
+                }
+
+                this.fullTextStatisticsCacheMaxEntries = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the boolean flag to skip converting a text stream to binary and vice versa. When enabled, the request and response stream
