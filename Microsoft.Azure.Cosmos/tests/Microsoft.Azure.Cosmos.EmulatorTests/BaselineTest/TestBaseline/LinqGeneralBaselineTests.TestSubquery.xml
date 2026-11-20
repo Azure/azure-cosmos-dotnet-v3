@@ -260,9 +260,9 @@ JOIN (
         SELECT TOP 1 VALUE c0["GivenName"] 
         FROM root 
         JOIN c0 IN root["Children"] 
-        ORDER BY c0["GivenName"]["Length"] ASC)) AS v1
+        ORDER BY LENGTH(c0["GivenName"]) ASC)) AS v1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":124,"end":162},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":124,"end":160},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

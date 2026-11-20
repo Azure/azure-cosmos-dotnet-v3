@@ -1,0 +1,181 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[String Length]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Length)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE LENGTH(root["StringField"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String Length in filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField.Length > 10))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (LENGTH(root["StringField"]) > 10)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Array Length]]></Description>
+      <Expression><![CDATA[query.Select(doc => ArrayLength(doc.ArrayField))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_LENGTH(root["ArrayField"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[List Count]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.EnumerableField.Count)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_LENGTH(root["EnumerableField"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[List Count in filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.EnumerableField.Count > 5))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (ARRAY_LENGTH(root["EnumerableField"]) > 5)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[DateTime Year]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.DefaultTime.Year)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE DateTimePart("yyyy", root["DefaultTime"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[DateTime Month]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.DefaultTime.Month)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE DateTimePart("mm", root["DefaultTime"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[DateTime Day]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.DefaultTime.Day)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE DateTimePart("dd", root["DefaultTime"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[DateTime Hour]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.DefaultTime.Hour)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE DateTimePart("hh", root["DefaultTime"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[DateTime Minute]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.DefaultTime.Minute)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE DateTimePart("mi", root["DefaultTime"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[DateTime Second]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.DefaultTime.Second)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE DateTimePart("ss", root["DefaultTime"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[DateTime Millisecond]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.DefaultTime.Millisecond)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE DateTimePart("ms", root["DefaultTime"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[DateTime Year in filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.DefaultTime.Year > 2016))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (DateTimePart("yyyy", root["DefaultTime"]) > 2016)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UTC DateTime Year]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.IsoTime.Year)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE DateTimePart("yyyy", root["IsoTime"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UTC DateTime Hour]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.IsoTime.Hour)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE DateTimePart("hh", root["IsoTime"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UTC DateTime Millisecond]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.IsoTime.Millisecond)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE DateTimePart("ms", root["IsoTime"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

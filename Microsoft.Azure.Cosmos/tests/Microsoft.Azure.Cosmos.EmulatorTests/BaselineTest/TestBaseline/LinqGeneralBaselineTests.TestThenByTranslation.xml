@@ -79,7 +79,7 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN p0 IN root["Parents"] 
-    WHERE (p0["GivenName"]["Length"] > 10)) AS v0 
+    WHERE (LENGTH(p0["GivenName"]) > 10)) AS v0 
     ORDER BY root["FamilyId"] ASC, v0 DESC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","code":2206,"message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]},0x800A0B00]]></ErrorMessage>
@@ -103,7 +103,7 @@ JOIN (
         SELECT VALUE COUNT(1) 
         FROM root 
         JOIN p0 IN root["Parents"] 
-        WHERE (p0["GivenName"]["Length"] > 10)) AS v1 
+        WHERE (LENGTH(p0["GivenName"]) > 10)) AS v1 
         ORDER BY v0 DESC, v1 ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","code":2206,"message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]},0x800A0B00]]></ErrorMessage>
@@ -246,7 +246,7 @@ JOIN (
         SELECT VALUE COUNT(1) 
         FROM root 
         JOIN p0 IN root["Parents"] 
-        WHERE (p0["GivenName"]["Length"] > 10)) AS v1 
+        WHERE (LENGTH(p0["GivenName"]) > 10)) AS v1 
         ORDER BY v0 ASC, v1 ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","code":2206,"message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]},0x800A0B00]]></ErrorMessage>
@@ -265,7 +265,7 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN p0 IN root["Parents"] 
-    WHERE (p0["GivenName"]["Length"] > 10)) AS v0 
+    WHERE (LENGTH(p0["GivenName"]) > 10)) AS v0 
     JOIN (
         SELECT VALUE COUNT(1) 
         FROM root 
@@ -310,7 +310,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        ORDER BY c0["Grade"] ASC, c0["Pets"]["Count"] ASC)) AS v0 
+        ORDER BY c0["Grade"] ASC, ARRAY_LENGTH(c0["Pets"]) ASC)) AS v0 
         JOIN (
             SELECT VALUE ARRAY(
                 SELECT VALUE (p0["FamilyName"] || p0["GivenName"]) 
@@ -319,7 +319,7 @@ JOIN (
                 ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC)) AS v1 
                 ORDER BY v0 ASC, v1 DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":107,"end":156},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":278,"end":329},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":107,"end":161},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":283,"end":334},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -358,7 +358,7 @@ JOIN (
             SELECT TOP 10 VALUE c0 
             FROM root 
             JOIN c0 IN root["Children"] 
-            ORDER BY c0["Grade"] ASC, c0["Pets"]["Count"] DESC) AS r0 
+            ORDER BY c0["Grade"] ASC, ARRAY_LENGTH(c0["Pets"]) DESC) AS r0 
             ORDER BY r0["GivenName"] DESC, r0["Gender"] ASC)) AS v1 
             JOIN (
                 SELECT VALUE ARRAY(
@@ -368,7 +368,7 @@ JOIN (
                     ORDER BY p0["FamilyName"] ASC, p0["GivenName"] DESC)) AS v2 
                     ORDER BY v1 ASC, v2 DESC
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":136,"end":186},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":82,"end":88},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":194,"end":241},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":363,"end":414},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":136,"end":191},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":82,"end":88},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":199,"end":246},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":368,"end":419},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -410,10 +410,10 @@ JOIN (
             SELECT VALUE COUNT(1) 
             FROM c0 
             JOIN p0 IN c0["Pets"] 
-            WHERE (p0["GivenName"]["Length"] > 5)) AS v0) AS r0 
+            WHERE (LENGTH(p0["GivenName"]) > 5)) AS v0) AS r0 
             ORDER BY r0["FamilyId"] ASC, r0["FamilyNumber"] ASC) AS v1
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":372,"end":423},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":370,"end":421},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -432,7 +432,7 @@ FROM (
         SELECT VALUE COUNT(1) 
         FROM c0 
         JOIN p0 IN c0["Pets"] 
-        WHERE (p0["GivenName"]["Length"] > 5)) AS v0) AS r0 
+        WHERE (LENGTH(p0["GivenName"]) > 5)) AS v0) AS r0 
         ORDER BY r0["FamilyId"] ASC, r0["FamilyNumber"] ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Underlying object does not have an '_rid' or '__sys_rid' field.]]></ErrorMessage>
@@ -546,7 +546,7 @@ FROM (
             SELECT VALUE COUNT(1) 
             FROM r0 
             JOIN p0 IN r0["Pets"] 
-            WHERE (p0["GivenName"]["Length"] > 10)) AS v2 
+            WHERE (LENGTH(p0["GivenName"]) > 10)) AS v2 
             WHERE (v2 > 0)) AS r1
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":163,"end":209},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":210,"end":227},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
@@ -569,7 +569,7 @@ FROM (
         WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
         ORDER BY f0["Grade"] ASC, ARRAY_LENGTH(f0["Pets"]) DESC) AS r1 
         OFFSET 5 LIMIT 2147483647) AS r2 
-        ORDER BY r2["Length"] ASC
+        ORDER BY LENGTH(r2) ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":170,"end":225},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":60,"end":66},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":233,"end":258},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
@@ -650,7 +650,7 @@ FROM (
         SELECT VALUE COUNT(1) 
         FROM c0 
         JOIN p0 IN c0["Pets"] 
-        WHERE (p0["GivenName"]["Length"] > 8)) AS v0 
+        WHERE (LENGTH(p0["GivenName"]) > 8)) AS v0 
         WHERE (ARRAY_LENGTH(root["Children"]) > 0)) AS r0 
         ORDER BY r0["Name"] DESC, r0["PetWithLongNames"] ASC
 ]]></SqlQuery>
@@ -677,7 +677,7 @@ JOIN (
                 SELECT VALUE p0 
                 FROM root 
                 JOIN p0 IN root["Parents"] 
-                WHERE (p0["GivenName"]["Length"] > 10))) AS v1 
+                WHERE (LENGTH(p0["GivenName"]) > 10))) AS v1 
                 ORDER BY v0 ASC, v1 DESC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","code":2206,"message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]},0x800A0B00]]></ErrorMessage>

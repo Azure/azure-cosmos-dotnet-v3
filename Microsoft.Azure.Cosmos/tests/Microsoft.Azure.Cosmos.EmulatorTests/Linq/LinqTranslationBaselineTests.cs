@@ -1241,6 +1241,49 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             this.ExecuteTestSuite(inputs);
         }
 
+        [TestMethod]
+        public void TestBuiltinMemberAccess()
+        {
+            const int Records = 100;
+            const int MaxStringLength = 20;
+            const int MaxArraySize = 10;
+            DateTime midDateTime = new DateTime(2016, 9, 13, 0, 0, 0);
+            Func<Random, DataObject> createDataObj = (random) => new DataObject()
+            {
+                StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                ArrayField = new int[random.Next(MaxArraySize)],
+                EnumerableField = new List<int>(new int[random.Next(MaxArraySize)]),
+                // Kind Unspecified: stored with no time zone designator
+                DefaultTime = LinqTestsCommon.RandomDateTime(random, midDateTime).AddSeconds(random.Next(60)).AddMilliseconds(random.Next(1000)),
+                // Kind Utc: stored with a trailing Z
+                IsoTime = DateTime.SpecifyKind(LinqTestsCommon.RandomDateTime(random, midDateTime), DateTimeKind.Utc).AddSeconds(random.Next(60)).AddMilliseconds(random.Next(1000)),
+                Id = Guid.NewGuid().ToString(),
+                Pk = "Test"
+            };
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("String Length", b => getQuery(b).Select(doc => doc.StringField.Length)),
+                new LinqTestInput("String Length in filter", b => getQuery(b).Where(doc => doc.StringField.Length > 10)),
+                new LinqTestInput("Array Length", b => getQuery(b).Select(doc => doc.ArrayField.Length)),
+                new LinqTestInput("List Count", b => getQuery(b).Select(doc => doc.EnumerableField.Count)),
+                new LinqTestInput("List Count in filter", b => getQuery(b).Where(doc => doc.EnumerableField.Count > 5)),
+                new LinqTestInput("DateTime Year", b => getQuery(b).Select(doc => doc.DefaultTime.Year)),
+                new LinqTestInput("DateTime Month", b => getQuery(b).Select(doc => doc.DefaultTime.Month)),
+                new LinqTestInput("DateTime Day", b => getQuery(b).Select(doc => doc.DefaultTime.Day)),
+                new LinqTestInput("DateTime Hour", b => getQuery(b).Select(doc => doc.DefaultTime.Hour)),
+                new LinqTestInput("DateTime Minute", b => getQuery(b).Select(doc => doc.DefaultTime.Minute)),
+                new LinqTestInput("DateTime Second", b => getQuery(b).Select(doc => doc.DefaultTime.Second)),
+                new LinqTestInput("DateTime Millisecond", b => getQuery(b).Select(doc => doc.DefaultTime.Millisecond)),
+                new LinqTestInput("DateTime Year in filter", b => getQuery(b).Where(doc => doc.DefaultTime.Year > 2016)),
+                new LinqTestInput("UTC DateTime Year", b => getQuery(b).Select(doc => doc.IsoTime.Year)),
+                new LinqTestInput("UTC DateTime Hour", b => getQuery(b).Select(doc => doc.IsoTime.Hour)),
+                new LinqTestInput("UTC DateTime Millisecond", b => getQuery(b).Select(doc => doc.IsoTime.Millisecond)),
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
         private Func<bool, IQueryable<DataObject>> CreateDataTestStringFunctions()
         {
             const int Records = 100;
