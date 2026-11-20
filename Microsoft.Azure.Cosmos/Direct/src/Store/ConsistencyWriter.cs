@@ -214,6 +214,21 @@ Sequence of steps:
                 // TODO: Can we not rely on this inversion of dependencies.
                 request.RequestContext.ClientRequestStatistics.RecordContactedReplicas(partitionPerProtocolAddress.ReplicaTransportAddressUris);
 
+                // Let a cached miss trigger the normal Gone retry. If a forced refresh still finds no
+                // primary, let the outer retry policy decide whether another region can serve the write.
+                if (forceRefresh
+                    && request.DefaultReplicaIndex.GetValueOrDefault() == 0
+                    && partitionPerProtocolAddress.PrimaryReplicaTransportAddressUri == null)
+                {
+                    throw new ServiceUnavailableException(
+                        string.Format(
+                            CultureInfo.CurrentUICulture,
+                            RMResources.PrimaryNotFound,
+                            request.RequestContext.ResolvedPartitionKeyRange?.Id ?? request.PartitionKeyRangeIdentity?.PartitionKeyRangeId,
+                            request.RequestContext.TargetIdentity?.ServiceName ?? request.RequestContext.LocationEndpointToRoute),
+                        SubStatusCodes.ServerGenerated410);
+                }
+
                 TransportAddressUri primaryUri = partitionPerProtocolAddress.GetPrimaryAddressUri(request);
                 this.LastWriteAddress = primaryUri.ToString();
 

@@ -21,6 +21,81 @@ namespace Microsoft.Azure.Cosmos.Test
     [TestClass]
     public class ConsistencyWriterTests
     {
+        [DataTestMethod]
+        [DataRow(false, false, DisplayName = "No primary after refresh: stop without sending the write")]
+        [DataRow(false, true, DisplayName = "Replica index zero also requires a primary")]
+        [DataRow(true, false, DisplayName = "Primary appears on refresh: send the write once")]
+        public async Task WriteWithoutCachedPrimary_RefreshesOnceAsync(bool primaryAfterRefresh, bool explicitPrimaryIndex)
+        {
+            ConsistencyWriterTestSetup setup = CreateTestSetup();
+            setup.Entity.DefaultReplicaIndex = explicitPrimaryIndex ? 0u : (uint?)null;
+            setup.Entity.RequestContext.ResolvedPartitionKeyRange = new Documents.PartitionKeyRange { Id = "7" };
+            PartitionAddressInformation secondaryOnly = new PartitionAddressInformation(CommonAddressInformation.Where(a => !a.IsPrimary).ToArray());
+            PartitionAddressInformation refreshed = primaryAfterRefresh ? new PartitionAddressInformation(CommonAddressInformation) : secondaryOnly;
+            List<bool> refreshRequests = new List<bool>();
+            setup.MockAddressResolver.Setup(r => r.ResolveAsync(setup.Entity, It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((DocumentServiceRequest request, bool refresh, CancellationToken token) =>
+                {
+                    refreshRequests.Add(refresh);
+                    Assert.IsTrue(refreshRequests.Count <= 2, "Unexpected address lookup after the forced refresh.");
+                    return refresh ? refreshed : secondaryOnly;
+                });
+            setup.MockTransportClient.Setup(t => t.InvokeResourceOperationAsync(It.IsAny<TransportAddressUri>(), setup.Entity))
+                .ReturnsAsync(new StoreResponse { Status = (int)HttpStatusCode.Created, Headers = new DictionaryNameValueCollection() });
+
+            // Exercise the Gone retry policy as well as the writer; no manual second WriteAsync call.
+            ReplicatedResourceClient client = new ReplicatedResourceClient(
+                setup.MockAddressResolver.Object, new NullSessionContainer(), Protocol.Tcp, setup.MockTransportClient.Object,
+                setup.MockServiceConfigReader.Object, setup.MockAuthorizationTokenProvider.Object,
+                enableReadRequestsFallback: false, useMultipleWriteLocations: false, detectClientConnectivityIssues: false,
+                disableRetryWithRetryPolicy: false, enableReplicaValidation: false);
+
+            if (primaryAfterRefresh)
+            {
+                StoreResponse response = await client.InvokeAsync(setup.Entity);
+                Assert.AreEqual((int)HttpStatusCode.Created, response.Status);
+                TransportAddressUri primary = refreshed.Get(Protocol.Tcp).PrimaryReplicaTransportAddressUri;
+                setup.MockTransportClient.Verify(t => t.InvokeResourceOperationAsync(primary, setup.Entity), Times.Once());
+            }
+            else
+            {
+                ServiceUnavailableException exception = await Assert.ThrowsExceptionAsync<ServiceUnavailableException>(() => client.InvokeAsync(setup.Entity));
+                Assert.AreEqual(HttpStatusCode.ServiceUnavailable, exception.StatusCode);
+                Assert.AreEqual(SubStatusCodes.ServerGenerated410, exception.GetSubStatus());
+                StringAssert.Contains(exception.Message, "partition 7");
+            }
+
+            CollectionAssert.AreEqual(new[] { false, true }, refreshRequests);
+            setup.MockTransportClient.Verify(t => t.InvokeResourceOperationAsync(It.IsAny<TransportAddressUri>(), It.IsAny<DocumentServiceRequest>()),
+                Times.Exactly(primaryAfterRefresh ? 1 : 0));
+        }
+
+        [DataTestMethod]
+        [DataRow(1)]
+        [DataRow(2)]
+        public async Task WriteWithExplicitReplicaIndex_PreservesSelectionAfterRefreshAsync(int replicaIndex)
+        {
+            ConsistencyWriterTestSetup setup = CreateTestSetup();
+            setup.Entity.DefaultReplicaIndex = (uint)replicaIndex;
+            PartitionAddressInformation secondaryOnly = new PartitionAddressInformation(CommonAddressInformation.Where(a => !a.IsPrimary).ToArray());
+            setup.MockAddressResolver.Setup(r => r.ResolveAsync(setup.Entity, true, It.IsAny<CancellationToken>())).ReturnsAsync(secondaryOnly);
+            ConsistencyWriter writer = CreateConsistencyWriter(setup);
+            if (replicaIndex == 1)
+            {
+                TransportAddressUri selected = secondaryOnly.Get(Protocol.Tcp).ReplicaTransportAddressUris[1];
+                setup.MockTransportClient.Setup(t => t.InvokeResourceOperationAsync(selected, setup.Entity))
+                    .ReturnsAsync(new StoreResponse { Status = (int)HttpStatusCode.Created, Headers = new DictionaryNameValueCollection() });
+                StoreResponse response = await writer.WriteAsync(setup.Entity, setup.Entity.RequestContext.TimeoutHelper, forceRefresh: true);
+                Assert.AreEqual((int)HttpStatusCode.Created, response.Status);
+                setup.MockTransportClient.Verify(t => t.InvokeResourceOperationAsync(selected, setup.Entity), Times.Once());
+            }
+            else
+            {
+                await Assert.ThrowsExceptionAsync<GoneException>(() => writer.WriteAsync(setup.Entity, setup.Entity.RequestContext.TimeoutHelper, forceRefresh: true));
+                setup.MockTransportClient.Verify(t => t.InvokeResourceOperationAsync(It.IsAny<TransportAddressUri>(), It.IsAny<DocumentServiceRequest>()), Times.Never());
+            }
+        }
+
         [TestMethod]
         [Owner("cosmosdbcomputeteam")]
         public async Task SessionNotFoundExceptionLessRetryConsistencyTestAsync()
