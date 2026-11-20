@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- [6222](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6222) LINQ: Fixes `Nullable<T>.HasValue` returning true for properties stored as `null`. Such documents no longer match `HasValue`, now match `!HasValue`, and project `false`. Missing properties and values are unchanged. See [#4864](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4864).
+
 #### Bugs Fixed
 
 - [6214](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6214) Gateway V2 (thin client): Fixes requests that set an explicit session token covering multiple partition key ranges failing with 400 "Session token specified is invalid.". The token is now narrowed to the target partition key range.

@@ -797,10 +797,15 @@ namespace Microsoft.Azure.Cosmos.Linq
                     return memberExpression;
                 }
 
-                // convert .HasValue to IS_DEFINED expression
+                // HasValue is false for both missing and null properties.
                 if (memberName == memberNames.HasValue)
                 {
-                    return SqlFunctionCallScalarExpression.CreateBuiltin("IS_DEFINED", memberExpression);
+                    return SqlBinaryScalarExpression.Create(
+                        SqlBinaryScalarOperatorKind.And,
+                        SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.IsDefined, memberExpression),
+                        SqlUnaryScalarExpression.Create(
+                            SqlUnaryScalarOperatorKind.Not,
+                            SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.IsNull, memberExpression)));
                 }
             }
 
