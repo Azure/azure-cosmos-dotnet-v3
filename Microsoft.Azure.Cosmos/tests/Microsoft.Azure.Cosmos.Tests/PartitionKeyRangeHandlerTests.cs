@@ -656,7 +656,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
 
-            Mock<Common.CollectionCache> collectionCache = new Mock<Common.CollectionCache>(MockBehavior.Strict, false);
+            Mock<Common.CollectionCache> collectionCache = new Mock<Common.CollectionCache>(MockBehavior.Strict, false, null);
             collectionCache.Setup(c => c.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), default, trace))
                 .ReturnsAsync(containerProperties);
 

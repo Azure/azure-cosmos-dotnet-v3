@@ -55,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 retryPolicyFactoryMock.Object,
                 telemetry,
                 true,
+                null,
                 null)
             {
                 CallBase = true
@@ -106,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 retryPolicyFactoryMock.Object,
                 telemetry,
                 true,
+                null,
                 null)
             {
                 CallBase = true
@@ -402,6 +404,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 retryPolicyFactoryMock.Object,
                 telemetry,
                 true,
+                null,
                 null)
             {
                 CallBase = true

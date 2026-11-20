@@ -31,7 +31,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
         public async Task<IEnumerable<ISecondaryIndexMetadata>> GetSecondaryIndexMetadataAsync(
             ContainerProperties source,
             ITrace trace,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool forceRefresh = false)
         {
             if (source == null)
             {
@@ -47,7 +48,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
 
             ClientCollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(discoveryTrace);
             cancellationToken.ThrowIfCancellationRequested();
-            IReadOnlyList<MaterializedViewProperties> mvReferences = source.MaterializedViews;
+            ContainerProperties discoverySource = forceRefresh
+                ? await collectionCache.ResolveByRidAsync(
+                    HttpConstants.Versions.CurrentVersion,
+                    source.ResourceId,
+                    discoveryTrace,
+                    clientSideRequestStatistics: null,
+                    cancellationToken,
+                    forceRefresh: true)
+                : source;
+            IReadOnlyList<MaterializedViewProperties> mvReferences = discoverySource.MaterializedViews;
 
             List<ISecondaryIndexMetadata> secondaryIndexesMetadata = new ();
             foreach (MaterializedViewProperties mvReference in mvReferences)
@@ -57,8 +67,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting
                     mvReference.ResourceId,
                     discoveryTrace,
                     clientSideRequestStatistics: null,
-                    cancellationToken);
-                if (TryCreateMetadata(candidate, source, out SecondaryIndexMetadata secondaryIndexMetadata))
+                    cancellationToken,
+                    forceRefresh);
+                if (TryCreateMetadata(candidate, discoverySource, out SecondaryIndexMetadata secondaryIndexMetadata))
                 {
                     secondaryIndexesMetadata.Add(secondaryIndexMetadata);
                 }
