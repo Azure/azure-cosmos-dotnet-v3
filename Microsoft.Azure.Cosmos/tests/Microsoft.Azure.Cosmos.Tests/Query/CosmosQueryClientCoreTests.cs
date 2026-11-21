@@ -6,20 +6,108 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.SecondaryIndexRouting;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class CosmosQueryClientCoreTests
     {
         private const string ContainerLink = "dbs/database/colls/source";
+
+        public TestContext TestContext { get; set; }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task OverlappingQueryPlan_InjectedGatewayRoutesWithoutOverlapsAsync(bool containedPoint)
+        {
+            this.TestContext.WriteLine("Injected gateway plan: this does not establish actual gateway planner behavior.");
+            List<Range<string>> injectedRanges = new List<Range<string>>
+            {
+                new Range<string>("10", "20", true, false),
+                Range<string>.GetPointRange(containedPoint ? "15" : "30"),
+            };
+            MultiHashQueryPlanTestHelper.WriteRanges(injectedRanges, this.TestContext);
+            using MockDocumentClient documentClient = new MockDocumentClient();
+            (CosmosQueryClientCore queryClient, PartitionedQueryExecutionInfo plan) =
+                await GetInjectedGatewayPlanAsync(documentClient, injectedRanges);
+
+            await Pipeline.FactoryTests.VerifyOverlappingQueryPlanExecutionAsync(queryClient, plan);
+        }
+
+        [TestMethod]
+        public async Task OverlappingQueryPlan_InjectedPartialOverlapStillFailsAsync()
+        {
+            List<Range<string>> injectedRanges = new List<Range<string>>
+            {
+                new Range<string>("10", "30", true, false),
+                new Range<string>("20", "40", true, false),
+            };
+            using MockDocumentClient documentClient = new MockDocumentClient();
+            (CosmosQueryClientCore queryClient, PartitionedQueryExecutionInfo plan) =
+                await GetInjectedGatewayPlanAsync(documentClient, injectedRanges);
+
+            CollectionAssert.AreEqual(injectedRanges, plan.QueryRanges);
+            ArgumentException exception = await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                Pipeline.FactoryTests.VerifyOverlappingQueryPlanExecutionAsync(queryClient, plan));
+            StringAssert.StartsWith(exception.Message, "sortedRanges had overlaps.");
+            StringAssert.Contains(exception.Message, "[10,30)");
+            StringAssert.Contains(exception.Message, "[20,40)");
+        }
+
+        private static async Task<(CosmosQueryClientCore QueryClient, PartitionedQueryExecutionInfo Plan)> GetInjectedGatewayPlanAsync(
+            MockDocumentClient documentClient,
+            List<Range<string>> injectedRanges)
+        {
+            Mock<CosmosClientContext> context = MultiHashQueryPlanTestHelper.CreateContext(documentClient);
+            const string supportedFeatures = "NonValueAggregate";
+            Guid correlationId = Guid.NewGuid();
+            context.Setup(client => client.ProcessResourceOperationStreamAsync(
+                MultiHashQueryPlanTestHelper.ContainerLink, ResourceType.Document, OperationType.QueryPlan,
+                null, null, (Cosmos.FeedRange)null, It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                NoOpTrace.Singleton, CancellationToken.None))
+                .Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.FeedRange, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                    (uri, resource, operation, options, container, feedRange, payload, enrich, trace, cancellationToken) =>
+                    {
+                        using RequestMessage request = new RequestMessage();
+                        enrich(request);
+                        Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.IsQueryPlanRequest]);
+                        Assert.AreEqual(supportedFeatures, request.Headers[HttpConstants.HttpHeaders.SupportedQueryFeatures]);
+                        Assert.AreEqual("1.0", request.Headers[HttpConstants.HttpHeaders.QueryVersion]);
+                        Assert.AreEqual(RuntimeConstants.MediaTypes.QueryJson, request.Headers.ContentType);
+                        Assert.AreEqual(correlationId.ToString(), request.Headers[WFConstants.BackendHeaders.CorrelatedActivityId]);
+                        Assert.IsTrue(request.UseGatewayMode);
+                        return Task.FromResult(new ResponseMessage(HttpStatusCode.OK)
+                        {
+                            Content = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(
+                                new { queryInfo = new QueryInfo(), queryRanges = injectedRanges }))),
+                        });
+                    });
+            CosmosQueryClientCore queryClient = new CosmosQueryClientCore(context.Object, null);
+            PartitionedQueryExecutionInfo plan = await queryClient.ExecuteQueryPlanRequestAsync(
+                MultiHashQueryPlanTestHelper.ContainerLink, ResourceType.Document, OperationType.QueryPlan,
+                new SqlQuerySpec("SELECT * FROM c"), partitionKey: null, supportedFeatures,
+                excludeRegions: null, correlationId, NoOpTrace.Singleton, CancellationToken.None);
+            context.Verify(client => client.ProcessResourceOperationStreamAsync(
+                MultiHashQueryPlanTestHelper.ContainerLink, ResourceType.Document, OperationType.QueryPlan,
+                null, null, (Cosmos.FeedRange)null, It.IsAny<Stream>(), It.IsAny<Action<RequestMessage>>(),
+                NoOpTrace.Singleton, CancellationToken.None), Times.Once);
+
+            return (queryClient, plan);
+        }
 
         [DataTestMethod]
         [DataRow(HttpStatusCode.Forbidden)]
@@ -61,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                         source.PartitionKey,
                         source.IndexingPolicy,
                         new Dictionary<string, PropertyPath>(),
-                        ConsistencyLevel.Eventual),
+                        Cosmos.ConsistencyLevel.Eventual),
                 }
                 : Array.Empty<ISecondaryIndexMetadata>();
             Mock<ISecondaryIndexMetadataCache> cache = new Mock<ISecondaryIndexMetadataCache>(MockBehavior.Strict);

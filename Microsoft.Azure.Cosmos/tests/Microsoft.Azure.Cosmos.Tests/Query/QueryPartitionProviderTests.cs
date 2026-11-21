@@ -4,9 +4,11 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -24,6 +26,37 @@
         };
 
         public TestContext TestContext { get; set; }
+
+        public static IEnumerable<object[]> MultiHashCases => MultiHashQueryPlanTestHelper.Cases();
+
+        [DataTestMethod]
+        [DynamicData(nameof(MultiHashCases))]
+        public void MultiHashNativePlans_CharacterizeRawRanges(string name, string queryJson)
+        {
+            using QueryPartitionProvider provider = MultiHashQueryPlanTestHelper.CreateProvider();
+            this.TestContext.WriteLine($"Case: {name}");
+            MultiHashQueryPlanTestHelper.GetNativePlan(provider, JsonConvert.DeserializeObject<SqlQuerySpec>(queryJson), this.TestContext);
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(MultiHashCases))]
+        public async Task MultiHashNativePlans_RouteWithoutOverlapsAsync(string name, string queryJson)
+        {
+            using QueryPartitionProvider provider = MultiHashQueryPlanTestHelper.CreateProvider();
+            this.TestContext.WriteLine($"Case: {name}");
+            PartitionedQueryExecutionInfo plan = MultiHashQueryPlanTestHelper.GetNativePlan(
+                provider, JsonConvert.DeserializeObject<SqlQuerySpec>(queryJson), this.TestContext);
+            using MockDocumentClient documentClient = new MockDocumentClient();
+            CosmosQueryClientCore queryClient = new CosmosQueryClientCore(
+                MultiHashQueryPlanTestHelper.CreateContext(documentClient).Object, null);
+
+            List<PartitionKeyRange> ranges = await queryClient.GetTargetPartitionKeyRangesAsync(
+                MultiHashQueryPlanTestHelper.ContainerLink, "rid", plan.QueryRanges,
+                forceRefresh: false, trace: NoOpTrace.Singleton);
+
+            Assert.AreEqual(1, ranges.Count);
+            Assert.AreEqual("0", ranges[0].Id);
+        }
 
         [TestMethod]
         public void TestQueryPartitionProviderUpdate()
