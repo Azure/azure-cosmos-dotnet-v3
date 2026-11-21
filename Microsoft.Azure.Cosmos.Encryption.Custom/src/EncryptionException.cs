@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public string DataEncryptionKeyId { get; }
 
         /// <summary>
-        /// Gets the raw encrypted content as string.
+        /// Gets the original encrypted content as a string, or an empty string when encrypted content is unavailable.
         /// </summary>
         public string EncryptedContent { get; }
 
@@ -33,8 +33,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Exception innerException)
             : base(innerException.Message, innerException)
         {
-            this.DataEncryptionKeyId = dataEncryptionKeyId ?? throw new ArgumentNullException(dataEncryptionKeyId);
-            this.EncryptedContent = encryptedContent ?? throw new ArgumentNullException(encryptedContent);
+            // Missing diagnostic fields must not mask the original failure.
+            this.DataEncryptionKeyId = dataEncryptionKeyId ?? string.Empty;
+            this.EncryptedContent = encryptedContent ?? string.Empty;
         }
     }
 }

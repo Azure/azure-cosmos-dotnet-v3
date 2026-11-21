@@ -34,10 +34,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return (this.cosmosSerializer.FromStream<T>(EncryptionProcessor.BaseSerializer.ToStream(this.decryptableContent)), null);
             }
 
+            JObject encryptedInfo = document[Constants.EncryptedInfo] as JObject;
             try
             {
+                // Decryption can mutate its input only when object metadata is present.
                 (JObject decryptedItem, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
-                    document,
+                    encryptedInfo == null ? document : (JObject)document.DeepClone(),
                     this.encryptor,
                     new CosmosDiagnosticsContext(),
                     cancellationToken: default);
@@ -46,14 +48,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
             catch (Exception exception)
             {
-                string dataEncryptionKeyId = !(document.TryGetValue(Constants.EncryptedInfo, out JToken encryptedInfo) &&
-                    (encryptedInfo is JObject encryptedInfoObject))
-                    ? null
-                    : (string)encryptedInfoObject.GetValue(Constants.EncryptionDekId);
+                string dataEncryptionKeyId = null;
+                string encryptedContent = string.Empty;
+                if (encryptedInfo != null)
+                {
+                    if (encryptedInfo[Constants.EncryptionDekId] is JValue keyId)
+                    {
+                        dataEncryptionKeyId = (string)keyId;
+                    }
+
+                    if (encryptedInfo.TryGetValue(Constants.EncryptionAlgorithm, out JToken algorithm) &&
+                        algorithm.Type != JTokenType.Null)
+                    {
+                        encryptedContent = document.ToString();
+                    }
+                }
 
                 throw new EncryptionException(
                     dataEncryptionKeyId,
-                    this.decryptableContent.ToString(),
+                    encryptedContent,
                     exception);
             }
         }
