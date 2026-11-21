@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Test
                             messagePayload: request,
                             transportRequestStats: null);
 
-                    // The health check requires strictly more than the 10-second receive hang grace period.
+                    // The health check strictly requires more than the 10-second receive hang grace period.
                     await Task.Delay(12000);
                     Assert.IsFalse(
                         condition: connection.Healthy,
