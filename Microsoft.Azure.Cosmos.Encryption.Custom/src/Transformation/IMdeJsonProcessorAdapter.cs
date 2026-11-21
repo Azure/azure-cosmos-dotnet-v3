@@ -31,8 +31,14 @@ internal interface IMdeJsonProcessorAdapter
     /// <param name="encryptor">Encryptor to use for encryption operations.</param>
     /// <param name="options">Encryption options including paths to encrypt.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="replacePlaintextEncryptionMetadata">Whether point-item serialization may replace stale plaintext encryption metadata.</param>
     /// <returns>New stream containing encrypted JSON document.</returns>
-    Task<Stream> EncryptAsync(Stream input, Encryptor encryptor, EncryptionOptions options, CancellationToken cancellationToken);
+    Task<Stream> EncryptAsync(
+        Stream input,
+        Encryptor encryptor,
+        EncryptionOptions options,
+        CancellationToken cancellationToken,
+        bool replacePlaintextEncryptionMetadata);
 
     /// <summary>
     /// Encrypts a JSON stream and writes the encrypted result to an output stream.

@@ -94,6 +94,71 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
             return JsonDocument.Parse(output);
         }
 
+        [DataTestMethod]
+        [DataRow("123")]
+        [DataRow("true")]
+        [DataRow("false")]
+        [DataRow("{}")]
+        [DataRow("[]")]
+        [DataRow("{\"nested\":\"plaintext\"}")]
+        [DataRow("[\"plaintext\"]")]
+        public async Task Decrypt_IncompatibleEncryptedTarget_Throws(string replacementJson)
+        {
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(
+                new { id = "1", secret = "sensitive" },
+                CreateOptions(new[] { "/secret" }));
+            using (encrypted)
+            {
+                JObject document = JObject.Parse(Encoding.UTF8.GetString(encrypted.ToArray()));
+                document["secret"] = JToken.Parse(replacementJson);
+                using MemoryStream tampered = new(Encoding.UTF8.GetBytes(document.ToString()));
+                using MemoryStream output = new();
+
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(() =>
+                    new StreamProcessor().DecryptStreamAsync(
+                        tampered, output, mockEncryptor.Object, props,
+                        new CosmosDiagnosticsContext(), CancellationToken.None));
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task Decrypt_MissingOrNullEncryptedTarget_PreservesProjection(bool missing)
+        {
+            (MemoryStream encrypted, EncryptionProperties props) = await EncryptRawAsync(
+                new { id = "1", secret = "sensitive" },
+                CreateOptions(new[] { "/secret" }));
+            using (encrypted)
+            {
+                JObject document = JObject.Parse(Encoding.UTF8.GetString(encrypted.ToArray()));
+                if (missing)
+                {
+                    document.Remove("secret");
+                }
+                else
+                {
+                    document["secret"] = JValue.CreateNull();
+                }
+
+                using MemoryStream projected = new(Encoding.UTF8.GetBytes(document.ToString()));
+                using MemoryStream output = new();
+                DecryptionContext context = await new StreamProcessor().DecryptStreamAsync(
+                    projected, output, mockEncryptor.Object, props,
+                    new CosmosDiagnosticsContext(), CancellationToken.None);
+                output.Position = 0;
+                using JsonDocument result = JsonDocument.Parse(output);
+                Assert.AreEqual(!missing, result.RootElement.TryGetProperty("secret", out JsonElement secret));
+                if (!missing)
+                {
+                    Assert.AreEqual(JsonValueKind.Null, secret.ValueKind);
+                }
+
+                Assert.IsFalse(context.DecryptionInfoList[0].PathsDecrypted.Contains("/secret"));
+                Assert.IsFalse(result.RootElement.TryGetProperty(Constants.EncryptedInfo, out _));
+            }
+        }
+
         [TestMethod]
         public async Task Decrypt_AllPrimitiveTypesAndContainers()
         {
@@ -660,7 +725,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
         }
 
         [TestMethod]
-        public async Task Decrypt_EncryptedPathValueIsNumber_NoDecryptionOccurs()
+        public async Task Decrypt_EncryptedPathValueIsNumber_RejectsUnauthenticatedValue()
         {
             // Arrange
             var doc = new { id = "1", SensitiveStr = "abc" };
@@ -679,15 +744,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 
             MemoryStream mutated = new(Encoding.UTF8.GetBytes(jsonText));
 
-            // Act
-            MemoryStream output = new();
-            DecryptionContext ctx = await new StreamProcessor().DecryptStreamAsync(mutated, output, mockEncryptor.Object, props, new CosmosDiagnosticsContext(), CancellationToken.None);
-
-            // Assert: value remains number and path is not recorded as decrypted
-            output.Position = 0;
-            using JsonDocument outDoc = JsonDocument.Parse(output);
-            Assert.AreEqual(123, outDoc.RootElement.GetProperty("SensitiveStr").GetInt32());
-            Assert.IsFalse(ctx.DecryptionInfoList[0].PathsDecrypted.Contains("/SensitiveStr"));
+            using MemoryStream output = new();
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() =>
+                new StreamProcessor().DecryptStreamAsync(mutated, output, mockEncryptor.Object, props,
+                    new CosmosDiagnosticsContext(), CancellationToken.None));
         }
 
         [TestMethod]

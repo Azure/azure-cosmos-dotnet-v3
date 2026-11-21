@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         [DataRow("42")]
         [DataRow("false")]
         [DataRow("[1,2,3]")]
-        public async Task DecryptAsync_WhenLastEiIsNonObject_MatchesNewtonsoftPassThrough(string lastEi)
+        public async Task DecryptAsync_WhenLastEiIsNonObject_FailsClosedAcrossProcessors(string lastEi)
         {
             const string validEi = "{\"_ef\":3,\"_ea\":\"AEAD_AES_256_CBC_HMAC_SHA256_RANDOMIZED\",\"_en\":\"dek-id\",\"_ep\":[\"/Sensitive\"]}";
             string json = "{\"_ei\":" + validEi + ",\"id\":\"1\",\"_ei\":" + lastEi + "}";
@@ -114,29 +114,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             SystemTextJsonStreamAdapter streamAdapter = new (new StreamProcessor());
             NewtonsoftAdapter newtonsoftAdapter = new (new MdeJObjectEncryptionProcessor());
 
-            (Stream streamResult, DecryptionContext streamContext) = await streamAdapter.DecryptAsync(
-                streamInput,
-                mockEncryptor.Object,
-                diagnostics,
-                CancellationToken.None);
-            (Stream newtonsoftResult, DecryptionContext newtonsoftContext) = await newtonsoftAdapter.DecryptAsync(
-                newtonsoftInput,
-                mockEncryptor.Object,
-                diagnostics,
-                CancellationToken.None);
+            InvalidOperationException streamException =
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    async () => await streamAdapter.DecryptAsync(
+                        streamInput,
+                        mockEncryptor.Object,
+                        diagnostics,
+                        CancellationToken.None));
+            InvalidOperationException newtonsoftException =
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+                    async () => await newtonsoftAdapter.DecryptAsync(
+                        newtonsoftInput,
+                        mockEncryptor.Object,
+                        diagnostics,
+                        CancellationToken.None));
 
-            Assert.AreSame(streamInput, streamResult);
-            Assert.AreSame(newtonsoftInput, newtonsoftResult);
-            Assert.IsNull(streamContext);
-            Assert.IsNull(newtonsoftContext);
-            Assert.AreEqual(0, streamResult.Position);
-            Assert.AreEqual(0, newtonsoftResult.Position);
-
-            using JsonDocument streamDocument = JsonDocument.Parse(streamResult);
-            using JsonDocument newtonsoftDocument = JsonDocument.Parse(newtonsoftResult);
-            Assert.AreEqual(
-                newtonsoftDocument.RootElement.GetRawText(),
-                streamDocument.RootElement.GetRawText());
+            Assert.AreEqual("The document contains invalid encryption metadata.", streamException.Message);
+            Assert.AreEqual(streamException.Message, newtonsoftException.Message);
+            Assert.AreEqual(0, streamInput.Position);
+            Assert.AreEqual(0, newtonsoftInput.Position);
         }
 
         [TestMethod]
@@ -363,10 +359,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
         public async Task DecryptAsync_WithLegacyAlgorithm_Throws()
         {
             SystemTextJsonStreamAdapter adapter = new (new StreamProcessor());
-            EncryptionProperties legacyProps = CreateLegacyEncryptionProperties();
-            EncryptionPropertiesWrapper wrapper = new (legacyProps);
-            byte[] payload = JsonSerializer.SerializeToUtf8Bytes(wrapper);
-            using MemoryStream input = new (payload);
+            using MemoryStream input = new (Convert.FromBase64String(EncryptionMetadataEnvelopeTests.Preview07LegacyFixtureBase64));
             CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContext();
 
             NotSupportedException exception = await Assert.ThrowsExceptionAsync<NotSupportedException>(async () =>
@@ -386,18 +379,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
             Stream encrypted = await adapter.EncryptAsync(input, mockEncryptor.Object, defaultOptions, CancellationToken.None);
             encrypted.Position = 0;
             return encrypted;
-        }
-
-        private static EncryptionProperties CreateLegacyEncryptionProperties()
-        {
-#pragma warning disable CS0618
-            return new EncryptionProperties(
-                encryptionFormatVersion: 2,
-                encryptionAlgorithm: CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                dataEncryptionKeyId: "legacy-dek",
-                encryptedData: null,
-                encryptedPaths: new[] { "/Sensitive" });
-#pragma warning restore CS0618
         }
 
         private sealed class FailingKeyAccessEncryptor : Encryptor, IDataEncryptionKeyAccessor
