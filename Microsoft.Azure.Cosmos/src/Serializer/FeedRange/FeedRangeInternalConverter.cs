@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
         private const string PartitionKeyNoneValue = "None";
         private const string RangePropertyName = "Range";
         private const string PartitionKeyPropertyName = "PK";
+        private const string PartialPartitionKeyPropertyName = "PartialPK";
         private const string PartitionKeyRangeIdPropertyName = "PKRangeId";
         private static readonly RangeJsonConverter rangeJsonConverter = new RangeJsonConverter();
 
@@ -64,7 +65,21 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     Documents.Routing.Range<string> completeRange = (Documents.Routing.Range<string>)rangeJsonConverter.ReadJson(rangeJToken.CreateReader(), typeof(Documents.Routing.Range<string>), null, serializer);
-                    return new FeedRangeEpk(completeRange);
+                    PartitionKey? partialPartitionKey = null;
+                    if (jObject.TryGetValue(PartialPartitionKeyPropertyName, out JToken partialPkJToken))
+                    {
+                        if (partialPkJToken.Type != JTokenType.String
+                            || !PartitionKey.TryParseJsonString(
+                                partialPkJToken.Value<string>(),
+                                out PartitionKey parsedPartitionKey))
+                        {
+                            throw new JsonReaderException();
+                        }
+
+                        partialPartitionKey = parsedPartitionKey;
+                    }
+
+                    return new FeedRangeEpk(completeRange, partialPartitionKey);
                 }
                 catch (JsonSerializationException)
                 {
@@ -105,6 +120,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 writer.WritePropertyName(FeedRangeInternalConverter.RangePropertyName);
                 rangeJsonConverter.WriteJson(writer, feedRangeEpk.Range, serializer);
+                if (feedRangeEpk.PartialPartitionKey.HasValue)
+                {
+                    writer.WritePropertyName(PartialPartitionKeyPropertyName);
+                    writer.WriteValue(feedRangeEpk.PartialPartitionKey.Value.ToJsonString());
+                }
+
                 return;
             }
 

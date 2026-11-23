@@ -17,10 +17,13 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Rntbd;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
@@ -262,6 +265,141 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(sent);
             container.Verify(c => c.GetCachedContainerPropertiesAsync(
                 false, It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [DataTestMethod]
+        [DataRow(ConnectionMode.Gateway, false)]
+        [DataRow(ConnectionMode.Direct, false)]
+        [DataRow(ConnectionMode.Gateway, true)]
+        [DataRow(ConnectionMode.Direct, true)]
+        public async Task PartialHpkFeedHeaderSurvivesSplitAndResume(
+            ConnectionMode connectionMode,
+            bool changeFeed)
+        {
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(builder =>
+            {
+                if (connectionMode == ConnectionMode.Gateway)
+                {
+                    builder.WithConnectionModeGateway();
+                }
+                else
+                {
+                    builder.WithConnectionModeDirect();
+                }
+            });
+            ContainerProperties properties = ContainerProperties.CreateWithResourceId("testCollRid");
+            properties.PartitionKeyPaths = new[] { "/tenant", "/user" };
+            Cosmos.PartitionKey partialKey = new PartitionKeyBuilder().Add("tenant-a").Build();
+            Mock<ContainerInternal> container = MockCosmosUtil.CreateMockContainer("testDb", "testColl");
+            container.Setup(c => c.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(properties.PartitionKey);
+            container.Setup(c => c.GetCachedContainerPropertiesAsync(
+                It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(properties);
+            Mock<Cosmos.Database> database = new Mock<Cosmos.Database>();
+            database.Setup(d => d.Id).Returns("testDb");
+            container.Setup(c => c.Database).Returns(database.Object);
+
+            FeedRangeEpk prefix = (FeedRangeEpk)await RequestInvokerHandler.ResolveFeedRangeBasedOnPrefixContainerAsync(
+                new FeedRangePartitionKey(partialKey),
+                container.Object,
+                CancellationToken.None);
+            string splitPoint = prefix.Range.Min + "80";
+            PartitionKeyRange[] physicalRanges =
+            {
+                new PartitionKeyRange { Id = "1", MinInclusive = "", MaxExclusive = splitPoint },
+                new PartitionKeyRange { Id = "2", MinInclusive = splitPoint, MaxExclusive = "FF" },
+            };
+            Mock.Get(await client.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton))
+                .Setup(cache => cache.TryGetOverlappingRangesAsync(
+                    It.IsAny<string>(), It.IsAny<Documents.Routing.Range<string>>(), It.IsAny<ITrace>(), It.IsAny<bool>()))
+                .ReturnsAsync((string rid, Documents.Routing.Range<string> range, ITrace trace, bool refresh) =>
+                    physicalRanges.Where(physicalRange => physicalRange.MinInclusive == range.Min ||
+                        physicalRange.MaxExclusive == range.Max).ToList());
+
+            int sent = 0;
+            FeedRangeEpk expectedRange = null;
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, null, null, null, null)
+            {
+                InnerHandler = new TestHandler((request, token) =>
+                {
+                    sent++;
+                    Assert.AreEqual(partialKey.ToJsonString(), request.Headers[HttpConstants.HttpHeaders.PartialPartitionKey]);
+                    Assert.AreEqual(partialKey.ToJsonString(), request.ToDocumentServiceRequest().Headers[HttpConstants.HttpHeaders.PartialPartitionKey]);
+                    Assert.IsNull(request.Headers.PartitionKey);
+                    Assert.AreEqual(expectedRange.Range.Min, request.Headers.StartEpk);
+                    Assert.AreEqual(expectedRange.Range.Max, request.Headers.EndEpk);
+                    if (connectionMode == ConnectionMode.Direct)
+                    {
+                        using TransportSerialization.SerializedRequest serialized = TransportSerialization.BuildRequest(
+                            request.ToDocumentServiceRequest(),
+                            "replica",
+                            new ResourceOperation(OperationType.ReadFeed, ResourceType.Document),
+                            Guid.NewGuid(),
+                            new BufferProvider(),
+                            "1",
+                            out _,
+                            out _);
+                        byte[] bytes = new byte[serialized.RequestSize];
+                        serialized.CopyTo(new ArraySegment<byte>(bytes));
+                        BytesDeserializer reader = new BytesDeserializer(bytes, bytes.Length);
+                        reader.ReadBytes(24);
+                        RntbdConstants.Request wireRequest = new RntbdConstants.Request();
+                        wireRequest.ParseFrom(ref reader);
+                        Assert.IsTrue(wireRequest.partialPartitionKey.isPresent);
+                        CollectionAssert.AreEqual(
+                            BytesSerializer.GetBytesForString(partialKey.ToJsonString(), wireRequest).ToArray(),
+                            wireRequest.partialPartitionKey.value.valueBytes.ToArray());
+                    }
+
+                    return TestHandler.ReturnSuccess();
+                })
+            };
+
+            foreach (PartitionKeyRange physicalRange in physicalRanges)
+            {
+                FeedRangeEpk child = prefix.GetClippedRange(physicalRange.ToRange(), useLengthAwareRangeComparer: true);
+                FeedRangeInternal resumedChild;
+                if (changeFeed)
+                {
+                    TryCatch<FeedRangeInternal> parsed =
+                        FeedRangeCosmosElementSerializer.MonadicCreateFromCosmosElement(
+                            FeedRangeCosmosElementSerializer.ToCosmosElement(child));
+                    Assert.IsTrue(parsed.Succeeded);
+                    resumedChild = parsed.Result;
+                }
+                else
+                {
+                    FeedRangeCompositeContinuation continuation = new FeedRangeCompositeContinuation(
+                        string.Empty,
+                        child,
+                        new[] { child.Range });
+                    Assert.IsTrue(FeedRangeContinuation.TryParse(continuation.ToString(), out FeedRangeContinuation parsed));
+                    resumedChild = (FeedRangeInternal)parsed.GetFeedRange();
+                }
+
+                foreach (FeedRangeInternal range in new FeedRangeInternal[] { child, resumedChild })
+                {
+                    expectedRange = (FeedRangeEpk)range;
+                    RequestOptions options = changeFeed
+                        ? new ChangeFeedRequestOptions()
+                        : new QueryRequestOptions();
+                    using ResponseMessage response = await invoker.SendAsync(
+                        "dbs/testDb/colls/testColl",
+                        ResourceType.Document,
+                        OperationType.ReadFeed,
+                        options,
+                        container.Object,
+                        range,
+                        streamPayload: null,
+                        requestEnricher: null,
+                        NoOpTrace.Singleton,
+                        CancellationToken.None);
+                    Assert.IsTrue(response.IsSuccessStatusCode);
+                }
+            }
+
+            Assert.AreEqual(4, sent);
         }
 
         [TestMethod]
@@ -799,7 +937,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     min: "01620B162169497AFD85FA66E99F73760845FB119899DE50766A2C4CEFC2FA73",
                     max: "01620B162169497AFD85FA66E99F73760845FB119899DE50766A2C4CEFC2FA73FF",
                     isMinInclusive: true,
-                    isMaxInclusive: default)),
+                    isMaxInclusive: default),
+                    partitionKey),
                 getPartitionKeyDefinitionAsyncExecutions: Moq.Times.Once());
         }
 

@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -356,6 +358,63 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             CollectionAssert.AreEquivalent(expectedIds, actualIds);
             Assert.AreEqual(expectedIds.Length, actualIds.Distinct().Count());
+        }
+
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_PreservesPartialKeyAcrossTokenOnlyResumes()
+        {
+            Cosmos.PartitionKey partialKey = new PartitionKeyBuilder().Add("tenant-a").Build();
+            FeedRangeEpk prefix = new FeedRangeEpk(
+                new Documents.Routing.Range<string>("AA", "CC", true, false),
+                partialKey);
+            FeedRangeCompositeContinuation initialContinuation = new FeedRangeCompositeContinuation(
+                string.Empty,
+                prefix,
+                new[]
+                {
+                    new Documents.Routing.Range<string>("AA", "BB", true, false),
+                    new Documents.Routing.Range<string>("BB", "CC", true, false),
+                });
+            Mock<IDocumentContainer> documentContainer = new Mock<IDocumentContainer>();
+            documentContainer.Setup(c => c.MonadicReadFeedAsync(
+                    It.IsAny<FeedRangeState<ReadFeedState>>(),
+                    It.IsAny<ReadFeedExecutionOptions>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync((FeedRangeState<ReadFeedState> state, ReadFeedExecutionOptions options, ITrace trace, CancellationToken token) =>
+                {
+                    FeedRangeEpk range = (FeedRangeEpk)state.FeedRange;
+                    Assert.AreEqual(partialKey, range.PartialPartitionKey);
+                    return TryCatch<Microsoft.Azure.Cosmos.ReadFeed.Pagination.ReadFeedPage>.FromResult(
+                        new Microsoft.Azure.Cosmos.ReadFeed.Pagination.ReadFeedPage(
+                            new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\":[]}")),
+                            requestCharge: 1,
+                            itemCount: 0,
+                            activityId: Guid.NewGuid().ToString(),
+                            additionalHeaders: new Dictionary<string, string>(),
+                            state: ReadFeedState.Continuation(CosmosString.Create("next"))));
+                });
+
+            string continuationToken = initialContinuation.ToString();
+            for (int page = 0; page < 3; page++)
+            {
+                using FeedIterator iterator = CreateReadFeedIterator(
+                    documentContainer.Object,
+                    continuationToken,
+                    pageSize: 1);
+                using ResponseMessage response = await iterator.ReadNextAsync();
+                Assert.IsTrue(response.IsSuccessStatusCode);
+                FeedRangeCompositeContinuation continuation = ParseReadFeedContinuation(response.ContinuationToken);
+                Assert.AreEqual(partialKey, ((FeedRangeEpk)continuation.FeedRange).PartialPartitionKey);
+                Assert.AreEqual(2, continuation.CompositeContinuationTokens.Count);
+                continuationToken = response.ContinuationToken;
+            }
+
+            documentContainer.Verify(c => c.MonadicReadFeedAsync(
+                It.IsAny<FeedRangeState<ReadFeedState>>(),
+                It.IsAny<ReadFeedExecutionOptions>(),
+                It.IsAny<ITrace>(),
+                It.IsAny<CancellationToken>()), Times.Exactly(3));
         }
 
         [DataTestMethod]
