@@ -16,6 +16,86 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         private static readonly bool IsLengthAwareComparisonEnabled = ConfigurationManager.IsLengthAwareRangeComparatorEnabled();
 
         /// <summary>
+        /// Sorts query-plan EPK ranges and removes nonempty ranges fully contained in another range,
+        /// without merging partial overlaps or modifying the input list.
+        /// </summary>
+        /// <param name="ranges">The query-plan ranges, whose original bounds and flags are retained.</param>
+        /// <param name="useLengthAwareComparer">Whether zero-extended EPK boundaries compare as equal.</param>
+        public static List<Range<string>> RemoveContainedRanges(List<Range<string>> ranges, bool useLengthAwareComparer)
+        {
+            if (ranges == null || ranges.Count <= 1)
+            {
+                return ranges;
+            }
+
+            foreach (Range<string> range in ranges)
+            {
+                if (range == null)
+                {
+                    // Do not alter malformed plans as a side effect of containment normalization.
+                    return ranges;
+                }
+            }
+
+            (IComparer<Range<string>> minComparer, IComparer<Range<string>> maxComparer) =
+                RangeComparerProvider.GetComparers(useLengthAwareComparer);
+            List<Range<string>> normalized = new List<Range<string>>(ranges);
+            normalized.Sort((left, right) =>
+            {
+                int comparison = minComparer.Compare(left, right);
+                if (comparison == 0)
+                {
+                    comparison = maxComparer.Compare(right, left);
+                }
+
+                // Choose a deterministic representative when zero-extended bounds compare equal.
+                if (comparison == 0)
+                {
+                    comparison = Range<string>.MinComparer.Instance.Compare(left, right);
+                }
+
+                return comparison != 0 ? comparison : Range<string>.MaxComparer.Instance.Compare(right, left);
+            });
+
+            int retainedCount = 0;
+            Range<string> coveringRange = null;
+            for (int index = 0; index < normalized.Count; index++)
+            {
+                Range<string> range = normalized[index];
+                // Match lower-bound flags so only the endpoint values determine validity and emptiness.
+                Range<string> maximumAsMinimum = new Range<string>(range.Max, range.Max, range.IsMinInclusive, range.IsMaxInclusive);
+                int boundsComparison = minComparer.Compare(range, maximumAsMinimum);
+                if (boundsComparison > 0)
+                {
+                    // Do not alter malformed plans as a side effect of containment normalization.
+                    return ranges;
+                }
+
+                if (boundsComparison == 0 && !(range.IsMinInclusive && range.IsMaxInclusive))
+                {
+                    normalized[retainedCount++] = range;
+                    continue;
+                }
+
+                if (coveringRange != null
+                    && minComparer.Compare(coveringRange, range) <= 0
+                    && maxComparer.Compare(coveringRange, range) >= 0)
+                {
+                    continue;
+                }
+
+                normalized[retainedCount++] = range;
+                if (coveringRange == null || maxComparer.Compare(range, coveringRange) > 0)
+                {
+                    coveringRange = range;
+                }
+            }
+
+            normalized.RemoveRange(retainedCount, normalized.Count - retainedCount);
+            return normalized;
+        }
+
+        /// <summary>
         /// Updates the FeedRange to limit the scope of incoming feedRange to logical partition within a single physical partition.
         /// Generally speaking, a subpartitioned container can experience split partition at any level of hierarchical partition key.
         /// This could cause a situation where more than one physical partition contains the data for a partial partition key.

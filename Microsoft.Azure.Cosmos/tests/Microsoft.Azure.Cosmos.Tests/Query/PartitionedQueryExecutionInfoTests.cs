@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Tokens;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
@@ -49,29 +50,73 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 yield return Case("Joint coverage is not containment", new[] { 0, 2, 1 },
                     Interval("10", "30"), Interval("20", "40"), Interval("15", "35"));
                 yield return Case("Ordinal, not length-aware ordering", new[] { 1, 0 }, Interval("2", "3"), Interval("10", "20"));
+                yield return CaseWithComparers("Zero-extended minimum", new[] { 1, 0 }, new[] { 0 },
+                    Interval("1000", "20"), Range<string>.GetPointRange("10"));
+                yield return CaseWithComparers("Zero-extended maximum", new[] { 0, 1 }, new[] { 0 },
+                    Interval("10", "20", true, true), Range<string>.GetPointRange("2000"));
+                yield return CaseWithComparers("Zero-extended duplicate points", new[] { 0, 1 }, new[] { 0 },
+                    Range<string>.GetPointRange("10"), Range<string>.GetPointRange("1000"));
+                yield return CaseWithComparers("Zero-extended duplicate intervals", new[] { 0, 1 }, new[] { 0 },
+                    Interval("10", "20"), Interval("1000", "2000"));
+                yield return CaseWithComparers("Zero-extended excluded minimum", new[] { 0 }, new[] { 1, 0 },
+                    Interval("10", "20", false, true), Range<string>.GetPointRange("1000"));
+                yield return CaseWithComparers("Zero-extended excluded maximum", new[] { 0, 1 }, new[] { 0, 1 },
+                    Interval("10", "20"), Range<string>.GetPointRange("2000"));
+                yield return CaseWithComparers("Zero-extended empty range cannot cover a point", new[] { 0 }, new[] { 1, 0 },
+                    Interval("10", "1000"), Range<string>.GetPointRange("10"));
             }
         }
 
         [DataTestMethod]
         [DynamicData(nameof(NormalizationCases))]
-        public void NormalizesOnlyContainedRanges(string name, string rangesJson, int[] retainedIndices)
+        public void NormalizesOnlyContainedRanges(string name, string rangesJson, int[] ordinalIndices, int[] lengthAwareIndices)
         {
             List<Range<string>> original = JsonConvert.DeserializeObject<List<Range<string>>>(rangesJson);
-            Range<string>[] expected = retainedIndices.Select(index => original[index]).ToArray();
-            foreach (List<Range<string>> input in new[] { original, original.AsEnumerable().Reverse().ToList() })
+            foreach (bool useLengthAwareComparer in new[] { false, true })
             {
-                Range<string>[] snapshot = input.ToArray();
-                PartitionedQueryExecutionInfo plan = new PartitionedQueryExecutionInfo { QueryRanges = input };
+                int[] retainedIndices = useLengthAwareComparer ? lengthAwareIndices : ordinalIndices;
+                Range<string>[] expected = retainedIndices.Select(index => original[index]).ToArray();
+                foreach (List<Range<string>> input in new[] { original, original.AsEnumerable().Reverse().ToList() })
+                {
+                    Range<string>[] snapshot = input.ToArray();
+                    List<Range<string>> normalized = QueryRangeUtils.RemoveContainedRanges(input, useLengthAwareComparer);
 
-                CollectionAssert.AreEqual(expected, plan.QueryRanges, name);
-                CollectionAssert.AreEqual(snapshot, input, "Caller-owned input must not be changed.");
-                AssertUnionPreserved(input, plan.QueryRanges);
-                Assert.IsTrue(plan.QueryRanges.All(range => input.Any(item => ReferenceEquals(item, range))),
-                    "Retained ranges must keep their original bounds and flags.");
+                    CollectionAssert.AreEqual(expected, normalized, $"{name}, length-aware={useLengthAwareComparer}");
+                    CollectionAssert.AreEqual(snapshot, input, "Caller-owned input must not be changed.");
+                    AssertUnionPreserved(input, normalized, useLengthAwareComparer);
+                    Assert.IsTrue(normalized.All(range => input.Any(item => ReferenceEquals(item, range))),
+                        "Retained ranges must keep their original bounds and flags.");
 
-                Range<string>[] normalized = plan.QueryRanges.ToArray();
-                plan.QueryRanges = plan.QueryRanges;
-                CollectionAssert.AreEqual(normalized, plan.QueryRanges, "Normalization must be idempotent.");
+                    CollectionAssert.AreEqual(normalized, QueryRangeUtils.RemoveContainedRanges(normalized, useLengthAwareComparer),
+                        "Normalization must be idempotent.");
+                    if (useLengthAwareComparer == ConfigurationManager.IsLengthAwareRangeComparatorEnabled())
+                    {
+                        PartitionedQueryExecutionInfo plan = new PartitionedQueryExecutionInfo { QueryRanges = input };
+                        CollectionAssert.AreEqual(normalized, plan.QueryRanges, "Plan assignment must use the shared utility.");
+                    }
+                }
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void ZeroExtendedBoundsUseConfiguredValidityAndEmptiness(bool useLengthAwareComparer)
+        {
+            Range<string> emptyRange = Interval("1000", "10");
+            Range<string> point = Range<string>.GetPointRange("10");
+            foreach (List<Range<string>> input in new[]
+            {
+                new List<Range<string>> { emptyRange, point },
+                new List<Range<string>> { point, emptyRange },
+            })
+            {
+                List<Range<string>> normalized = QueryRangeUtils.RemoveContainedRanges(input, useLengthAwareComparer);
+                CollectionAssert.AreEqual(
+                    useLengthAwareComparer ? new[] { point, emptyRange } : input.ToArray(),
+                    normalized,
+                    "Length-aware mode retains the empty interval; ordinal mode leaves reversed bounds untouched.");
+                AssertUnionPreserved(input, normalized, useLengthAwareComparer);
             }
         }
 
@@ -99,10 +144,46 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 Interval("10", "20", (firstFlags & 1) != 0, (firstFlags & 2) != 0),
                 Interval("10", "20", (secondFlags & 1) != 0, (secondFlags & 2) != 0),
             };
-            PartitionedQueryExecutionInfo plan = new PartitionedQueryExecutionInfo { QueryRanges = input };
+            foreach (bool useLengthAwareComparer in new[] { false, true })
+            {
+                List<Range<string>> normalized = QueryRangeUtils.RemoveContainedRanges(input, useLengthAwareComparer);
 
-            Assert.AreEqual(expectedCount, plan.QueryRanges.Count);
-            AssertUnionPreserved(input, plan.QueryRanges);
+                Assert.AreEqual(expectedCount, normalized.Count);
+                AssertUnionPreserved(input, normalized, useLengthAwareComparer);
+            }
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public void QueryRangesHonorsConfiguredComparison()
+        {
+            string originalSetting = Environment.GetEnvironmentVariable(ConfigurationManager.UseLengthAwareRangeComparator);
+            try
+            {
+                foreach (bool enabled in new[] { false, true })
+                {
+                    Environment.SetEnvironmentVariable(ConfigurationManager.UseLengthAwareRangeComparator, enabled.ToString());
+                    List<Range<string>> ranges = new List<Range<string>>
+                    {
+                        Interval("10", "20", true, true),
+                        Range<string>.GetPointRange("2000"),
+                    };
+                    PartitionedQueryExecutionInfo plan = new PartitionedQueryExecutionInfo { QueryRanges = ranges };
+
+                    Assert.AreEqual(enabled ? 1 : 2, plan.QueryRanges.Count);
+                    AssertUnionPreserved(ranges, plan.QueryRanges, enabled);
+                    string json = JsonConvert.SerializeObject(new { queryRanges = ranges });
+                    foreach (string source in new[] { "JsonConvert", "TryParse", "GatewaySerializer", "LegacyContinuation" })
+                    {
+                        PartitionedQueryExecutionInfo deserialized = DeserializePlan(source, json);
+                        CollectionAssert.AreEqual(plan.QueryRanges, deserialized.QueryRanges, source);
+                    }
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.UseLengthAwareRangeComparator, originalSetting);
+            }
         }
 
         [DataTestMethod]
@@ -238,27 +319,46 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         }
 
         private static object[] Case(string name, int[] retainedIndices, params Range<string>[] ranges) =>
-            new object[] { name, JsonConvert.SerializeObject(ranges), retainedIndices };
+            CaseWithComparers(name, retainedIndices, retainedIndices, ranges);
+
+        private static object[] CaseWithComparers(string name, int[] ordinalIndices, int[] lengthAwareIndices, params Range<string>[] ranges) =>
+            new object[] { name, JsonConvert.SerializeObject(ranges), ordinalIndices, lengthAwareIndices };
 
         private static Range<string> Interval(string min, string max, bool isMinInclusive = true, bool isMaxInclusive = false) =>
             new Range<string>(min, max, isMinInclusive, isMaxInclusive);
 
-        private static void AssertUnionPreserved(IReadOnlyList<Range<string>> input, IReadOnlyList<Range<string>> output)
+        private static void AssertUnionPreserved(IReadOnlyList<Range<string>> input, IReadOnlyList<Range<string>> output, bool useLengthAwareComparer)
         {
             string[] endpoints = input.Concat(output).SelectMany(range => new[] { range.Min, range.Max }).Distinct().ToArray();
-            foreach (string probe in endpoints.Concat(endpoints.Select(endpoint => endpoint + "\0")))
+            int width = endpoints.Max(endpoint => endpoint.Length);
+            foreach (string probe in endpoints.Concat(endpoints.Select(
+                endpoint => useLengthAwareComparer ? endpoint.PadRight(width, '0') + "1" : endpoint + "\0")))
             {
-                Assert.AreEqual(input.Any(range => Includes(range, probe)), output.Any(range => Includes(range, probe)),
+                Assert.AreEqual(
+                    input.Any(range => Includes(range, probe, useLengthAwareComparer)),
+                    output.Any(range => Includes(range, probe, useLengthAwareComparer)),
                     $"EPK union changed at {JsonConvert.SerializeObject(probe)}.");
             }
         }
 
-        private static bool Includes(Range<string> range, string value)
+        private static bool Includes(Range<string> range, string value, bool useLengthAwareComparer)
         {
-            int minimum = string.CompareOrdinal(value, range.Min);
-            int maximum = string.CompareOrdinal(value, range.Max);
+            int minimum = CompareEndpoints(value, range.Min, useLengthAwareComparer);
+            int maximum = CompareEndpoints(value, range.Max, useLengthAwareComparer);
             return (minimum > 0 || (minimum == 0 && range.IsMinInclusive))
                 && (maximum < 0 || (maximum == 0 && range.IsMaxInclusive));
+        }
+
+        private static int CompareEndpoints(string left, string right, bool useLengthAwareComparer)
+        {
+            if (useLengthAwareComparer)
+            {
+                // Independently model zero-extension instead of reusing the production range comparers.
+                int width = Math.Max(left.Length, right.Length);
+                return string.CompareOrdinal(left.PadRight(width, '0'), right.PadRight(width, '0'));
+            }
+
+            return string.CompareOrdinal(left, right);
         }
     }
 }
