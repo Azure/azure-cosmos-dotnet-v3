@@ -154,6 +154,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             foreach (FeedRangeEpk childRange in childRanges.Result)
             {
+                Assert.AreEqual(partialPartitionKey, childRange.PartialPartitionKey);
                 TryCatch<ReadFeedPage> readFeedPage =
                     await documentContainer.MonadicReadFeedAsync(
                         new FeedRangeState<ReadFeedState>(
@@ -353,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         {
             FeedRangeEpk actualEpk = actual as FeedRangeEpk;
             return actualEpk != null &&
-                actualEpk.Range.Equals(expected.Range);
+                actualEpk.Equals(expected);
         }
     }
 }

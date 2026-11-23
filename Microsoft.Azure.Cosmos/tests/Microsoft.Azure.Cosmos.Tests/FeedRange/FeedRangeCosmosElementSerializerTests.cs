@@ -40,6 +40,38 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             AssertRoundTrip(feedRange);
         }
 
+        [DataTestMethod]
+        [DataRow("[\"tenant-a\"]")]
+        [DataRow("[\"tenant-a\",null,42,true]")]
+        public void PartialPartitionKeySurvivesBothSerializers(string partialKeyJson)
+        {
+            Assert.IsTrue(Cosmos.PartitionKey.TryParseJsonString(partialKeyJson, out Cosmos.PartitionKey partialKey));
+            FeedRangeEpk feedRange = new FeedRangeEpk(
+                new Documents.Routing.Range<string>("AA", "BB", true, false),
+                partialKey);
+            TryCatch<FeedRangeInternal> parsed = FeedRangeCosmosElementSerializer.MonadicCreateFromCosmosElement(
+                FeedRangeCosmosElementSerializer.ToCosmosElement(feedRange));
+            Assert.IsTrue(parsed.Succeeded);
+            Assert.AreEqual(partialKey, ((FeedRangeEpk)parsed.Result).PartialPartitionKey);
+            Assert.IsTrue(FeedRangeInternal.TryParse(feedRange.ToJsonString(), out FeedRangeInternal legacyParsed));
+            Assert.AreEqual(partialKey, ((FeedRangeEpk)legacyParsed).PartialPartitionKey);
+            Assert.AreNotEqual(new FeedRangeEpk(feedRange.Range), feedRange);
+        }
+
+        [DataTestMethod]
+        [DataRow("null")]
+        [DataRow("42")]
+        [DataRow("\"not a partition key\"")]
+        public void InvalidPartialPartitionKeyIsRejected(string value)
+        {
+            CosmosElement cosmosElement = CosmosElement.Parse(
+                "{\"type\":\"Effective Partition Key Range\",\"value\":{\"min\":\"AA\",\"max\":\"BB\",\"partialPartitionKey\":" + value + "}}");
+            Assert.IsTrue(FeedRangeCosmosElementSerializer.MonadicCreateFromCosmosElement(cosmosElement).Failed);
+            Assert.IsFalse(FeedRangeInternal.TryParse(
+                "{\"Range\":{\"min\":\"AA\",\"max\":\"BB\"},\"PartialPK\":" + value + "}",
+                out _));
+        }
+
         private static void AssertRoundTrip(FeedRangeInternal feedRange)
         {
             CosmosElement cosmosElement = FeedRangeCosmosElementSerializer.ToCosmosElement(feedRange);

@@ -24,6 +24,13 @@ namespace Microsoft.Azure.Cosmos
             isMaxInclusive: false));
 
         public FeedRangeEpk(Documents.Routing.Range<string> range)
+            : this(range, partialPartitionKey: null)
+        {
+        }
+
+        public FeedRangeEpk(
+            Documents.Routing.Range<string> range,
+            PartitionKey? partialPartitionKey)
         {
             if (!range.IsMinInclusive)
             {
@@ -31,9 +38,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.Range = range ?? throw new ArgumentNullException(nameof(range));
+            this.PartialPartitionKey = partialPartitionKey;
         }
 
         public Documents.Routing.Range<string> Range { get; }
+
+        internal PartitionKey? PartialPartitionKey { get; }
 
         internal static bool TryCreateFromPartialPartitionKey(
             FeedRangePartitionKey feedRangePartitionKey,
@@ -59,8 +69,14 @@ namespace Microsoft.Azure.Cosmos
 
             feedRangeEpk = new FeedRangeEpk(
                 feedRangePartitionKey.PartitionKey.InternalKey
-                    .GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
+                    .GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition),
+                feedRangePartitionKey.PartitionKey);
             return true;
+        }
+
+        internal FeedRangeEpk WithRange(Documents.Routing.Range<string> range)
+        {
+            return new FeedRangeEpk(range, this.PartialPartitionKey);
         }
 
         internal FeedRangeEpk GetClippedRange(
@@ -72,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(range));
             }
 
-            return new FeedRangeEpk(RangeComparerProvider.GetIntersection(
+            return this.WithRange(RangeComparerProvider.GetIntersection(
                 this.Range,
                 range,
                 useLengthAwareRangeComparer));
@@ -147,7 +163,8 @@ namespace Microsoft.Azure.Cosmos
                 && this.Range.Min.Equals(other.Range.Min)
                 && this.Range.Max.Equals(other.Range.Max)
                 && this.Range.IsMinInclusive.Equals(other.Range.IsMinInclusive)
-                && this.Range.IsMaxInclusive.Equals(other.Range.IsMaxInclusive);
+                && this.Range.IsMaxInclusive.Equals(other.Range.IsMaxInclusive)
+                && Nullable.Equals(this.PartialPartitionKey, other.PartialPartitionKey);
         }
 
         public override int GetHashCode()
@@ -155,7 +172,8 @@ namespace Microsoft.Azure.Cosmos
             return this.Range.Min.GetHashCode()
                 ^ this.Range.Max.GetHashCode()
                 ^ this.Range.IsMinInclusive.GetHashCode()
-                ^ this.Range.IsMaxInclusive.GetHashCode();
+                ^ this.Range.IsMaxInclusive.GetHashCode()
+                ^ (this.PartialPartitionKey?.GetHashCode() ?? 0);
         }
     }
 }

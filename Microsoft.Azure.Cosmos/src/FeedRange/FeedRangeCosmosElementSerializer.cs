@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
 
         private const string MinPropertyName = "min";
         private const string MaxPropertyName = "max";
+        private const string PartialPartitionKeyPropertyName = "partialPartitionKey";
 
         private const string LogicalPartitionKey = "Logical Partition Key";
         private const string PhysicalPartitionKeyRangeId = "Physical Partition Key Range Id";
@@ -99,12 +100,30 @@ namespace Microsoft.Azure.Cosmos
                                 new FormatException($"expected string value property for max effective partition key value: {cosmosElement}."));
                         }
 
+                        PartitionKey? partialPartitionKey = null;
+                        if (objectValueProperty.TryGetValue(
+                            PartialPartitionKeyPropertyName,
+                            out CosmosElement partialPartitionKeyElement))
+                        {
+                            if (!(partialPartitionKeyElement is CosmosString partialPartitionKeyValue)
+                                || !PartitionKey.TryParseJsonString(
+                                    partialPartitionKeyValue.Value,
+                                    out PartitionKey parsedPartitionKey))
+                            {
+                                return TryCatch<FeedRangeInternal>.FromException(
+                                    new FormatException($"failed to parse partial partition key value: {partialPartitionKeyElement}."));
+                            }
+
+                            partialPartitionKey = parsedPartitionKey;
+                        }
+
                         feedRange = new FeedRangeEpk(
                             new Documents.Routing.Range<string>(
                                 min: minPartitionKeyValue.Value,
                                 max: maxPartitionKeyValue.Value,
                                 isMinInclusive: true,
-                                isMaxInclusive: false));
+                                isMaxInclusive: false),
+                            partialPartitionKey);
                     }
                     break;
 
@@ -157,17 +176,24 @@ namespace Microsoft.Azure.Cosmos
 
             public CosmosElement Visit(FeedRangeEpk feedRange)
             {
+                Dictionary<string, CosmosElement> rangeProperties = new Dictionary<string, CosmosElement>()
+                {
+                    { MinPropertyName, CosmosString.Create(feedRange.Range.Min) },
+                    { MaxPropertyName, CosmosString.Create(feedRange.Range.Max) },
+                };
+                if (feedRange.PartialPartitionKey.HasValue)
+                {
+                    rangeProperties.Add(
+                        PartialPartitionKeyPropertyName,
+                        CosmosString.Create(feedRange.PartialPartitionKey.Value.ToJsonString()));
+                }
+
                 return CosmosObject.Create(new Dictionary<string, CosmosElement>()
                 {
                     { TypePropertyName, EffecitvePartitionKeyRangeIdCosmosElement },
                     {
                         ValuePropertyName,
-                        CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { MinPropertyName, CosmosString.Create(feedRange.Range.Min) },
-                                { MaxPropertyName, CosmosString.Create(feedRange.Range.Max) },
-                            })
+                        CosmosObject.Create(rangeProperties)
                     }
                 });
             }

@@ -128,7 +128,8 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                                     min,
                                     max,
                                     isMinInclusive: true,
-                                    isMaxInclusive: false));
+                                    isMaxInclusive: false),
+                                (feedRangeContinuation.FeedRange as FeedRangeEpk)?.PartialPartitionKey);
                             ReadFeedState state;
                             if (token is CosmosNull)
                             {
@@ -360,29 +361,28 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             CrossFeedRangeState<ReadFeedState> crossFeedRangeState,
             bool useLengthAwareRangeComparer)
         {
-            if (!(configuredFeedRange is FeedRangePartitionKey))
-            {
-                return configuredFeedRange;
-            }
-
             List<Documents.Routing.Range<string>> childRanges =
                 new List<Documents.Routing.Range<string>>();
+            Cosmos.PartitionKey? partialPartitionKey = null;
             foreach (FeedRangeState<ReadFeedState> feedRangeState in crossFeedRangeState.Value.Span)
             {
                 if (feedRangeState.FeedRange is FeedRangeEpk feedRangeEpk)
                 {
                     childRanges.Add(feedRangeEpk.Range);
+                    partialPartitionKey ??= feedRangeEpk.PartialPartitionKey;
                 }
             }
 
-            if (childRanges.Count == 0)
+            if (childRanges.Count == 0
+                || (!partialPartitionKey.HasValue && !(configuredFeedRange is FeedRangePartitionKey)))
             {
                 return configuredFeedRange;
             }
 
             return new FeedRangeEpk(RangeComparerProvider.GetHull(
                 childRanges,
-                useLengthAwareRangeComparer));
+                useLengthAwareRangeComparer),
+                partialPartitionKey);
         }
 
         private FeedRangeInternal GetConfiguredFeedRange()

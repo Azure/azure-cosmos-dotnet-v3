@@ -98,14 +98,14 @@ namespace Microsoft.Azure.Cosmos
 
         public override FeedRange GetFeedRange()
         {
-            if (!(this.FeedRange is FeedRangeEpk))
+            if (!(this.FeedRange is FeedRangeEpk feedRangeEpk))
             {
                 return this.FeedRange;
             }
 
             if (this.CurrentToken != null)
             {
-                return new FeedRangeEpk(this.CurrentToken.Range);
+                return feedRangeEpk.WithRange(this.CurrentToken.Range);
             }
 
             return null;
