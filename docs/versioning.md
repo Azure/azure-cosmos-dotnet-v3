@@ -7,6 +7,18 @@ The Azure Cosmos DB SDK ships two [Nuget package](https://www.nuget.org/packages
 
 > :information_source: General Availability of an API or feature present in a Preview SDK is not guaranteed on the next GA SDK release following the Preview SDK release when it was introduced. Each Preview API can have an independent GA cycle that can be dependent on the Azure Cosmos DB Service.
 
+## Bundled Direct assembly
+
+The managed Direct transport is built from SDK source and has no independent
+release version. The SDK's version calculation remains in
+[`Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj`](../Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj).
+Direct's strong-name `AssemblyVersion` remains fixed at `3.44.4.0` in its project
+for binding compatibility. Its `Version`, `FileVersion`, `InformationalVersion`,
+and generated `AssemblyFileVersionString` all use that same value, independent of
+SDK GA, preview, or nightly versions. This is not a package version to increment
+on SDK releases. Windows ServiceInterop and Linux QueryPlanInterop remain
+separately versioned external native dependencies.
+
 ## Major releases
 
 Major releases are defined by:

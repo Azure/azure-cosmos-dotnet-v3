@@ -1198,9 +1198,7 @@
                 @"/key")
             };
 
-            this.ExecuteTestSuite(
-                testVariations,
-                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "Top.Linux" : nameof(this.Top));
+            this.ExecuteTestSuite(testVariations);
         }
 
         [TestMethod]
@@ -1362,9 +1360,7 @@
                     @"/key"),
             };
 
-            this.ExecuteTestSuite(
-                testVariations,
-                RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "OffsetLimit.Linux" : nameof(this.OffsetLimit));
+            this.ExecuteTestSuite(testVariations);
         }
 
         [TestMethod]

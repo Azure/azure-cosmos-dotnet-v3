@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos
             for (int i = 0; i <= 2; i++)
             {
                 addressInformation[i] = new AddressInformation(
-                    physicalUri: "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
+                    physicalUri: "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/5604283d-0907-4bf4-9357-4fa9e62de7b5/replicas/"
                         + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
                     isPrimary: i == 0,
                     protocol: Documents.Client.Protocol.Tcp,

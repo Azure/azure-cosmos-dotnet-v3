@@ -736,7 +736,7 @@
 
         private static string RemoveWhitespace(string jsonString)
         {
-            return jsonString.Replace(" ", string.Empty);
+            return jsonString.ReplaceLineEndings("\n").Replace(" ", string.Empty);
         }
 
         private static async Task<(MergeTestUtil, IQueryPipelineStage)> CreateFallbackPipelineTestInfrastructure(int numItems, bool isFailedFallbackPipelineTest, bool isMultiPartition, QueryRequestOptions queryRequestOptions)

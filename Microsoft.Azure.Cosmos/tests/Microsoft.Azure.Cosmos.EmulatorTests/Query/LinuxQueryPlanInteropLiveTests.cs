@@ -26,9 +26,17 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         [TestInitialize]
         public void TestInitialize()
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                && RuntimeInformation.ProcessArchitecture == Architecture.X64)
+            {
+                Assert.AreSame(WindowsX64QueryPlanInterop.Instance, QueryPlanInterop.Instance);
+                Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing(), "Windows x64 live tests must use ServiceInterop.");
+                return;
+            }
+
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                Assert.Inconclusive("Requires Linux.");
+                Assert.Inconclusive("Requires Windows x64 or glibc Linux.");
             }
 
             string runtimeIdentifier = RuntimeInformation.RuntimeIdentifier;
@@ -51,7 +59,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         [TestCategory("LinuxQueryPlanInteropLive")]
         public async Task CityCaseFoldingMatchesGatewayAsync()
         {
-            if (!ConfigurationManager.IsQueryInteropEnabled())
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                && !ConfigurationManager.IsQueryInteropEnabled())
             {
                 Assert.Inconclusive("Requires Linux with AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX=true.");
             }
