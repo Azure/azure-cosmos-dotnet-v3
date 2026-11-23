@@ -14,18 +14,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Query\TestBaseline\**" />
-    <EmbeddedResource Remove="Query\TestBaseline\**" />
-    <None Remove="Query\TestBaseline\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="BaselineTest\TestBaseline\DistinctHashBaselineTests.ElementsHash.xml" />
     <None Remove="BaselineTest\TestBaseline\DistinctHashBaselineTests.ExtendedTypesHash.xml" />
     <None Remove="BaselineTest\TestBaseline\DistinctHashBaselineTests.NumbersHash.xml" />
     <None Remove="BaselineTest\TestBaseline\PartitionKeyHashBaselineTest.Singletons.xml" />
-    <None Remove="BaselineTest\TestBaseline\QueryPartitionProviderTest - Copy (2).Top.xml" />
-    <None Remove="BaselineTest\TestBaseline\QueryPartitionProviderTest - Copy.Top.xml" />
     <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlBinaryScalarOperators.xml" />
     <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlFunctionCalls.xml" />
     <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlLiteral.xml" />
