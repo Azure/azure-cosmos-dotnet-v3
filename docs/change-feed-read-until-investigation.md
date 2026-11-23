@@ -14,6 +14,8 @@ Partition merges are out of scope.
 
 ### Read Until a GLSN
 
+**Current availability:** The .NET SDK does not currently provide a built-in option to read until target GLSNs for the physical partitions covered. The behavior described below is a proposed enhancement, not an available SDK feature.
+
 **The iterator resumes from the customer's anchor and caches target GLSNs for the physical partitions covered. It stops when continuation progress reaches or exceeds every cached target GLSN.**
 
 In addition to selecting the container and feed mode, the customer supplies the existing anchor and requests bounded reading. The customer does not need to discover partitions, supply target GLSNs, or pass a second continuation.
@@ -170,13 +172,8 @@ LatestVersion's mode-setting code supplies `A-IM: Incremental Feed` without the 
 #### Assumptions and limitations
 
 - Production use requires validating both response-session target selection and continuation comparability in both modes. Scalar comparison alone is insufficient.
-- **False progress:** GLSN can move backward across configurations. Without validated reconciliation, this scalar comparison cannot establish completion.
+- **False progress:** GLSN can move backward across a higher vector clock number.
 - **Partition merges are out of scope.**
-- If a physical partition splits after its target GLSN has been cached, the SDK must use a validated parent-to-child mapping rather than silently selecting newer targets.
-- Target GLSNs are acquired at different times across physical partitions. They do not constitute an atomic snapshot or replication barrier.
-- Delayed replay may observe different target GLSNs. This is not equivalent to stopping at the original write-cutoff timestamp.
-- Errors and missing target GLSNs must never indicate completion. Cached targets must survive restart unchanged.
-- The recorded split replay required a fresh client. The same-client 410/1002 behavior remains unresolved.
 
 ## 3. Why Event Timestamps and Customer Tokens Are Insufficient
 
