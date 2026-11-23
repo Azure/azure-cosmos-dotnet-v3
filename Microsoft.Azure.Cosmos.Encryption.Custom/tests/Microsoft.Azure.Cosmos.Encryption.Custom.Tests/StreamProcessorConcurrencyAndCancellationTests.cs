@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Azure.Cosmos.Encryption.Tests; // TestEncryptorFactory & TestCommon
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
 
     /// <summary>
     /// Additional coverage for scenarios explicitly requested: large payloads, corrupted payload (assert existing coverage), concurrency and cancellation.
@@ -26,13 +25,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Tests
     public class StreamProcessorConcurrencyAndCancellationTests
     {
         private const string DekId = "dekId";
-        private static Mock<Encryptor> mockEncryptor;
+        private static TestEncryptorFactory.MdeConcreteEncryptor mockEncryptor;
 
         [ClassInitialize]
         public static void Init(TestContext ctx)
         {
             _ = ctx;
-            mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out _);
+            mockEncryptor = TestEncryptorFactory.CreateMde(DekId);
         }
 
         private static EncryptionOptions CreateEncryptionOptions(IEnumerable<string> paths)

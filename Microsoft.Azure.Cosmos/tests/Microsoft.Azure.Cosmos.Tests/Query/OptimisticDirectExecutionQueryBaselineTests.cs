@@ -18,6 +18,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQuery;
@@ -735,7 +736,7 @@
 
         private static string RemoveWhitespace(string jsonString)
         {
-            return jsonString.Replace(" ", string.Empty);
+            return jsonString.ReplaceLineEndings("\n").Replace(" ", string.Empty);
         }
 
         private static async Task<(MergeTestUtil, IQueryPipelineStage)> CreateFallbackPipelineTestInfrastructure(int numItems, bool isFailedFallbackPipelineTest, bool isMultiPartition, QueryRequestOptions queryRequestOptions)
@@ -1287,6 +1288,8 @@
 
         public override Action<IQueryable> OnExecuteScalarQueryCallback => throw new NotImplementedException();
 
+        public override HybridSearchStatisticsCacheFactory HybridSearchStatisticsCacheFactory => HybridSearchStatisticsCacheFactory.Create(null, 0);
+
         public override bool BypassQueryParsing()
         {
             return false;
@@ -1316,6 +1319,7 @@
         {
             return Task.FromResult(new ContainerQueryProperties(
                  "test",
+                 null,
                  new List<Range<string>>
                  {
                      new Range<string>(

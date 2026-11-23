@@ -258,10 +258,6 @@ namespace Microsoft.Azure.Cosmos
         /// (absent from the Gateway response), existing hedging behavior is preserved. The flag is intended
         /// as an operational escape hatch and is not exposed through any public SDK API surface.
         /// </remarks>
-        // TODO: The JSON property name is hard-coded here because the corresponding constant has not yet been
-        // published in the Microsoft.Azure.Cosmos.Direct package referenced by this SDK. Once Direct is updated
-        // to expose this name on Constants.Properties, refactor this attribute to read from
-        // Constants.Properties.<NewConstant> for consistency with the other AccountProperties JSON bindings.
         [JsonProperty(PropertyName = "disableCrossRegionalHedging")]
         internal bool? DisableCrossRegionalHedging { get; set; }
 
