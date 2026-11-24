@@ -14,41 +14,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class CosmosSerializationUtil
     {
-        internal const string BinaryFormatWithSupportedFeatures = nameof(SupportedSerializationFormats.CosmosBinary)
-            + "+" + nameof(SupportedSerializationFeatures.Base64Strings)
-            + "+" + nameof(SupportedSerializationFeatures.NumberArrays)
-            + "+" + nameof(SupportedSerializationFeatures.UInt64);
-
-        internal static readonly string DefaultSupportedSerializationFormats = string.Join(",", SupportedSerializationFormats.JsonText, BinaryFormatWithSupportedFeatures);
-
         private static readonly CamelCaseNamingStrategy camelCaseNamingStrategy = new CamelCaseNamingStrategy();
-
-        internal static string GetSupportedSerializationFormatsAndFeatures(
-            SupportedSerializationFormats? formats = null,
-            SupportedSerializationFeatures? features = null)
-        {
-            if (!formats.HasValue && !features.HasValue)
-            {
-                return DefaultSupportedSerializationFormats;
-            }
-
-            string supportedFormats = formats.HasValue
-                ? formats.Value.ToString()
-                : string.Join(",", SupportedSerializationFormats.JsonText, SupportedSerializationFormats.CosmosBinary);
-            string binaryFormatWithFeatures = BinaryFormatWithSupportedFeatures;
-            if (features.HasValue)
-            {
-                binaryFormatWithFeatures = nameof(SupportedSerializationFormats.CosmosBinary);
-                if (features.Value != SupportedSerializationFeatures.None)
-                {
-                    binaryFormatWithFeatures += "+" + features.Value.ToString().Replace(", ", "+");
-                }
-            }
-
-            return supportedFormats.Replace(
-                nameof(SupportedSerializationFormats.CosmosBinary),
-                binaryFormatWithFeatures);
-        }
 
         internal static string GetStringWithPropertyNamingPolicy(CosmosLinqSerializerOptions options, string name)
         {

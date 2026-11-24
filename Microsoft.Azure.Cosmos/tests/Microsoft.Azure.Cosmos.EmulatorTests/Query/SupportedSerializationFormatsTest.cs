@@ -44,7 +44,6 @@
         }
 
         [TestMethod]
-        [Ignore("Requires an emulator build that supports binary serialization feature negotiation.")]
         [DoNotParallelize]
         [DataRow(ConnectionMode.Direct, null)]
         [DataRow(ConnectionMode.Gateway, null)]
@@ -74,7 +73,7 @@
                         if (request.ResourceType == ResourceType.Document
                             && (request.OperationType == OperationType.Read || request.OperationType == OperationType.Query))
                         {
-                            StringAssert.Contains(request.Headers.CosmosMessageHeaders.SupportedSerializationFormats, CosmosSerializationUtil.BinaryFormatWithSupportedFeatures);
+                            StringAssert.Contains(request.Headers.CosmosMessageHeaders.SupportedSerializationFormats, SerializationFormatUtil.BinaryFormatWithSupportedFeatures);
                             if (formatsOverride != null)
                             {
                                 request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = formatsOverride;

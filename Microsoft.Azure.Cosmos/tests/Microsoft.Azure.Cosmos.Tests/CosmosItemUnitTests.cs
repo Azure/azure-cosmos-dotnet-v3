@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     testHandlerHitCount++;
 
                     bool shouldReturnBinaryResponse = request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] != null
-                        && request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats].Equals(CosmosSerializationUtil.BinaryFormatWithSupportedFeatures);
+                        && request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats].Equals(SerializationFormatUtil.BinaryFormatWithSupportedFeatures);
 
                     Assert.AreEqual(binaryEncodingEnabledInClient, shouldReturnBinaryResponse);
 

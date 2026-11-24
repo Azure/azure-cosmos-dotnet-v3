@@ -336,7 +336,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestHeaders.Set(HttpConstants.HttpHeaders.MergeStaticId, this.feedOptions.MergeStaticId);
             }
 
-            requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = CosmosSerializationUtil.GetSupportedSerializationFormatsAndFeatures(
+            requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = SerializationFormatUtil.GetSupportedSerializationFormatsAndFeatures(
                 this.feedOptions.SupportedSerializationFormats,
                 this.feedOptions.SupportedSerializationFeatures);
 
