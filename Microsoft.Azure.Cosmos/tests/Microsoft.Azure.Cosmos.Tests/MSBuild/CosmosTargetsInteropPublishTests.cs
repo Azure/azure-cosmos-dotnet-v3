@@ -9,11 +9,14 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
     using System.IO;
     using System.IO.Compression;
     using System.Linq;
+    using System.Reflection.Metadata;
+    using System.Reflection.PortableExecutable;
     using System.Runtime.InteropServices;
     using System.Security.Cryptography;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Xml.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
 
@@ -255,6 +258,39 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         }
 
         [TestMethod]
+        public async Task Package_UniqueVersionPreservesAssemblyIdentity()
+        {
+            string projectPath = Path.Combine(GetRepositoryRoot(), "Microsoft.Azure.Cosmos", "src", "Microsoft.Azure.Cosmos.csproj");
+            string evaluation = await RunDotnetCommandAsync(
+                $"msbuild \"{projectPath}\" -nologo -target:GetAssemblyVersion -getProperty:AssemblyVersion");
+            Version expectedAssemblyVersion = Version.Parse(evaluation.Trim());
+            using ZipArchive package = ZipFile.OpenRead(
+                Path.Combine(localNugetPackagePath, $"Microsoft.Azure.Cosmos.{packageVersion}.nupkg"));
+            ZipArchiveEntry nuspec = package.GetEntry("Microsoft.Azure.Cosmos.nuspec");
+            Assert.IsNotNull(nuspec);
+            using (Stream stream = nuspec.Open())
+            {
+                XDocument metadata = XDocument.Load(stream);
+                Assert.AreEqual(packageVersion, metadata.Descendants().Single(element => element.Name.LocalName == "version").Value);
+            }
+
+            ZipArchiveEntry assembly = package.GetEntry("lib/netstandard2.0/Microsoft.Azure.Cosmos.Client.dll");
+            Assert.IsNotNull(assembly);
+            using MemoryStream image = new MemoryStream();
+            using (Stream stream = assembly.Open())
+            {
+                await stream.CopyToAsync(image);
+            }
+
+            image.Position = 0;
+            using PEReader reader = new PEReader(image);
+            Assert.AreEqual(
+                expectedAssemblyVersion,
+                reader.GetMetadataReader().GetAssemblyDefinition().Version,
+                "A unique test package version must not change the SDK's managed assembly identity.");
+        }
+
+        [TestMethod]
         public async Task Package_NativePayloadsMatchRestoredPackages()
         {
             string projectPath = Path.Combine(GetRepositoryRoot(), "Microsoft.Azure.Cosmos", "src", "Microsoft.Azure.Cosmos.csproj");
@@ -330,12 +366,12 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             string packOutputDir = Path.Combine(testProjectsRoot, "nuget-packages");
             Directory.CreateDirectory(packOutputDir);
 
-            // Use a unique version to avoid cache conflicts
+            // Avoid NuGet cache conflicts without changing assembly metadata and forcing a rebuild.
             packageVersion = $"99.0.0-test.{DateTime.UtcNow:yyyyMMddHHmmss}";
 
             await RunDotnetCommandAsync(
-                $"pack \"{cosmosProjectPath}\" -c Release -o \"{packOutputDir}\" --verbosity normal /p:Version={packageVersion} /p:PackageVersion={packageVersion}",
-                timeoutMinutes: 5);
+                $"pack \"{cosmosProjectPath}\" -c Release -o \"{packOutputDir}\" --verbosity normal /p:PackageVersion={packageVersion}",
+                timeoutMinutes: 10);
 
             localNugetPackagePath = packOutputDir;
         }
