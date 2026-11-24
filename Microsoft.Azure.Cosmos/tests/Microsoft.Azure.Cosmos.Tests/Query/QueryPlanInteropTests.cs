@@ -113,6 +113,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         [TestMethod]
         public void OptedInLinuxProcessUsesNativePlanning()
         {
+            string expectedArchitecture = Environment.GetEnvironmentVariable("QPIARCH");
+            Console.WriteLine($"Query-plan test process: {RuntimeInformation.ProcessArchitecture}; expected: {expectedArchitecture ?? "<not specified>"}");
+            if (expectedArchitecture != null)
+            {
+                Assert.AreEqual(
+                    expectedArchitecture,
+                    RuntimeInformation.ProcessArchitecture.ToString(),
+                    ignoreCase: true,
+                    message: "Native planning must execute in the requested architecture, not the build host's architecture.");
+            }
+
             // Check inherited flags without changing the process environment.
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
                 || !ConfigurationManager.IsQueryInteropEnabled())

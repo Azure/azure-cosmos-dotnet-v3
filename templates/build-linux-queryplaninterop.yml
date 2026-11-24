@@ -24,6 +24,9 @@ parameters:
 - name: Arm64TestImage
   type: string
   default: 'mcr.microsoft.com/dotnet/sdk:8.0-jammy'
+- name: Arm64EmulatorImage
+  type: string
+  default: 'tonistiigi/binfmt:qemu-v10.2.3-68@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0'
 - name: IncludeRuntimeImage
   type: boolean
   default: true
@@ -95,14 +98,17 @@ jobs:
       mkdir -p "$results"
       if [ "$QPIARCH" = "arm64" ]; then
         # Run ARM64 binaries on the hosted x64 agent.
-        sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq qemu-user-static binfmt-support > /dev/null
+        # Older QEMU versions can corrupt .NET SDK restore/JIT execution; use the pinned emulator.
+        docker run --privileged --rm "$QEMU_IMAGE" --uninstall qemu-aarch64
+        docker run --privileged --rm "$QEMU_IMAGE" --install arm64
+        docker run --rm "$QEMU_IMAGE" --version
         # The test assembly requires the .NET 6 runtime.
         printf '%s\n' "FROM $ARM64_IMAGE" \
           "RUN curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --runtime dotnet --channel 6.0 --install-dir /usr/share/dotnet > /dev/null" \
           | docker build --quiet --platform linux/arm64 -t qpi-arm64-test -
         runner=(docker run --rm --platform linux/arm64 --user 0:0
           -e HOME=/tmp -e DOTNET_CLI_HOME=/tmp -e DOTNET_NOLOGO=1 -e DOTNET_CLI_TELEMETRY_OPTOUT=1
+          -e QPIARCH
           -e AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX -e AZURE_COSMOS_BYPASS_QUERY_PARSING
           -v "$BUILD_SOURCESDIRECTORY:$BUILD_SOURCESDIRECTORY" -v "$results:$results" -w "$out"           qpi-arm64-test)
                 else
@@ -119,15 +125,8 @@ jobs:
         report_failure "$library has unresolved native dependencies on $QPIARCH."
       fi
 
-      test_filter="$UNIT_FILTER"
-      if [ "$QPIARCH" = "arm64" ]; then
-        # SDK pack/publish tests run natively in the x64 leg, including ARM64 asset checks.
-        # Avoid running the SDK's restore/audit tooling under QEMU; keep native planner tests here.
-        test_filter="($test_filter)&FullyQualifiedName!~Microsoft.Azure.Cosmos.Tests.MSBuild.CosmosTargetsInteropPublishTests"
-      fi
-
       test_exit=0
-      "${runner[@]}" dotnet test "$out/Microsoft.Azure.Cosmos.Tests.dll" --filter "$test_filter" \
+      "${runner[@]}" dotnet test "$out/Microsoft.Azure.Cosmos.Tests.dll" --filter "$UNIT_FILTER" \
         --results-directory "$results" --logger "trx;LogFileName=unit-$QPIARCH.trx" || test_exit=$?
       echo "dotnet test exit code on $QPIARCH: $test_exit"
       if [ "$test_exit" -ne 0 ]; then
@@ -147,6 +146,7 @@ jobs:
     env:
       CONFIGURATION: ${{ parameters.BuildConfiguration }}
       ARM64_IMAGE: ${{ parameters.Arm64TestImage }}
+      QEMU_IMAGE: ${{ parameters.Arm64EmulatorImage }}
       UNIT_FILTER: ${{ parameters.UnitTestFilter }}
 
   - task: PublishTestResults@2
@@ -256,8 +256,9 @@ jobs:
     - bash: |
         set -euo pipefail
         if [ "$QPIDOCKERARCH" = "arm64" ]; then
-          sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq qemu-user-static binfmt-support > /dev/null
+          docker run --privileged --rm "$QEMU_IMAGE" --uninstall qemu-aarch64
+          docker run --privileged --rm "$QEMU_IMAGE" --install arm64
+          docker run --rm "$QEMU_IMAGE" --version
         fi
         docker pull --quiet --platform "linux/$QPIDOCKERARCH" "$QPIIMAGE"
         docker run --rm --platform "linux/$QPIDOCKERARCH" -e AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX=true \
@@ -265,6 +266,8 @@ jobs:
           "$QPIIMAGE" /app/QpiRuntimeProbe.dll
       displayName: Load QueryPlanInterop in $(QpiImage) ($(QpiArch))
       continueOnError: ${{ not(parameters.RuntimeImageBlocking) }}
+      env:
+        QEMU_IMAGE: ${{ parameters.Arm64EmulatorImage }}
 
 - job: LinuxQueryPlanInteropLive
   displayName: Linux native query planning - live account

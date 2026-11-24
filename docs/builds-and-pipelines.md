@@ -187,11 +187,18 @@ time. Every emulator job pulls in `emulator-setup.yml` and sets
 ### Linux native query planning (`build-linux-queryplaninterop.yml`)
 
 Native planner, ABI, routing and baseline tests run on native x64 and QEMU-emulated
-ARM64. `CosmosTargetsInteropPublishTests` runs only in the native x64 leg: its
-`dotnet pack`/publish/restore subprocesses exercise SDK build tooling, not the
-ARM64 planner ABI, and are unreliable under emulation. The fixture still checks
-ARM64 publish assets; the separate ARM64 runtime-image jobs verify native-library
-loading. NuGet auditing and blocking native-planning checks remain enabled.
+ARM64, including `CosmosTargetsInteropPublishTests` and its SDK pack/publish/restore
+subprocesses in both legs. ARM64 uses ARM64 binaries under emulation on an x64 host,
+not native ARM64 hardware. The test container receives `QPIARCH`; the native-planning
+sentinel checks `RuntimeInformation.ProcessArchitecture` against it so an accidental
+x64 test process cannot satisfy an ARM64 run.
+
+Both emulated lanes register the digest-pinned `Arm64EmulatorImage` rather than
+Ubuntu 22.04's older QEMU package, replacing only the ARM64 binfmt handler.
+Older QEMU versions have known .NET restore/JIT failures (see
+[dotnet/sdk#43405](https://github.com/dotnet/sdk/issues/43405)); updating the emulator
+preserves ARM64 coverage without disabling NuGet auditing or runtime memory protections.
+The installed emulator version is printed in the job log.
 
 The runner checks the test-command exit code and requires a nonempty TRX file
 before inspecting the native-planning sentinels. An aborted run or missing results
