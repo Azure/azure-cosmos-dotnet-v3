@@ -202,8 +202,9 @@ The installed emulator version is printed in the job log.
 
 The ARM64 test container mounts the host's restored NuGet global-packages directory
 at the same path and passes it through `NUGET_PACKAGES`, avoiding a second cold
-package download while keeping auditing enabled. SDK command timeouts in the
-packaging fixture are tripled on ARM64 (30 minutes for pack, 15 for publish).
+package download while keeping auditing enabled. SDK commands in the packaging
+fixture use a five-minute timeout on both architectures. Pack uses normal MSBuild
+verbosity to show restore/build progress without a diagnostic environment dump.
 Timed-out commands terminate their process tree and report captured stdout/stderr.
 The fixture also forwards both child streams as they arrive. Since MSTest buffers
 test-console output, CI sets `COSMOS_TEST_DOTNET_OUTPUT_LOG` to a file in the mounted

@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
                 Task<AssertFailedException> command = Assert.ThrowsExceptionAsync<AssertFailedException>(() =>
                     RunDotnetCommandAsync(
                         $"\"{Path.Combine(publishPath, projectName + ".dll")}\" --simulate-stall",
-                        timeoutMinutes: 0.1));
+                        timeoutMinutes: 0.25));
                 AssertFailedException exception = null;
                 try
                 {
@@ -334,8 +334,8 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             packageVersion = $"99.0.0-test.{DateTime.UtcNow:yyyyMMddHHmmss}";
 
             await RunDotnetCommandAsync(
-                $"pack \"{cosmosProjectPath}\" -c Release -o \"{packOutputDir}\" /p:Version={packageVersion} /p:PackageVersion={packageVersion}",
-                timeoutMinutes: 10);
+                $"pack \"{cosmosProjectPath}\" -c Release -o \"{packOutputDir}\" --verbosity normal /p:Version={packageVersion} /p:PackageVersion={packageVersion}",
+                timeoutMinutes: 5);
 
             localNugetPackagePath = packOutputDir;
         }
@@ -561,9 +561,7 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
             // Reused build nodes can keep redirected output pipes open after dotnet exits.
             processInfo.Environment["MSBUILDDISABLENODEREUSE"] = "1";
 
-            // SDK compilation and publishing are substantially slower under ARM64 emulation.
-            TimeSpan timeout = TimeSpan.FromMinutes(
-                timeoutMinutes * (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? 3 : 1));
+            TimeSpan timeout = TimeSpan.FromMinutes(timeoutMinutes);
             string commandLine = $"dotnet {arguments}";
             WriteCommandOutput($"Executing (timeout {timeout.TotalMinutes} minutes): {commandLine}{Environment.NewLine}");
 
