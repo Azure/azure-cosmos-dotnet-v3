@@ -194,11 +194,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             if (this.BenchmarkHelper.EnableBinaryEncoding)
             {
                 string headerValue = response.Headers.GetValueOrDefault(HttpConstants.HttpHeaders.SupportedSerializationFormats);
-                if (headerValue != CosmosSerializationUtil.SupportedBinarySerializationFormat)
+                if (headerValue != CosmosSerializationUtil.BinaryFormatWithSupportedFeatures)
                 {
                     //If we expected binary but got something else, fail.
                     throw new InvalidOperationException(
-                        $"Expected response with '{CosmosSerializationUtil.SupportedBinarySerializationFormat}' format, but got '{headerValue ?? "<null>"}'.");
+                        $"Expected response with '{CosmosSerializationUtil.BinaryFormatWithSupportedFeatures}' format, but got '{headerValue ?? "<null>"}'.");
                 }
             }
         }

@@ -14,40 +14,40 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class CosmosSerializationUtil
     {
-        internal const string SupportedBinarySerializationFormat = nameof(SupportedSerializationFormats.CosmosBinary)
+        internal const string BinaryFormatWithSupportedFeatures = nameof(SupportedSerializationFormats.CosmosBinary)
             + "+" + nameof(SupportedSerializationFeatures.Base64Strings)
             + "+" + nameof(SupportedSerializationFeatures.NumberArrays)
             + "+" + nameof(SupportedSerializationFeatures.UInt64);
 
-        internal static readonly string DefaultSupportedSerializationFormats = string.Join(",", SupportedSerializationFormats.JsonText, CosmosSerializationUtil.SupportedBinarySerializationFormat);
+        internal static readonly string DefaultSupportedSerializationFormats = string.Join(",", SupportedSerializationFormats.JsonText, BinaryFormatWithSupportedFeatures);
 
         private static readonly CamelCaseNamingStrategy camelCaseNamingStrategy = new CamelCaseNamingStrategy();
 
         internal static string GetSupportedSerializationFormatsAndFeatures(
-            SupportedSerializationFormats? formats,
+            SupportedSerializationFormats? formats = null,
             SupportedSerializationFeatures? features = null)
         {
             if (!formats.HasValue && !features.HasValue)
             {
-                return CosmosSerializationUtil.DefaultSupportedSerializationFormats;
+                return DefaultSupportedSerializationFormats;
             }
 
             string supportedFormats = formats.HasValue
                 ? formats.Value.ToString()
                 : string.Join(",", SupportedSerializationFormats.JsonText, SupportedSerializationFormats.CosmosBinary);
-            string binaryFormat = CosmosSerializationUtil.SupportedBinarySerializationFormat;
+            string binaryFormatWithFeatures = BinaryFormatWithSupportedFeatures;
             if (features.HasValue)
             {
-                binaryFormat = nameof(SupportedSerializationFormats.CosmosBinary);
+                binaryFormatWithFeatures = nameof(SupportedSerializationFormats.CosmosBinary);
                 if (features.Value != SupportedSerializationFeatures.None)
                 {
-                    binaryFormat += "+" + features.Value.ToString().Replace(", ", "+");
+                    binaryFormatWithFeatures += "+" + features.Value.ToString().Replace(", ", "+");
                 }
             }
 
             return supportedFormats.Replace(
                 nameof(SupportedSerializationFormats.CosmosBinary),
-                binaryFormat);
+                binaryFormatWithFeatures);
         }
 
         internal static string GetStringWithPropertyNamingPolicy(CosmosLinqSerializerOptions options, string name)
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return namingPolicy switch
             {
-                CosmosPropertyNamingPolicy.CamelCase => CosmosSerializationUtil.camelCaseNamingStrategy.GetPropertyName(name, false),
+                CosmosPropertyNamingPolicy.CamelCase => camelCaseNamingStrategy.GetPropertyName(name, false),
                 CosmosPropertyNamingPolicy.Default => name,
                 _ => throw new NotImplementedException("Unsupported CosmosPropertyNamingPolicy value"),
             };
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
 
                     if (targetContent != null && targetContent.Length > 0)
                     {
-                        return CosmosSerializationUtil.ConvertToStreamUsingJsonSerializationFormat(
+                        return ConvertToStreamUsingJsonSerializationFormat(
                             targetContent,
                             targetSerializationFormat);
                     }

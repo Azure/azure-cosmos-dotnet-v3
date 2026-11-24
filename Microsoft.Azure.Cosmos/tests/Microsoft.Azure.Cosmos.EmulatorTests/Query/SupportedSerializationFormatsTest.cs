@@ -74,7 +74,7 @@
                         if (request.ResourceType == ResourceType.Document
                             && (request.OperationType == OperationType.Read || request.OperationType == OperationType.Query))
                         {
-                            StringAssert.Contains(request.Headers.CosmosMessageHeaders.SupportedSerializationFormats, CosmosSerializationUtil.SupportedBinarySerializationFormat);
+                            StringAssert.Contains(request.Headers.CosmosMessageHeaders.SupportedSerializationFormats, CosmosSerializationUtil.BinaryFormatWithSupportedFeatures);
                             if (formatsOverride != null)
                             {
                                 request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = formatsOverride;

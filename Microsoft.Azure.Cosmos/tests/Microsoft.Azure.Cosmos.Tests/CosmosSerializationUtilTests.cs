@@ -18,6 +18,20 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class CosmosSerializationUtilTests
     {
         [TestMethod]
+        public void GetSupportedSerializationFormatsAndFeatures_AllowsOmittedFormats()
+        {
+            Assert.AreEqual(
+                "JsonText,CosmosBinary+Base64Strings+NumberArrays+UInt64",
+                CosmosSerializationUtil.GetSupportedSerializationFormatsAndFeatures());
+            Assert.AreEqual(
+                "JsonText,CosmosBinary+UInt64",
+                CosmosSerializationUtil.GetSupportedSerializationFormatsAndFeatures(features: SupportedSerializationFeatures.UInt64));
+            Assert.AreEqual(
+                "JsonText,CosmosBinary",
+                CosmosSerializationUtil.GetSupportedSerializationFormatsAndFeatures(features: SupportedSerializationFeatures.None));
+        }
+
+        [TestMethod]
         [DataRow((int)SupportedSerializationFormats.JsonText, "JsonText")]
         [DataRow((int)SupportedSerializationFormats.HybridRow, "HybridRow")]
         [DataRow((int)SupportedSerializationFormats.CosmosBinary, "CosmosBinary+Base64Strings+NumberArrays+UInt64")]

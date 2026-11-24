@@ -30,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Other Changes
 
-- [6175](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6175) Binary serialization: Advertises support for Base64-encoded strings, typed number arrays, and unsigned 64-bit integers so the service can use these encodings in binary responses.
 - Direct: Builds and bundles the managed transport implementation from SDK source instead of the separate Direct package, and obtains Windows native query planning from Microsoft.Azure.Cosmos.ServiceInterop 1.0.6. Existing Linux query-planning support is unchanged.
 - Direct: Aligns the bundled transport library's file and informational versions with its existing assembly version, 3.44.4.0, independent of SDK release versions.
 
