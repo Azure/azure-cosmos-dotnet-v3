@@ -53,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bugs Fixed
 
+- [6203](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6203) Diagnostics: Fixes `CosmosException.ToString()` and `CosmosDiagnostics.ToString()` throwing `ArgumentNullException` when a Gateway mode attempt returned a status code without a reason phrase, such as 449 (`RetryWith`). The diagnostics now report a null `ReasonPhrase` for that attempt.
 - [6188](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6188) Query: Fixes hybrid search reciprocal rank fusion (RRF) results being ranked incorrectly when component scores are tied. Each result now receives a unique ordinal rank, with deterministic tie-breaking based on the decoded document ID portion of `_rid`.
 - [6151](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6151) Query: Updates query-plan deserialization to preserve vector embedding policy paths alongside embedding text and recognize optional hybrid-search score combination metadata. This schema update does not enable `GenerateEmbeddings` or `CombinedScore` execution.
 - [6139](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6139) Query: Fixes an issue where a query whose `OFFSET`, `LIMIT`, or `TOP` value was fractional or too large for a 64-bit integer threw an unexpected `ArgumentOutOfRangeException` during client-side query parsing. These queries are now treated as parse failures.

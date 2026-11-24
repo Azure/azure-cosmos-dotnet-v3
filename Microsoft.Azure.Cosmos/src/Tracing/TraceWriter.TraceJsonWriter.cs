@@ -293,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     if (!stat.HttpResponseMessage.IsSuccessStatusCode)
                     {
                         jsonWriter.WriteFieldName("ReasonPhrase");
-                        jsonWriter.WriteStringValue(stat.HttpResponseMessage.ReasonPhrase);
+                        this.WriteStringValueOrNull(stat.HttpResponseMessage.ReasonPhrase);
                     }
                 }
 
