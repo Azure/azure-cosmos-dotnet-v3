@@ -14,7 +14,7 @@ Partition merges are out of scope.
 
 ### Read Until a GLSN
 
-**Current availability:** The .NET SDK does not currently provide a built-in option to read until target GLSNs for the physical partitions covered. The behavior described below is a proposed enhancement, not an available SDK feature.
+**Current availability:** The .NET SDK does not currently offer this read-until-GLSN option. The behavior below is a proposed enhancement.
 
 **The iterator resumes from the customer's anchor and caches target GLSNs for the physical partitions covered. It stops when continuation progress reaches or exceeds every cached target GLSN.**
 
@@ -71,7 +71,7 @@ After ingestion finishes, the customer creates the bounded reader from the saved
 
 ##### How the iterator obtains a target GLSN
 
-The service supplies the value through the response's session token. The iterator does not calculate the target GLSN from the anchor or obtain it from the change-feed continuation.
+The target GLSN comes from the service's response session token, not the anchor or continuation.
 
 For example, the first recorded replay request targeting partition-key range 3 returned these response headers:
 
@@ -84,18 +84,16 @@ In this vector-session-token format, the number immediately after the first `#` 
 
 Under the proposed rule, the iterator extracts **12784** and caches it as the **target GLSN** for the tracked request scope. Separately, it updates continuation progress to **412** from the response ETag. Since 412 is less than 12784, the iterator continues reading that scope.
 
-The SDK would perform this extraction internally because the public .NET feed wrapper does not expose the service session-token header. The customer would neither supply the target GLSN nor parse the token.
-
 The iterator acquires target GLSNs while replaying changes, rather than in a separate preparatory pass. When the iterator resumes from a bounded continuation, it restores progress and cached targets. A partition without a target cannot be considered complete.
 
-The first replay responses in the recording supplied the target GLSNs shown in the following table.
+The recorded first replay responses supplied these target GLSNs.
 
 | Requested partition-key range / tracked FeedRange | Original resume position | Response `x-ms-session-token` | Extracted target GLSN |
 |---|---:|---|---:|
 | 3 / R1 | 90 | `5:2#12784#2=4614` | 12784 |
 | 4 / R2 | 90 | `5:2#12786#2=4614` | 12786 |
 
-Both recorded response tokens have prefix `5`, whereas their requests targeted partition-key ranges `3` and `4`. This unresolved discrepancy means that the association between these response tokens and the requested physical partitions still requires validation.
+Both responses have token prefix `5`, although requests targeted ranges `3` and `4`. This unresolved partition-association discrepancy requires validation.
 
 Ordinary writes do not move the targets forward. The GCN-change follow-up permits conditional replacement. Targets never replace starting continuations.
 
@@ -136,7 +134,7 @@ The following recorded pages show how this rule would evaluate the continuation 
 
 #### 4) Complete this workload, not the change feed itself
 
-The iterator returns the final page before completing bounded iteration. It can still return a continuation that describes where future reading could resume. The presence of that continuation does not mean that this bounded workload is unfinished.
+The iterator returns the final page before completing bounded iteration. A returned continuation describes where future reading could resume; it does not indicate unfinished bounded work.
 
 Completion does not require a 304 response, a null continuation, or a matching document at the exact target GLSN.
 
@@ -160,7 +158,7 @@ x-ms-max-item-count: 100
 
 For R2, the routing header is `x-ms-documentdb-partitionkeyrangeid: 4`. Its scope matches the physical range, so this path does not add `x-ms-read-key-type`, `x-ms-start-epk`, or `x-ms-end-epk`. The other listed headers are unchanged.
 
-The first replay responses' `x-ms-session-token` GLSN components were 12784 for partition 3 and 12786 for partition 4. The change-feed response ETags advance continuation progress. The first returned positions were 412 and 507, respectively. **Session tokens are not passed as feed continuations.** A document's ETag is also not a feed continuation.
+The first replay responses advanced R1 to 412 and R2 to 507. **Session tokens are not passed as feed continuations.** A document's ETag is also not a feed continuation.
 
 Initial anchoring uses `If-None-Match: *`. Replay instead sends `If-None-Match: "90"` and then each range's preceding response ETag. It never substitutes the target GLSN for that continuation.
 
@@ -184,15 +182,30 @@ On every successful change-feed response, the SDK would apply these rules in ord
 1. If `cachedGCN < responseGCN` and `cachedGLSN > responseGLSN`, the SDK would replace both target values with the response's GCN and GLSN. Otherwise, it would retain the target.
 2. The SDK would compare continuation progress against the target GLSN only when the continuation-associated session token's GCN equals the target GCN. Otherwise, it would continue draining without declaring completion.
 
-For example, a cached target of GCN 1/GLSN 105 would become GCN 2/GLSN 100 upon receiving that newer-GCN, lower-GLSN response. Subsequent responses illustrate the comparison gate:
+##### Example 1: The target changes, and the continuation catches up
 
-| Continuation-associated GCN | Continuation LSN | Decision against target GCN 2/GLSN 100 |
-|---|---:|---|
-| 1 | 108 | Reading continues because the GCNs differ. |
-| 2 | 99 | Reading continues because progress is below 100. |
-| 2 | 103 | This partition completes, allowing over-reading. |
+The partition anchors at GCN 1/continuation 90. The first replay response establishes target `(1,105)`. Response and target pairs below mean `(GCN, GLSN)`; continuation pairs mean `(associated GCN, LSN)`. These are hypothetical values, not wire-format tokens.
 
-All covered partitions must complete. Resume must preserve target updates and continuation-associated tokens. The example is hypothetical: the service must establish the continuation's GCN and coverage semantics. Copying the latest response GCN onto an older continuation would bypass the check, not validate it.
+| Response | Target before | Target after | Continuation | Decision |
+|---|---|---|---|---|
+| `(1,110)` | `(1,105)` | `(1,105)` | `(1,100)` | The target stays, and reading continues. |
+| `(2,100)` | `(1,105)` | `(2,100)` | `(1,108)` | Both update conditions hold, but the continuation GCN still differs. |
+| `(2,110)` | `(2,100)` | `(2,100)` | `(2,99)` | GCNs match, but progress remains below 100. |
+| `(2,115)` | `(2,100)` | `(2,100)` | `(2,103)` | This partition completes with over-reading. |
+
+##### Example 2: Only one update condition holds
+
+Each independent case starts with target `(1,105)`.
+
+| Response | Target after | Explanation |
+|---|---|---|
+| `(1,100)` | `(1,105)` | GLSN is lower, but GCN is unchanged. |
+| `(2,110)` | `(1,105)` | GCN is newer, but GLSN is higher. |
+| `(2,105)` | `(1,105)` | GCN is newer, but GLSN is equal. |
+
+The latter cases remain incomparable if the continuation-associated GCN is 2; the current rule does not guarantee eventual completion.
+
+All partitions must complete, and resume must preserve target updates and continuation-associated tokens. The service must establish continuation GCN and coverage semantics; copying the latest response GCN onto an older continuation would bypass validation.
 
 ## 3. Why Event Timestamps and Customer Tokens Are Insufficient
 
