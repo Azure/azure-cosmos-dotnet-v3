@@ -175,11 +175,11 @@ LatestVersion's mode-setting code supplies `A-IM: Incremental Feed` without the 
 
 #### Follow-up: Dynamic Targets After a GCN Change
 
-The SDK would save each covered partition's full session token alongside its anchoring continuation. During catch-up, it would track the continuation-associated session token separately from the dynamic target's cached GCN and GLSN. This remains a proposed follow-up.
+The SDK would retain each partition's full anchoring and continuation-associated session tokens separately from its target GCN and GLSN. This remains a proposed follow-up.
 
 On every successful change-feed response, the SDK would apply these rules in order:
 
-1. If `cachedGCN < responseGCN` and `cachedGLSN > responseGLSN`, the SDK would replace both target values with the response's GCN and GLSN. Otherwise, it would retain the target.
+1. If `responseGCN > cachedGCN`, the SDK would adopt the response's GCN and GLSN. Otherwise, it would retain the target, including for older-GCN responses.
 2. The SDK would compare continuation progress against the target GLSN only when the continuation-associated session token's GCN equals the target GCN. Otherwise, it would continue draining without declaring completion.
 
 ##### Example 1: The target changes, and the continuation catches up
@@ -189,21 +189,23 @@ The partition anchors at GCN 1/continuation 90. The first replay response establ
 | Response | Target before | Target after | Continuation | Decision |
 |---|---|---|---|---|
 | `(1,110)` | `(1,105)` | `(1,105)` | `(1,100)` | The target stays, and reading continues. |
-| `(2,100)` | `(1,105)` | `(2,100)` | `(1,108)` | Both update conditions hold, but the continuation GCN still differs. |
+| `(2,100)` | `(1,105)` | `(2,100)` | `(1,108)` | The target changes, but the continuation GCN still differs. |
 | `(2,110)` | `(2,100)` | `(2,100)` | `(2,99)` | GCNs match, but progress remains below 100. |
 | `(2,115)` | `(2,100)` | `(2,100)` | `(2,103)` | This partition completes with over-reading. |
 
-##### Example 2: Only one update condition holds
+##### Example 2: A newer GCN takes precedence
 
 Each independent case starts with target `(1,105)`.
 
 | Response | Target after | Explanation |
 |---|---|---|
-| `(1,100)` | `(1,105)` | GLSN is lower, but GCN is unchanged. |
-| `(2,110)` | `(1,105)` | GCN is newer, but GLSN is higher. |
-| `(2,105)` | `(1,105)` | GCN is newer, but GLSN is equal. |
+| `(1,100)` | `(1,105)` | The GCN is unchanged. |
+| `(1,110)` | `(1,105)` | Same-GCN writes cannot advance the target. |
+| `(2,110)` | `(2,110)` | The newer GCN takes precedence despite the higher GLSN. |
+| `(2,105)` | `(2,105)` | The newer GCN takes precedence despite the equal GLSN. |
+| `(0,120)` | `(1,105)` | The response GCN is older. |
 
-The latter cases remain incomparable if the continuation-associated GCN is 2; the current rule does not guarantee eventual completion.
+With false-progress merging enabled, [VectorSessionToken.Merge](../Microsoft.Azure.Cosmos/Direct/src/Session/VectorSessionToken.cs#L259) selects the newer GCN's GLSN. Normal same-GCN merging takes the maximum GLSN; the target policy deliberately does not, avoiding a moving target.
 
 All partitions must complete, and resume must preserve target updates and continuation-associated tokens. The service must establish continuation GCN and coverage semantics; copying the latest response GCN onto an older continuation would bypass validation.
 
