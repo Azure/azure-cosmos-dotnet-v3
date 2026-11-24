@@ -119,9 +119,23 @@ jobs:
         report_failure "$library has unresolved native dependencies on $QPIARCH."
       fi
 
+      test_filter="$UNIT_FILTER"
+      if [ "$QPIARCH" = "arm64" ]; then
+        # SDK pack/publish tests run natively in the x64 leg, including ARM64 asset checks.
+        # Avoid running the SDK's restore/audit tooling under QEMU; keep native planner tests here.
+        test_filter="($test_filter)&FullyQualifiedName!~Microsoft.Azure.Cosmos.Tests.MSBuild.CosmosTargetsInteropPublishTests"
+      fi
+
       test_exit=0
-      "${runner[@]}" dotnet test "$out/Microsoft.Azure.Cosmos.Tests.dll" --filter "$UNIT_FILTER" \
+      "${runner[@]}" dotnet test "$out/Microsoft.Azure.Cosmos.Tests.dll" --filter "$test_filter" \
         --results-directory "$results" --logger "trx;LogFileName=unit-$QPIARCH.trx" || test_exit=$?
+      echo "dotnet test exit code on $QPIARCH: $test_exit"
+      if [ "$test_exit" -ne 0 ]; then
+        report_failure "Linux native query-plan tests failed on $QPIARCH (dotnet test exit code $test_exit). See the test output and any published results."
+      fi
+      if [ ! -s "$results/unit-$QPIARCH.trx" ]; then
+        report_failure "Linux native query-plan tests produced no nonempty TRX results on $QPIARCH; native-planning sentinels cannot be verified."
+      fi
 
       # Require successful native routing and query planning.
       for sentinel in OptedInLinuxProcessUsesNativePlanning AbsFilterTargetsBothSigns; do
@@ -129,9 +143,6 @@ jobs:
           report_failure "QueryPlanInteropTests.$sentinel did not pass on $QPIARCH; the tests did not use QueryPlanInterop ($library)."
         fi
       done
-      if [ "$test_exit" -ne 0 ]; then
-        report_failure "Linux native query-plan tests failed on $QPIARCH. See the published test results."
-      fi
     displayName: Native query-plan ABI, routing and baseline tests ($(QpiArch))
     env:
       CONFIGURATION: ${{ parameters.BuildConfiguration }}

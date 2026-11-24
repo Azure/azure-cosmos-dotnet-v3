@@ -73,6 +73,7 @@ The gate every PR to `main` / `releases/*` must pass. It excludes doc-only chang
 | [`build-preview.yml`](../templates/build-preview.yml) | The PREVIEW-flag build + core and Encryption/Custom companion preview unit tests + encryption/benchmark surface-area parity. |
 | [`build-benchmark.yml`](../templates/build-benchmark.yml) | The [benchmark tool](../Microsoft.Azure.Cosmos.Samples/Tools/Benchmark) builds (GA + preview). |
 | [`build-thinclient.yml`](../templates/build-thinclient.yml) | Thin-client protocol emulator tests. |
+| [`build-linux-queryplaninterop.yml`](../templates/build-linux-queryplaninterop.yml) | Linux native query-plan ABI, routing and baseline tests, plus native-library loading in supported runtime images. |
 | [`build-test-aad.yml`](../templates/build-test-aad.yml) | **Live-account AAD (Entra ID) tests** — see [that section](#live-account-aad-tests-multiregionaad). Self-skips until its service connection is set. |
 
 **External contributors:** the CI won't auto-run for forked PRs; a maintainer starts it with an
@@ -182,6 +183,19 @@ source-reference parity builds do not execute service tests.
 Buckets 1 and 2 exist purely to **parallelize** the large emulator suite and shorten PR feedback
 time. Every emulator job pulls in `emulator-setup.yml` and sets
 `AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true`.
+
+### Linux native query planning (`build-linux-queryplaninterop.yml`)
+
+Native planner, ABI, routing and baseline tests run on native x64 and QEMU-emulated
+ARM64. `CosmosTargetsInteropPublishTests` runs only in the native x64 leg: its
+`dotnet pack`/publish/restore subprocesses exercise SDK build tooling, not the
+ARM64 planner ABI, and are unreliable under emulation. The fixture still checks
+ARM64 publish assets; the separate ARM64 runtime-image jobs verify native-library
+loading. NuGet auditing and blocking native-planning checks remain enabled.
+
+The runner checks the test-command exit code and requires a nonempty TRX file
+before inspecting the native-planning sentinels. An aborted run or missing results
+must not be reported as a native-planner assertion failure.
 
 ### Emulator setup (`emulator-setup.yml`)
 
