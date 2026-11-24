@@ -200,6 +200,12 @@ Older QEMU versions have known .NET restore/JIT failures (see
 preserves ARM64 coverage without disabling NuGet auditing or runtime memory protections.
 The installed emulator version is printed in the job log.
 
+The ARM64 test container mounts the host's restored NuGet global-packages directory
+at the same path and passes it through `NUGET_PACKAGES`, avoiding a second cold
+package download while keeping auditing enabled. SDK command timeouts in the
+packaging fixture are tripled on ARM64 (30 minutes for pack, 15 for publish).
+Timed-out commands terminate their process tree and report captured stdout/stderr.
+
 The runner checks the test-command exit code and requires a nonempty TRX file
 before inspecting the native-planning sentinels. An aborted run or missing results
 must not be reported as a native-planner assertion failure.

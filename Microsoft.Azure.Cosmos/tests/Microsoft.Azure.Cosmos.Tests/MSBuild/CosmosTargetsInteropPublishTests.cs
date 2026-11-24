@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Security.Cryptography;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
@@ -191,6 +192,21 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         }
 
         [TestMethod]
+        public async Task CommandTimeoutPreservesCapturedOutput()
+        {
+            const string projectName = "CommandTimeoutProbe";
+            string publishPath = await this.CreateAndPublishTestProjectAsync(projectName, runtimeIdentifier: null);
+            AssertFailedException exception = await Assert.ThrowsExceptionAsync<AssertFailedException>(() =>
+                RunDotnetCommandAsync(
+                    $"\"{Path.Combine(publishPath, projectName + ".dll")}\" --simulate-stall",
+                    timeoutMinutes: 0.1));
+
+            StringAssert.Contains(exception.Message, "Command timed out");
+            StringAssert.Contains(exception.Message, "Timeout probe stdout");
+            StringAssert.Contains(exception.Message, "Timeout probe stderr");
+        }
+
+        [TestMethod]
         public async Task Package_NativePayloadsMatchRestoredPackages()
         {
             string projectPath = Path.Combine(GetRepositoryRoot(), "Microsoft.Azure.Cosmos", "src", "Microsoft.Azure.Cosmos.csproj");
@@ -325,6 +341,12 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
 
             // Reflection exercises the packaged SDK's internal native planner without friend-assembly access.
             File.WriteAllText(programFile, @"
+if (System.Array.IndexOf(args, ""--simulate-stall"") >= 0)
+{
+    System.Console.WriteLine(""Timeout probe stdout"");
+    System.Console.Error.WriteLine(""Timeout probe stderr"");
+    System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite);
+}
 if (System.Array.IndexOf(args, ""--verify-windows-query-planning"") >= 0)
 {
     System.Environment.SetEnvironmentVariable(""AZURE_COSMOS_BYPASS_QUERY_PARSING"", ""false"");
@@ -475,7 +497,7 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
             return currentDir;
         }
 
-        private static async Task<string> RunDotnetCommandAsync(string arguments, int timeoutMinutes = 5)
+        private static async Task<string> RunDotnetCommandAsync(string arguments, double timeoutMinutes = 5)
         {
             ProcessStartInfo processInfo = new ProcessStartInfo
             {
@@ -490,8 +512,11 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
             // Reused build nodes can keep redirected output pipes open after dotnet exits.
             processInfo.Environment["MSBUILDDISABLENODEREUSE"] = "1";
 
+            // SDK compilation and publishing are substantially slower under ARM64 emulation.
+            TimeSpan timeout = TimeSpan.FromMinutes(
+                timeoutMinutes * (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? 3 : 1));
             string commandLine = $"dotnet {arguments}";
-            Console.WriteLine($"Executing: {commandLine}");
+            Console.WriteLine($"Executing (timeout {timeout.TotalMinutes} minutes): {commandLine}");
 
             Process process = Process.Start(processInfo);
             if (process == null)
@@ -504,15 +529,34 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
                 Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
                 Task<string> errorTask = process.StandardError.ReadToEndAsync();
 
-                bool exited = process.WaitForExit((int)TimeSpan.FromMinutes(timeoutMinutes).TotalMilliseconds);
-                if (!exited)
+                bool timedOut = false;
+                using CancellationTokenSource cancellation = new CancellationTokenSource(timeout);
+                try
                 {
-                    process.Kill();
-                    Assert.Fail($"Command timed out after {timeoutMinutes} minutes.\nCommand: {commandLine}");
+                    await process.WaitForExitAsync(cancellation.Token);
+                }
+                catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+                {
+                    timedOut = true;
+                    try
+                    {
+                        process.Kill(entireProcessTree: true);
+                    }
+                    catch (InvalidOperationException) when (process.HasExited)
+                    {
+                        // The process exited while the timeout was firing.
+                    }
+
+                    await process.WaitForExitAsync();
                 }
 
                 string output = await outputTask;
                 string error = await errorTask;
+
+                if (timedOut)
+                {
+                    Assert.Fail($"Command timed out after {timeout.TotalMinutes} minutes.\nCommand: {commandLine}\nOutput: {output}\nError: {error}");
+                }
 
                 if (process.ExitCode != 0)
                 {

@@ -97,6 +97,13 @@ jobs:
       results="$AGENT_TEMPDIRECTORY/LinuxQueryPlanInterop-$QPIARCH"
       mkdir -p "$results"
       if [ "$QPIARCH" = "arm64" ]; then
+        nuget_packages="$(dotnet nuget locals global-packages --list --force-english-output)"
+        nuget_packages="${nuget_packages#global-packages: }"
+        case "$nuget_packages" in
+          /*) ;;
+          *) report_failure "Cannot resolve the host NuGet global-packages directory: $nuget_packages" ;;
+        esac
+        mkdir -p "$nuget_packages"
         # Run ARM64 binaries on the hosted x64 agent.
         # Older QEMU versions can corrupt .NET SDK restore/JIT execution; use the pinned emulator.
         docker run --privileged --rm "$QEMU_IMAGE" --uninstall qemu-aarch64
@@ -109,6 +116,7 @@ jobs:
         runner=(docker run --rm --platform linux/arm64 --user 0:0
           -e HOME=/tmp -e DOTNET_CLI_HOME=/tmp -e DOTNET_NOLOGO=1 -e DOTNET_CLI_TELEMETRY_OPTOUT=1
           -e QPIARCH
+          -e "NUGET_PACKAGES=$nuget_packages" -v "$nuget_packages:$nuget_packages"
           -e AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX -e AZURE_COSMOS_BYPASS_QUERY_PARSING
           -v "$BUILD_SOURCESDIRECTORY:$BUILD_SOURCESDIRECTORY" -v "$results:$results" -w "$out"           qpi-arm64-test)
                 else
