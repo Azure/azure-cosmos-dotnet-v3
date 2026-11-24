@@ -490,6 +490,7 @@ System.Runtime.InteropServices.COMException : 0x800A0B00
           </Range>
         </QueryRanges>
         <HybridSearchQueryInfo>
+          <ScoreCombinationKind>Rrf</ScoreCombinationKind>
           <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "swim"))]}] AS fullTextStatistics
 FROM c</GlobalStatisticsQuery>
           <FullTextSearchTerms>
@@ -548,6 +549,7 @@ ORDER BY _FullTextScore(c.text, ["swim"], {documentdb-formattablehybridsearchque
           </Range>
         </QueryRanges>
         <HybridSearchQueryInfo>
+          <ScoreCombinationKind>Rrf</ScoreCombinationKind>
           <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "swim"))]}] AS fullTextStatistics
 FROM c</GlobalStatisticsQuery>
           <FullTextSearchTerms>

@@ -474,6 +474,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            // Sort and coalesce the results on _rid.
+            // After deduplication, each HybridSearchQueryResult has a fixed index in the list.
+            // This index can be used as the key for the ranking array.
+            // For RRF, create an array (per dimension) of tuples (score, index) and sort it by score.
+            // Use these sorted arrays to compute ordinal ranks, then use the ranks to compute RRF scores.
+            // For CombinedScore, compute the direction-adjusted weighted sum directly, without ranking arrays.
+            // Sort the results by the combined scores, using the respective strategy's RID tie-breaker.
+
             TryCatch<(List<HybridSearchQueryResult> queryResults, QueryPage emptyPage)> tryGetResults = await PrefetchInParallelAsync(
                 queryPipelineStages,
                 scoreCombinationKind == ScoreCombinationKind.CombinedScore ? componentRankingInfos : null,

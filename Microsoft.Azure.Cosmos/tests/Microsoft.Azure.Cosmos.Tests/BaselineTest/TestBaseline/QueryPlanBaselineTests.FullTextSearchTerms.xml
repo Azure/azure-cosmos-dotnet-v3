@@ -16,6 +16,7 @@
           </Range>
         </QueryRanges>
         <HybridSearchQueryInfo>
+          <ScoreCombinationKind>Rrf</ScoreCombinationKind>
           <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "swim")), COUNTIF(FullTextContains(c.text, "run"))]}] AS fullTextStatistics
 FROM c</GlobalStatisticsQuery>
           <FullTextSearchTerms>
@@ -77,6 +78,7 @@ ORDER BY _FullTextScore(c.text, ["swim", "run"], {documentdb-formattablehybridse
           </Range>
         </QueryRanges>
         <HybridSearchQueryInfo>
+          <ScoreCombinationKind>Rrf</ScoreCombinationKind>
           <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c["author"]["bio"])), "hitCounts": [COUNTIF(FullTextContains(c["author"]["bio"], "energy"))]}] AS fullTextStatistics
 FROM c</GlobalStatisticsQuery>
           <FullTextSearchTerms>
@@ -136,6 +138,7 @@ ORDER BY _FullTextScore(c["author"]["bio"], ["energy"], {documentdb-formattableh
           </Range>
         </QueryRanges>
         <HybridSearchQueryInfo>
+          <ScoreCombinationKind>Rrf</ScoreCombinationKind>
           <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c["a/b"])), "hitCounts": [COUNTIF(FullTextContains(c["a/b"], "energy"))]}] AS fullTextStatistics
 FROM c</GlobalStatisticsQuery>
           <FullTextSearchTerms>
@@ -194,6 +197,7 @@ ORDER BY _FullTextScore(c["a/b"], ["energy"], {documentdb-formattablehybridsearc
           </Range>
         </QueryRanges>
         <HybridSearchQueryInfo>
+          <ScoreCombinationKind>Rrf</ScoreCombinationKind>
           <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.tags[0])), "hitCounts": [COUNTIF(FullTextContains(c.tags[0], "energy"))]}] AS fullTextStatistics
 FROM c</GlobalStatisticsQuery>
           <FullTextSearchTerms>
@@ -253,6 +257,7 @@ ORDER BY _FullTextScore(c.tags[0], ["energy"], {documentdb-formattablehybridsear
           </Range>
         </QueryRanges>
         <HybridSearchQueryInfo>
+          <ScoreCombinationKind>Rrf</ScoreCombinationKind>
           <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "swim"))]}, {"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "run"))]}] AS fullTextStatistics
 FROM c</GlobalStatisticsQuery>
           <FullTextSearchTerms>
@@ -342,6 +347,7 @@ ORDER BY _FullTextScore(c.text, ["run"], {documentdb-formattablehybridsearchquer
           </Range>
         </QueryRanges>
         <HybridSearchQueryInfo>
+          <ScoreCombinationKind>Rrf</ScoreCombinationKind>
           <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.title)), "hitCounts": [COUNTIF(FullTextContains(c.title, "energy"))]}, {"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "swim")), COUNTIF(FullTextContains(c.text, "run"))]}] AS fullTextStatistics
 FROM c</GlobalStatisticsQuery>
           <FullTextSearchTerms>
@@ -434,6 +440,7 @@ ORDER BY _FullTextScore(c.text, ["swim", "run"], {documentdb-formattablehybridse
           </Range>
         </QueryRanges>
         <HybridSearchQueryInfo>
+          <ScoreCombinationKind>Rrf</ScoreCombinationKind>
           <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, {"term": "swim", "distance": 2})), COUNTIF(FullTextContains(c.text, "run"))]}] AS fullTextStatistics
 FROM c</GlobalStatisticsQuery>
           <FullTextSearchTerms>
@@ -496,6 +503,7 @@ ORDER BY _FullTextScore(c.text, [{"term": "swim", "distance": 2}, "run"], {docum
           </Range>
         </QueryRanges>
         <HybridSearchQueryInfo>
+          <ScoreCombinationKind>Rrf</ScoreCombinationKind>
           <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "run")), COUNTIF(FullTextContains(c.text, "swim")), COUNTIF(FullTextContains(c.text, "run")), COUNTIF(FullTextContains(c.text, "United States"))]}] AS fullTextStatistics
 FROM c</GlobalStatisticsQuery>
           <FullTextSearchTerms>
@@ -573,6 +581,7 @@ ORDER BY _FullTextScore(c.text, ["run", "swim", "run", "United States"], {docume
           </Range>
         </QueryRanges>
         <HybridSearchQueryInfo>
+          <ScoreCombinationKind>Rrf</ScoreCombinationKind>
           <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c[@path])), "hitCounts": [COUNTIF(FullTextContains(c[@path], @term))]}] AS fullTextStatistics
 FROM c</GlobalStatisticsQuery>
           <FullTextSearchTerms>
