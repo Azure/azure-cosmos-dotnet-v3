@@ -83,6 +83,17 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static readonly string DefaultParameterName = "v";
         private static readonly bool usePropertyRef = false;
 
+        private static readonly Dictionary<string, string> DateTimePartNames = new Dictionary<string, string>
+        {
+            { nameof(DateTime.Year), "yyyy" },
+            { nameof(DateTime.Month), "mm" },
+            { nameof(DateTime.Day), "dd" },
+            { nameof(DateTime.Hour), "hh" },
+            { nameof(DateTime.Minute), "mi" },
+            { nameof(DateTime.Second), "ss" },
+            { nameof(DateTime.Millisecond), "ms" },
+        };
+
         /// <summary>
         /// Toplevel entry point.
         /// </summary>
@@ -379,6 +390,12 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (inputExpression.NodeType == ExpressionType.Convert)
             {
                 return operand;
+            }
+
+            // byte[] is serialized as a base64 string, not an array
+            if (inputExpression.NodeType == ExpressionType.ArrayLength && inputExpression.Operand.Type != typeof(byte[]))
+            {
+                return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.ArrayLength, operand);
             }
 
             SqlUnaryScalarOperatorKind op = GetUnaryOperatorKind(inputExpression.NodeType);
@@ -778,6 +795,13 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static SqlScalarExpression VisitMemberAccess(MemberExpression inputExpression, TranslationContext context)
         {
             SqlScalarExpression memberExpression = ExpressionToSql.VisitScalarExpression(inputExpression.Expression, context);
+
+            SqlScalarExpression builtinMemberExpression = ExpressionToSql.VisitBuiltinMember(inputExpression, memberExpression);
+            if (builtinMemberExpression != null)
+            {
+                return builtinMemberExpression;
+            }
+
             string memberName = inputExpression.Member.GetMemberName(context);
 
             // If the resulting memberName is null, then the indexer should be on the root of the object.
@@ -826,6 +850,71 @@ namespace Microsoft.Azure.Cosmos.Linq
                 SqlMemberIndexerScalarExpression memberIndexerExpression = SqlMemberIndexerScalarExpression.Create(memberExpression, indexExpression);
                 return memberIndexerExpression;
             }
+        }
+
+        // Returns a system-function translation for supported built-in members, or null to use the property path.
+        private static SqlScalarExpression VisitBuiltinMember(MemberExpression inputExpression, SqlScalarExpression memberExpression)
+        {
+            if (inputExpression.Expression == null)
+            {
+                return null;
+            }
+
+            Type declaringType = inputExpression.Member.DeclaringType;
+            string name = inputExpression.Member.Name;
+
+            if (declaringType == typeof(string))
+            {
+                return name == nameof(string.Length)
+                    ? SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.Length, memberExpression)
+                    : null;
+            }
+
+            if (declaringType == typeof(DateTime))
+            {
+                return ExpressionToSql.DateTimePartNames.TryGetValue(name, out string part)
+                    ? SqlFunctionCallScalarExpression.CreateBuiltin(
+                        SqlFunctionCallScalarExpression.Names.DateTimePart,
+                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(part)),
+                        memberExpression)
+                    : null;
+            }
+
+            if (ExpressionToSql.IsArrayLengthMember(declaringType, name, inputExpression.Expression.Type))
+            {
+                return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.ArrayLength, memberExpression);
+            }
+
+            return null;
+        }
+
+        private static bool IsArrayLengthMember(Type declaringType, string name, Type receiverType)
+        {
+            // A rectangular array is stored as nested arrays, so ARRAY_LENGTH would count only its rows.
+            if (receiverType.IsArray && receiverType.GetArrayRank() != 1)
+            {
+                return false;
+            }
+
+            if (name == nameof(Array.Length) && declaringType == typeof(Array))
+            {
+                return receiverType != typeof(byte[]);
+            }
+
+            // Count of these collection types is ARRAY_LENGTH; dictionaries are stored as JSON objects.
+            Type collectionType = declaringType.IsGenericType()
+                ? declaringType.GetGenericTypeDefinition()
+                : declaringType;
+
+            return name == "Count"
+                && (collectionType == typeof(ICollection<>)
+                    || collectionType == typeof(IReadOnlyCollection<>)
+                    || collectionType == typeof(List<>)
+                    || collectionType == typeof(ICollection)
+                    || collectionType == typeof(ArrayList))
+                && receiverType != typeof(byte[])
+                && !receiverType.IsDictionary()
+                && !typeof(IDictionary).IsAssignableFrom(receiverType);
         }
 
         private static SqlScalarExpression[] VisitExpressionList(ReadOnlyCollection<Expression> inputExpressionList, TranslationContext context)
