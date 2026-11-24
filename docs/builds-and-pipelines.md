@@ -208,6 +208,10 @@ ten-minute limit. Pack uses normal MSBuild
 verbosity to show restore/build progress without a diagnostic environment dump.
 The fixture varies only `PackageVersion` for cache isolation, preserving the SDK's
 normal assembly identity so the initial AnyCPU build can be reused.
+Source-reference publish probes also set `AppendRuntimeIdentifierToOutputPath=false`
+to reuse the managed library outputs instead of rebuilding them under each RID.
+The requested `RuntimeIdentifier` is retained for native-asset selection, which the
+existing publish assertions continue to verify.
 Timed-out commands terminate their process tree and report captured stdout/stderr.
 The fixture also forwards both child streams as they arrive. Since MSTest buffers
 test-console output, CI sets `COSMOS_TEST_DOTNET_OUTPUT_LOG` to a file in the mounted

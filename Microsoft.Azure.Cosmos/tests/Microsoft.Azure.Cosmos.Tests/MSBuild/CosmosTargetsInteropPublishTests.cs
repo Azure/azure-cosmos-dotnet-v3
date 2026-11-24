@@ -132,6 +132,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
 
         [TestMethod]
         [DataRow("linux-x64")]
+        [DataRow("linux-arm64")]
         [DataRow("win-x64")]
         public async Task Publish_WithSourceProjectReference_SelectsNativePayload(string runtimeIdentifier)
         {
@@ -151,7 +152,10 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
                 Assert.AreEqual(Path.Combine(publishPath, LinuxLibraryName), linuxLibraries[0]);
                 using BinaryReader reader = new BinaryReader(File.OpenRead(linuxLibraries[0]));
                 reader.BaseStream.Position = 18;
-                Assert.AreEqual((ushort)62, reader.ReadUInt16(), "Source-reference publish must include the x64 ELF library.");
+                Assert.AreEqual(
+                    runtimeIdentifier == "linux-arm64" ? (ushort)183 : (ushort)62,
+                    reader.ReadUInt16(),
+                    "Source-reference publish must include the requested architecture's ELF library.");
             }
         }
 
@@ -493,8 +497,12 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
             // Publish the project
             string publishDir = Path.Combine(projectDir, "bin", "publish", runtimeIdentifier ?? "no-rid");
             string ridArgument = runtimeIdentifier != null ? $"-r {runtimeIdentifier} --self-contained false" : string.Empty;
+            // Keep RID-based native-asset selection without rebuilding the AnyCPU libraries into new RID directories.
+            string sourceArguments = useProjectReference
+                ? "--verbosity normal /p:AppendRuntimeIdentifierToOutputPath=false"
+                : string.Empty;
             await RunDotnetCommandAsync(
-                $"publish \"{projectFile}\" -c Release -o \"{publishDir}\" {ridArgument}".Trim(),
+                $"publish \"{projectFile}\" -c Release -o \"{publishDir}\" {ridArgument} {sourceArguments}".Trim(),
                 timeoutMinutes: 5);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
