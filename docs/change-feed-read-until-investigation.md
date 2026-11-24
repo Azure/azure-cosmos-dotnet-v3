@@ -172,8 +172,29 @@ LatestVersion's mode-setting code supplies `A-IM: Incremental Feed` without the 
 #### Assumptions and limitations
 
 - Production use requires validating both response-session target selection and continuation comparability in both modes. Scalar comparison alone is insufficient.
-- **False progress:** GLSN can move backward across a higher vector clock number.
+- **False progress:** GLSN can move backward when a newer GCN (the session token's configuration version) is returned.
 - **Partition merges are out of scope.**
+
+#### Follow-up: Lower GLSN with a Newer GCN
+
+Conservative over-reading is acceptable, so a follow-up could investigate replacing target GLSNs after a configuration change. This is not supported SDK behavior.
+
+The SDK would retain each covered partition's full session token alongside its anchor and target, and check the GCN throughout replay. If a response reports a lower GLSN with a newer GCN, the SDK would suspend scalar comparisons across configurations.
+
+Consider this hypothetical example. The target is GLSN 105 under GCN 1, but failover produces GCN 2 with GLSN 100. Assume the service can safely reconcile the continuation and subsequently establish target GLSN 120 under GCN 2, covering all required surviving tenant changes.
+
+| Stage | GCN | Continuation progress | Target GLSN |
+|---|---:|---|---|
+| The customer anchors. | 1 | 90 | No target has been selected. |
+| Replay begins. | 1 | 94 | 105 |
+| Failover occurs. | 2 | Reconciliation is required. | The old target is not directly comparable. |
+| Reconciled replay continues. | 2 | 102 | 120 |
+| All required tenant changes have been returned. | 2 | 110 | 120 |
+| This partition completes. | 2 | 123 | 120 |
+
+The reader scans beyond the required changes at 110 and the replacement target at 120. Other tenants' writes may advance progress through empty filtered pages.
+
+The replacement target must come from a validated service position, not an arbitrary LSN buffer, and remain fixed during compatible replay. If continuation reconciliation or coverage cannot be established, the SDK must not report completion.
 
 ## 3. Why Event Timestamps and Customer Tokens Are Insufficient
 
