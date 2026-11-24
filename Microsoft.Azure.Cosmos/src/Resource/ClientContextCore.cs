@@ -63,7 +63,8 @@ namespace Microsoft.Azure.Cosmos
             this.batchExecutorCache = batchExecutorCache;
 
             ISecondaryIndexMetadataProvider secondaryIndexMetadataProvider = new SecondaryIndexMetadataProvider(documentClient);
-            this.secondaryIndexMetadataCache = new SecondaryIndexMetadataCache(secondaryIndexMetadataProvider, clientOptions.EnableAsyncCacheExceptionNoSharing);
+            this.secondaryIndexMetadataCache = new SecondaryIndexMetadataCache(secondaryIndexMetadataProvider);
+            this.documentClient.SecondaryIndexMetadataInvalidator.Register(this.secondaryIndexMetadataCache);
         }
 
         internal static CosmosClientContext Create(

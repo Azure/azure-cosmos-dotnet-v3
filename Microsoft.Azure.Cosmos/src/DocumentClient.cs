@@ -213,6 +213,8 @@ namespace Microsoft.Azure.Cosmos
         internal TelemetryToServiceHelper telemetryToServiceHelper { get; set; }
 
         private ClientCollectionCache collectionCache;
+        internal SecondaryIndexMetadataInvalidator SecondaryIndexMetadataInvalidator { get; } =
+            new SecondaryIndexMetadataInvalidator();
 
         private PartitionKeyRangeCache partitionKeyRangeCache;
 
@@ -772,7 +774,8 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
-                    metadataHedgingStrategy: this.metadataHedgingStrategy);
+                    metadataHedgingStrategy: this.metadataHedgingStrategy,
+                    secondaryIndexMetadataInvalidator: this.SecondaryIndexMetadataInvalidator);
                 this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing, this.metadataHedgingStrategy);
 
                 DefaultTrace.TraceWarning("Exception occurred while OpenAsync. Exception Message: {0}", ex.Message);
@@ -1258,7 +1261,8 @@ namespace Microsoft.Azure.Cosmos
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing,
-                    metadataHedgingStrategy: this.metadataHedgingStrategy);
+                    metadataHedgingStrategy: this.metadataHedgingStrategy,
+                    secondaryIndexMetadataInvalidator: this.SecondaryIndexMetadataInvalidator);
             this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.UseLengthAwareRangeComparer, this.enableAsyncCacheExceptionNoSharing, this.metadataHedgingStrategy);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 

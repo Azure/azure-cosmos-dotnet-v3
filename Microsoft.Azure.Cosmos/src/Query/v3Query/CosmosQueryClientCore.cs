@@ -302,6 +302,7 @@ namespace Microsoft.Azure.Cosmos
                     // This can only happen if collection is deleted/created with same name and client was not restarted
                     // in between.
                     CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(getPKRangesTrace);
+                    collectionCache.InvalidateSecondaryIndexMetadata(collectionResourceId);
                     collectionCache.Refresh(resourceLink);
                 }
 

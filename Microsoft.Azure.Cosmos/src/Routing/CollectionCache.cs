@@ -54,13 +54,16 @@ namespace Microsoft.Azure.Cosmos.Common
         /// for a collection, but this handles the situation if customer is using multiple API versions from different applications
         /// </summary>
         protected readonly InternalCache[] cacheByApiList;
+        private readonly SecondaryIndexMetadataInvalidator secondaryIndexMetadataInvalidator;
 
         protected CollectionCache(
-            bool enableAsyncCacheExceptionNoSharing = true)
+            bool enableAsyncCacheExceptionNoSharing = true,
+            SecondaryIndexMetadataInvalidator secondaryIndexMetadataInvalidator = null)
         {
             this.cacheByApiList = new InternalCache[2];
             this.cacheByApiList[0] = new InternalCache(enableAsyncCacheExceptionNoSharing); // for API version < 2018-12-31
             this.cacheByApiList[1] = new InternalCache(enableAsyncCacheExceptionNoSharing); // for API version >= 2018-12-31
+            this.secondaryIndexMetadataInvalidator = secondaryIndexMetadataInvalidator;
         }
 
         /// <summary>
@@ -208,6 +211,17 @@ namespace Microsoft.Azure.Cosmos.Common
             }
         }
 
+        internal void InvalidateSecondaryIndexMetadata(string sourceCollectionRid)
+        {
+            if (sourceCollectionRid != null)
+            {
+                this.secondaryIndexMetadataInvalidator?.Invalidate(sourceCollectionRid);
+            }
+        }
+
+        protected bool HasSecondaryIndexMetadataInvalidationTarget =>
+            this.secondaryIndexMetadataInvalidator?.HasTarget == true;
+
         protected abstract Task<ContainerProperties> GetByRidAsync(string apiVersion, 
                                 string collectionRid, 
                                 ITrace trace, 
@@ -250,7 +264,8 @@ namespace Microsoft.Azure.Cosmos.Common
             string resourceId,
             ITrace trace,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool forceRefresh = false)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -268,7 +283,8 @@ namespace Microsoft.Azure.Cosmos.Common
                              (string currentKey, DateTime currentValue) => currentTime);
                     return collection;
                 },
-                cancellationToken);
+                cancellationToken,
+                forceRefresh);
         }
 
         internal virtual async Task<ContainerProperties> ResolveByNameAsync(
