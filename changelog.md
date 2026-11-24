@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
+- Adds client-side execution of `COMBINEDSCORE` query plans, ranking full-text search candidates by a weighted sum of scores. Requires a query planner and service that support `COMBINEDSCORE`. See [PR 6150](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6150).
 - [6191](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6191) Query: Adds `CosmosClientOptions.FullTextStatisticsCacheMaxAge` to opt in to caching the full-text statistics used by Global-scoped hybrid search queries. While the cached document, word, and term counts are younger than the configured age (at least two minutes), queries skip the cross-partition statistics request, reducing latency and request charge. Reused statistics may not reflect recent writes. The cache is disabled by default. `CosmosClientOptions.FullTextStatisticsCacheMaxEntries` (default 256) limits the number of cached counts per client.
 
 #### Breaking Changes
