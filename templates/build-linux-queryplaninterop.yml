@@ -96,6 +96,9 @@ jobs:
       out="$BUILD_SOURCESDIRECTORY/Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/bin/$CONFIGURATION/net6.0"
       results="$AGENT_TEMPDIRECTORY/LinuxQueryPlanInterop-$QPIARCH"
       mkdir -p "$results"
+      command_log="$results/dotnet-commands.log"
+      : > "$command_log"
+      export COSMOS_TEST_DOTNET_OUTPUT_LOG="$command_log"
       if [ "$QPIARCH" = "arm64" ]; then
         nuget_packages="$(dotnet nuget locals global-packages --list --force-english-output)"
         nuget_packages="${nuget_packages#global-packages: }"
@@ -116,6 +119,7 @@ jobs:
         runner=(docker run --rm --platform linux/arm64 --user 0:0
           -e HOME=/tmp -e DOTNET_CLI_HOME=/tmp -e DOTNET_NOLOGO=1 -e DOTNET_CLI_TELEMETRY_OPTOUT=1
           -e QPIARCH
+          -e COSMOS_TEST_DOTNET_OUTPUT_LOG
           -e "NUGET_PACKAGES=$nuget_packages" -v "$nuget_packages:$nuget_packages"
           -e AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX -e AZURE_COSMOS_BYPASS_QUERY_PARSING
           -v "$BUILD_SOURCESDIRECTORY:$BUILD_SOURCESDIRECTORY" -v "$results:$results" -w "$out"           qpi-arm64-test)
@@ -135,7 +139,14 @@ jobs:
 
       test_exit=0
       "${runner[@]}" dotnet test "$out/Microsoft.Azure.Cosmos.Tests.dll" --filter "$UNIT_FILTER" \
-        --results-directory "$results" --logger "trx;LogFileName=unit-$QPIARCH.trx" || test_exit=$?
+        --results-directory "$results" --logger "trx;LogFileName=unit-$QPIARCH.trx" &
+      test_pid=$!
+      tail -n +1 --pid="$test_pid" -f "$command_log" &
+      tail_pid=$!
+      trap 'kill "$tail_pid" "$test_pid" 2>/dev/null || true' EXIT
+      wait "$test_pid" || test_exit=$?
+      wait "$tail_pid"
+      trap - EXIT
       echo "dotnet test exit code on $QPIARCH: $test_exit"
       if [ "$test_exit" -ne 0 ]; then
         report_failure "Linux native query-plan tests failed on $QPIARCH (dotnet test exit code $test_exit). See the test output and any published results."

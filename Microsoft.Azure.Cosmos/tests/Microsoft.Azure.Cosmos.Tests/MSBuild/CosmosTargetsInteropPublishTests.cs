@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Security.Cryptography;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -26,6 +27,8 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
     public class CosmosTargetsInteropPublishTests
     {
         private const string LinuxLibraryName = "libQueryPlanInterop.so";
+        private const string CommandOutputLogEnvironmentVariable = "COSMOS_TEST_DOTNET_OUTPUT_LOG";
+        private static readonly object CommandOutputLock = new object();
         private static string testProjectsRoot;
         private static string localNugetPackagePath;
         private static string packageVersion;
@@ -192,18 +195,63 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         }
 
         [TestMethod]
+        [DoNotParallelize]
         public async Task CommandTimeoutPreservesCapturedOutput()
         {
             const string projectName = "CommandTimeoutProbe";
             string publishPath = await this.CreateAndPublishTestProjectAsync(projectName, runtimeIdentifier: null);
-            AssertFailedException exception = await Assert.ThrowsExceptionAsync<AssertFailedException>(() =>
-                RunDotnetCommandAsync(
-                    $"\"{Path.Combine(publishPath, projectName + ".dll")}\" --simulate-stall",
-                    timeoutMinutes: 0.1));
+            string originalLog = Environment.GetEnvironmentVariable(CommandOutputLogEnvironmentVariable);
+            string progressLog = string.IsNullOrEmpty(originalLog)
+                ? Path.Combine(testProjectsRoot, "command-output.log")
+                : originalLog;
+            if (!File.Exists(progressLog))
+            {
+                File.WriteAllText(progressLog, string.Empty);
+            }
 
-            StringAssert.Contains(exception.Message, "Command timed out");
-            StringAssert.Contains(exception.Message, "Timeout probe stdout");
-            StringAssert.Contains(exception.Message, "Timeout probe stderr");
+            long startOffset = new FileInfo(progressLog).Length;
+            Environment.SetEnvironmentVariable(CommandOutputLogEnvironmentVariable, progressLog);
+            try
+            {
+                Task<AssertFailedException> command = Assert.ThrowsExceptionAsync<AssertFailedException>(() =>
+                    RunDotnetCommandAsync(
+                        $"\"{Path.Combine(publishPath, projectName + ".dll")}\" --simulate-stall",
+                        timeoutMinutes: 0.1));
+                AssertFailedException exception = null;
+                try
+                {
+                    bool forwarded = false;
+                    while (!command.IsCompleted)
+                    {
+                        using FileStream stream = new FileStream(progressLog, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        stream.Position = startOffset;
+                        using StreamReader reader = new StreamReader(stream);
+                        string progress = await reader.ReadToEndAsync();
+                        if (progress.Contains("Timeout probe stdout") && progress.Contains("Timeout probe stderr"))
+                        {
+                            forwarded = true;
+                            break;
+                        }
+
+                        await Task.Delay(25);
+                    }
+
+                    Assert.IsTrue(forwarded, "Both child streams must be forwarded before the command exits.");
+                    Assert.IsFalse(command.IsCompleted, "Progress must be visible while the child is still running.");
+                }
+                finally
+                {
+                    exception = await command;
+                }
+
+                StringAssert.Contains(exception.Message, "Command timed out");
+                StringAssert.Contains(exception.Message, "Timeout probe stdout");
+                StringAssert.Contains(exception.Message, "Timeout probe stderr");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(CommandOutputLogEnvironmentVariable, originalLog);
+            }
         }
 
         [TestMethod]
@@ -343,6 +391,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             File.WriteAllText(programFile, @"
 if (System.Array.IndexOf(args, ""--simulate-stall"") >= 0)
 {
+    System.Console.WriteLine(""Timeout probe PID: "" + System.Environment.ProcessId);
     System.Console.WriteLine(""Timeout probe stdout"");
     System.Console.Error.WriteLine(""Timeout probe stderr"");
     System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite);
@@ -516,7 +565,7 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
             TimeSpan timeout = TimeSpan.FromMinutes(
                 timeoutMinutes * (RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? 3 : 1));
             string commandLine = $"dotnet {arguments}";
-            Console.WriteLine($"Executing (timeout {timeout.TotalMinutes} minutes): {commandLine}");
+            WriteCommandOutput($"Executing (timeout {timeout.TotalMinutes} minutes): {commandLine}{Environment.NewLine}");
 
             Process process = Process.Start(processInfo);
             if (process == null)
@@ -526,8 +575,8 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
 
             using (process)
             {
-                Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
-                Task<string> errorTask = process.StandardError.ReadToEndAsync();
+                Task<string> outputTask = CaptureCommandOutputAsync(process.StandardOutput, isError: false);
+                Task<string> errorTask = CaptureCommandOutputAsync(process.StandardError, isError: true);
 
                 bool timedOut = false;
                 using CancellationTokenSource cancellation = new CancellationTokenSource(timeout);
@@ -538,6 +587,7 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
                 catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
                 {
                     timedOut = true;
+                    WriteCommandOutput($"Command timed out; terminating process tree: {commandLine}{Environment.NewLine}", isError: true);
                     try
                     {
                         process.Kill(entireProcessTree: true);
@@ -564,8 +614,40 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
                 }
 
                 Assert.IsTrue(string.IsNullOrEmpty(error), $"Command had unexpected error output.\nCommand: {commandLine}\nError: {error}");
-                Console.WriteLine($"Command succeeded: {commandLine}");
+                WriteCommandOutput($"Command succeeded: {commandLine}{Environment.NewLine}");
                 return output;
+            }
+        }
+
+        private static async Task<string> CaptureCommandOutputAsync(StreamReader reader, bool isError)
+        {
+            StringBuilder captured = new StringBuilder();
+            char[] buffer = new char[4096];
+            int count;
+            while ((count = await reader.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            {
+                string text = new string(buffer, 0, count);
+                captured.Append(text);
+                WriteCommandOutput(text, isError);
+            }
+
+            return captured.ToString();
+        }
+
+        private static void WriteCommandOutput(string text, bool isError = false)
+        {
+            lock (CommandOutputLock)
+            {
+                TextWriter console = isError ? Console.Error : Console.Out;
+                console.Write(text);
+                console.Flush();
+
+                // MSTest buffers Console output; CI tails this optional log independently.
+                string logPath = Environment.GetEnvironmentVariable(CommandOutputLogEnvironmentVariable);
+                if (!string.IsNullOrEmpty(logPath))
+                {
+                    File.AppendAllText(logPath, text);
+                }
             }
         }
     }

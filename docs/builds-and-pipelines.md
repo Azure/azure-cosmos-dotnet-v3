@@ -205,6 +205,25 @@ at the same path and passes it through `NUGET_PACKAGES`, avoiding a second cold
 package download while keeping auditing enabled. SDK command timeouts in the
 packaging fixture are tripled on ARM64 (30 minutes for pack, 15 for publish).
 Timed-out commands terminate their process tree and report captured stdout/stderr.
+The fixture also forwards both child streams as they arrive. Since MSTest buffers
+test-console output, CI sets `COSMOS_TEST_DOTNET_OUTPUT_LOG` to a file in the mounted
+results directory and tails it from outside the test process. Pack/publish progress
+therefore reaches the job console before the command or test finishes, while full
+stdout/stderr remain available for assertions and timeout diagnostics.
+
+The forwarding mechanism can be checked on Windows x64 without Linux or QEMU:
+
+```powershell
+$env:COSMOS_TEST_DOTNET_OUTPUT_LOG = Join-Path $env:TEMP 'cosmos-dotnet-commands.log'
+New-Item -ItemType File -Path $env:COSMOS_TEST_DOTNET_OUTPUT_LOG -Force | Out-Null
+dotnet test Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Microsoft.Azure.Cosmos.Tests.csproj --framework net6.0 --configuration Debug --filter 'FullyQualifiedName~CosmosTargetsInteropPublishTests.CommandTimeoutPreservesCapturedOutput'
+Remove-Item Env:\COSMOS_TEST_DOTNET_OUTPUT_LOG
+```
+
+In another PowerShell terminal, run
+`Get-Content (Join-Path $env:TEMP 'cosmos-dotnet-commands.log') -Wait`.
+The probe's stdout/stderr markers must appear while it is still running, before
+the expected timeout is caught and the test passes.
 
 The runner checks the test-command exit code and requires a nonempty TRX file
 before inspecting the native-planning sentinels. An aborted run or missing results
