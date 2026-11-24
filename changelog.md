@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- [6222](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6222) LINQ: Fixes `Nullable<T>.HasValue` returning true for properties stored as `null`. Such documents no longer match `HasValue`, now match `!HasValue`, and project `false`. Missing properties and values are unchanged. See [#4864](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4864).
+
 #### Bugs Fixed
 
 - [6225](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6225) Query: Prevents hierarchical-partition-key queries from failing when a query plan contains redundant ranges fully covered by another range, including equivalent zero-padded boundaries when length-aware comparison is enabled. Errors for remaining invalid overlaps now identify the conflicting ranges.

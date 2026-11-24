@@ -1031,6 +1031,47 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestNullableHasValueWithStoredNull()
+        {
+            // This class's client drops null properties, so a stored null is written through the stream API
+            List<DataObject> data = new List<DataObject>();
+            for (int i = 0; i < 9; i++)
+            {
+                DataObject obj = new DataObject
+                {
+                    NullableField = i % 3 == 0 ? i : null,
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
+                data.Add(obj);
+
+                if (i % 3 == 2)
+                {
+                    byte[] json = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(obj));
+                    using (ResponseMessage response = testContainer.CreateItemStreamAsync(new System.IO.MemoryStream(json), new Cosmos.PartitionKey("Test")).Result)
+                    {
+                        response.EnsureSuccessStatusCode();
+                    }
+                }
+                else
+                {
+                    testContainer.CreateItemAsync(obj, new Cosmos.PartitionKey("Test")).Wait();
+                }
+            }
+
+            IOrderedQueryable<DataObject> cosmosQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? cosmosQuery : data.AsQueryable();
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("HasValue", b => getQuery(b).Where(doc => doc.NullableField.HasValue).Select(doc => doc.Id)),
+                new LinqTestInput("Not HasValue", b => getQuery(b).Where(doc => !doc.NullableField.HasValue).Select(doc => doc.Id)),
+                new LinqTestInput("Select HasValue", b => getQuery(b).Select(doc => new { doc.Id, HasValue = doc.NullableField.HasValue }), ignoreOrder: true),
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         [Ignore]
         public void TestMathFunctionsIssues()
         {
