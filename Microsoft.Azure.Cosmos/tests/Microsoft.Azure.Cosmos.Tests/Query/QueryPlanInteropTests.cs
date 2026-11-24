@@ -137,6 +137,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         }
 
         [TestMethod]
+        public void TemporaryArm64NativePipelineMustFail()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+                || RuntimeInformation.ProcessArchitecture != Architecture.Arm64)
+            {
+                Assert.Inconclusive("Temporary CI failure probe applies only to Linux ARM64.");
+            }
+
+            Assert.Fail("INTENTIONAL TEMPORARY FAILURE: verify that the Linux ARM64 native query-plan pipeline turns red. Remove this test before merging.");
+        }
+
+        [TestMethod]
         [TestCategory("Windows")]
         [TestCategory("ServiceInterop")]
         public void WindowsX64ProcessUsesServiceInterop()
