@@ -27,7 +27,7 @@ There are three distinct pieces of state:
 | State | Where it comes from | Does it change during replay? |
 |---|---|---|
 | Anchor continuation | Saved after initial anchoring from Now | No; it defines where this workload begins |
-| Target GLSNs for the physical partitions covered | GLSN components of their first replay response session tokens | No; each target is cached once |
+| Target GLSNs for the physical partitions covered | GLSN components of their first replay response session tokens | Only the dynamic-target follow-up permits replacement. |
 | Progress continuation | Returned after each replay page | Yes; it records how far the reader has advanced |
 
 There is no single container-wide target GLSN. The SDK associates each covered physical partition's target GLSN with its tracked FeedRange and compares progress internally. Customers do not need to parse tokens. This follows Java's [first-response target selection](https://github.com/Azure/azure-sdk-for-java/blob/main/sdk/cosmos/azure-cosmos/src/main/java/com/azure/cosmos/implementation/feedranges/FeedRangeCompositeContinuationImpl.java#L270-L288).
@@ -67,7 +67,7 @@ After ingestion finishes, the customer creates the bounded reader from the saved
 1. The iterator validates the anchor and resolves the physical partitions covered by its FeedRange scope.
 2. The iterator reads changes from the anchor in the selected feed mode.
 3. When the iterator receives a partition's first successful replay response, it reads the `x-ms-session-token` response header, extracts its GLSN component, and caches that value as the partition's target GLSN.
-4. The iterator advances continuation progress after every response without replacing an already cached target.
+4. The iterator advances continuation progress after every response. The dynamic-target follow-up defines when it may replace the cached target.
 
 ##### How the iterator obtains a target GLSN
 
@@ -97,7 +97,7 @@ The first replay responses in the recording supplied the target GLSNs shown in t
 
 Both recorded response tokens have prefix `5`, whereas their requests targeted partition-key ranges `3` and `4`. This unresolved discrepancy means that the association between these response tokens and the requested physical partitions still requires validation.
 
-These target GLSNs remain fixed while other tenants write. They are not passed back as starting continuations.
+Ordinary writes do not move the targets forward. The GCN-change follow-up permits conditional replacement. Targets never replace starting continuations.
 
 #### 3) Cycle through physical partitions and compare progress
 
@@ -109,9 +109,9 @@ flowchart LR
     W --> U["Resume from anchor"]
     subgraph SDK["One change-feed iterator: SDK-owned work"]
         U --> R["Read next unfinished physical partition"]
-        R --> T["Cache response-session target GLSN if absent"]
+        R --> T["Cache target; apply dynamic GCN-change rule"]
         T --> P["Return page and advance continuation"]
-        P --> C{"Every covered partition has reached its target GLSN?"}
+        P --> C{"All continuations match target GCNs and cover target GLSNs?"}
         C -->|No| R
         C -->|Yes| D["Complete bounded iteration"]
     end
@@ -119,7 +119,7 @@ flowchart LR
 
 The iterator cycles through the tracked FeedRanges on unfinished physical partitions in round-robin order and reads one backend page per turn. After each response, it updates progress only for the range it just read. An empty 200 response can advance that range's continuation even though it returns no tenant documents.
 
-Once progress reaches or exceeds a partition's target GLSN, the iterator stops polling its tracked range but retains its state. It continues reading the remaining partitions. The SDK matches continuation entries by FeedRange rather than by array index because queue rotation changes their order.
+Once progress reaches or exceeds a partition's target GLSN with matching GCNs, the iterator stops polling its tracked range but retains its state. It continues reading the remaining partitions. The SDK matches continuation entries by FeedRange rather than by array index because queue rotation changes their order.
 
 For the numeric positions in this recording, the proposed stopping condition is **R1 progress >= 12784 AND R2 progress >= 12786**.
 
@@ -175,26 +175,24 @@ LatestVersion's mode-setting code supplies `A-IM: Incremental Feed` without the 
 - **False progress:** GLSN can move backward when a newer GCN (the session token's configuration version) is returned.
 - **Partition merges are out of scope.**
 
-#### Follow-up: Lower GLSN with a Newer GCN
+#### Follow-up: Dynamic Targets After a GCN Change
 
-Conservative over-reading is acceptable, so a follow-up could investigate replacing target GLSNs after a configuration change. This is not supported SDK behavior.
+The SDK would save each covered partition's full session token alongside its anchoring continuation. During catch-up, it would track the continuation-associated session token separately from the dynamic target's cached GCN and GLSN. This remains a proposed follow-up.
 
-The SDK would retain each covered partition's full session token alongside its anchor and target, and check the GCN throughout replay. If a response reports a lower GLSN with a newer GCN, the SDK would suspend scalar comparisons across configurations.
+On every successful change-feed response, the SDK would apply these rules in order:
 
-Consider this hypothetical example. The target is GLSN 105 under GCN 1, but failover produces GCN 2 with GLSN 100. Assume the service can safely reconcile the continuation and subsequently establish target GLSN 120 under GCN 2, covering all required surviving tenant changes.
+1. If `cachedGCN < responseGCN` and `cachedGLSN > responseGLSN`, the SDK would replace both target values with the response's GCN and GLSN. Otherwise, it would retain the target.
+2. The SDK would compare continuation progress against the target GLSN only when the continuation-associated session token's GCN equals the target GCN. Otherwise, it would continue draining without declaring completion.
 
-| Stage | GCN | Continuation progress | Target GLSN |
-|---|---:|---|---|
-| The customer anchors. | 1 | 90 | No target has been selected. |
-| Replay begins. | 1 | 94 | 105 |
-| Failover occurs. | 2 | Reconciliation is required. | The old target is not directly comparable. |
-| Reconciled replay continues. | 2 | 102 | 120 |
-| All required tenant changes have been returned. | 2 | 110 | 120 |
-| This partition completes. | 2 | 123 | 120 |
+For example, a cached target of GCN 1/GLSN 105 would become GCN 2/GLSN 100 upon receiving that newer-GCN, lower-GLSN response. Subsequent responses illustrate the comparison gate:
 
-The reader scans beyond the required changes at 110 and the replacement target at 120. Other tenants' writes may advance progress through empty filtered pages.
+| Continuation-associated GCN | Continuation LSN | Decision against target GCN 2/GLSN 100 |
+|---|---:|---|
+| 1 | 108 | Reading continues because the GCNs differ. |
+| 2 | 99 | Reading continues because progress is below 100. |
+| 2 | 103 | This partition completes, allowing over-reading. |
 
-The replacement target must come from a validated service position, not an arbitrary LSN buffer, and remain fixed during compatible replay. If continuation reconciliation or coverage cannot be established, the SDK must not report completion.
+All covered partitions must complete. Resume must preserve target updates and continuation-associated tokens. The example is hypothetical: the service must establish the continuation's GCN and coverage semantics. Copying the latest response GCN onto an older continuation would bypass the check, not validate it.
 
 ## 3. Why Event Timestamps and Customer Tokens Are Insufficient
 

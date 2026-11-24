@@ -41,11 +41,11 @@ flowchart TD
     E --> F["Complete only when every range is covered"]
 ```
 
-**Current:** Resume the anchor; cache each covered physical partition's target GLSN from its first successful replay response's session token. Compare advancing continuations against fixed targets. Assert no second Now probe and no target replacement on later responses. Missing targets prevent completion.
+**Current:** Resume the anchor and cache each partition's first successful replay response session target. Ordinary writes must not move targets; the dynamic-target test covers the exception. Missing targets prevent completion. No second Now probe is allowed.
 
 **Timestamp:** Customer supplies Unix `t0` and nonnegative `delta`. Proposed target is service-confirmed time `t0 + delta`, not a per-document predicate. Require the same defined time-coverage contract for both modes, including empty responses. Until available, require explicit unsupported behavior; do not substitute LatestVersion `_ts` or Now.
 
-Buffer is an operational allowance, not a replication guarantee. Test `t0 = maxWriteTs` and independent cutoffs. Persist scope, mode, targets, and progress; reject conflicting boundaries, malformed tokens, mode changes on resume, and negative buffers. Unbounded defaults remain unchanged.
+Buffer is an operational allowance, not a replication guarantee. Test `t0 = maxWriteTs` and independent cutoffs. Persist scope, mode, target GCNs/GLSNs, and continuation-associated tokens; reject conflicts, malformed tokens, mode changes, and negative buffers. Unbounded defaults remain unchanged.
 
 ## 5. Acceptance and Oracles
 
@@ -58,7 +58,7 @@ Buffer is an operational allowance, not a replication guarantee. Test `t0 = maxW
 - Use models omitting system timestamps to prove shared completion does not inspect payload fields.
 - Empty 200s and 304s cannot independently signal completion. Verify all-partition progress, timestamp ties, lagging partitions, and fixed target GLSNs despite continued writes.
 - Cover splits before and after caching target GLSNs. Unsupported remapping must fail explicitly, never drop an uncovered child.
-- Inject false progress (configuration 1/GLSN 105 to configuration 2/GLSN 100); require failure until reconciliation is validated, never completion.
+- Inject target GCN 1/GLSN 105 followed by response GCN 2/GLSN 100; require target replacement. With continuation GCN 1/LSN 108, drain without comparison; with GCN 2, stop only at LSN >= 100. Either update condition alone must not replace the target.
 - Inject errors, cancellation, and timeouts; none may report `TargetReached`.
 - Record target GLSNs, progress, statuses, counts, RU charges, and elapsed time without credentials or document bodies.
 

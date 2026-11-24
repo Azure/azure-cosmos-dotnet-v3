@@ -33,13 +33,13 @@ Partition merges are out of scope.
 Retain:
 
 - Container identity, prefix, and feed mode.
-- Current continuation for each constituent range.
-- Cached target GLSNs for the physical partitions covered.
+- Current continuations and their associated session tokens.
+- Cached target GCNs and GLSNs for the physical partitions covered.
 - Which partitions have reached their target GLSNs.
 
-Resume the anchor. Cache each physical partition's target GLSN from its first successful replay response's session token. No second Now probe. Bounded resumption restores cached target GLSNs.
+The iterator resumes the anchor and caches targets from first successful replay response session tokens. Resumption restores saved state without another Now probe.
 
-Advance continuations, including on empty pages, and retire partitions when progress reaches or exceeds their target GLSNs. Completion never inspects payload timestamps.
+Advance continuations, including on empty pages, and retire partitions when progress reaches or exceeds their target GLSNs with matching continuation-associated and target GCNs. Completion never inspects payload timestamps.
 
 Missing targets prevent completion. Target acquisition is neither an atomic snapshot nor a historical timestamp bound.
 
@@ -58,7 +58,7 @@ Keep completed ranges in resumable state after removing them from scheduling. Mo
 
 - Return the final page before ending bounded iteration.
 - Expose target-reached status distinctly from failure. `HasMoreResults == false` alone is insufficient because existing error paths also set it.
-- Persist target GLSNs in a versioned bounded continuation; never replace cached targets on resume.
+- Persist target GCNs, GLSNs, and continuation-associated tokens; resumption must restore them.
 - Reject scope or mode changes on resume, conflicting boundary options, and malformed state.
 - Preserve progress and target GLSNs across splits. Unsupported target remapping must fail explicitly, never omit an uncovered child.
 - Cancellation, timeout, buffered errors, and missing targets must not report target completion.
@@ -66,13 +66,13 @@ Keep completed ranges in resumable state after removing them from scheduling. Mo
 
 ## 5. Timestamp Support and Validation Gates
 
-A future service-supported time boundary could feed the same completion engine. Do not introduce an AVAD-only completion branch that scans event `crts`, or substitute LatestVersion `_ts`.
+A future service-supported time boundary could share completion logic without inspecting event `crts` or document `_ts`.
 
 Validate response-session target selection and cursor comparison in both modes. The recorded AVAD first-response rule missed 595 events; scalar parsing is not a supported comparison contract.
 
-False progress can lower GLSN across configurations (105 to 100). Without validated reconciliation, bounded reads must fail explicitly, never report target completion. A version tag alone is insufficient.
+For dynamic targets, replace cached GCN/GLSN only when the response GCN is higher and GLSN is lower. Compare continuation LSN only when its associated session token's GCN matches the target GCN; otherwise, continue draining. Service validation of continuation GCN and coverage remains required.
 
-Validate both modes across typed/stream APIs, empty pages, fixed target GLSNs under continued writes, resume, splits, errors, and cancellation. Include payload models omitting system timestamps. Separate recorded-page verification from live execution evidence.
+Validate both modes across typed/stream APIs, empty pages, ordinary writes, resume, splits, errors, and cancellation. Include models omitting timestamps. Distinguish recorded-page verification from live execution.
 
 The observed same-client post-split 410/1002 behavior remains a separate release concern; successful fresh-client replay is not a permanent routing fix.
 
