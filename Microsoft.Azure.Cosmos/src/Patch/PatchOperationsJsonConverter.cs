@@ -15,10 +15,16 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class PatchOperationsJsonConverter : JsonConverter
     {
         private readonly CosmosSerializer userSerializer;
+        private readonly bool serializeAsText;
 
-        public PatchOperationsJsonConverter(CosmosSerializer userSerializer)
+        public PatchOperationsJsonConverter(CosmosSerializer userSerializer, bool serializeAsText = false)
         {
             this.userSerializer = userSerializer ?? throw new ArgumentNullException(nameof(userSerializer));
+            this.serializeAsText = serializeAsText;
+            if (serializeAsText)
+            {
+                this.userSerializer = new CosmosJsonSerializerWrapper(userSerializer, serializeAsText: true);
+            }
         }
 
         public override bool CanConvert(Type objectType)
@@ -98,9 +104,16 @@ namespace Microsoft.Azure.Cosmos
                     string valueParam;
                     using (valueStream)
                     {
-                        using (StreamReader streamReader = new StreamReader(valueStream))
+                        if (this.serializeAsText)
                         {
-                            valueParam = streamReader.ReadToEnd();
+                            valueParam = CosmosSerializationUtil.ReadStreamAsTextJson(valueStream);
+                        }
+                        else
+                        {
+                            using (StreamReader streamReader = new StreamReader(valueStream))
+                            {
+                                valueParam = streamReader.ReadToEnd();
+                            }
                         }
                     }
 
@@ -122,10 +135,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static CosmosSerializer CreatePatchOperationsSerializer(
             CosmosSerializer cosmosSerializer,
-            CosmosSerializer propertiesSerializer)
+            CosmosSerializer propertiesSerializer,
+            bool serializeAsText = false)
         {
             // If both serializers are the same no need for the custom converter
-            if (object.ReferenceEquals(cosmosSerializer, propertiesSerializer))
+            if (!serializeAsText && object.ReferenceEquals(cosmosSerializer, propertiesSerializer))
             {
                 return propertiesSerializer;
             }
@@ -134,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 Converters = new List<JsonConverter>()
                 {
-                    new PatchOperationsJsonConverter(cosmosSerializer)
+                    new PatchOperationsJsonConverter(cosmosSerializer, serializeAsText)
                 },
                 MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
             };

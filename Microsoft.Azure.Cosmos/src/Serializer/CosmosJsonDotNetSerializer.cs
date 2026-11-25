@@ -134,12 +134,17 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An open readable stream containing the JSON of the serialized object</returns>
         public override Stream ToStream<T>(T input)
         {
+            return this.ToStream(input, this.BinaryEncodingEnabled);
+        }
+
+        internal Stream ToStream<T>(T input, bool binaryEncodingEnabled)
+        {
             MemoryStream streamPayload;
             JsonSerializer jsonSerializer = this.GetSerializer();
 
             // Binary encoding is currently not supported for internal types, for e.g.
             // container creation, database creation requests etc.
-            if (this.BinaryEncodingEnabled
+            if (binaryEncodingEnabled
                 && !CosmosSerializerCore.IsInputTypeInternal(typeof(T)))
             {
                 using (Json.Interop.CosmosDBToNewtonsoftWriter writer = new (

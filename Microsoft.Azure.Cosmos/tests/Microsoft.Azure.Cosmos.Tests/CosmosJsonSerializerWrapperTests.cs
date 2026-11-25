@@ -20,10 +20,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
         [ExpectedException(typeof(InvalidOperationException))]
-        public void ToStream_Throws()
+        public void ToStream_Throws(bool serializeAsText)
         {
-            CosmosJsonSerializerWrapper handler = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerFails());
+            CosmosJsonSerializerWrapper handler = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerFails(), serializeAsText);
             _ = handler.ToStream("testValue");
         }
 

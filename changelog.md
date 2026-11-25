@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Breaking Changes
 
 #### Bugs Fixed
+- [6173](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6173) Distributed Transactions (preview): Fixes invalid request JSON for Create, Replace, Upsert, and Patch when binary encoding is enabled together with `CosmosClientOptions.SerializerOptions`.
+- [6173](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6173) Distributed Transactions (preview): Fixes a resource leak when serializing Create, Replace, Upsert, and Patch requests with a custom serializer.
 
 - [6225](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6225) Query: Prevents hierarchical-partition-key queries from failing when a query plan contains redundant ranges fully covered by another range, including equivalent zero-padded boundaries when length-aware comparison is enabled. Errors for remaining invalid overlaps now identify the conflicting ranges.
 - [6214](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6214) Gateway V2 (thin client): Fixes requests that set an explicit session token covering multiple partition key ranges failing with 400 "Session token specified is invalid.". The token is now narrowed to the target partition key range.
