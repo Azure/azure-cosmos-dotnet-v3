@@ -251,6 +251,11 @@ namespace Microsoft.Azure.Cosmos
         public const string USNatEast = "USNat East";
 
         /// <summary>
+        /// Name of the Azure USNat North region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string USNatNorth = "USNat North";
+
+        /// <summary>
         /// Name of the Azure USNat West region in the Azure Cosmos DB service.
         /// </summary>
         public const string USNatWest = "USNat West";
@@ -504,5 +509,10 @@ namespace Microsoft.Azure.Cosmos
         /// Name of the Azure West Central US FRE region in the Azure Cosmos DB service.
         /// </summary>
         public const string WestCentralUSFRE = "West Central US FRE";
+
+        /// <summary>
+        /// Name of the Azure Netherlands Northeast region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string NetherlandsNortheast = "Netherlands Northeast";
     }
 }

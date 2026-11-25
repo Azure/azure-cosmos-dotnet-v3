@@ -8706,6 +8706,11 @@
           "Attributes": [],
           "MethodInfo": "System.String MexicoCentral;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String NetherlandsNortheast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String NetherlandsNortheast;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String NewZealandNorth": {
           "Type": "Field",
           "Attributes": [],
@@ -8900,6 +8905,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String USNatEast;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String USNatNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String USNatNorth;IsInitOnly:False;IsStatic:True;"
         },
         "System.String USNatWest": {
           "Type": "Field",
