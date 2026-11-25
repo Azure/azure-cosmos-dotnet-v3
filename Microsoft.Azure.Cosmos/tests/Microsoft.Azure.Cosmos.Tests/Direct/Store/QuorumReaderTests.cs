@@ -27,6 +27,154 @@ namespace Microsoft.Azure.Documents
         private const string QuorumNotSelected = "QuorumNotSelected";
         private const string QuorumThrottled = "QuorumThrottled";
 
+        [DataTestMethod]
+        [DataRow(false, true, false)]
+        [DataRow(false, false, true)]
+        [DataRow(false, false, false)]
+        [DataRow(true, true, true)]
+        [DataRow(true, false, false)]
+        public async Task TwoDistinctLeaseFailuresRequireFreshPrimaryConfirmationAsync(bool primaryInFirstPair, bool primaryHealthy, bool throwOnGone)
+        {
+            using DocumentServiceRequest request = GetRequestEntity(operationType: OperationType.Query);
+            request.RequestContext.PerformLocalRefreshOnGoneException = true;
+            request.RequestContext.ResolvedPartitionTargetReplicaSetSize = primaryInFirstPair ? 3 : 4;
+            List<string> contacted = new();
+            List<bool> refreshes = new();
+            QuorumReader reader = GetQuorumReader((uri, req) =>
+            {
+                contacted.Add(uri.Segments.Last());
+                refreshes.Add(req.RequestContext.ForceRefreshAddressCache);
+                if (primaryHealthy && contacted.Count == 3 && contacted.Last() == "0p/")
+                {
+                    return Task.FromResult(CreateHealthyPrimaryResponse());
+                }
+                StoreResponse gone = CreateGoneResponse(SubStatusCodes.LeaseNotFound);
+                if (throwOnGone)
+                {
+                    ThrowServerException(gone, req);
+                }
+
+                return Task.FromResult(gone);
+            }, addressEnumerator: OrderedReplicas());
+
+            if (primaryHealthy)
+            {
+                StoreResponse result = await reader.ReadStrongAsync(request, 2, ReadMode.BoundedStaleness);
+                Assert.AreEqual((int)HttpStatusCode.OK, result.Status);
+            }
+            else
+            {
+                ServiceUnavailableException failure = await Assert.ThrowsExceptionAsync<ServiceUnavailableException>(
+                    () => reader.ReadStrongAsync(request, 2, ReadMode.BoundedStaleness));
+                Assert.AreEqual(HttpStatusCode.ServiceUnavailable, failure.StatusCode);
+                Assert.AreEqual(SubStatusCodes.LeaseNotFound, failure.GetSubStatus());
+            }
+
+            CollectionAssert.AreEqual(primaryInFirstPair ? new[] { "0p/", "1s/", "0p/" } : new[] { "1s/", "2s/", "0p/" }, contacted);
+            CollectionAssert.AreEqual(new[] { false, false, true }, refreshes);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task UnconfirmedPrimaryLeaseLossPreservesQuorumErrorAsync(bool primaryHasLeaseButCannotServeAlone)
+        {
+            using DocumentServiceRequest request = GetRequestEntity(operationType: OperationType.Query);
+            request.RequestContext.PerformLocalRefreshOnGoneException = true;
+            List<string> contacted = new();
+            QuorumReader reader = GetQuorumReader((uri, req) =>
+            {
+                contacted.Add(uri.Segments.Last());
+                if (contacted.Count == 3 && contacted.Last() == "0p/")
+                {
+                    if (!primaryHasLeaseButCannotServeAlone)
+                    {
+                        return Task.FromResult(CreateGoneResponse(SubStatusCodes.ServerGenerated410));
+                    }
+
+                    StoreResponse ok = CreateHealthyPrimaryResponse();
+                    ok.Headers[WFConstants.BackendHeaders.CurrentReplicaSetSize] = "4";
+                    return Task.FromResult(ok);
+                }
+
+                return Task.FromResult(CreateGoneResponse(SubStatusCodes.LeaseNotFound));
+            }, addressEnumerator: OrderedReplicas());
+
+            GoneException failure = await Assert.ThrowsExceptionAsync<GoneException>(
+                () => reader.ReadStrongAsync(request, 2, ReadMode.BoundedStaleness));
+            Assert.AreEqual(primaryHasLeaseButCannotServeAlone ? SubStatusCodes.Server_ReadQuorumNotMet : SubStatusCodes.ServerGenerated410, failure.GetSubStatus());
+            CollectionAssert.AreEqual(new[] { "1s/", "2s/", "0p/" }, contacted.Take(3).ToArray());
+            Assert.AreEqual(primaryHasLeaseButCannotServeAlone, contacted.Count > 3);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task RepeatedLeaseFailuresFromSameSecondaryCountOnlyOnceAsync(bool primaryReportsLeaseLoss)
+        {
+            using DocumentServiceRequest request = GetRequestEntity(operationType: OperationType.Query);
+            request.RequestContext.PerformLocalRefreshOnGoneException = true;
+            List<string> contacted = new();
+            List<bool> primaryRefreshes = new();
+            QuorumReader reader = GetQuorumReader((uri, req) =>
+            {
+                string replica = uri.Segments.Last();
+                contacted.Add(replica);
+                if (replica == "0p/")
+                {
+                    primaryRefreshes.Add(req.RequestContext.ForceRefreshAddressCache);
+                    if (!primaryReportsLeaseLoss)
+                    {
+                        return Task.FromResult(CreateHealthyPrimaryResponse());
+                    }
+                }
+
+                // Only 1s reports lease loss during both secondary sweeps.
+                SubStatusCodes code = replica == "1s/" || replica == "0p/" ? SubStatusCodes.LeaseNotFound : SubStatusCodes.ServerGenerated410;
+                StoreResponse gone = CreateGoneResponse(code);
+                ThrowServerException(gone, req);
+                return Task.FromResult(gone);
+            }, addressEnumerator: OrderedReplicas());
+
+            if (primaryReportsLeaseLoss)
+            {
+                ServiceUnavailableException failure = await Assert.ThrowsExceptionAsync<ServiceUnavailableException>(
+                    () => reader.ReadStrongAsync(request, 2, ReadMode.BoundedStaleness));
+                Assert.AreEqual(SubStatusCodes.LeaseNotFound, failure.GetSubStatus());
+            }
+            else
+            {
+                StoreResponse response = await reader.ReadStrongAsync(request, 2, ReadMode.BoundedStaleness);
+                Assert.AreEqual((int)HttpStatusCode.OK, response.Status);
+            }
+
+            CollectionAssert.AreEqual(new[] { "1s/", "2s/", "3s/", "1s/", "2s/", "3s/" }, contacted.Where(r => r != "0p/").ToArray());
+            CollectionAssert.AreEqual(primaryReportsLeaseLoss ? new[] { false, true } : new[] { false }, primaryRefreshes);
+        }
+
+        private static IAddressEnumerator OrderedReplicas()
+        {
+            Mock<IAddressEnumerator> enumerator = new();
+            enumerator.Setup(e => e.GetTransportAddresses(It.IsAny<IReadOnlyList<TransportAddressUri>>(), It.IsAny<Lazy<ConcurrentDictionary<TransportAddressUri, bool>>>(), It.IsAny<bool>()))
+                .Returns<IReadOnlyList<TransportAddressUri>, Lazy<ConcurrentDictionary<TransportAddressUri, bool>>, bool>((addresses, _, _) => addresses.OrderBy(a => a.Uri.AbsoluteUri, StringComparer.Ordinal));
+            return enumerator.Object;
+        }
+
+        private static StoreResponse CreateGoneResponse(SubStatusCodes code) => new StoreResponse
+        {
+            Status = (int)HttpStatusCode.Gone,
+            Headers = new DictionaryNameValueCollection { [WFConstants.BackendHeaders.SubStatus] = ((int)code).ToString(CultureInfo.InvariantCulture) }
+        };
+
+        private static StoreResponse CreateHealthyPrimaryResponse()
+        {
+            StoreResponse ok = CreateSuccessResponse(1);
+            ok.Headers[WFConstants.BackendHeaders.LocalLSN] = "100";
+            ok.Headers[WFConstants.BackendHeaders.QuorumAckedLocalLSN] = "100";
+            ok.Headers[WFConstants.BackendHeaders.CurrentReplicaSetSize] = "2";
+            return ok;
+        }
+
         [TestMethod]
         [Owner("cosmosdbcomputeteam")]
         public async Task ValidatesReadMultipleReplicaAsyncExcludesGoneReplicas()
@@ -2099,11 +2247,12 @@ namespace Microsoft.Azure.Documents
         /// Get a dummy request entity.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token.</param>
+        /// <param name="operationType">Store operation to exercise.</param>
         /// <returns>Dummy request entity.</returns>
-        private static DocumentServiceRequest GetRequestEntity(CancellationToken cancellationToken = default)
+        private static DocumentServiceRequest GetRequestEntity(CancellationToken cancellationToken = default, OperationType operationType = OperationType.Read)
         {
             DocumentServiceRequest entity = DocumentServiceRequest.Create(
-                OperationType.Read,
+            operationType,
                 ResourceType.Document,
                 AuthorizationTokenType.SystemAll);
             entity.ResourceId = "1-MxAPlgMgA=";

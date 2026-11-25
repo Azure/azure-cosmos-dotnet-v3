@@ -53,6 +53,7 @@ namespace Microsoft.Azure.Documents
         /// <param name="readMode"> Read mode </param>
         /// <param name="checkMinLSN"> set minimum required session lsn </param>
         /// <param name="forceReadAll"> reads from all available replicas to gather result from readsToRead number of replicas </param>
+        /// <param name="leaseFailures">For quorum selection only: stop after two distinct replicas report lease loss.</param>
         /// <returns> ReadReplicaResult which indicates the LSN and whether Quorum was Met / Not Met etc </returns>
         public async Task<IList<ReferenceCountedDisposable<StoreResult>>> ReadMultipleReplicaAsync(
             DocumentServiceRequest entity,
@@ -62,7 +63,8 @@ namespace Microsoft.Azure.Documents
             bool useSessionToken,
             ReadMode readMode,
             bool checkMinLSN = false,
-            bool forceReadAll = false)
+            bool forceReadAll = false,
+            QuorumLeaseFailures leaseFailures = null)
         {
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
@@ -70,7 +72,7 @@ namespace Microsoft.Azure.Documents
             try
             {
                 using ReadReplicaResult readQuorumResult = await this.ReadMultipleReplicasInternalAsync(
-                    entity, includePrimary, replicaCountToRead, requiresValidLsn, useSessionToken, readMode, checkMinLSN, forceReadAll);
+                    entity, includePrimary, replicaCountToRead, requiresValidLsn, useSessionToken, readMode, checkMinLSN, forceReadAll, leaseFailures);
                 if (entity.RequestContext.PerformLocalRefreshOnGoneException &&
                     readQuorumResult.RetryWithForceRefresh &&
                     !entity.RequestContext.ForceRefreshAddressCache)
@@ -86,7 +88,8 @@ namespace Microsoft.Azure.Documents
                         useSessionToken: useSessionToken,
                         readMode: readMode,
                         checkMinLSN: false,
-                        forceReadAll: forceReadAll);
+                        forceReadAll: forceReadAll,
+                        leaseFailures: leaseFailures);
                     return readQuorumResultSecondCall.StoreResultList.GetValueAndDereference();
                 }
 
@@ -102,33 +105,33 @@ namespace Microsoft.Azure.Documents
         public async Task<ReferenceCountedDisposable<StoreResult>> ReadPrimaryAsync(
             DocumentServiceRequest entity,
             bool requiresValidLsn,
-            bool useSessionToken)
+            bool useSessionToken,
+            QuorumLeaseFailures leaseFailures = null)
         {
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
             string originalSessionToken = entity.Headers[HttpConstants.HttpHeaders.SessionToken];
             try
             {
-                using ReadReplicaResult readQuorumResult = await this.ReadPrimaryInternalAsync(
-                        entity, 
-                        requiresValidLsn, 
-                        useSessionToken, 
-                        isRetryAfterRefresh: false);
-                if (entity.RequestContext.PerformLocalRefreshOnGoneException &&
-                    readQuorumResult.RetryWithForceRefresh &&
-                    !entity.RequestContext.ForceRefreshAddressCache)
+                bool afterRefresh = false;
+                while (true)
                 {
-                    entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
-                    entity.RequestContext.ForceRefreshAddressCache = true;
-                    using ReadReplicaResult readQuorumResultSecondCall = await this.ReadPrimaryInternalAsync(
-                            entity, 
-                            requiresValidLsn, 
-                            useSessionToken,
-                            isRetryAfterRefresh: true);
-                    return StoreReader.GetStoreResultOrThrowGoneException(readQuorumResultSecondCall);
-                }
+                    if (afterRefresh || leaseFailures?.NeedsPrimaryConfirmation == true)
+                    {
+                        entity.RequestContext.ForceRefreshAddressCache = true;
+                    }
 
-                return StoreReader.GetStoreResultOrThrowGoneException(readQuorumResult);
+                    using ReadReplicaResult result = await this.ReadPrimaryInternalAsync(
+                        entity, requiresValidLsn, useSessionToken, afterRefresh, leaseFailures);
+                    if (!result.RetryWithForceRefresh)
+                    {
+                        return StoreReader.GetStoreResultOrThrowGoneException(result);
+                    }
+
+                    // An ordinary Gone can request one refresh; reaching the two-replica
+                    // threshold can request one additional, dedicated confirmation.
+                    afterRefresh = true;
+                }
             }
             finally
             {
@@ -158,6 +161,7 @@ namespace Microsoft.Azure.Documents
         /// <param name="readMode"> Read mode </param>
         /// <param name="checkMinLSN"> set minimum required session lsn </param>
         /// <param name="forceReadAll"> will read from all available replicas to put together result from readsToRead number of replicas </param>
+        /// <param name="leaseFailures">Tracks distinct lease failures across batches and local address refresh for a quorum read.</param>
         /// <returns> ReadReplicaResult which indicates the LSN and whether Quorum was Met / Not Met etc </returns>
         private async Task<ReadReplicaResult> ReadMultipleReplicasInternalAsync(DocumentServiceRequest entity,
             bool includePrimary,
@@ -165,8 +169,9 @@ namespace Microsoft.Azure.Documents
             bool requiresValidLsn,
             bool useSessionToken,
             ReadMode readMode,
-            bool checkMinLSN = false,
-            bool forceReadAll = false)
+            bool checkMinLSN,
+            bool forceReadAll,
+            QuorumLeaseFailures leaseFailures)
         {
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
@@ -335,8 +340,12 @@ namespace Microsoft.Azure.Documents
                             StoreResult.VerifyCanContinueOnException(storeResult.Exception);
                         }
 
-                        // Valid results including exceptionless failures with required valid LSN
-                        if (storeResult.IsValid
+                        if (leaseFailures != null && BarrierRequestHelper.IsGoneLeaseNotFound(storeResult))
+                        {
+                            // A returned 410/1022 is no more valid for quorum than a thrown one.
+                            leaseFailures.Record(targetUri);
+                        }
+                        else if (storeResult.IsValid
                             && (!entity.IsValidStatusCodeForExceptionlessRetry((int)storeResult.StatusCode, storeResult.SubStatusCode) || !requiresValidLsn || storeResult.LSN > 0))
                         {
                             if (requestSessionToken == null
@@ -368,7 +377,9 @@ namespace Microsoft.Azure.Documents
                     }
                 }
 
-                if (storeResultList.Count >= replicaCountToRead)
+                // Finish recording every in-flight result before handing an incomplete quorum
+                // back to QuorumReader for a dedicated primary probe. Do not repeat the sweep.
+                if (storeResultList.Count >= replicaCountToRead || leaseFailures?.NeedsPrimaryConfirmation == true)
                 {
                     return new ReadReplicaResult(false, storeResultList.GetValueAndDereference());
                 }
@@ -420,7 +431,8 @@ namespace Microsoft.Azure.Documents
             DocumentServiceRequest entity,
             bool requiresValidLsn,
             bool useSessionToken,
-            bool isRetryAfterRefresh)
+            bool isRetryAfterRefresh,
+            QuorumLeaseFailures leaseFailures)
         {
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
@@ -458,6 +470,21 @@ namespace Microsoft.Azure.Documents
 
             if (storeResult.Target.StatusCode == StatusCodes.Gone && storeResult.Target.SubStatusCode != SubStatusCodes.NameCacheIsStale)
             {
+                if (leaseFailures != null && storeResult.Target.SubStatusCode == SubStatusCodes.LeaseNotFound)
+                {
+                    if (leaseFailures.NeedsPrimaryConfirmation)
+                    {
+                        throw ServiceUnavailableException.Create(SubStatusCodes.LeaseNotFound, innerException: storeResult.Target.Exception);
+                    }
+
+                    // An ordinary primary fallback may itself be the second distinct replica.
+                    leaseFailures.Record(primaryUri);
+                    if (leaseFailures.NeedsPrimaryConfirmation)
+                    {
+                        return new ReadReplicaResult(true, new List<ReferenceCountedDisposable<StoreResult>>());
+                    }
+                }
+
                 if (isRetryAfterRefresh ||
                     !entity.RequestContext.PerformLocalRefreshOnGoneException ||
                     entity.RequestContext.ForceRefreshAddressCache)
@@ -622,6 +649,32 @@ namespace Microsoft.Azure.Documents
 
                 activity.ActivityComplete(true);
                 return response;
+            }
+        }
+
+        // Scoped to one quorum read, never shared with another request, partition or hedge.
+        internal sealed class QuorumLeaseFailures
+        {
+            private TransportAddressUri firstReplica;
+            private bool confirmationCompleted;
+
+            public bool NeedsPrimaryConfirmation { get; private set; }
+
+            public void Record(TransportAddressUri replica)
+            {
+                if (this.confirmationCompleted)
+                {
+                    return;
+                }
+
+                this.firstReplica ??= replica;
+                this.NeedsPrimaryConfirmation |= !this.firstReplica.Equals(replica);
+            }
+
+            public void CompleteConfirmation()
+            {
+                this.confirmationCompleted = true;
+                this.NeedsPrimaryConfirmation = false;
             }
         }
 

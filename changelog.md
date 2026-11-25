@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [6225](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6225) Query: Prevents hierarchical-partition-key queries from failing when a query plan contains redundant ranges fully covered by another range, including equivalent zero-padded boundaries when length-aware comparison is enabled. Errors for remaining invalid overlaps now identify the conflicting ranges.
 - [6214](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6214) Gateway V2 (thin client): Fixes requests that set an explicit session token covering multiple partition key ranges failing with 400 "Session token specified is invalid.". The token is now narrowed to the target partition key range.
+- Direct mode: When two distinct replicas report a missing lease (410/1022) during a quorum read, the SDK checks the current primary instead of repeating the replica sweep. If the primary confirms the lease is missing, regional failover can proceed without waiting for local retries.
+- [6214](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6214) GatewayV2 (thin client): Fixes requests that set an explicit session token covering multiple partition key ranges failing with 400 "Session token specified is invalid.". The token is now narrowed to the target partition key range.
 - [6210](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6210) Partition routing: Resumes partition-key range cache initialization from the last successfully read change-feed page after throttling retries are exhausted, avoiding redundant rereads from the beginning.
 
 #### Other Changes
