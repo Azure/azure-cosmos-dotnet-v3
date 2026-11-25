@@ -91,8 +91,12 @@ do
         sleep 10
 done
 
-# ---------- 2) ADDITIONAL SCENARIOS DIRECT-ONLY ----------
-if [ "${DIRECTMODE_ENABLED:-false}" = true ]; then
+# ---------- 2) ADDITIONAL SCENARIOS (DIRECT + THINCLIENT) ----------
+# ThinClient is a Gateway-mode transport, but functionally supports the same
+# item/query/telemetry operations as Direct, so we run the extended workload
+# set for both modes to get comparable coverage. Gateway-only runs are
+# intentionally left out to keep the loop.sh cadence short.
+if [ "${DIRECTMODE_ENABLED:-false}" = true ] || [ "${THINCLIENT_ENABLED:-false}" = true ]; then
     # Client telemetry disabled ReadStreamExistsV3
     dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 $MODE_FLAGS --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT $AUTH_FLAGS  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
     sleep 10 #Wait
