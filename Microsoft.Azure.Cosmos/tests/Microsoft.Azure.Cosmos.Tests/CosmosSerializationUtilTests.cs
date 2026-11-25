@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System.IO;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
@@ -16,6 +17,29 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class CosmosSerializationUtilTests
     {
+        [TestMethod]
+        [DataRow("{\"value\":\"SGVsbG8gV29ybGQhSGVsbG8gV29ybGQ=\"}", (int)JsonWriteOptions.EnableBase64Strings)]
+        [DataRow("[1000,1001,1002,1003,1004,1005,1006,1007]", (int)JsonWriteOptions.EnableNumberArrays)]
+        [DataRow("{\"value\":18446744073709551615}", (int)JsonWriteOptions.EnableUInt64Values)]
+        [DataRow("{\"base64\":\"SGVsbG8gV29ybGQhSGVsbG8gV29ybGQ=\",\"numbers\":[1000,1001,1002,1003,1004,1005,1006,1007],\"uint64\":18446744073709551615}",
+            (int)(JsonWriteOptions.EnableBase64Strings | JsonWriteOptions.EnableNumberArrays | JsonWriteOptions.EnableUInt64Values))]
+        public void ConvertToText_PreservesBinaryFeatureValues(string json, int writeOptions)
+        {
+            byte[] text = Encoding.UTF8.GetBytes(json);
+            IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary, (JsonWriteOptions)writeOptions);
+            JsonReader.Create(text).WriteAll(binaryWriter);
+
+            IJsonWriter legacyWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+            JsonReader.Create(text).WriteAll(legacyWriter);
+            CollectionAssert.AreNotEqual(legacyWriter.GetResult().ToArray(), binaryWriter.GetResult().ToArray());
+
+            using Stream converted = CosmosSerializationUtil.ConvertToStreamUsingJsonSerializationFormat(
+                binaryWriter.GetResult(),
+                JsonSerializationFormat.Text);
+            using StreamReader reader = new StreamReader(converted);
+            Assert.AreEqual(json, reader.ReadToEnd());
+        }
+
         [TestMethod]
         public void GetStringWithPropertyNamingPolicy_CamelCase()
         {

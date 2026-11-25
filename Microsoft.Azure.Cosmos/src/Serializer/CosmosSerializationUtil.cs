@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return namingPolicy switch
             {
-                CosmosPropertyNamingPolicy.CamelCase => CosmosSerializationUtil.camelCaseNamingStrategy.GetPropertyName(name, false),
+                CosmosPropertyNamingPolicy.CamelCase => camelCaseNamingStrategy.GetPropertyName(name, false),
                 CosmosPropertyNamingPolicy.Default => name,
                 _ => throw new NotImplementedException("Unsupported CosmosPropertyNamingPolicy value"),
             };
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
 
                     if (targetContent != null && targetContent.Length > 0)
                     {
-                        return CosmosSerializationUtil.ConvertToStreamUsingJsonSerializationFormat(
+                        return ConvertToStreamUsingJsonSerializationFormat(
                             targetContent,
                             targetSerializationFormat);
                     }
