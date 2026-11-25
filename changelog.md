@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- [6135](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6135) Diagnostics: Fixes misspelled sub-status code names in `CosmosDiagnostics` and the OpenTelemetry error type attribute, for example `ThottleDueToSplit` is now reported as `ThrottleDueToSplit`. Filters or alerts that match one of the misspelled names need to use the corrected name.
+
 #### Bugs Fixed
 
 - [6225](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6225) Query: Prevents hierarchical-partition-key queries from failing when a query plan contains redundant ranges fully covered by another range, including equivalent zero-padded boundaries when length-aware comparison is enabled. Errors for remaining invalid overlaps now identify the conflicting ranges.
