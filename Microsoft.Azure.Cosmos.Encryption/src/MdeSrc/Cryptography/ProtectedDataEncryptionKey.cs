@@ -95,6 +95,54 @@ namespace Microsoft.Data.Encryption.Cryptography
             EncryptedValue = encryptedKey;
         }
 
+        /// <summary>
+        /// Internal constructor that accepts pre-computed root key bytes, bypassing the synchronous
+        /// <see cref="Encryption.Cryptography.KeyEncryptionKey.DecryptEncryptionKey"/> call.
+        /// Used by the background refresh worker to build a PDEK from async-resolved key material.
+        /// </summary>
+        internal ProtectedDataEncryptionKey(string name, KeyEncryptionKey keyEncryptionKey, byte[] encryptedKey, byte[] rootKey)
+            : base(name, rootKey)
+        {
+            name.ValidateNotNullOrWhitespace(nameof(name));
+            keyEncryptionKey.ValidateNotNull(nameof(keyEncryptionKey));
+
+            KeyEncryptionKey = keyEncryptionKey;
+            EncryptedValue = encryptedKey;
+        }
+
+        /// <summary>
+        /// Directly stores a <see cref="ProtectedDataEncryptionKey"/> in the static cache with pre-computed
+        /// root key bytes, replacing any existing entry. Used by the background refresh worker for
+        /// proactive cache warming before TTL expiry.
+        /// </summary>
+        internal static void SetInCache(string name, KeyEncryptionKey keyEncryptionKey, byte[] encryptedKey, byte[] rootKey)
+        {
+            name.ValidateNotNullOrWhitespace(nameof(name));
+            keyEncryptionKey.ValidateNotNull(nameof(keyEncryptionKey));
+            encryptedKey.ValidateNotNullOrEmpty(nameof(encryptedKey));
+            rootKey.ValidateNotNullOrEmpty(nameof(rootKey));
+
+            var cacheKey = Tuple.Create(name, keyEncryptionKey, encryptedKey.ToHexString());
+            var pdek = new ProtectedDataEncryptionKey(name, keyEncryptionKey, encryptedKey, rootKey);
+            encryptionKeyCache.Set(cacheKey, pdek);
+        }
+
+        /// <summary>
+        /// Evicts the <see cref="ProtectedDataEncryptionKey"/> identified by the (name, KEK, encrypted key) triple
+        /// from the static cache. Used by the background refresh worker to invalidate a PDEK when the
+        /// underlying KEK has been revoked (403 from Key Vault), forcing the next hot-path access to
+        /// re-resolve the KEK and observe the revocation.
+        /// </summary>
+        internal static void RemoveFromCache(string name, KeyEncryptionKey keyEncryptionKey, byte[] encryptedKey)
+        {
+            name.ValidateNotNullOrWhitespace(nameof(name));
+            keyEncryptionKey.ValidateNotNull(nameof(keyEncryptionKey));
+            encryptedKey.ValidateNotNullOrEmpty(nameof(encryptedKey));
+
+            var cacheKey = Tuple.Create(name, keyEncryptionKey, encryptedKey.ToHexString());
+            encryptionKeyCache.Remove(cacheKey);
+        }
+
         private static byte[] GenerateNewColumnEncryptionKey(KeyEncryptionKey masterKey)
         {
             byte[] plainTextColumnEncryptionKey = new byte[32];
