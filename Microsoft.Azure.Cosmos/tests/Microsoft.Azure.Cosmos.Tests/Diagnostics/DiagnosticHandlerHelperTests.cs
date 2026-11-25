@@ -59,48 +59,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             Assert.AreEqual(diagnosticHandlerHelper1, diagnosticHandlerHelper2, "Not Singleton");
         }
 
-        [TestMethod]
-        public async Task RefreshTestAsync()
-        {
-            // Get default instance of DiagnosticsHandlerHelper with client telemetry disabled (default)
-            DiagnosticsHandlerHelper diagnosticHandlerHelper1 = DiagnosticsHandlerHelper.GetInstance();
-            await Task.Delay(10000); // warm up to make sure there is at least one entry in the history
-            Assert.IsNotNull(diagnosticHandlerHelper1.GetDiagnosticsSystemHistory());
-            Assert.IsNull(diagnosticHandlerHelper1.GetClientTelemetrySystemHistory());
-            Assert.IsTrue(diagnosticHandlerHelper1.GetDiagnosticsSystemHistory().Values.Count > 0);
-            int countBeforeRefresh = diagnosticHandlerHelper1.GetDiagnosticsSystemHistory().Values.Count;
-
-            FieldInfo TelemetrySystemUsageRecorderField1 = typeof(DiagnosticsHandlerHelper).GetField("TelemetrySystemUsageRecorder",
-                            BindingFlags.Static |
-                            BindingFlags.NonPublic);
-            Assert.IsNull(TelemetrySystemUsageRecorderField1.GetValue(null));
-
-            // Refresh instance of DiagnosticsHandlerHelper with client telemetry enabled
-            DiagnosticsHandlerHelper.Refresh(isClientTelemetryEnabled: true);
-            DiagnosticsHandlerHelper diagnosticHandlerHelper2 = DiagnosticsHandlerHelper.GetInstance();
-            Assert.IsNotNull(diagnosticHandlerHelper2.GetDiagnosticsSystemHistory());
-            int countAfterRefresh = diagnosticHandlerHelper2.GetDiagnosticsSystemHistory().Values.Count;
-
-            Assert.IsTrue(countBeforeRefresh <= countAfterRefresh, "After Refresh count should be greater than or equal to before refresh count");
-            Assert.AreNotEqual(diagnosticHandlerHelper1, diagnosticHandlerHelper2);
-
-            await Task.Delay(5000); // warm up to make sure there is at least one entry in the history
-            Assert.IsNotNull(diagnosticHandlerHelper2.GetClientTelemetrySystemHistory());
-
-            Assert.IsTrue(diagnosticHandlerHelper2.GetClientTelemetrySystemHistory().Values.Count > 0);
-
-            // Refresh instance of DiagnosticsHandlerHelper with client telemetry disabled
-            DiagnosticsHandlerHelper.Refresh(isClientTelemetryEnabled: false);
-            DiagnosticsHandlerHelper diagnosticHandlerHelper3 = DiagnosticsHandlerHelper.GetInstance();
-            Assert.IsNotNull(diagnosticHandlerHelper3.GetDiagnosticsSystemHistory());
-            Assert.IsNull(diagnosticHandlerHelper3.GetClientTelemetrySystemHistory());
-
-            FieldInfo TelemetrySystemUsageRecorderField3 = typeof(DiagnosticsHandlerHelper).GetField("TelemetrySystemUsageRecorder",
-                            BindingFlags.Static |
-                            BindingFlags.NonPublic);
-            Assert.IsNull(TelemetrySystemUsageRecorderField3.GetValue(null));
-        }
-
         /// <summary>
         /// Regression test: the "System Info" (CPU/memory) datum must be attached to the request
         /// diagnostics on BOTH the success and the failure path. Previously it was only added after a
@@ -112,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         public async Task SystemInfoIsCapturedOnSuccessAndFailurePathsAsync()
         {
             // Ensure a clean, started monitor and wait until it has at least one system-usage sample so
-            // GetDiagnosticsSystemHistory() returns non-null (mirrors the RefreshTestAsync warm-up).
+            // GetDiagnosticsSystemHistory() returns non-null.
             DiagnosticHandlerHelperTests.ResetDiagnosticsHandlerHelper();
             await DiagnosticHandlerHelperTests.WaitForDiagnosticsSystemHistoryAsync();
 

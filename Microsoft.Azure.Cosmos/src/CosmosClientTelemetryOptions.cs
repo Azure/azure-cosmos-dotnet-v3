@@ -10,18 +10,6 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosClientTelemetryOptions
     {
         /// <summary>
-        /// Disable sending telemetry data to Microsoft, <see cref="Microsoft.Azure.Cosmos.CosmosThresholdOptions"/> is not applicable for this. 
-        /// </summary>
-        /// <remarks>This feature has to be enabled at 2 places:
-        /// <list type="bullet">
-        /// <item>Opt-in from portal to subscribe for this feature.</item>
-        /// <item>Setting this property to false, to enable it for a particular client instance.</item>
-        /// </list>
-        /// </remarks>
-        /// <value>true</value>
-        public bool DisableSendingMetricsToService { get; set; } = true;
-
-        /// <summary>
         /// This method enable/disable generation of operation level <see cref="System.Diagnostics.Activity"/> if listener is subscribed to the Source Name <i>"Azure.Cosmos.Operation"</i>(to capture operation level traces) 
         /// and <i>"Azure-Cosmos-Operation-Request-Diagnostics"</i>(to capture events with request diagnostics JSON)
         /// </summary>

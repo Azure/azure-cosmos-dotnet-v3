@@ -130,9 +130,6 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Enable Distributed Tracing")]
         public bool EnableDistributedTracing { get; set; } = false;
 
-        [Option(Required = false, HelpText = "Client Telemetry Schedule in Seconds")]
-        public int  TelemetryScheduleInSec { get; set; }
-
         [Option(Required = false, HelpText = "Endpoint to publish results to")]
         public string ResultsEndpoint { get; set; }
 
@@ -161,9 +158,6 @@ namespace CosmosBenchmark
 
         [Option(Required = false, HelpText = "Application Insights connection string")]
         public string AppInsightsConnectionString { get; set; }
-
-        [Option(Required = false, HelpText = "Enable Client Telemetry Feature in SDK. Make sure you enable it from the portal also.")]
-        public bool EnableTelemetry { get; set; } = false;
 
         [Option(Required = false, HelpText = "List of comma separated preferred regions.")]
         public string ApplicationPreferredRegions { get; set; } = null;
@@ -235,12 +229,6 @@ namespace CosmosBenchmark
 
         internal Microsoft.Azure.Cosmos.CosmosClient CreateCosmosClient()
         {
-            // Overwrite the default timespan if configured
-            if(this.TelemetryScheduleInSec > 0)
-            {
-                ClientTelemetryOptions.DefaultIntervalForTelemetryJob = TimeSpan.FromSeconds(this.TelemetryScheduleInSec);
-            }
-
             Microsoft.Azure.Cosmos.CosmosClientOptions clientOptions = new Microsoft.Azure.Cosmos.CosmosClientOptions()
             {
                 ApplicationName = this.GetUserAgentPrefix(),
@@ -250,7 +238,6 @@ namespace CosmosBenchmark
                 ConnectionMode = (this.IsThinClientEnabled || this.IsGatewayModeEnabled) ? Microsoft.Azure.Cosmos.ConnectionMode.Gateway: Microsoft.Azure.Cosmos.ConnectionMode.Direct,
                 CosmosClientTelemetryOptions = new Microsoft.Azure.Cosmos.CosmosClientTelemetryOptions()
                 {
-                    DisableSendingMetricsToService = !this.EnableTelemetry,
                     DisableDistributedTracing = !this.EnableDistributedTracing
                 },
             };

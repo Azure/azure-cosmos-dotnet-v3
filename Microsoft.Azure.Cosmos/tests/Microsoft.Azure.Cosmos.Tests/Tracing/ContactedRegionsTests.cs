@@ -67,18 +67,18 @@
         }
 
         [TestMethod]
-        public void ContactedRegionsWithNameForClientTelemetryTest()
+        public void ContactedRegionsWithNameForOpenTelemetryTest()
         {
             CosmosDiagnostics diagnostics = new CosmosTraceDiagnostics(this.CreateTestTraceTree());
 
-            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(diagnostics.GetContactedRegions());
+            string regionsContacted = OpenTelemetryHelper.GetContactedRegions(diagnostics.GetContactedRegions());
             Assert.IsNotNull(regionsContacted);
             Assert.AreEqual("Central US,Central India,East US 2,France Central", regionsContacted);
 
         }
 
         [TestMethod]
-        public void ContactedRegionWithNameForClientTelemetryTest()
+        public void ContactedRegionWithNameForOpenTelemetryTest()
         {
             Trace trace;
             using (trace = Trace.GetRootTrace("Root Trace", TraceComponent.Unknown, TraceLevel.Info))
@@ -91,7 +91,7 @@
 
             CosmosDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
 
-            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(diagnostics.GetContactedRegions());
+            string regionsContacted = OpenTelemetryHelper.GetContactedRegions(diagnostics.GetContactedRegions());
             Assert.IsNotNull(regionsContacted);
             Assert.AreEqual("France Central", regionsContacted);
         }

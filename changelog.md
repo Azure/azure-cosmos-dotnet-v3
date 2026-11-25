@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Breaking Changes
 
+- The SDK no longer collects or sends client telemetry to the Cosmos DB telemetry service. `CosmosClientTelemetryOptions.DisableSendingMetricsToService` has been removed; remove assignments to this property when upgrading. Request diagnostics, distributed tracing, and separately enabled OpenTelemetry metrics remain available.
+
 #### Bugs Fixed
 
 - [6225](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6225) Query: Prevents hierarchical-partition-key queries from failing when a query plan contains redundant ranges fully covered by another range, including equivalent zero-padded boundaries when length-aware comparison is enabled. Errors for remaining invalid overlaps now identify the conflicting ranges.
