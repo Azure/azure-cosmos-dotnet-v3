@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
             SupportedSerializationFormats formats,
             SupportedSerializationFeatures features)
         {
-            string formatsText = formats.ToString().Replace(", ", ",");
+            string formatsText = formats.ToString();
 
             if ((formats & SupportedSerializationFormats.CosmosBinary) == 0
                 || features == SupportedSerializationFeatures.None)

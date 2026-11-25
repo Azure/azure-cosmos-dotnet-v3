@@ -17,12 +17,12 @@ namespace Microsoft.Azure.Cosmos
         [DataRow(null, null, "JsonText,CosmosBinary+Base64Strings+NumberArrays+UInt64")]
         [DataRow((int)SupportedSerializationFormats.JsonText, null, "JsonText")]
         [DataRow((int)SupportedSerializationFormats.CosmosBinary, null, "CosmosBinary+Base64Strings+NumberArrays+UInt64")]
-        [DataRow((int)(SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow), null, "CosmosBinary+Base64Strings+NumberArrays+UInt64,HybridRow")]
-        [DataRow(null, (int)SupportedSerializationFeatures.None, "JsonText,CosmosBinary")]
-        [DataRow(null, (int)SupportedSerializationFeatures.NumberArrays, "JsonText,CosmosBinary+NumberArrays")]
+        [DataRow((int)(SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow), null, "CosmosBinary+Base64Strings+NumberArrays+UInt64, HybridRow")]
+        [DataRow(null, (int)SupportedSerializationFeatures.None, "JsonText, CosmosBinary")]
+        [DataRow(null, (int)SupportedSerializationFeatures.NumberArrays, "JsonText, CosmosBinary+NumberArrays")]
         [DataRow((int)SupportedSerializationFormats.CosmosBinary, (int)SupportedSerializationFeatures.None, "CosmosBinary")]
         [DataRow((int)SupportedSerializationFormats.CosmosBinary, (int)SupportedSerializationFeatures.UInt64, "CosmosBinary+UInt64")]
-        [DataRow((int)(SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow), (int)(SupportedSerializationFeatures.Base64Strings | SupportedSerializationFeatures.NumberArrays), "CosmosBinary+Base64Strings+NumberArrays,HybridRow")]
+        [DataRow((int)(SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow), (int)(SupportedSerializationFeatures.Base64Strings | SupportedSerializationFeatures.NumberArrays), "CosmosBinary+Base64Strings+NumberArrays, HybridRow")]
         [DataRow((int)SupportedSerializationFormats.JsonText, (int)SupportedSerializationFeatures.UInt64, "JsonText")]
         public void QueryAdvertisesSupportedSerializationFeatures(
             int? formats,

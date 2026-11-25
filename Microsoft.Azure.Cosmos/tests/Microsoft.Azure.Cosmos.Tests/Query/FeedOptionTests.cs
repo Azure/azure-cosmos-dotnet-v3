@@ -63,13 +63,13 @@ namespace Microsoft.Azure.Cosmos.Query
 
         [TestMethod]
         [DataRow(null, null, "JsonText,CosmosBinary+Base64Strings+NumberArrays+UInt64")]
-        [DataRow((int)(SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow), null, "CosmosBinary+Base64Strings+NumberArrays+UInt64,HybridRow")]
+        [DataRow((int)(SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow), null, "CosmosBinary+Base64Strings+NumberArrays+UInt64, HybridRow")]
         [DataRow((int)SupportedSerializationFormats.JsonText, null, "JsonText")]
-        [DataRow(null, (int)SupportedSerializationFeatures.None, "JsonText,CosmosBinary")]
-        [DataRow(null, (int)SupportedSerializationFeatures.NumberArrays, "JsonText,CosmosBinary+NumberArrays")]
+        [DataRow(null, (int)SupportedSerializationFeatures.None, "JsonText, CosmosBinary")]
+        [DataRow(null, (int)SupportedSerializationFeatures.NumberArrays, "JsonText, CosmosBinary+NumberArrays")]
         [DataRow((int)SupportedSerializationFormats.CosmosBinary, (int)SupportedSerializationFeatures.None, "CosmosBinary")]
         [DataRow((int)SupportedSerializationFormats.CosmosBinary, (int)SupportedSerializationFeatures.UInt64, "CosmosBinary+UInt64")]
-        [DataRow((int)(SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow), (int)(SupportedSerializationFeatures.Base64Strings | SupportedSerializationFeatures.NumberArrays), "CosmosBinary+Base64Strings+NumberArrays,HybridRow")]
+        [DataRow((int)(SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow), (int)(SupportedSerializationFeatures.Base64Strings | SupportedSerializationFeatures.NumberArrays), "CosmosBinary+Base64Strings+NumberArrays, HybridRow")]
         [DataRow((int)SupportedSerializationFormats.JsonText, (int)SupportedSerializationFeatures.UInt64, "JsonText")]
         public async Task TestSupportedSerializationFormats(int? formats, int? features, string expected)
         {
