@@ -251,6 +251,11 @@ namespace Microsoft.Azure.Cosmos
         public const string USNatEast = "USNat East";
 
         /// <summary>
+        /// Name of the Azure USNat North region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string USNatNorth = "USNat North";
+
+        /// <summary>
         /// Name of the Azure USNat West region in the Azure Cosmos DB service.
         /// </summary>
         public const string USNatWest = "USNat West";

@@ -523,5 +523,10 @@ namespace Microsoft.Azure.Documents
         /// Name of the Azure Netherlands Northeast region in the Azure Cosmos DB service.
         /// </summary>
         public const string NetherlandsNortheast = "Netherlands Northeast";
+
+        /// <summary>
+        /// Name of the Azure USNat North region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string USNatNorth = "USNat North";
     }
 }
