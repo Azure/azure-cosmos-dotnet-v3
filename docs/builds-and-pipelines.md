@@ -73,6 +73,7 @@ The gate every PR to `main` / `releases/*` must pass. It excludes doc-only chang
 | [`build-preview.yml`](../templates/build-preview.yml) | The PREVIEW-flag build + core and Encryption/Custom companion preview unit tests + encryption/benchmark surface-area parity. |
 | [`build-benchmark.yml`](../templates/build-benchmark.yml) | The [benchmark tool](../Microsoft.Azure.Cosmos.Samples/Tools/Benchmark) builds (GA + preview). |
 | [`build-thinclient.yml`](../templates/build-thinclient.yml) | Thin-client protocol emulator tests. |
+| [`build-linux-queryplaninterop.yml`](../templates/build-linux-queryplaninterop.yml) | Linux native query-plan ABI, routing and baseline tests, plus native-library loading in supported runtime images. |
 | [`build-test-aad.yml`](../templates/build-test-aad.yml) | **Live-account AAD (Entra ID) tests** — see [that section](#live-account-aad-tests-multiregionaad). Self-skips until its service connection is set. |
 
 **External contributors:** the CI won't auto-run for forked PRs; a maintainer starts it with an
@@ -182,6 +183,59 @@ source-reference parity builds do not execute service tests.
 Buckets 1 and 2 exist purely to **parallelize** the large emulator suite and shorten PR feedback
 time. Every emulator job pulls in `emulator-setup.yml` and sets
 `AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true`.
+
+### Linux native query planning (`build-linux-queryplaninterop.yml`)
+
+Native planner, ABI, routing and baseline tests run on native x64 and QEMU-emulated
+ARM64, including `CosmosTargetsInteropPublishTests` and its SDK pack/publish/restore
+subprocesses in both legs. ARM64 uses ARM64 binaries under emulation on an x64 host,
+not native ARM64 hardware. The test container receives `QPIARCH`; the native-planning
+sentinel checks `RuntimeInformation.ProcessArchitecture` against it so an accidental
+x64 test process cannot satisfy an ARM64 run.
+
+Both emulated lanes register the digest-pinned `Arm64EmulatorImage` rather than
+Ubuntu 22.04's older QEMU package, replacing only the ARM64 binfmt handler.
+Older QEMU versions have known .NET restore/JIT failures (see
+[dotnet/sdk#43405](https://github.com/dotnet/sdk/issues/43405)); updating the emulator
+preserves ARM64 coverage without disabling NuGet auditing or runtime memory protections.
+The installed emulator version is printed in the job log.
+
+The ARM64 test container mounts the host's restored NuGet global-packages directory
+at the same path and passes it through `NUGET_PACKAGES`, avoiding a second cold
+package download while keeping auditing enabled. SDK commands in the packaging
+fixture use a five-minute default timeout on both architectures; pack has an explicit
+ten-minute limit. Pack uses normal MSBuild
+verbosity to show restore/build progress without a diagnostic environment dump.
+The fixture varies only `PackageVersion` for cache isolation, preserving the SDK's
+normal assembly identity so the initial AnyCPU build can be reused.
+Source-reference publish probes also set `AppendRuntimeIdentifierToOutputPath=false`
+to reuse the managed library outputs instead of rebuilding them under each RID.
+The requested `RuntimeIdentifier` is retained for native-asset selection, which the
+existing publish assertions continue to verify.
+Timed-out commands terminate their process tree and report captured stdout/stderr.
+The fixture also forwards both child streams as they arrive. Since MSTest buffers
+test-console output, CI sets `COSMOS_TEST_DOTNET_OUTPUT_LOG` to a file in the mounted
+results directory and tails it from outside the test process. Pack/publish progress
+therefore reaches the job console before the command or test finishes, while full
+stdout/stderr remain available for assertions and timeout diagnostics.
+
+The forwarding mechanism can be checked on Windows x64 without Linux or QEMU:
+
+```powershell
+$env:COSMOS_TEST_DOTNET_OUTPUT_LOG = Join-Path $env:TEMP 'cosmos-dotnet-commands.log'
+New-Item -ItemType File -Path $env:COSMOS_TEST_DOTNET_OUTPUT_LOG -Force | Out-Null
+dotnet test Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Microsoft.Azure.Cosmos.Tests.csproj --framework net6.0 --configuration Debug --filter 'FullyQualifiedName~CosmosTargetsInteropPublishTests.CommandTimeoutPreservesCapturedOutput'
+Remove-Item Env:\COSMOS_TEST_DOTNET_OUTPUT_LOG
+```
+
+In another PowerShell terminal, run
+`Get-Content (Join-Path $env:TEMP 'cosmos-dotnet-commands.log') -Wait`.
+The probe's stdout/stderr markers must appear while it is still running, before
+the expected timeout is caught and the test passes.
+
+The runner checks the test-command exit code and requires a nonempty TRX file
+before inspecting the native-planning sentinels. An aborted run or missing results
+must not be reported as a native-planner assertion failure.
 
 ### Emulator setup (`emulator-setup.yml`)
 

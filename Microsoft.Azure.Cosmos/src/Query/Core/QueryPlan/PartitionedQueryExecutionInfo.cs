@@ -6,11 +6,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
     using Constants = Documents.Constants;
 
     internal sealed class PartitionedQueryExecutionInfo
     {
+        private List<Range<string>> queryRanges;
+
         public PartitionedQueryExecutionInfo()
         {
             this.Version = Constants.PartitionedQueryExecutionInfo.CurrentVersion;
@@ -31,10 +34,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         }
 
         [JsonProperty(Constants.Properties.QueryRanges)]
-        public List<Documents.Routing.Range<string>> QueryRanges
+        public List<Range<string>> QueryRanges
         {
-            get;
-            set;
+            get => this.queryRanges;
+            set => this.queryRanges = QueryRangeUtils.RemoveContainedRanges(
+                value,
+                useLengthAwareComparer: ConfigurationManager.IsLengthAwareRangeComparatorEnabled());
         }
 
         // Change to the below after Direct package upgrade

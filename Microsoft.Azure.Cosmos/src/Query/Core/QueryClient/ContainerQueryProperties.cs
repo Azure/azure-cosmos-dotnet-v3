@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     {
         public ContainerQueryProperties(
             string resourceId,
+            string etag,
             IReadOnlyList<Range<string>> effectivePartitionKeyRanges,
             PartitionKeyDefinition partitionKeyDefinition,
             Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy,
@@ -22,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             IEnumerable<ISecondaryIndexMetadata> globalSecondaryIndexes)
         {
             this.ResourceId = resourceId;
+            this.ETag = etag;
             this.EffectiveRangesForPartitionKey = effectivePartitionKeyRanges;
             this.PartitionKeyDefinition = partitionKeyDefinition;
             this.VectorEmbeddingPolicy = vectorEmbeddingPolicy;
@@ -31,6 +33,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         }
 
         public string ResourceId { get; }
+
+        public string ETag { get; }
 
         //A PartitionKey has one range when it is a full PartitionKey value.
         //It can span many  it is a prefix PartitionKey for a sub-partitioned container.

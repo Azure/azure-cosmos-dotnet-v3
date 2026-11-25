@@ -20,12 +20,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Features Added
 
 - [6219](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6219) Region Availability: Adds `Regions.USNatNorth` for the USNat North region, and upgrades the Microsoft.Azure.Cosmos.Direct dependency to 3.44.5.
+- [6191](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6191) Query: Adds `CosmosClientOptions.FullTextStatisticsCacheMaxAge` to opt in to caching the full-text statistics used by Global-scoped hybrid search queries. While the cached document, word, and term counts are younger than the configured age (at least two minutes), queries skip the cross-partition statistics request, reducing latency and request charge. Reused statistics may not reflect recent writes. The cache is disabled by default. `CosmosClientOptions.FullTextStatisticsCacheMaxEntries` (default 256) limits the number of cached counts per client.
 
 #### Breaking Changes
 
 #### Bugs Fixed
 
+- [6225](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6225) Query: Prevents hierarchical-partition-key queries from failing when a query plan contains redundant ranges fully covered by another range, including equivalent zero-padded boundaries when length-aware comparison is enabled. Errors for remaining invalid overlaps now identify the conflicting ranges.
+- [6214](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6214) Gateway V2 (thin client): Fixes requests that set an explicit session token covering multiple partition key ranges failing with 400 "Session token specified is invalid.". The token is now narrowed to the target partition key range.
+- [6210](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6210) Partition routing: Resumes partition-key range cache initialization from the last successfully read change-feed page after throttling retries are exhausted, avoiding redundant rereads from the beginning.
+
 #### Other Changes
+
+- Direct: Builds and bundles the managed transport implementation from SDK source instead of the separate Direct package, and obtains Windows native query planning from Microsoft.Azure.Cosmos.ServiceInterop 1.0.6. Existing Linux query-planning support is unchanged.
+- Direct: Aligns the bundled transport library's file and informational versions with its existing assembly version, 3.44.4.0, independent of SDK release versions.
 
 ### <a name="3.65.0-preview.0"/> [3.65.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.65.0-preview.0) - 2026-11-06
 
