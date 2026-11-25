@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// The partition key definition version 1 uses a hash function that computes
         /// hash based on the first 100 bytes of the partition key. This can cause
         /// conflicts for documents with partition keys greater than 100 bytes.
-        /// 
+        ///
         /// The partition key definition version 2 uses a hash function that computes
         /// hash based on the first 2 KB of the partition key.
         /// </summary>
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Sets the time to live base timestamp property path.
         /// </summary>
-        /// <param name="propertyPath">This property should be only present when DefaultTimeToLive is set. When this property is present, time to live for a item is decided based on the value of this property in an item. By default, time to live is based on the _ts property in an item. Example: /property</param>
+        /// <param name="propertyPath">This property should be only present when DefaultTimeToLive is set. When this property is present, time to live for an item is decided based on the value of this property in an item. By default, time to live is based on the _ts property in an item. Example: /property</param>
         /// <returns>An instance of the current Fluent builder.</returns>
         /// <seealso cref="ContainerProperties.TimeToLivePropertyPath"/>
         public T WithTimeToLivePropertyPath(string propertyPath)
