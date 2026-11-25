@@ -49,5 +49,12 @@ namespace Microsoft.Azure.Cosmos
 
             return normalizedRegionName;
         }
+
+        internal static string SanitizeRegionName(string regionName)
+        {
+            return string.IsNullOrEmpty(regionName)
+                ? string.Empty
+                : regionName.Replace(" ", string.Empty).ToLowerInvariant();
+        }
     }
 }
