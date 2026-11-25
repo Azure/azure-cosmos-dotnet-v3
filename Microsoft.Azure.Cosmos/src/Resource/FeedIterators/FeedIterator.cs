@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Cosmos Result set iterator that keeps track of the continuation token when retrieving results form a query.
+    /// Cosmos Result set iterator that keeps track of the continuation token when retrieving results from a query.
     /// </summary>
     /// <example>
     /// Example on how to fully drain the query results.
