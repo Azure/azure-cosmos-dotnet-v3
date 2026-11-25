@@ -131,7 +131,7 @@
 		<ServiceInteropNative Include="$(PkgMicrosoft_Azure_Cosmos_ServiceInterop)\runtimes\win-x64\native\msvcp140.dll" />
 		<ServiceInteropNative Include="$(PkgMicrosoft_Azure_Cosmos_ServiceInterop)\runtimes\win-x64\native\vcruntime140.dll" />
 		<ServiceInteropNative Include="$(PkgMicrosoft_Azure_Cosmos_ServiceInterop)\runtimes\win-x64\native\vcruntime140_1.dll" />
-		<PackageReference Include="Microsoft.Azure.Cosmos.QueryPlanInterop.Linux" Version="[$(QueryPlanInteropLinuxVersion)]"
+		<PackageReference Include="Microsoft.Azure.Cosmos.QueryPlanInterop" Version="[$(QueryPlanInteropVersion)]"
 		                  PrivateAssets="All" ExcludeAssets="All" GeneratePathProperty="true" />
 		<PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" GeneratePathProperty="true" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
@@ -166,8 +166,9 @@
   </ItemGroup>	
 
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-		<None Include="$(PkgMicrosoft_Azure_Cosmos_QueryPlanInterop_Linux)\runtimes\linux-x64\native\libQueryPlanInterop.so" Pack="true" PackagePath="runtimes\linux-x64\native" />
-		<None Include="$(PkgMicrosoft_Azure_Cosmos_QueryPlanInterop_Linux)\runtimes\linux-arm64\native\libQueryPlanInterop.so" Pack="true" PackagePath="runtimes\linux-arm64\native" />
+		<None Include="$(PkgMicrosoft_Azure_Cosmos_QueryPlanInterop)\runtimes\linux-x64\native\libQueryPlanInterop.so" Pack="true" PackagePath="runtimes\linux-x64\native" />
+		<None Include="$(PkgMicrosoft_Azure_Cosmos_QueryPlanInterop)\runtimes\linux-arm64\native\libQueryPlanInterop.so" Pack="true" PackagePath="runtimes\linux-arm64\native" />
+		<None Include="$(PkgMicrosoft_Azure_Cosmos_QueryPlanInterop)\runtimes\win-arm64\native\Cosmos.QueryPlanInterop.dll" Pack="true" PackagePath="runtimes\win-arm64\native" />
 		<None Include="@(ServiceInteropNative)" Pack="true" PackagePath="runtimes\win-x64\native" />
 		<None Include="$(PkgMicrosoft_Azure_Cosmos_ServiceInterop)\ThirdPartyNotice.txt" Pack="true" PackagePath="ThirdPartyNotices\Microsoft.Azure.Cosmos.ServiceInterop.txt" />
 		<None Include="$(PkgMicrosoft_HybridRow)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />

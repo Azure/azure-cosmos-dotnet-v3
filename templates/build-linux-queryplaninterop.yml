@@ -39,7 +39,7 @@ parameters:
   default: 'mcr.microsoft.com/dotnet/aspnet:8.0-azurelinux3.0-distroless-extra'
 - name: UnitTestFilter
   type: string
-  default:  'FullyQualifiedName~QueryPlanInteropTests|FullyQualifiedName~QueryPartitionProviderTests|FullyQualifiedName~CosmosTargetsInteropPublishTests|FullyQualifiedName~QueryPlanBaselineTests|FullyQualifiedName~OptimisticDirectExecutionQueryBaselineTests|FullyQualifiedName~FullPipelineTests|FullyQualifiedName~PageSizeFactorForTopTests|FullyQualifiedName~QueryPlanRetrieverTests|FullyQualifiedName~PartitionRoutingHelperTest|FullyQualifiedName~SubpartitionTests|FullyQualifiedName~ClientDistributionPlanBaselineTests'
+  default:  '(FullyQualifiedName~QueryPlanInteropTests|FullyQualifiedName~QueryPartitionProviderTests|FullyQualifiedName~CosmosTargetsInteropPublishTests|FullyQualifiedName~QueryPlanBaselineTests|FullyQualifiedName~OptimisticDirectExecutionQueryBaselineTests|FullyQualifiedName~FullPipelineTests|FullyQualifiedName~PageSizeFactorForTopTests|FullyQualifiedName~QueryPlanRetrieverTests|FullyQualifiedName~PartitionRoutingHelperTest|FullyQualifiedName~SubpartitionTests|FullyQualifiedName~ClientDistributionPlanBaselineTests)&TestCategory!=Windows'
 
 jobs:
 - job: LinuxQueryPlanInterop
@@ -186,7 +186,7 @@ jobs:
         # Direct is built locally; private SDK dependencies require explicit references in this probe.
         props="$BUILD_SOURCESDIRECTORY/Directory.Build.props"
         hybridrow_version=$(sed -n 's:.*<HybridRowVersion>\(.*\)</HybridRowVersion>.*:\1:p' "$props")
-        qpi_version=$(sed -n 's:.*<QueryPlanInteropLinuxVersion>\(.*\)</QueryPlanInteropLinuxVersion>.*:\1:p' "$props")
+        qpi_version=$(sed -n 's:.*<QueryPlanInteropVersion>\(.*\)</QueryPlanInteropVersion>.*:\1:p' "$props")
         cat > "$probe/QpiRuntimeProbe.csproj" <<EOF
         <Project Sdk="Microsoft.NET.Sdk">
           <PropertyGroup>
@@ -198,7 +198,7 @@ jobs:
             <ProjectReference Include="$BUILD_SOURCESDIRECTORY/Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj" />
             <ProjectReference Include="$BUILD_SOURCESDIRECTORY/Microsoft.Azure.Cosmos/Direct/src/Microsoft.Azure.Cosmos.Direct.csproj" />
             <PackageReference Include="Microsoft.HybridRow" Version="[$hybridrow_version]" />
-            <PackageReference Include="Microsoft.Azure.Cosmos.QueryPlanInterop.Linux" Version="[$qpi_version]" />
+            <PackageReference Include="Microsoft.Azure.Cosmos.QueryPlanInterop" Version="[$qpi_version]" />
           </ItemGroup>
         </Project>
         EOF

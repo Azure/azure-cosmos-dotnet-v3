@@ -19,6 +19,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 return LinuxQueryPlanInterop.Instance;
             }
 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                && RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+                && ConfigurationManager.IsWindowsArm64QueryInteropEnabled())
+            {
+                return WindowsArm64QueryPlanInterop.Instance;
+            }
+
             return WindowsX64QueryPlanInterop.Instance;
         }
     }

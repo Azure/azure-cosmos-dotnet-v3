@@ -34,9 +34,22 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 return;
             }
 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+            {
+                if (!ConfigurationManager.IsWindowsArm64QueryInteropEnabled())
+                {
+                    Assert.Inconclusive($"Requires {ConfigurationManager.UseWindowsArm64QueryInterop}=true at process startup.");
+                }
+
+                Assert.AreSame(WindowsArm64QueryPlanInterop.Instance, QueryPlanInterop.Instance);
+                Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing(), "Windows ARM64 live tests must use native QueryPlanInterop.");
+                return;
+            }
+
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                Assert.Inconclusive("Requires Windows x64 or glibc Linux.");
+                Assert.Inconclusive("Requires Windows x64, opted-in Windows ARM64, or glibc Linux.");
             }
 
             string runtimeIdentifier = RuntimeInformation.RuntimeIdentifier;
@@ -49,6 +62,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         [TestMethod]
         [TestCategory("LinuxQueryPlanInteropLive")]
+        [TestCategory("WindowsArm64QueryPlanInteropLive")]
         public async Task TestQueryUnicodeDocumentHttpsGateway()
         {
             // Reuse the assertions without QueryTests' account-wide setup/cleanup.
@@ -57,6 +71,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         [TestMethod]
         [TestCategory("LinuxQueryPlanInteropLive")]
+        [TestCategory("WindowsArm64QueryPlanInteropLive")]
         public async Task CityCaseFoldingMatchesGatewayAsync()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)

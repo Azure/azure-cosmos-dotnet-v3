@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
     public class CosmosTargetsInteropPublishTests
     {
         private const string LinuxLibraryName = "libQueryPlanInterop.so";
+        private const string WindowsArm64LibraryName = "Cosmos.QueryPlanInterop.dll";
         private static string testProjectsRoot;
         private static string localNugetPackagePath;
         private static string packageVersion;
@@ -124,8 +125,35 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         }
 
         [TestMethod]
+        [DataRow("ARM64", null)]
+        [DataRow("AnyCPU", null)]
+        [DataRow(null, null)]
+        [DataRow("ARM64", "win-arm64")]
+        public async Task Publish_NetFramework_CopiesArm64PlannerBesideManagedAssemblies(string platformTarget, string runtimeIdentifier)
+        {
+            string projectName = $"Framework_{platformTarget ?? "ImplicitAnyCPU"}_{runtimeIdentifier ?? "NoRid"}";
+            string publishPath = await this.CreateAndPublishTestProjectAsync(
+                projectName, runtimeIdentifier, targetFramework: "net481", platformTarget: platformTarget);
+            string buildAssembly = Directory.GetFiles(
+                Path.Combine(testProjectsRoot, projectName, "bin", "Release"),
+                "Microsoft.Azure.Cosmos.Client.dll",
+                SearchOption.AllDirectories).Single();
+
+            foreach (string outputPath in new[] { Path.GetDirectoryName(buildAssembly), publishPath })
+            {
+                string[] libraries = Directory.GetFiles(outputPath, WindowsArm64LibraryName, SearchOption.AllDirectories);
+                CollectionAssert.AreEqual(
+                    new[] { Path.Combine(outputPath, WindowsArm64LibraryName) },
+                    libraries,
+                    ".NET Framework must resolve the ARM64 planner without CoreCLR's RID-aware probing.");
+            }
+        }
+
+        [TestMethod]
         [DataRow("linux-x64")]
+        [DataRow("linux-arm64")]
         [DataRow("win-x64")]
+        [DataRow("win-arm64")]
         public async Task Publish_WithSourceProjectReference_SelectsNativePayload(string runtimeIdentifier)
         {
             string publishPath = await this.CreateAndPublishTestProjectAsync(
@@ -144,7 +172,8 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
                 Assert.AreEqual(Path.Combine(publishPath, LinuxLibraryName), linuxLibraries[0]);
                 using BinaryReader reader = new BinaryReader(File.OpenRead(linuxLibraries[0]));
                 reader.BaseStream.Position = 18;
-                Assert.AreEqual((ushort)62, reader.ReadUInt16(), "Source-reference publish must include the x64 ELF library.");
+                Assert.AreEqual(runtimeIdentifier == "linux-x64" ? (ushort)62 : (ushort)183, reader.ReadUInt16(),
+                    "Source-reference publish must include the matching ELF library.");
             }
         }
 
@@ -195,20 +224,20 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
         {
             string projectPath = Path.Combine(GetRepositoryRoot(), "Microsoft.Azure.Cosmos", "src", "Microsoft.Azure.Cosmos.csproj");
             string evaluation = await RunDotnetCommandAsync(
-                $"msbuild \"{projectPath}\" -nologo -p:Configuration=Release -getProperty:PkgMicrosoft_Azure_Cosmos_ServiceInterop,PkgMicrosoft_Azure_Cosmos_QueryPlanInterop_Linux");
+                $"msbuild \"{projectPath}\" -nologo -p:Configuration=Release -getProperty:PkgMicrosoft_Azure_Cosmos_ServiceInterop,PkgMicrosoft_Azure_Cosmos_QueryPlanInterop");
             JObject properties = (JObject)JObject.Parse(evaluation)["Properties"];
             string windowsPackage = (string)properties["PkgMicrosoft_Azure_Cosmos_ServiceInterop"];
-            string linuxPackage = (string)properties["PkgMicrosoft_Azure_Cosmos_QueryPlanInterop_Linux"];
+            string linuxPackage = (string)properties["PkgMicrosoft_Azure_Cosmos_QueryPlanInterop"];
             Assert.IsFalse(string.IsNullOrEmpty(windowsPackage), "The ServiceInterop package must be restored.");
             Assert.IsFalse(string.IsNullOrEmpty(linuxPackage), "The Linux query-plan package must be restored.");
 
             using ZipArchive package = ZipFile.OpenRead(
                 Path.Combine(localNugetPackagePath, $"Microsoft.Azure.Cosmos.{packageVersion}.nupkg"));
             Assert.AreEqual(
-                7,
+                8,
                 package.Entries.Count(entry => entry.FullName.StartsWith("runtimes/", StringComparison.Ordinal)
                     && entry.FullName.Contains("/native/", StringComparison.Ordinal)),
-                "The SDK must bundle exactly five Windows DLLs and two Linux query-plan libraries.");
+                "The SDK must bundle exactly five Windows x64 DLLs, one Windows ARM64 DLL and two Linux query-plan libraries.");
 
             foreach (string dll in WindowsNativeDlls)
             {
@@ -225,6 +254,11 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
                     $"runtimes/{rid}/native/{LinuxLibraryName}",
                     Path.Combine(linuxPackage, "runtimes", rid, "native", LinuxLibraryName));
             }
+
+            AssertPackageEntryMatchesFile(
+                package,
+                $"runtimes/win-arm64/native/{WindowsArm64LibraryName}",
+                Path.Combine(linuxPackage, "runtimes", "win-arm64", "native", WindowsArm64LibraryName));
         }
 
         [TestMethod]
@@ -276,7 +310,12 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             localNugetPackagePath = packOutputDir;
         }
 
-        private async Task<string> CreateAndPublishTestProjectAsync(string projectName, string runtimeIdentifier, bool useProjectReference = false)
+        private async Task<string> CreateAndPublishTestProjectAsync(
+            string projectName,
+            string runtimeIdentifier,
+            bool useProjectReference = false,
+            string targetFramework = "net8.0",
+            string platformTarget = null)
         {
             string projectDir = Path.Combine(testProjectsRoot, projectName);
             Directory.CreateDirectory(projectDir);
@@ -301,7 +340,10 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             string sourceDependencies = useProjectReference
                 ? $@"<ProjectReference Include=""{Path.Combine(GetRepositoryRoot(), "Microsoft.Azure.Cosmos", "Direct", "src", "Microsoft.Azure.Cosmos.Direct.csproj")}"" />
     <PackageReference Include=""Microsoft.HybridRow"" Version=""[$(HybridRowVersion)]"" />
-    <PackageReference Include=""Microsoft.Azure.Cosmos.QueryPlanInterop.Linux"" Version=""[$(QueryPlanInteropLinuxVersion)]"" />"
+    <PackageReference Include=""Microsoft.Azure.Cosmos.QueryPlanInterop"" Version=""[$(QueryPlanInteropVersion)]"" ExcludeAssets=""All"" GeneratePathProperty=""true"" />
+    <Content Include=""$(PkgMicrosoft_Azure_Cosmos_QueryPlanInterop)\runtimes\{runtimeIdentifier}\native\{(runtimeIdentifier.StartsWith("win", StringComparison.Ordinal) ? WindowsArm64LibraryName : LinuxLibraryName)}""
+             Condition=""'{runtimeIdentifier}' == 'linux-x64' Or '{runtimeIdentifier}' == 'linux-arm64' Or '{runtimeIdentifier}' == 'win-arm64'""
+             Link=""{(runtimeIdentifier.StartsWith("win", StringComparison.Ordinal) ? WindowsArm64LibraryName : LinuxLibraryName)}"" CopyToOutputDirectory=""PreserveNewest"" />"
                 : string.Empty;
             string sourceVersionImport = useProjectReference
                 ? $@"<Import Project=""{Path.Combine(GetRepositoryRoot(), "Directory.Build.props")}"" />"
@@ -312,7 +354,9 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
   {sourceVersionImport}
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>{targetFramework}</TargetFramework>
+    <PlatformTarget>{platformTarget}</PlatformTarget>
+    <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
@@ -325,11 +369,75 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
 
             // Reflection exercises the packaged SDK's internal native planner without friend-assembly access.
             File.WriteAllText(programFile, @"
-if (System.Array.IndexOf(args, ""--verify-windows-query-planning"") >= 0)
+if (args.Length > 1)
 {
-    System.Environment.SetEnvironmentVariable(""AZURE_COSMOS_BYPASS_QUERY_PARSING"", ""false"");
-    System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(Microsoft.Azure.Cosmos.CosmosClient).TypeHandle);
-    var providerType = typeof(Microsoft.Azure.Cosmos.CosmosClient).Assembly.GetType(
+    throw new System.ArgumentException(""Expected a single verification mode."");
+}
+
+const string windowsArm64OptIn = ""AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_WINDOWS_ARM64"";
+string mode = args.Length == 0 ? string.Empty : args[0];
+string expectedAdapter;
+switch (mode)
+{
+    case """":
+        System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"");
+        return;
+    case ""--verify-windows-query-planning"":
+        System.Environment.SetEnvironmentVariable(windowsArm64OptIn, ""true"");
+        expectedAdapter = ""WindowsX64QueryPlanInterop"";
+        break;
+    case ""--verify-linux-query-planning"":
+    case ""--verify-linux-query-planning-fallback"":
+        System.Environment.SetEnvironmentVariable(""AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX"", ""true"");
+        expectedAdapter = ""LinuxQueryPlanInterop"";
+        break;
+    case ""--verify-windows-arm64-default"":
+        System.Environment.SetEnvironmentVariable(windowsArm64OptIn, null);
+        expectedAdapter = ""WindowsX64QueryPlanInterop"";
+        break;
+    case ""--verify-windows-arm64-disabled"":
+        System.Environment.SetEnvironmentVariable(windowsArm64OptIn, ""false"");
+        expectedAdapter = ""WindowsX64QueryPlanInterop"";
+        break;
+    case ""--verify-windows-arm64-invalid"":
+        System.Environment.SetEnvironmentVariable(windowsArm64OptIn, ""1"");
+        expectedAdapter = ""WindowsX64QueryPlanInterop"";
+        break;
+    case ""--verify-windows-arm64-query-planning"":
+    case ""--verify-windows-arm64-fallback"":
+    case ""--verify-windows-arm64-force-bypass"":
+        System.Environment.SetEnvironmentVariable(windowsArm64OptIn, ""TrUe"");
+        expectedAdapter = ""WindowsArm64QueryPlanInterop"";
+        break;
+    default:
+        throw new System.ArgumentException(""Unknown verification mode: "" + mode);
+}
+
+bool expectGateway = mode is not (""--verify-windows-query-planning""
+    or ""--verify-linux-query-planning""
+    or ""--verify-windows-arm64-query-planning"");
+System.Environment.SetEnvironmentVariable(""AZURE_COSMOS_BYPASS_QUERY_PARSING"",
+    mode == ""--verify-windows-arm64-force-bypass"" ? ""true"" : ""false"");
+System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(Microsoft.Azure.Cosmos.CosmosClient).TypeHandle);
+var sdkAssembly = typeof(Microsoft.Azure.Cosmos.CosmosClient).Assembly;
+var factory = sdkAssembly.GetType(""Microsoft.Azure.Cosmos.Query.Core.QueryPlan.QueryPlanInterop"", throwOnError: true)!;
+var instance = factory.GetProperty(""Instance"")!.GetValue(null)!;
+if (instance.GetType().Name != expectedAdapter)
+{
+    throw new System.InvalidOperationException(""Unexpected native adapter: "" + instance.GetType().Name);
+}
+
+var retriever = sdkAssembly.GetType(""Microsoft.Azure.Cosmos.Query.Core.QueryPlan.QueryPlanRetriever"", throwOnError: true)!;
+var bypass = retriever.GetMethod(""BypassQueryParsing"",
+    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!;
+if ((bool)bypass.Invoke(null, null)! != expectGateway)
+{
+    throw new System.InvalidOperationException(""Unexpected published native query-plan routing."");
+}
+
+if (!expectGateway)
+{
+    var providerType = sdkAssembly.GetType(
         ""Microsoft.Azure.Cosmos.Query.Core.QueryPlan.QueryPartitionProvider"", throwOnError: true)!;
     using var provider = (System.IDisposable)System.Activator.CreateInstance(
         providerType,
@@ -339,7 +447,7 @@ if (System.Array.IndexOf(args, ""--verify-windows-query-planning"") >= 0)
         ""{\""paths\"":[\""/pk\""],\""kind\"":\""Hash\"",\""version\"":2}"",
         getPlan.GetParameters()[1].ParameterType)!;
     string query = Newtonsoft.Json.JsonConvert.SerializeObject(
-        new { query = ""SELECT TOP 1 * FROM c WHERE c.pk = 'partition'"" });
+        new { query = ""SELECT TOP 1 * FROM c WHERE c.pk = 'partition-\u6771\u4eac\U0001f642'"" });
     var outcome = getPlan.Invoke(provider, new object?[]
     {
         query, partitionKey, null,
@@ -366,19 +474,39 @@ if (System.Array.IndexOf(args, ""--verify-windows-query-planning"") >= 0)
     }
 }
 
-bool expectGateway = System.Array.IndexOf(args, ""--verify-linux-query-planning-fallback"") >= 0;
-if (expectGateway || System.Array.IndexOf(args, ""--verify-linux-query-planning"") >= 0)
+if (mode.StartsWith(""--verify-windows-arm64-"", System.StringComparison.Ordinal))
 {
-    System.Environment.SetEnvironmentVariable(""AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX"", ""true"");
-    System.Environment.SetEnvironmentVariable(""AZURE_COSMOS_BYPASS_QUERY_PARSING"", ""false"");
-    System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(Microsoft.Azure.Cosmos.CosmosClient).TypeHandle);
-    var retriever = typeof(Microsoft.Azure.Cosmos.CosmosClient).Assembly.GetType(
-        ""Microsoft.Azure.Cosmos.Query.Core.QueryPlan.QueryPlanRetriever"", throwOnError: true)!;
-    var bypass = retriever.GetMethod(""BypassQueryParsing"",
-        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!;
-    if ((bool)bypass.Invoke(null, null)! != expectGateway)
+    using var process = System.Diagnostics.Process.GetCurrentProcess();
+    System.Diagnostics.ProcessModule? native = null;
+    foreach (System.Diagnostics.ProcessModule module in process.Modules)
     {
-        throw new System.InvalidOperationException(""Unexpected published Linux query-plan routing."");
+        if (System.String.Equals(module.ModuleName, ""Cosmos.QueryPlanInterop.dll"", System.StringComparison.OrdinalIgnoreCase))
+        {
+            native = module;
+        }
+    }
+    if ((native == null) != expectGateway)
+    {
+        throw new System.InvalidOperationException(""Unexpected Windows ARM64 native library load."");
+    }
+    if (native != null)
+    {
+        string expected = System.IO.Path.Combine(System.AppContext.BaseDirectory, ""Cosmos.QueryPlanInterop.dll"");
+        if (!System.IO.File.Exists(expected))
+        {
+            expected = System.IO.Path.Combine(System.AppContext.BaseDirectory, ""runtimes"", ""win-arm64"", ""native"", ""Cosmos.QueryPlanInterop.dll"");
+        }
+        if (!System.String.Equals(System.IO.Path.GetFullPath(expected), System.IO.Path.GetFullPath(native.FileName), System.StringComparison.OrdinalIgnoreCase))
+        {
+            throw new System.InvalidOperationException(""Unexpected native library path: "" + native.FileName);
+        }
+    }
+    System.Environment.SetEnvironmentVariable(windowsArm64OptIn,
+        expectedAdapter == ""WindowsArm64QueryPlanInterop"" ? ""false"" : ""true"");
+    if (!System.Object.ReferenceEquals(instance, factory.GetProperty(""Instance"")!.GetValue(null))
+        || (bool)bypass.Invoke(null, null)! != expectGateway)
+    {
+        throw new System.InvalidOperationException(""Native backend or routing changed after initialization."");
     }
 }
 System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"");");
@@ -390,7 +518,8 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
                 $"publish \"{projectFile}\" -c Release -o \"{publishDir}\" {ridArgument}".Trim(),
                 timeoutMinutes: 5);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+            if (targetFramework == "net8.0"
+                && RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
                 && (runtimeIdentifier == null
                     || (runtimeIdentifier == "linux-x64" && RuntimeInformation.ProcessArchitecture == Architecture.X64)
                     || (runtimeIdentifier == "linux-arm64" && RuntimeInformation.ProcessArchitecture == Architecture.Arm64)))
@@ -416,6 +545,32 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
                 }
             }
 
+            if (targetFramework == "net8.0"
+                && RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                && RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+                && (runtimeIdentifier == null || runtimeIdentifier == "win-arm64"))
+            {
+                string consumer = $"\"{Path.Combine(publishDir, projectName + ".dll")}\"";
+                foreach (string mode in new[] { "default", "disabled", "invalid", "force-bypass", "query-planning" })
+                {
+                    await RunDotnetCommandAsync($"{consumer} --verify-windows-arm64-{mode}");
+                }
+
+                string libraryPath = runtimeIdentifier == null
+                    ? Path.Combine(publishDir, "runtimes", "win-arm64", "native", WindowsArm64LibraryName)
+                    : Path.Combine(publishDir, WindowsArm64LibraryName);
+                string unavailablePath = libraryPath + ".disabled";
+                File.Move(libraryPath, unavailablePath);
+                try
+                {
+                    await RunDotnetCommandAsync($"{consumer} --verify-windows-arm64-fallback");
+                }
+                finally
+                {
+                    File.Move(unavailablePath, libraryPath);
+                }
+            }
+
             return publishDir;
         }
 
@@ -423,6 +578,9 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
         {
             Assert.IsTrue(Directory.Exists(publishPath), $"Publish directory does not exist: {publishPath}");
             this.AssertPublishOutputIsValid(publishPath, runtimeIdentifier);
+
+            Assert.AreEqual(0, Directory.GetFiles(publishPath, WindowsArm64LibraryName, SearchOption.AllDirectories).Length,
+                "Windows QueryPlanInterop must not be published for non-Windows runtimes.");
 
             foreach (string dll in WindowsNativeDlls)
             {
@@ -436,6 +594,23 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
         {
             Assert.IsTrue(Directory.Exists(publishPath), $"Publish directory does not exist: {publishPath}");
             this.AssertPublishOutputIsValid(publishPath, runtimeIdentifier);
+
+            string[] arm64Libraries = Directory.GetFiles(publishPath, WindowsArm64LibraryName, SearchOption.AllDirectories);
+            bool includesArm64 = runtimeIdentifier == "win-arm64" || runtimeIdentifier == "no RuntimeIdentifier";
+            Assert.AreEqual(includesArm64 ? 1 : 0, arm64Libraries.Length, "Do not publish QueryPlanInterop for Windows x64 or x86.");
+            if (includesArm64)
+            {
+                string expected = runtimeIdentifier == "win-arm64"
+                    ? Path.Combine(publishPath, WindowsArm64LibraryName)
+                    : Path.Combine(publishPath, "runtimes", "win-arm64", "native", WindowsArm64LibraryName);
+                Assert.AreEqual(expected, arm64Libraries[0]);
+                using BinaryReader reader = new BinaryReader(File.OpenRead(expected));
+                reader.BaseStream.Position = 0x3c;
+                uint peOffset = reader.ReadUInt32();
+                reader.BaseStream.Position = peOffset;
+                Assert.AreEqual(0x00004550U, reader.ReadUInt32(), "Expected a PE native library.");
+                Assert.AreEqual((ushort)0xaa64, reader.ReadUInt16(), "Expected native Windows ARM64, not x64 or ARM64EC.");
+            }
 
             foreach (string dll in WindowsNativeDlls)
             {
