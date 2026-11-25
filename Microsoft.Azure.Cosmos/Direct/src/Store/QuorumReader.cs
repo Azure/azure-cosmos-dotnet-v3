@@ -92,6 +92,9 @@ namespace Microsoft.Azure.Documents
             int readQuorumRetry = QuorumReader.maxNumberOfReadQuorumRetries;
             bool shouldRetryOnSecondary = false;
             bool hasPerformedReadFromPrimary = false;
+            StoreReader.QuorumLeaseFailures leaseFailures = entity.DefaultReplicaIndex.GetValueOrDefault() == 0
+                ? new StoreReader.QuorumLeaseFailures()
+                : null;
 
             // Use the partition-level TargetReplicaSetSize (TRSS) resolved
             // during address resolution. When TRSS <= 3 there are at most
@@ -106,7 +109,7 @@ namespace Microsoft.Azure.Documents
 
                 shouldRetryOnSecondary = false;
                 using ReadQuorumResult secondaryQuorumReadResult =
-                    await this.ReadQuorumAsync(entity, readQuorumValue, includePrimary, readMode);
+                    await this.ReadQuorumAsync(entity, readQuorumValue, includePrimary, readMode, leaseFailures);
 
                 switch (secondaryQuorumReadResult.QuorumResult)
                 {
@@ -177,7 +180,7 @@ namespace Microsoft.Azure.Documents
 
                     case ReadQuorumResultKind.QuorumNotSelected:
                         {
-                            if (hasPerformedReadFromPrimary)
+                            if (hasPerformedReadFromPrimary && leaseFailures?.NeedsPrimaryConfirmation != true)
                             {
                                 DefaultTrace.TraceWarning("QuorumNotSelected: Primary read already attempted. Quorum could not be selected after retrying on secondaries. ReadStoreResponses: {0}, resourceType: {1}, operationType: {2}",
                                     secondaryQuorumReadResult.ToString(),
@@ -194,7 +197,13 @@ namespace Microsoft.Azure.Documents
                                 entity.ResourceType,
                                 entity.OperationType);
 
-                            using ReadPrimaryResult response = await this.ReadPrimaryAsync(entity, readQuorumValue, false);
+                            using ReadPrimaryResult response = await this.ReadPrimaryAsync(entity, readQuorumValue, false, leaseFailures);
+                            if (leaseFailures?.NeedsPrimaryConfirmation == true)
+                            {
+                                // A primary which still has a lease may require another quorum read for
+                                // consistency. Do not repeat the confirmation on that pass.
+                                leaseFailures.CompleteConfirmation();
+                            }
 
                             if (response.IsSuccessful && response.ShouldRetryOnSecondary)
                             {
@@ -304,7 +313,8 @@ namespace Microsoft.Azure.Documents
             DocumentServiceRequest entity,
             int readQuorum,
             bool includePrimary,
-            ReadMode readMode)
+            ReadMode readMode,
+            StoreReader.QuorumLeaseFailures leaseFailures)
         {
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
@@ -320,7 +330,8 @@ namespace Microsoft.Azure.Documents
                     replicaCountToRead: readQuorum,
                     requiresValidLsn: true,
                     useSessionToken: false,
-                    readMode: readMode));
+                    readMode: readMode,
+                    leaseFailures: leaseFailures));
                 IList<ReferenceCountedDisposable<StoreResult>> responseResult = disposableResponseResult.Value;
 
                 responsesForLogging = new StoreResult[responseResult.Count];
@@ -459,20 +470,23 @@ namespace Microsoft.Azure.Documents
         /// <param name="entity"></param>
         /// <param name="readQuorum"></param>
         /// <param name="useSessionToken"></param>
+        /// <param name="leaseFailures">Tracks lease failures observed during this quorum read.</param>
         /// <returns></returns>
         private async Task<ReadPrimaryResult> ReadPrimaryAsync(
             DocumentServiceRequest entity,
             int readQuorum,
-            bool useSessionToken)
+            bool useSessionToken,
+            StoreReader.QuorumLeaseFailures leaseFailures)
         {
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
-            // We would have already refreshed address before reaching here. Avoid performing here.
+            // Ordinary fallback follows an address refresh. StoreReader forces a refresh for lease confirmation.
             entity.RequestContext.ForceRefreshAddressCache = false;
             using ReferenceCountedDisposable<StoreResult> disposableStoreResult = await this.storeReader.ReadPrimaryAsync(
                 entity,
                 requiresValidLsn: true,
-                useSessionToken: useSessionToken);
+                useSessionToken: useSessionToken,
+                leaseFailures: leaseFailures);
             StoreResult storeResult = disposableStoreResult.Target;
 
             // Local helper to create a throttled ReadPrimaryResult

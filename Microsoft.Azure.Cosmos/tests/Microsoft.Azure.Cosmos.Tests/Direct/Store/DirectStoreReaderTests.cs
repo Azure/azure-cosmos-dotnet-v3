@@ -128,6 +128,36 @@ namespace Microsoft.Azure.Documents
             Assert.AreEqual(dce.GetSubStatus(), SubStatusCodes.TransportGenerated410);
         }
 
+        [DataTestMethod]
+        [DataRow(1, (int)SubStatusCodes.LeaseNotFound)]
+        [DataRow(0, (int)SubStatusCodes.LeaseNotFound)]
+        [DataRow(0, (int)SubStatusCodes.ServerGenerated410)]
+        public async Task StandaloneReplicaGoneStillRefreshesAsync(int replicaIndex, int subStatus)
+        {
+            using DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            request.DefaultReplicaIndex = (uint)replicaIndex;
+            request.RequestContext = new DocumentServiceRequestContext
+            {
+                PerformLocalRefreshOnGoneException = true,
+                RequestChargeTracker = new RequestChargeTracker(),
+                ClientRequestStatistics = new ClientSideRequestStatistics(),
+                TimeoutHelper = new TimeoutHelper(TimeSpan.FromSeconds(10))
+            };
+            AddressInformation[] addresses = CreateAddressInformation(2);
+            Mock<IAddressResolver> resolver = this.GetMockAddressCache(addresses);
+            Mock<TransportClient> transport = new Mock<TransportClient>(MockBehavior.Strict);
+            TransportAddressUri target = new TransportAddressUri(new Uri(addresses[replicaIndex].PhysicalUri));
+            transport.Setup(t => t.InvokeResourceOperationAsync(target, request))
+                .ThrowsAsync(new GoneException("gone", (SubStatusCodes)subStatus));
+            StoreReader reader = new StoreReader(transport.Object, new AddressSelector(resolver.Object, Protocol.Tcp), new AddressEnumerator(), new NullSessionContainer(), false);
+
+            GoneException failure = await Assert.ThrowsExceptionAsync<GoneException>(() => reader.ReadPrimaryAsync(request, requiresValidLsn: true, useSessionToken: false));
+
+            Assert.AreEqual((SubStatusCodes)subStatus, failure.GetSubStatus());
+            resolver.Verify(r => r.ResolveAsync(request, true, It.IsAny<CancellationToken>()), Times.Once);
+            transport.Verify(t => t.InvokeResourceOperationAsync(target, request), Times.Exactly(2));
+        }
+
         [TestMethod]
         [Owner("askagarw")]
         [DataRow(false, DisplayName = "Store reader capture store result diagnostics test with replica validation disabled.")]
