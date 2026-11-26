@@ -1089,7 +1089,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Ignore("This test will be enabled once the V2 DocumentCollection starts supporting the full text policy index.")]
         public async Task ContainerV2CompatTest()
         {
             string containerId = "SerializeContainerTest";

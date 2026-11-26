@@ -7,9 +7,18 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
     using System;
     using System.Diagnostics;
     using System.IO;
+    using System.IO.Compression;
+    using System.Linq;
+    using System.Reflection.Metadata;
+    using System.Reflection.PortableExecutable;
     using System.Runtime.InteropServices;
+    using System.Security.Cryptography;
+    using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
+    using System.Xml.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Integration tests that verify native assets match the published RuntimeIdentifier,
@@ -21,6 +30,8 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
     public class CosmosTargetsInteropPublishTests
     {
         private const string LinuxLibraryName = "libQueryPlanInterop.so";
+        private const string CommandOutputLogEnvironmentVariable = "COSMOS_TEST_DOTNET_OUTPUT_LOG";
+        private static readonly object CommandOutputLock = new object();
         private static string testProjectsRoot;
         private static string localNugetPackagePath;
         private static string packageVersion;
@@ -119,6 +130,239 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             Assert.IsFalse(File.Exists(Path.Combine(publishPath, LinuxLibraryName)), "Portable publish must resolve the Linux library through runtimes/<rid>/native.");
         }
 
+        [TestMethod]
+        [DataRow("linux-x64")]
+        [DataRow("linux-arm64")]
+        [DataRow("win-x64")]
+        public async Task Publish_WithSourceProjectReference_SelectsNativePayload(string runtimeIdentifier)
+        {
+            string publishPath = await this.CreateAndPublishTestProjectAsync(
+                $"SourceTest_{runtimeIdentifier}", runtimeIdentifier, useProjectReference: true);
+
+            if (runtimeIdentifier.StartsWith("win", StringComparison.Ordinal))
+            {
+                this.AssertWindowsDllsPresent(publishPath, runtimeIdentifier);
+                Assert.AreEqual(0, Directory.GetFiles(publishPath, LinuxLibraryName, SearchOption.AllDirectories).Length);
+            }
+            else
+            {
+                this.AssertWindowsDllsNotPresent(publishPath, runtimeIdentifier);
+                string[] linuxLibraries = Directory.GetFiles(publishPath, LinuxLibraryName, SearchOption.AllDirectories);
+                Assert.AreEqual(1, linuxLibraries.Length);
+                Assert.AreEqual(Path.Combine(publishPath, LinuxLibraryName), linuxLibraries[0]);
+                using BinaryReader reader = new BinaryReader(File.OpenRead(linuxLibraries[0]));
+                reader.BaseStream.Position = 18;
+                Assert.AreEqual(
+                    runtimeIdentifier == "linux-arm64" ? (ushort)183 : (ushort)62,
+                    reader.ReadUInt16(),
+                    "Source-reference publish must include the requested architecture's ELF library.");
+            }
+        }
+
+        [TestMethod]
+        [DataRow(false, false)]
+        [DataRow(true, false)]
+        [DataRow(false, true)]
+        [DataRow(true, true)]
+        public async Task Direct_MetadataMatchesAssemblyVersion(bool isPreview, bool isNightly)
+        {
+            string directProjectPath = Path.Combine(GetRepositoryRoot(), "Microsoft.Azure.Cosmos", "Direct", "src", "Microsoft.Azure.Cosmos.Direct.csproj");
+            string arguments = $"-nologo -p:IsPreview={isPreview} -p:IsNightly={isNightly} "
+                + "-getProperty:Version,FileVersion,InformationalVersion,AssemblyVersion";
+            JObject directProperties = (JObject)JObject.Parse(await RunDotnetCommandAsync(
+                $"msbuild \"{directProjectPath}\" {arguments}"))["Properties"];
+
+            foreach (string property in new[] { "Version", "FileVersion", "InformationalVersion", "AssemblyVersion" })
+            {
+                Assert.AreEqual("3.44.4.0", (string)directProperties[property], $"Direct's {property} must remain independent of SDK release versions.");
+            }
+        }
+
+        [TestMethod]
+        [DataRow("Debug")]
+        [DataRow("Release")]
+        public async Task Direct_WithGlobalSdkConstants_PreservesProjectConstants(string configuration)
+        {
+            const string internalConstants = "DOCDBCLIENT COSMOSCLIENT NETSTANDARD20 INTERNAL";
+            string directProjectPath = Path.Combine(GetRepositoryRoot(), "Microsoft.Azure.Cosmos", "Direct", "src", "Microsoft.Azure.Cosmos.Direct.csproj");
+            string arguments = $"msbuild \"{directProjectPath}\" -nologo -p:Configuration={configuration} -getProperty:DefineConstants";
+            string normalConstants = await RunDotnetCommandAsync(arguments);
+            string overriddenConstants = await RunDotnetCommandAsync(
+                $"{arguments} \"-p:DefineConstants={internalConstants}\"");
+
+            Assert.AreEqual(
+                normalConstants.Trim(),
+                overriddenConstants.Trim(),
+                "SDK-wide compiler constants must not replace Direct's compilation settings.");
+
+            string sdkProjectPath = Path.Combine(GetRepositoryRoot(), "Microsoft.Azure.Cosmos", "src", "Microsoft.Azure.Cosmos.csproj");
+            string sdkConstants = await RunDotnetCommandAsync(
+                $"msbuild \"{sdkProjectPath}\" -nologo -p:Configuration={configuration} \"-p:DefineConstants={internalConstants}\" -getProperty:DefineConstants");
+            Assert.AreEqual(internalConstants, sdkConstants.Trim(), "The SDK must still receive its global compiler constants.");
+        }
+
+        [TestMethod]
+        [DoNotParallelize]
+        public async Task CommandTimeoutPreservesCapturedOutput()
+        {
+            const string projectName = "CommandTimeoutProbe";
+            string publishPath = await this.CreateAndPublishTestProjectAsync(projectName, runtimeIdentifier: null);
+            string originalLog = Environment.GetEnvironmentVariable(CommandOutputLogEnvironmentVariable);
+            string progressLog = string.IsNullOrEmpty(originalLog)
+                ? Path.Combine(testProjectsRoot, "command-output.log")
+                : originalLog;
+            if (!File.Exists(progressLog))
+            {
+                File.WriteAllText(progressLog, string.Empty);
+            }
+
+            long startOffset = new FileInfo(progressLog).Length;
+            Environment.SetEnvironmentVariable(CommandOutputLogEnvironmentVariable, progressLog);
+            try
+            {
+                Task<AssertFailedException> command = Assert.ThrowsExceptionAsync<AssertFailedException>(() =>
+                    RunDotnetCommandAsync(
+                        $"\"{Path.Combine(publishPath, projectName + ".dll")}\" --simulate-stall",
+                        timeoutMinutes: 0.25));
+                AssertFailedException exception = null;
+                try
+                {
+                    bool forwarded = false;
+                    while (!command.IsCompleted)
+                    {
+                        using FileStream stream = new FileStream(progressLog, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        stream.Position = startOffset;
+                        using StreamReader reader = new StreamReader(stream);
+                        string progress = await reader.ReadToEndAsync();
+                        if (progress.Contains("Timeout probe stdout") && progress.Contains("Timeout probe stderr"))
+                        {
+                            forwarded = true;
+                            break;
+                        }
+
+                        await Task.Delay(25);
+                    }
+
+                    Assert.IsTrue(forwarded, "Both child streams must be forwarded before the command exits.");
+                    Assert.IsFalse(command.IsCompleted, "Progress must be visible while the child is still running.");
+                }
+                finally
+                {
+                    exception = await command;
+                }
+
+                StringAssert.Contains(exception.Message, "Command timed out");
+                StringAssert.Contains(exception.Message, "Timeout probe stdout");
+                StringAssert.Contains(exception.Message, "Timeout probe stderr");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(CommandOutputLogEnvironmentVariable, originalLog);
+            }
+        }
+
+        [TestMethod]
+        public async Task Package_UniqueVersionPreservesAssemblyIdentity()
+        {
+            string projectPath = Path.Combine(GetRepositoryRoot(), "Microsoft.Azure.Cosmos", "src", "Microsoft.Azure.Cosmos.csproj");
+            string evaluation = await RunDotnetCommandAsync(
+                $"msbuild \"{projectPath}\" -nologo -target:GetAssemblyVersion -getProperty:AssemblyVersion");
+            Version expectedAssemblyVersion = Version.Parse(evaluation.Trim());
+            using ZipArchive package = ZipFile.OpenRead(
+                Path.Combine(localNugetPackagePath, $"Microsoft.Azure.Cosmos.{packageVersion}.nupkg"));
+            ZipArchiveEntry nuspec = package.GetEntry("Microsoft.Azure.Cosmos.nuspec");
+            Assert.IsNotNull(nuspec);
+            using (Stream stream = nuspec.Open())
+            {
+                XDocument metadata = XDocument.Load(stream);
+                Assert.AreEqual(packageVersion, metadata.Descendants().Single(element => element.Name.LocalName == "version").Value);
+            }
+
+            ZipArchiveEntry assembly = package.GetEntry("lib/netstandard2.0/Microsoft.Azure.Cosmos.Client.dll");
+            Assert.IsNotNull(assembly);
+            using MemoryStream image = new MemoryStream();
+            using (Stream stream = assembly.Open())
+            {
+                await stream.CopyToAsync(image);
+            }
+
+            image.Position = 0;
+            using PEReader reader = new PEReader(image);
+            Assert.AreEqual(
+                expectedAssemblyVersion,
+                reader.GetMetadataReader().GetAssemblyDefinition().Version,
+                "A unique test package version must not change the SDK's managed assembly identity.");
+        }
+
+        [TestMethod]
+        public async Task Package_NativePayloadsMatchRestoredPackages()
+        {
+            string projectPath = Path.Combine(GetRepositoryRoot(), "Microsoft.Azure.Cosmos", "src", "Microsoft.Azure.Cosmos.csproj");
+            string evaluation = await RunDotnetCommandAsync(
+                $"msbuild \"{projectPath}\" -nologo -p:Configuration=Release -getProperty:PkgMicrosoft_Azure_Cosmos_ServiceInterop,PkgMicrosoft_Azure_Cosmos_QueryPlanInterop_Linux");
+            JObject properties = (JObject)JObject.Parse(evaluation)["Properties"];
+            string windowsPackage = (string)properties["PkgMicrosoft_Azure_Cosmos_ServiceInterop"];
+            string linuxPackage = (string)properties["PkgMicrosoft_Azure_Cosmos_QueryPlanInterop_Linux"];
+            Assert.IsFalse(string.IsNullOrEmpty(windowsPackage), "The ServiceInterop package must be restored.");
+            Assert.IsFalse(string.IsNullOrEmpty(linuxPackage), "The Linux query-plan package must be restored.");
+
+            using ZipArchive package = ZipFile.OpenRead(
+                Path.Combine(localNugetPackagePath, $"Microsoft.Azure.Cosmos.{packageVersion}.nupkg"));
+            Assert.AreEqual(
+                7,
+                package.Entries.Count(entry => entry.FullName.StartsWith("runtimes/", StringComparison.Ordinal)
+                    && entry.FullName.Contains("/native/", StringComparison.Ordinal)),
+                "The SDK must bundle exactly five Windows DLLs and two Linux query-plan libraries.");
+
+            foreach (string dll in WindowsNativeDlls)
+            {
+                AssertPackageEntryMatchesFile(
+                    package,
+                    $"runtimes/win-x64/native/{dll}",
+                    Path.Combine(windowsPackage, "runtimes", "win-x64", "native", dll));
+            }
+
+            foreach (string rid in new[] { "linux-x64", "linux-arm64" })
+            {
+                AssertPackageEntryMatchesFile(
+                    package,
+                    $"runtimes/{rid}/native/{LinuxLibraryName}",
+                    Path.Combine(linuxPackage, "runtimes", rid, "native", LinuxLibraryName));
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("Windows")]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task Publish_WindowsX64_ExecutesNativeQueryPlanning(bool useProjectReference)
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                || RuntimeInformation.ProcessArchitecture != Architecture.X64)
+            {
+                Assert.Inconclusive("Executing ServiceInterop requires a Windows x64 process.");
+            }
+
+            string projectName = useProjectReference ? "WindowsNativeSourceTest" : "WindowsNativePackageTest";
+            string publishPath = await this.CreateAndPublishTestProjectAsync(
+                projectName, "win-x64", useProjectReference);
+            await RunDotnetCommandAsync(
+                $"\"{Path.Combine(publishPath, projectName + ".dll")}\" --verify-windows-query-planning");
+        }
+
+        private static void AssertPackageEntryMatchesFile(ZipArchive package, string entryName, string filePath)
+        {
+            ZipArchiveEntry entry = package.GetEntry(entryName);
+            Assert.IsNotNull(entry, $"Missing SDK package entry: {entryName}");
+            using Stream actual = entry.Open();
+            using Stream expected = File.OpenRead(filePath);
+            using SHA256 sha = SHA256.Create();
+            CollectionAssert.AreEqual(
+                sha.ComputeHash(expected),
+                sha.ComputeHash(actual),
+                $"Packaged native payload must match its restored NuGet source: {entryName}");
+        }
+
         private static async Task CreateLocalNuGetPackageAsync()
         {
             string repoRoot = GetRepositoryRoot();
@@ -126,17 +370,17 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
             string packOutputDir = Path.Combine(testProjectsRoot, "nuget-packages");
             Directory.CreateDirectory(packOutputDir);
 
-            // Use a unique version to avoid cache conflicts
+            // Avoid NuGet cache conflicts without changing assembly metadata and forcing a rebuild.
             packageVersion = $"99.0.0-test.{DateTime.UtcNow:yyyyMMddHHmmss}";
 
             await RunDotnetCommandAsync(
-                $"pack \"{cosmosProjectPath}\" -c Release -o \"{packOutputDir}\" /p:Version={packageVersion} /p:PackageVersion={packageVersion}",
+                $"pack \"{cosmosProjectPath}\" -c Release -o \"{packOutputDir}\" --verbosity normal /p:PackageVersion={packageVersion}",
                 timeoutMinutes: 10);
 
             localNugetPackagePath = packOutputDir;
         }
 
-        private async Task<string> CreateAndPublishTestProjectAsync(string projectName, string runtimeIdentifier)
+        private async Task<string> CreateAndPublishTestProjectAsync(string projectName, string runtimeIdentifier, bool useProjectReference = false)
         {
             string projectDir = Path.Combine(testProjectsRoot, projectName);
             Directory.CreateDirectory(projectDir);
@@ -155,8 +399,21 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
   </packageSources>
 </configuration>");
 
-            // Create a simple console app project that references the local NuGet package
+            string sdkReference = useProjectReference
+                ? $@"<ProjectReference Include=""{Path.Combine(GetRepositoryRoot(), "Microsoft.Azure.Cosmos", "src", "Microsoft.Azure.Cosmos.csproj")}"" />"
+                : $@"<PackageReference Include=""Microsoft.Azure.Cosmos"" Version=""{packageVersion}"" />";
+            string sourceDependencies = useProjectReference
+                ? $@"<ProjectReference Include=""{Path.Combine(GetRepositoryRoot(), "Microsoft.Azure.Cosmos", "Direct", "src", "Microsoft.Azure.Cosmos.Direct.csproj")}"" />
+    <PackageReference Include=""Microsoft.HybridRow"" Version=""[$(HybridRowVersion)]"" />
+    <PackageReference Include=""Microsoft.Azure.Cosmos.QueryPlanInterop.Linux"" Version=""[$(QueryPlanInteropLinuxVersion)]"" />"
+                : string.Empty;
+            string sourceVersionImport = useProjectReference
+                ? $@"<Import Project=""{Path.Combine(GetRepositoryRoot(), "Directory.Build.props")}"" />"
+                : string.Empty;
+
+            // Create a simple console app project that references the SDK.
             File.WriteAllText(projectFile, $@"<Project Sdk=""Microsoft.NET.Sdk"">
+  {sourceVersionImport}
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
@@ -164,13 +421,62 @@ namespace Microsoft.Azure.Cosmos.Tests.MSBuild
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include=""Microsoft.Azure.Cosmos"" Version=""{packageVersion}"" />
+    {sdkReference}
+    {sourceDependencies}
     <PackageReference Include=""Newtonsoft.Json"" Version=""13.0.3"" />
   </ItemGroup>
 </Project>");
 
-            // Create a minimal Program.cs
+            // Reflection exercises the packaged SDK's internal native planner without friend-assembly access.
             File.WriteAllText(programFile, @"
+if (System.Array.IndexOf(args, ""--simulate-stall"") >= 0)
+{
+    System.Console.WriteLine(""Timeout probe PID: "" + System.Environment.ProcessId);
+    System.Console.WriteLine(""Timeout probe stdout"");
+    System.Console.Error.WriteLine(""Timeout probe stderr"");
+    System.Threading.Thread.Sleep(System.Threading.Timeout.Infinite);
+}
+if (System.Array.IndexOf(args, ""--verify-windows-query-planning"") >= 0)
+{
+    System.Environment.SetEnvironmentVariable(""AZURE_COSMOS_BYPASS_QUERY_PARSING"", ""false"");
+    System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(Microsoft.Azure.Cosmos.CosmosClient).TypeHandle);
+    var providerType = typeof(Microsoft.Azure.Cosmos.CosmosClient).Assembly.GetType(
+        ""Microsoft.Azure.Cosmos.Query.Core.QueryPlan.QueryPartitionProvider"", throwOnError: true)!;
+    using var provider = (System.IDisposable)System.Activator.CreateInstance(
+        providerType,
+        new object[] { new System.Collections.Generic.Dictionary<string, object> { { ""maxSqlQueryInputLength"", 524288 } } })!;
+    var getPlan = providerType.GetMethod(""TryGetPartitionedQueryExecutionInfo"")!;
+    var partitionKey = Newtonsoft.Json.JsonConvert.DeserializeObject(
+        ""{\""paths\"":[\""/pk\""],\""kind\"":\""Hash\"",\""version\"":2}"",
+        getPlan.GetParameters()[1].ParameterType)!;
+    string query = Newtonsoft.Json.JsonConvert.SerializeObject(
+        new { query = ""SELECT TOP 1 * FROM c WHERE c.pk = 'partition'"" });
+    var outcome = getPlan.Invoke(provider, new object?[]
+    {
+        query, partitionKey, null,
+        true, false, true, false, true, false, false,
+        Microsoft.Azure.Cosmos.GeospatialType.Geography
+    })!;
+    var outcomeType = outcome.GetType();
+    if (!(bool)outcomeType.GetProperty(""Succeeded"")!.GetValue(outcome)!)
+    {
+        throw new System.InvalidOperationException(
+            ""Published SDK native query planning failed."",
+            (System.Exception)outcomeType.GetProperty(""Exception"")!.GetValue(outcome)!);
+    }
+
+    var plan = Newtonsoft.Json.Linq.JObject.Parse(
+        Newtonsoft.Json.JsonConvert.SerializeObject(outcomeType.GetProperty(""Result"")!.GetValue(outcome)));
+    if ((int?)plan[""queryInfo""]?[""top""] != 1
+        || plan[""queryRanges""] is not Newtonsoft.Json.Linq.JArray ranges
+        || ranges.Count != 1
+        || string.IsNullOrEmpty((string?)ranges[0][""min""])
+        || (string?)ranges[0][""min""] != (string?)ranges[0][""max""])
+    {
+        throw new System.InvalidOperationException(""Unexpected native TOP or partition-routing plan: "" + plan);
+    }
+}
+
 bool expectGateway = System.Array.IndexOf(args, ""--verify-linux-query-planning-fallback"") >= 0;
 if (expectGateway || System.Array.IndexOf(args, ""--verify-linux-query-planning"") >= 0)
 {
@@ -191,8 +497,12 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
             // Publish the project
             string publishDir = Path.Combine(projectDir, "bin", "publish", runtimeIdentifier ?? "no-rid");
             string ridArgument = runtimeIdentifier != null ? $"-r {runtimeIdentifier} --self-contained false" : string.Empty;
+            // Keep RID-based native-asset selection without rebuilding the AnyCPU libraries into new RID directories.
+            string sourceArguments = useProjectReference
+                ? "--verbosity normal /p:AppendRuntimeIdentifierToOutputPath=false"
+                : string.Empty;
             await RunDotnetCommandAsync(
-                $"publish \"{projectFile}\" -c Release -o \"{publishDir}\" {ridArgument}".Trim(),
+                $"publish \"{projectFile}\" -c Release -o \"{publishDir}\" {ridArgument} {sourceArguments}".Trim(),
                 timeoutMinutes: 5);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
@@ -246,7 +556,7 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
             {
                 string dllPath = Path.Combine(publishPath, dll);
                 Assert.IsTrue(File.Exists(dllPath),
-                    $"Windows native DLL '{dll}' SHOULD be present when publishing for {runtimeIdentifier}, but was NOT found at: {dllPath}");
+                    $"Unexpected native payload '{dll}' for {runtimeIdentifier}: {dllPath}");
             }
         }
 
@@ -280,7 +590,7 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
             return currentDir;
         }
 
-        private static async Task RunDotnetCommandAsync(string arguments, int timeoutMinutes = 5)
+        private static async Task<string> RunDotnetCommandAsync(string arguments, double timeoutMinutes = 5)
         {
             ProcessStartInfo processInfo = new ProcessStartInfo
             {
@@ -292,8 +602,12 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
                 CreateNoWindow = true
             };
 
+            // Reused build nodes can keep redirected output pipes open after dotnet exits.
+            processInfo.Environment["MSBUILDDISABLENODEREUSE"] = "1";
+
+            TimeSpan timeout = TimeSpan.FromMinutes(timeoutMinutes);
             string commandLine = $"dotnet {arguments}";
-            Console.WriteLine($"Executing: {commandLine}");
+            WriteCommandOutput($"Executing (timeout {timeout.TotalMinutes} minutes): {commandLine}{Environment.NewLine}");
 
             Process process = Process.Start(processInfo);
             if (process == null)
@@ -303,18 +617,38 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
 
             using (process)
             {
-                Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
-                Task<string> errorTask = process.StandardError.ReadToEndAsync();
+                Task<string> outputTask = CaptureCommandOutputAsync(process.StandardOutput, isError: false);
+                Task<string> errorTask = CaptureCommandOutputAsync(process.StandardError, isError: true);
 
-                bool exited = process.WaitForExit((int)TimeSpan.FromMinutes(timeoutMinutes).TotalMilliseconds);
-                if (!exited)
+                bool timedOut = false;
+                using CancellationTokenSource cancellation = new CancellationTokenSource(timeout);
+                try
                 {
-                    process.Kill();
-                    Assert.Fail($"Command timed out after {timeoutMinutes} minutes.\nCommand: {commandLine}");
+                    await process.WaitForExitAsync(cancellation.Token);
+                }
+                catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+                {
+                    timedOut = true;
+                    WriteCommandOutput($"Command timed out; terminating process tree: {commandLine}{Environment.NewLine}", isError: true);
+                    try
+                    {
+                        process.Kill(entireProcessTree: true);
+                    }
+                    catch (InvalidOperationException) when (process.HasExited)
+                    {
+                        // The process exited while the timeout was firing.
+                    }
+
+                    await process.WaitForExitAsync();
                 }
 
                 string output = await outputTask;
                 string error = await errorTask;
+
+                if (timedOut)
+                {
+                    Assert.Fail($"Command timed out after {timeout.TotalMinutes} minutes.\nCommand: {commandLine}\nOutput: {output}\nError: {error}");
+                }
 
                 if (process.ExitCode != 0)
                 {
@@ -322,7 +656,40 @@ System.Console.WriteLine(""Test app for verifying Cosmos SDK package behavior"")
                 }
 
                 Assert.IsTrue(string.IsNullOrEmpty(error), $"Command had unexpected error output.\nCommand: {commandLine}\nError: {error}");
-                Console.WriteLine($"Command succeeded: {commandLine}");
+                WriteCommandOutput($"Command succeeded: {commandLine}{Environment.NewLine}");
+                return output;
+            }
+        }
+
+        private static async Task<string> CaptureCommandOutputAsync(StreamReader reader, bool isError)
+        {
+            StringBuilder captured = new StringBuilder();
+            char[] buffer = new char[4096];
+            int count;
+            while ((count = await reader.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            {
+                string text = new string(buffer, 0, count);
+                captured.Append(text);
+                WriteCommandOutput(text, isError);
+            }
+
+            return captured.ToString();
+        }
+
+        private static void WriteCommandOutput(string text, bool isError = false)
+        {
+            lock (CommandOutputLock)
+            {
+                TextWriter console = isError ? Console.Error : Console.Out;
+                console.Write(text);
+                console.Flush();
+
+                // MSTest buffers Console output; CI tails this optional log independently.
+                string logPath = Environment.GetEnvironmentVariable(CommandOutputLogEnvironmentVariable);
+                if (!string.IsNullOrEmpty(logPath))
+                {
+                    File.AppendAllText(logPath, text);
+                }
             }
         }
     }

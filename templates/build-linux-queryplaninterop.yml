@@ -24,6 +24,9 @@ parameters:
 - name: Arm64TestImage
   type: string
   default: 'mcr.microsoft.com/dotnet/sdk:8.0-jammy'
+- name: Arm64EmulatorImage
+  type: string
+  default: 'tonistiigi/binfmt:qemu-v10.2.3-68@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0'
 - name: IncludeRuntimeImage
   type: boolean
   default: true
@@ -93,16 +96,31 @@ jobs:
       out="$BUILD_SOURCESDIRECTORY/Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/bin/$CONFIGURATION/net6.0"
       results="$AGENT_TEMPDIRECTORY/LinuxQueryPlanInterop-$QPIARCH"
       mkdir -p "$results"
+      command_log="$results/dotnet-commands.log"
+      : > "$command_log"
+      export COSMOS_TEST_DOTNET_OUTPUT_LOG="$command_log"
       if [ "$QPIARCH" = "arm64" ]; then
+        nuget_packages="$(dotnet nuget locals global-packages --list --force-english-output)"
+        nuget_packages="${nuget_packages#global-packages: }"
+        case "$nuget_packages" in
+          /*) ;;
+          *) report_failure "Cannot resolve the host NuGet global-packages directory: $nuget_packages" ;;
+        esac
+        mkdir -p "$nuget_packages"
         # Run ARM64 binaries on the hosted x64 agent.
-        sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
-        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq qemu-user-static binfmt-support > /dev/null
+        # Older QEMU versions can corrupt .NET SDK restore/JIT execution; use the pinned emulator.
+        docker run --privileged --rm "$QEMU_IMAGE" --uninstall qemu-aarch64
+        docker run --privileged --rm "$QEMU_IMAGE" --install arm64
+        docker run --rm "$QEMU_IMAGE" --version
         # The test assembly requires the .NET 6 runtime.
         printf '%s\n' "FROM $ARM64_IMAGE" \
           "RUN curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --runtime dotnet --channel 6.0 --install-dir /usr/share/dotnet > /dev/null" \
           | docker build --quiet --platform linux/arm64 -t qpi-arm64-test -
         runner=(docker run --rm --platform linux/arm64 --user 0:0
           -e HOME=/tmp -e DOTNET_CLI_HOME=/tmp -e DOTNET_NOLOGO=1 -e DOTNET_CLI_TELEMETRY_OPTOUT=1
+          -e QPIARCH
+          -e COSMOS_TEST_DOTNET_OUTPUT_LOG
+          -e "NUGET_PACKAGES=$nuget_packages" -v "$nuget_packages:$nuget_packages"
           -e AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX -e AZURE_COSMOS_BYPASS_QUERY_PARSING
           -v "$BUILD_SOURCESDIRECTORY:$BUILD_SOURCESDIRECTORY" -v "$results:$results" -w "$out"           qpi-arm64-test)
                 else
@@ -121,7 +139,21 @@ jobs:
 
       test_exit=0
       "${runner[@]}" dotnet test "$out/Microsoft.Azure.Cosmos.Tests.dll" --filter "$UNIT_FILTER" \
-        --results-directory "$results" --logger "trx;LogFileName=unit-$QPIARCH.trx" || test_exit=$?
+        --results-directory "$results" --logger "trx;LogFileName=unit-$QPIARCH.trx" &
+      test_pid=$!
+      tail -n +1 --pid="$test_pid" -f "$command_log" &
+      tail_pid=$!
+      trap 'kill "$tail_pid" "$test_pid" 2>/dev/null || true' EXIT
+      wait "$test_pid" || test_exit=$?
+      wait "$tail_pid"
+      trap - EXIT
+      echo "dotnet test exit code on $QPIARCH: $test_exit"
+      if [ "$test_exit" -ne 0 ]; then
+        report_failure "Linux native query-plan tests failed on $QPIARCH (dotnet test exit code $test_exit). See the test output and any published results."
+      fi
+      if [ ! -s "$results/unit-$QPIARCH.trx" ]; then
+        report_failure "Linux native query-plan tests produced no nonempty TRX results on $QPIARCH; native-planning sentinels cannot be verified."
+      fi
 
       # Require successful native routing and query planning.
       for sentinel in OptedInLinuxProcessUsesNativePlanning AbsFilterTargetsBothSigns; do
@@ -129,13 +161,11 @@ jobs:
           report_failure "QueryPlanInteropTests.$sentinel did not pass on $QPIARCH; the tests did not use QueryPlanInterop ($library)."
         fi
       done
-      if [ "$test_exit" -ne 0 ]; then
-        report_failure "Linux native query-plan tests failed on $QPIARCH. See the published test results."
-      fi
     displayName: Native query-plan ABI, routing and baseline tests ($(QpiArch))
     env:
       CONFIGURATION: ${{ parameters.BuildConfiguration }}
       ARM64_IMAGE: ${{ parameters.Arm64TestImage }}
+      QEMU_IMAGE: ${{ parameters.Arm64EmulatorImage }}
       UNIT_FILTER: ${{ parameters.UnitTestFilter }}
 
   - task: PublishTestResults@2
@@ -183,9 +213,8 @@ jobs:
         probe="$AGENT_TEMPDIRECTORY/qpi-runtime-probe"
         rm -rf "$probe"
         mkdir -p "$probe"
-        # Direct, HybridRow and QueryPlanInterop.Linux require explicit references in the probe project.
+        # Direct is built locally; private SDK dependencies require explicit references in this probe.
         props="$BUILD_SOURCESDIRECTORY/Directory.Build.props"
-        direct_version=$(sed -n 's:.*<DirectVersion>\(.*\)</DirectVersion>.*:\1:p' "$props")
         hybridrow_version=$(sed -n 's:.*<HybridRowVersion>\(.*\)</HybridRowVersion>.*:\1:p' "$props")
         qpi_version=$(sed -n 's:.*<QueryPlanInteropLinuxVersion>\(.*\)</QueryPlanInteropLinuxVersion>.*:\1:p' "$props")
         cat > "$probe/QpiRuntimeProbe.csproj" <<EOF
@@ -197,7 +226,7 @@ jobs:
           </PropertyGroup>
           <ItemGroup>
             <ProjectReference Include="$BUILD_SOURCESDIRECTORY/Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj" />
-            <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$direct_version]" />
+            <ProjectReference Include="$BUILD_SOURCESDIRECTORY/Microsoft.Azure.Cosmos/Direct/src/Microsoft.Azure.Cosmos.Direct.csproj" />
             <PackageReference Include="Microsoft.HybridRow" Version="[$hybridrow_version]" />
             <PackageReference Include="Microsoft.Azure.Cosmos.QueryPlanInterop.Linux" Version="[$qpi_version]" />
           </ItemGroup>
@@ -246,8 +275,9 @@ jobs:
     - bash: |
         set -euo pipefail
         if [ "$QPIDOCKERARCH" = "arm64" ]; then
-          sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq qemu-user-static binfmt-support > /dev/null
+          docker run --privileged --rm "$QEMU_IMAGE" --uninstall qemu-aarch64
+          docker run --privileged --rm "$QEMU_IMAGE" --install arm64
+          docker run --rm "$QEMU_IMAGE" --version
         fi
         docker pull --quiet --platform "linux/$QPIDOCKERARCH" "$QPIIMAGE"
         docker run --rm --platform "linux/$QPIDOCKERARCH" -e AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX=true \
@@ -255,6 +285,8 @@ jobs:
           "$QPIIMAGE" /app/QpiRuntimeProbe.dll
       displayName: Load QueryPlanInterop in $(QpiImage) ($(QpiArch))
       continueOnError: ${{ not(parameters.RuntimeImageBlocking) }}
+      env:
+        QEMU_IMAGE: ${{ parameters.Arm64EmulatorImage }}
 
 - job: LinuxQueryPlanInteropLive
   displayName: Linux native query planning - live account

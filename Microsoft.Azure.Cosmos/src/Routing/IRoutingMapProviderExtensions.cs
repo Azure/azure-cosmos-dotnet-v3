@@ -41,7 +41,9 @@ namespace Microsoft.Azure.Cosmos
             return ranges.Single();
         }
 
-        private static bool IsNonOverlapping<T>(SortedSet<Range<T>> sortedSet)
+        private static bool IsNonOverlapping<T>(
+            SortedSet<Range<T>> sortedSet,
+            out Tuple<Range<T>, Range<T>> overlappingPair)
             where T : IComparable<T>
         {
             IComparer<T> comparer = typeof(T) == typeof(string) ? (IComparer<T>)StringComparer.Ordinal : Comparer<T>.Default;
@@ -56,16 +58,14 @@ namespace Microsoft.Azure.Cosmos
                 Range<T> next = currentAndNext.Item2;
 
                 int compareResult = comparer.Compare(current.Max, next.Min);
-                if (compareResult > 0)
+                if (compareResult > 0 || (compareResult == 0 && current.IsMaxInclusive && next.IsMinInclusive))
                 {
-                    return false;
-                }
-                else if (compareResult == 0 && current.IsMaxInclusive && next.IsMinInclusive)
-                {
+                    overlappingPair = currentAndNext;
                     return false;
                 }
             }
 
+            overlappingPair = null;
             return true;
         }
 
@@ -81,18 +81,20 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(sortedRanges));
             }
 
+            List<Range<string>> inputRanges = sortedRanges.ToList();
+
             // Remove the duplicates
-            SortedSet<Range<string>> distinctSortedRanges = new SortedSet<Range<string>>(sortedRanges, Range<string>.MinComparer.Instance);
+            SortedSet<Range<string>> distinctSortedRanges = new SortedSet<Range<string>>(inputRanges, Range<string>.MinComparer.Instance);
 
             // Make sure there is no overlap
-            if (!IRoutingMapProviderExtensions.IsNonOverlapping(distinctSortedRanges))
+            if (!IRoutingMapProviderExtensions.IsNonOverlapping(distinctSortedRanges, out Tuple<Range<string>, Range<string>> overlappingPair))
             {
-                throw new ArgumentException($"{nameof(sortedRanges)} had overlaps.");
+                throw new ArgumentException($"{nameof(sortedRanges)} had overlaps. Conflicting ranges: {overlappingPair.Item1} and {overlappingPair.Item2}.");
             }
 
             // For each range try to figure out what PartitionKeyRanges it spans.
             List<PartitionKeyRange> targetRanges = new List<PartitionKeyRange>();
-            foreach (Range<string> range in sortedRanges)
+            foreach (Range<string> range in inputRanges)
             {
                 // if the range is empty then it by definition does not span any ranges.
                 if (range.IsEmpty)

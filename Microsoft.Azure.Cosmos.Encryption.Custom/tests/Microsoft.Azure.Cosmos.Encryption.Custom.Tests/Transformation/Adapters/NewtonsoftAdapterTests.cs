@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Microsoft.Azure.Cosmos.Encryption.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -21,14 +20,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation.Adapters
     public class NewtonsoftAdapterTests
     {
         private const string DekId = "dek-id";
-        private static Mock<Encryptor> mockEncryptor = null!;
+        private static TestEncryptorFactory.MdeConcreteEncryptor mockEncryptor = null!;
         private static EncryptionOptions defaultOptions = null!;
 
         [ClassInitialize]
         public static void ClassInitialize(TestContext context)
         {
             _ = context;
-            mockEncryptor = TestEncryptorFactory.CreateMde(DekId, out _);
+            mockEncryptor = TestEncryptorFactory.CreateMde(DekId);
             defaultOptions = new EncryptionOptions
             {
                 DataEncryptionKeyId = DekId,

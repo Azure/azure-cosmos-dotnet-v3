@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// Provides the default implementation for client-side encryption for Cosmos DB.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    public sealed class CosmosEncryptor : Encryptor
+    public sealed class CosmosEncryptor : Encryptor, IDataEncryptionKeyAccessor
     {
         /// <summary>
         /// Gets Container for data encryption keys.
@@ -29,10 +29,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <inheritdoc/>
+        async Task<DataEncryptionKey> IDataEncryptionKeyAccessor.GetEncryptionKeyAsync(
+            string dataEncryptionKeyId,
+            string encryptionAlgorithm,
+            CancellationToken cancellationToken)
+        {
+            return await this.FetchEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
+        }
+
+        /// <inheritdoc/>
         public override async Task<DataEncryptionKey> GetEncryptionKeyAsync(
             string dataEncryptionKeyId,
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
+        {
+            return await this.FetchEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
+        }
+
+        private async Task<DataEncryptionKey> FetchEncryptionKeyAsync(
+            string dataEncryptionKeyId,
+            string encryptionAlgorithm,
+            CancellationToken cancellationToken)
         {
             DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
                 dataEncryptionKeyId,
@@ -48,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
         {
-            DataEncryptionKey dek = await this.GetEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
+            DataEncryptionKey dek = await this.FetchEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
 
             return dek.EncryptData(plainText);
         }
@@ -60,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string encryptionAlgorithm,
             CancellationToken cancellationToken = default)
         {
-            DataEncryptionKey dek = await this.GetEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
+            DataEncryptionKey dek = await this.FetchEncryptionKeyAsync(dataEncryptionKeyId, encryptionAlgorithm, cancellationToken);
 
             return dek.DecryptData(cipherText);
         }

@@ -103,7 +103,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Ignore("This test will be enabled once the V2 DocumentCollection starts supporting the full text indexing policy.")]
         public void DefaultIndexingPolicySameAsDocumentCollection()
         {
             ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey")

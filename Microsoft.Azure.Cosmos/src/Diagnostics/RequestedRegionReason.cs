@@ -42,8 +42,8 @@ namespace Microsoft.Azure.Cosmos
     /// <para>
     /// Cross-SDK note: not every reason is populated by every SDK in every release. In the
     /// .NET SDK, <see cref="TransportRetry"/> is reserved but not emitted from the SDK
-    /// layer in this version because the transport retry decision is owned by the closed-source
-    /// <c>Microsoft.Azure.Cosmos.Direct</c> package and is not observable from the SDK layer.
+    /// layer in this version because the transport retry decision is owned by the locally built
+    /// <c>Microsoft.Azure.Cosmos.Direct</c> assembly and is not observable from the SDK layer.
     /// </para>
     /// </remarks>
     public enum RequestedRegionReason : byte
@@ -72,8 +72,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// A transport-level retry inside the per-region transport stack (e.g. TCP reset
         /// or single-frame failure). <b>Reserved but not populated by the .NET SDK in this
-        /// release.</b> Transport retries are issued by the closed-source
-        /// <c>Microsoft.Azure.Cosmos.Direct</c> package and are not observable from the
+        /// release.</b> Transport retries are issued by the locally built
+        /// <c>Microsoft.Azure.Cosmos.Direct</c> assembly and are not observable from the
         /// public SDK layer.
         /// </summary>
         TransportRetry = 3,

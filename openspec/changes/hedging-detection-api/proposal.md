@@ -107,6 +107,6 @@ Tracking issue: [Azure/azure-cosmos-dotnet-v3#5867](https://github.com/Azure/azu
 - **Reserved enum values**: `RequestedRegionReason.TransportRetry` and
   `RequestedRegionReason.CircuitBreakerProbe` are reserved for the future
   and not populated in v1 — PPCB rerouting decisions happen inside the
-  closed-source `Microsoft.Azure.Cosmos.Direct` package after the dispatch
+  locally built `Microsoft.Azure.Cosmos.Direct` assembly after the dispatch
   append site, and per-channel transport retries inside Direct are not
   surfaced at this layer yet.

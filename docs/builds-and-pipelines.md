@@ -26,7 +26,7 @@ how to add to or troubleshoot them, and the conventions to follow.
 | Concept | Detail |
 | --- | --- |
 | **Agent pool** | Almost every job runs on the **`OneES`** 1ES-managed pool (Windows). A few opt into other images via `demands: ImageOverride -equals <image>` (e.g. `dotnet-ubuntu-latest` for the CTL Docker build) or a hosted `VmImage` (macOS/Linux in the cron pipeline). |
-| **.NET versions** | Jobs install **.NET 6.0 runtime + .NET 8.0 SDK** via `UseDotNet@2`. `build-internal.yml` also installs the **.NET 9.0 SDK**. Test projects target `net6.0`. |
+| **.NET versions** | Jobs install **.NET 6.0 runtime + .NET 8.0 SDK** via `UseDotNet@2`. `build-internal.yml` also installs the **.NET 9.0 SDK**. Core/Encryption test projects target `net6.0`; Custom unit/emulator projects declare `net6.0;net8.0`. Installing an SDK does not by itself prove execution on its runtime. |
 | **Build flags** | Compile-time feature flags gate different SDK surfaces: `IsPreview=true` (the `-preview` package), `INTERNAL` / friend-assembly + dogfood surface (`build-internal.yml`), `SdkProjectRef` / `OSSProjectRef` (source vs NuGet references for the encryption/benchmark parity builds). Versions and constants are centralized in [`Directory.Build.props`](../Directory.Build.props) — do **not** change them casually. |
 | **Emulator** | Windows integration tests need the Cosmos DB emulator, installed/started by [`templates/emulator-setup.yml`](../templates/emulator-setup.yml) (see [Emulator setup](#emulator-setup-emulator-setupyml)). |
 | **Test selection** | Everything is driven by MSTest `TestCategory` filters passed to `dotnet test --filter`. See [Test categories](#test-categories--filtering). |
@@ -68,11 +68,12 @@ The gate every PR to `main` / `releases/*` must pass. It excludes doc-only chang
 | [`nuget-pack.yml`](../templates/nuget-pack.yml) | The SDK still packs into a valid NuGet package (`ReleasePackage: false` here — no publish). |
 | [`build-ctl.yml`](../templates/build-ctl.yml) | The [CTL runner](../Microsoft.Azure.Cosmos.Samples/Tools/CTL) builds. |
 | [`build-samples.yml`](../templates/build-samples.yml) | The [samples](../Microsoft.Azure.Cosmos.Samples/Usage) build. |
-| [`build-test.yml`](../templates/build-test.yml) | **The core** — unit tests, emulator tests (4 parallel category buckets), flaky retries, coverage, perf baseline, encryption emulator tests. |
+| [`build-test.yml`](../templates/build-test.yml) | **The core** — core and Encryption/Custom companion unit tests, emulator tests (4 parallel category buckets), flaky retries, coverage, perf baseline, encryption emulator tests. |
 | [`build-internal.yml`](../templates/build-internal.yml) | The solution builds under the `INTERNAL` flag (dogfood / friend-assembly surface). |
-| [`build-preview.yml`](../templates/build-preview.yml) | The PREVIEW-flag build + preview unit tests + encryption/benchmark surface-area parity. |
+| [`build-preview.yml`](../templates/build-preview.yml) | The PREVIEW-flag build + core and Encryption/Custom companion preview unit tests + encryption/benchmark surface-area parity. |
 | [`build-benchmark.yml`](../templates/build-benchmark.yml) | The [benchmark tool](../Microsoft.Azure.Cosmos.Samples/Tools/Benchmark) builds (GA + preview). |
 | [`build-thinclient.yml`](../templates/build-thinclient.yml) | Thin-client protocol emulator tests. |
+| [`build-linux-queryplaninterop.yml`](../templates/build-linux-queryplaninterop.yml) | Linux native query-plan ABI, routing and baseline tests, plus native-library loading in supported runtime images. |
 | [`build-test-aad.yml`](../templates/build-test-aad.yml) | **Live-account AAD (Entra ID) tests** — see [that section](#live-account-aad-tests-multiregionaad). Self-skips until its service connection is set. |
 
 **External contributors:** the CI won't auto-run for forked PRs; a maintainer starts it with an
@@ -146,7 +147,7 @@ The heart of CI. It defines a set of **parallel jobs** (all on `OneES`):
 
 | Job | Runs |
 | --- | --- |
-| `Microsoft.Azure.Cosmos.Tests` | Unit tests (no emulator, no endpoint). `retryCountOnTaskFailure: 2`. |
+| `Microsoft.Azure.Cosmos.Tests` | Core unit tests (no emulator, no endpoint), `retryCountOnTaskFailure: 2`; then explicit Encryption and Custom unit tasks when `IncludeEncryption` is true, without new automatic retries. Custom retains both declared test TFMs. |
 | `…Tests Flaky` | Unit tests filtered to `TestCategory=Flaky`, retried up to 4×. |
 | `…Tests Coverage` | Unit tests in Debug with Coverlet → Cobertura report (gated on `IncludeCoverage`). |
 | `PerformanceTests` | Builds + runs the micro-benchmarks with `--BaselineValidation` (gated on `IncludePerformance`, 120-min timeout). |
@@ -157,9 +158,84 @@ The heart of CI. It defines a set of **parallel jobs** (all on `OneES`):
 | `EmulatorTests … MultiRegion` | `TestCategory=MultiRegion` against a live multi-region account (`COSMOSDB_MULTI_REGION`). |
 | `EmulatorTests … MultiMaster` | `TestCategory=MultiMaster` against a live multi-master account (`COSMOSDB_MULTIMASTER`). |
 
+Encryption and Custom unit tasks forward caller filters, OS and configuration,
+use `SdkProjectRef=false` for package-backed execution, and default an empty
+configuration to `Debug`. Their preview tasks use `IsPreview=true` in the
+existing parity jobs and run even when emulator tests are disabled.
+
+Run both unit projects from the repository root (no emulator required):
+
+```shell
+dotnet test Microsoft.Azure.Cosmos.Encryption/tests/Microsoft.Azure.Cosmos.Encryption.Tests/Microsoft.Azure.Cosmos.Encryption.Tests.csproj --configuration Release /p:SdkProjectRef=false
+dotnet test Microsoft.Azure.Cosmos.Encryption.Custom/tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests/Microsoft.Azure.Cosmos.Encryption.Custom.Tests.csproj --configuration Release /p:SdkProjectRef=false
+```
+
+Add `/p:IsPreview=true` to reproduce preview units, or `--filter` to select
+specific tests. Leave `--framework` unset to run both Custom target frameworks
+(`net6.0;net8.0`); Encryption targets `net6.0`. Custom's default core package is
+`3.41.0-preview.0` even without `IsPreview=true`.
+
+For service tests, use the corresponding `tests/EmulatorTests/*.csproj` with
+the same configuration and reference flags after the [emulator setup](#emulator-setup-emulator-setupyml)
+below. The existing Custom emulator job has no separate preview counterpart;
+source-reference parity builds do not execute service tests.
+
 Buckets 1 and 2 exist purely to **parallelize** the large emulator suite and shorten PR feedback
 time. Every emulator job pulls in `emulator-setup.yml` and sets
 `AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true`.
+
+### Linux native query planning (`build-linux-queryplaninterop.yml`)
+
+Native planner, ABI, routing and baseline tests run on native x64 and QEMU-emulated
+ARM64, including `CosmosTargetsInteropPublishTests` and its SDK pack/publish/restore
+subprocesses in both legs. ARM64 uses ARM64 binaries under emulation on an x64 host,
+not native ARM64 hardware. The test container receives `QPIARCH`; the native-planning
+sentinel checks `RuntimeInformation.ProcessArchitecture` against it so an accidental
+x64 test process cannot satisfy an ARM64 run.
+
+Both emulated lanes register the digest-pinned `Arm64EmulatorImage` rather than
+Ubuntu 22.04's older QEMU package, replacing only the ARM64 binfmt handler.
+Older QEMU versions have known .NET restore/JIT failures (see
+[dotnet/sdk#43405](https://github.com/dotnet/sdk/issues/43405)); updating the emulator
+preserves ARM64 coverage without disabling NuGet auditing or runtime memory protections.
+The installed emulator version is printed in the job log.
+
+The ARM64 test container mounts the host's restored NuGet global-packages directory
+at the same path and passes it through `NUGET_PACKAGES`, avoiding a second cold
+package download while keeping auditing enabled. SDK commands in the packaging
+fixture use a five-minute default timeout on both architectures; pack has an explicit
+ten-minute limit. Pack uses normal MSBuild
+verbosity to show restore/build progress without a diagnostic environment dump.
+The fixture varies only `PackageVersion` for cache isolation, preserving the SDK's
+normal assembly identity so the initial AnyCPU build can be reused.
+Source-reference publish probes also set `AppendRuntimeIdentifierToOutputPath=false`
+to reuse the managed library outputs instead of rebuilding them under each RID.
+The requested `RuntimeIdentifier` is retained for native-asset selection, which the
+existing publish assertions continue to verify.
+Timed-out commands terminate their process tree and report captured stdout/stderr.
+The fixture also forwards both child streams as they arrive. Since MSTest buffers
+test-console output, CI sets `COSMOS_TEST_DOTNET_OUTPUT_LOG` to a file in the mounted
+results directory and tails it from outside the test process. Pack/publish progress
+therefore reaches the job console before the command or test finishes, while full
+stdout/stderr remain available for assertions and timeout diagnostics.
+
+The forwarding mechanism can be checked on Windows x64 without Linux or QEMU:
+
+```powershell
+$env:COSMOS_TEST_DOTNET_OUTPUT_LOG = Join-Path $env:TEMP 'cosmos-dotnet-commands.log'
+New-Item -ItemType File -Path $env:COSMOS_TEST_DOTNET_OUTPUT_LOG -Force | Out-Null
+dotnet test Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Microsoft.Azure.Cosmos.Tests.csproj --framework net6.0 --configuration Debug --filter 'FullyQualifiedName~CosmosTargetsInteropPublishTests.CommandTimeoutPreservesCapturedOutput'
+Remove-Item Env:\COSMOS_TEST_DOTNET_OUTPUT_LOG
+```
+
+In another PowerShell terminal, run
+`Get-Content (Join-Path $env:TEMP 'cosmos-dotnet-commands.log') -Wait`.
+The probe's stdout/stderr markers must appear while it is still running, before
+the expected timeout is caught and the test passes.
+
+The runner checks the test-command exit code and requires a nonempty TRX file
+before inspecting the native-planning sentinels. An aborted run or missing results
+must not be reported as a native-planner assertion failure.
 
 ### Emulator setup (`emulator-setup.yml`)
 
@@ -186,7 +262,7 @@ with comparable flags (see [CONTRIBUTING](../CONTRIBUTING.md#usage-of-cosmos-db-
 | [`nuget-pack.yml`](../templates/nuget-pack.yml) | Build + `dotnet pack` the SDK. When `ReleasePackage: true`: also `.snupkg` symbols, SBOM (`ManifestGeneratorTask@0`), and `AzureFileCopy@6` to the `azuresdkpartnerdrops` `drops` container under `cosmosdb/csharp/<BlobVersion>` (optionally cleaning first). |
 | [`static-tools.yml`](../templates/static-tools.yml) | Preview build + security scanners (BinSkim/CredScan/PoliCheck/AntiMalware/ComponentGovernance — several currently gated off with `condition: eq(1,2)`). |
 | [`build-internal.yml`](../templates/build-internal.yml) | Builds `Microsoft.Azure.Cosmos.sln` with `DefineConstants="DOCDBCLIENT COSMOSCLIENT NETSTANDARD20 INTERNAL"`; installs .NET 6/8/9. |
-| [`build-preview.yml`](../templates/build-preview.yml) | Preview-flag build, preview unit tests (+ flaky retries), and encryption **surface-area parity** builds (preview vs NuGet vs GA, `SdkProjectRef` combos) to catch missing abstract-member overrides. |
+| [`build-preview.yml`](../templates/build-preview.yml) | Preview-flag build, core preview unit tests (+ flaky retries), explicit Encryption/Custom preview units, and encryption **surface-area parity** builds (preview vs NuGet vs GA, `SdkProjectRef` combos) to catch missing abstract-member overrides. |
 | [`build-benchmark.yml`](../templates/build-benchmark.yml) | Builds `CosmosBenchmark.sln` GA (`OSSProjectRef=true`) and preview. |
 | [`build-samples.yml`](../templates/build-samples.yml) / [`build-ctl.yml`](../templates/build-ctl.yml) | Build the samples solution / the CTL tool solution. |
 | [`build-thinclient.yml`](../templates/build-thinclient.yml) | Emulator tests for the ThinClient protocol; sets `AZURE_COSMOS_THIN_CLIENT_ENABLED: True` and the `COSMOSDB_THINCLIENT*` connection strings. |
@@ -260,6 +336,43 @@ a dedicated AAD-only account. Keep account, subscription and tenant values out o
 The template sets `COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true` and
 `COSMOSDB_AAD_STRICT=true`. Missing credentials, permissions or resources fail CI rather than
 silently skipping the tests; local non-strict runs may use `Assert.Inconclusive`.
+
+### Isolated CFP checkpoint validation
+
+`ChangeFeed/CosmosAadLiveLeaseTests.cs` runs 100 sequential checkpoints through the
+real CFP checkpointer and lease updater for each lease representation in both Gateway
+and Direct mode. It is included automatically in the `MultiRegionAad` CI job.
+It requires 100 successful lease Replaces, zero 412s, zero conflict-recovery reads,
+each request's If-Match matching the preceding response ETag, and bodyless write responses.
+Setup and final verification reads are excluded from these counts.
+
+The test reuses `AadLiveTestDb/AadLiveTestContainer` (`/pk`). Lease documents have no
+`pk` property, so it uses `PartitionKey.None` and the existing non-partitioned lease
+request-options factory. Unique lease IDs isolate runs; cleanup deletes only each
+test's lease. No databases or containers are created or deleted, no processor host
+or renewal loop is started, and no new service connection or fixture is required.
+This tests lease checkpoint persistence, not full processor startup or `/id` lease
+container provisioning. Do not redirect the ordinary emulator `ChangeFeed` tests
+to a live account: their base fixture deletes databases.
+
+To run only this regression locally, sign in with `az login --tenant <tenant-id>`,
+set `COSMOSDB_MULTI_REGION_AAD` to the test account's endpoint,
+`COSMOSDB_AAD_USE_DEFAULT_CREDENTIAL=true`, and `COSMOSDB_AAD_STRICT=true`.
+The signed-in identity needs Cosmos DB data-plane permissions on the existing fixture.
+Remove stale service-principal credential variables if using Azure CLI authentication.
+Use .NET 8 SDK with the .NET 6 runtime, then run from the repository root:
+
+```bash
+dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/Microsoft.Azure.Cosmos.EmulatorTests.csproj \
+  -c Release --filter 'FullyQualifiedName~CosmosAadLiveLeaseTests' \
+  --logger 'trx;LogFileName=cfp-live.trx'
+```
+
+Require all four cases to pass with no skips. The TRX records request counts, RU
+charges, and elapsed time for each checkpoint loop; timing is diagnostic, not an
+allocation or latency benchmark. Run the same test against the unfixed updater to
+confirm it detects stale ETags; do not treat general live-suite success as a
+substitute for these specific results.
 
 ### Why an app registration (not the build-agent MI)
 
