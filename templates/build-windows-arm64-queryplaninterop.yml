@@ -1,0 +1,327 @@
+# Requires native Windows ARM64 agents in PoolName (OneES by default).
+# No x64/emulation fallback or emulator. Non-fork runs also use the existing live account.
+parameters:
+- name: BuildConfiguration
+  type: string
+  default: 'Release'
+- name: PoolName
+  type: string
+  default: 'OneES'
+- name: LiveConnectionString
+  type: string
+  default: ''
+- name: LiveConnectionStringName
+  type: string
+  default: 'COSMOSDB_MULTI_REGION'
+
+jobs:
+- job: WindowsArm64QueryPlanInterop
+  displayName: Windows ARM64 native query planning
+  timeoutInMinutes: 60
+  pool:
+    name: ${{ parameters.PoolName }}
+    demands:
+    - Agent.OS -equals Windows_NT
+    - Agent.OSArchitecture -equals ARM64
+  variables:
+    AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_WINDOWS_ARM64: 'true'
+    AZURE_COSMOS_BYPASS_QUERY_PARSING: 'false'
+    DOTNET_MULTILEVEL_LOOKUP: '0'
+    DOTNET_CLI_UI_LANGUAGE: 'en-US'
+    DOTNET_NOLOGO: '1'
+    DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+    QpiWorkDirectory: '$(Build.BinariesDirectory)\WindowsArm64QueryPlanInterop'
+    QpiLiveArtifactsSafe: 'false'
+  steps:
+  - checkout: self
+    clean: true
+
+  # UseDotNet@2 has no architecture input; its task host can run under emulation.
+  # dotnet-install explicitly selects ARM64 regardless of the PowerShell/task host.
+  - powershell: |
+      $ErrorActionPreference = 'Stop'
+      $work = '$(QpiWorkDirectory)'
+      if (Test-Path $work) { Remove-Item $work -Recurse -Force }
+      New-Item "$work\results" -ItemType Directory -Force | Out-Null
+      $installer = "$work\dotnet-install.ps1"
+      Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile $installer -UseBasicParsing
+      $dotnetRoot = "$work\dotnet"
+      & $installer -Channel 8.0 -Architecture arm64 -InstallDir $dotnetRoot -NoPath
+      & $installer -Channel 6.0 -Runtime dotnet -Architecture arm64 -InstallDir $dotnetRoot -NoPath -SkipNonVersionedFiles
+
+      $env:DOTNET_ROOT = $dotnetRoot
+      $info = & "$dotnetRoot\dotnet.exe" --info
+      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      $info | Tee-Object "$work\results\dotnet-info.log" | Write-Host
+      if (($info -join "`n") -notmatch '(?m)^\s*Architecture:\s+arm64\s*$' -or
+          ($info -join "`n") -notmatch '(?m)^\s*RID:\s+win-arm64\s*$') {
+        throw 'The .NET host must be native Windows ARM64, not x64 emulation.'
+      }
+      $sdk = & "$dotnetRoot\dotnet.exe" --version
+      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      if ($sdk -notmatch '^8\.0\.') { throw "Expected .NET 8 SDK; found $sdk." }
+      $runtimes = & "$dotnetRoot\dotnet.exe" --list-runtimes
+      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      if (-not ($runtimes -match '^Microsoft.NETCore.App 6\.0\.')) {
+        throw 'The net6.0 testhost requires the ARM64 .NET 6 runtime.'
+      }
+      Write-Host "##vso[task.prependpath]$dotnetRoot"
+      Write-Host "##vso[task.setvariable variable=DOTNET_ROOT]$dotnetRoot"
+      Write-Host "##vso[task.setvariable variable=DOTNET_ROOT_ARM64]$dotnetRoot"
+    displayName: Install and verify ARM64 .NET 8 SDK and .NET 6 runtime
+
+  - powershell: |
+      & "$env:DOTNET_ROOT\dotnet.exe" build `
+        'Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Microsoft.Azure.Cosmos.Tests.csproj' `
+        -c '${{ parameters.BuildConfiguration }}' --framework net6.0 --verbosity minimal
+      exit $LASTEXITCODE
+    displayName: Build query-planning unit test assembly
+
+  # MultiHashNativePlans_* measures x64 ServiceInterop specifically; do not treat
+  # its existing ARM64 skips (or the x64/Linux-only execution tests) as coverage.
+  # Publication tests execute net8.0 win-arm64 and portable consumers, including
+  # default/off/invalid/bypass/missing-library cases in isolated child processes.
+  # Other RIDs are packaging smoke checks only. net481 cases only build/publish:
+  # the SDK restores Framework reference assemblies if absent; no Framework app runs.
+  - powershell: |
+      $ErrorActionPreference = 'Stop'
+      $results = '$(QpiWorkDirectory)\results'
+      $assembly = Join-Path '$(Build.SourcesDirectory)' `
+        'Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\bin\${{ parameters.BuildConfiguration }}\net6.0\Microsoft.Azure.Cosmos.Tests.dll'
+      if ($env:AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_WINDOWS_ARM64 -ne 'true' -or
+          $env:AZURE_COSMOS_BYPASS_QUERY_PARSING -ne 'false') {
+        throw 'Native planning requires the Windows ARM64 opt-in and no global bypass.'
+      }
+      $filter = '(FullyQualifiedName~QueryPlanInteropTests|FullyQualifiedName~QueryPartitionProviderTests|FullyQualifiedName~QueryPlanBaselineTests|FullyQualifiedName~QueryPlanRetrieverTests|FullyQualifiedName~CosmosTargetsInteropPublishTests)' +
+        '&TestCategory!=ServiceInterop&TestCategory!=Quarantine&TestCategory!=Ignore' +
+        '&FullyQualifiedName!~OptedInLinuxProcessUsesNativePlanning' +
+        '&FullyQualifiedName!~MultiHashNativePlans_' +
+        '&FullyQualifiedName!~Publish_WindowsX64_ExecutesNativeQueryPlanning'
+      $env:COSMOS_TEST_DOTNET_OUTPUT_LOG = "$results\dotnet-commands.log"
+      Set-Content $env:COSMOS_TEST_DOTNET_OUTPUT_LOG -Value '' -Encoding UTF8
+      $arguments = @(
+        'vstest', "`"$assembly`"", '/Platform:ARM64',
+        '/Framework:.NETCoreApp,Version=v6.0',
+        "/TestCaseFilter:`"$filter`"",
+        "/ResultsDirectory:`"$results`"",
+        '/Logger:"trx;LogFileName=unit-win-arm64.trx"',
+        "/Diag:`"$results\vstest.log`""
+      )
+      Write-Host "Running native ARM64 VSTest: $($arguments -join ' ')"
+      # The existing publication helper captures stdout/stderr asynchronously.
+      # Stream its optional progress log while MSTest buffers Console output.
+      $stream = [IO.File]::Open($env:COSMOS_TEST_DOTNET_OUTPUT_LOG, 'Open', 'Read', 'ReadWrite')
+      $reader = [IO.StreamReader]::new($stream)
+      $startInfo = [Diagnostics.ProcessStartInfo]::new()
+      $startInfo.FileName = "$env:DOTNET_ROOT\dotnet.exe"
+      $startInfo.Arguments = $arguments -join ' '
+      $startInfo.UseShellExecute = $false
+      $process = [Diagnostics.Process]::Start($startInfo)
+      try {
+        while (-not $process.WaitForExit(1000)) {
+          Write-Host -NoNewline $reader.ReadToEnd()
+        }
+        Write-Host -NoNewline $reader.ReadToEnd()
+        $testExit = $process.ExitCode
+      }
+      finally {
+        $reader.Dispose()
+        $process.Dispose()
+      }
+      Write-Host "ARM64 VSTest exit code: $testExit"
+      if ($testExit -ne 0) { exit $testExit }
+
+      $trxPath = "$results\unit-win-arm64.trx"
+      if (-not (Test-Path $trxPath)) { throw 'No TRX: native execution cannot be verified.' }
+      [xml]$trx = Get-Content $trxPath -Raw
+      $ns = [Xml.XmlNamespaceManager]::new($trx.NameTable)
+      $ns.AddNamespace('t', 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010')
+      $testResults = @($trx.SelectNodes('//t:UnitTestResult', $ns))
+      # The native sentinel asserts ProcessArchitecture.Arm64, the selected
+      # adapter, successful planning, and the loaded DLL path/hash in testhost.
+      $sentinels = @(
+        'OptedInWindowsArm64ProcessUsesNativePlanning',
+        'AbsFilterTargetsBothSigns',
+        'WindowsArm64QueryPlanInteropRecoversAfterQueryError',
+        'WindowsArm64QueryPlanInteropPlansConcurrentParameterizedQueries',
+        'Aggregates',
+        'Publish_WithWindowsRuntimeIdentifier_CopiesWindowsDlls',
+        'Publish_WithoutRuntimeIdentifier_CopiesWindowsDlls',
+        'Publish_WithSourceProjectReference_SelectsNativePayload',
+        'Publish_NetFramework_CopiesArm64PlannerBesideManagedAssemblies'
+      )
+      foreach ($sentinel in $sentinels) {
+        $matches = @($testResults | Where-Object {
+          $_.testName -eq $sentinel -or $_.testName.StartsWith("$sentinel (")
+        })
+        if ($matches.Count -eq 0 -or @($matches | Where-Object outcome -ne 'Passed').Count -ne 0) {
+          throw "Required sentinel $sentinel is absent, skipped, or failed in ARM64 TRX."
+        }
+        Write-Host "Verified $sentinel ($($matches.Count) passed result(s))."
+      }
+    displayName: Execute ARM64 ABI, baseline, routing and publication tests; require native sentinels
+
+  - task: PublishTestResults@2
+    displayName: Publish Windows ARM64 query-planning results
+    condition: succeededOrFailed()
+    inputs:
+      testResultsFormat: VSTest
+      testResultsFiles: '$(QpiWorkDirectory)\results\*.trx'
+      testRunTitle: Windows ARM64 QueryPlanInterop
+      failTaskOnFailedTests: true
+      failTaskOnMissingResultsFile: true
+
+  - task: PublishPipelineArtifact@1
+    displayName: Publish Windows ARM64 query-planning diagnostics
+    condition: succeededOrFailed()
+    inputs:
+      targetPath: '$(QpiWorkDirectory)\results'
+      artifact: WindowsArm64QueryPlanInterop
+
+  # Only the audited fixtures below may run against the shared account.
+  # Query/LegacyQueryTests setup deletes all databases.
+  - powershell: |
+      $ErrorActionPreference = 'Stop'
+      $dotnet = "$env:DOTNET_ROOT\dotnet.exe"
+      $info = & $dotnet --info
+      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      if (($info -join "`n") -notmatch '(?m)^\s*Architecture:\s+arm64\s*$' -or
+          ($info -join "`n") -notmatch '(?m)^\s*RID:\s+win-arm64\s*$' -or
+          $env:AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_WINDOWS_ARM64 -ne 'true' -or
+          $env:AZURE_COSMOS_BYPASS_QUERY_PARSING -ne 'false') {
+        throw 'Live tests require native Windows ARM64, the ARM64 opt-in, and no global bypass.'
+      }
+
+      $name = $env:LIVE_CONNECTION_STRING_NAME
+      $raw = $env:LIVE_CONNECTION_STRING
+      if ([string]::IsNullOrWhiteSpace($raw) -or $raw.StartsWith('$(')) {
+        throw "The $name pipeline secret is not available; emulator or gateway fallback is not allowed."
+      }
+      $connection = [System.Data.Common.DbConnectionStringBuilder]::new()
+      try { $connection.set_ConnectionString($raw) }
+      catch { throw "$name is malformed." }
+      $endpoint = $null
+      if (-not $connection.ContainsKey('AccountEndpoint') -or -not $connection.ContainsKey('AccountKey') -or
+          -not [Uri]::TryCreate([string]$connection['AccountEndpoint'], [UriKind]::Absolute, [ref]$endpoint) -or
+          $endpoint.Scheme -ne 'https' -or $endpoint.IsLoopback -or -not [string]::IsNullOrEmpty($endpoint.UserInfo) -or
+          [string]::IsNullOrWhiteSpace([string]$connection['AccountKey'])) {
+        throw "$name must contain a non-emulator HTTPS AccountEndpoint and a nonempty AccountKey."
+      }
+      # Register the parsed parts too: masking the full connection string alone is insufficient.
+      Write-Host "##vso[task.setsecret]$($endpoint.AbsoluteUri)"
+      Write-Host "##vso[task.setsecret]$($endpoint.Host)"
+      Write-Host "##vso[task.setsecret]$([string]$connection['AccountKey'])"
+      $accountName = $endpoint.Host.Split('.')[0]
+      Write-Host "##vso[task.setsecret]$accountName"
+
+      $project = '$(Build.SourcesDirectory)\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Microsoft.Azure.Cosmos.EmulatorTests.csproj'
+      & $dotnet build $project -c '${{ parameters.BuildConfiguration }}' --framework net6.0 --verbosity minimal
+      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      $output = Join-Path (Split-Path $project) 'bin\${{ parameters.BuildConfiguration }}\net6.0'
+      $results = '$(QpiWorkDirectory)\live-results'
+      New-Item $results -ItemType Directory -Force | Out-Null
+      $settingsPath = Join-Path $output 'settings.json'
+      $originalSettings = [IO.File]::ReadAllBytes($settingsPath)
+      # Restore only the DACL; restoring owner/SACL can require privileges the agent lacks.
+      $originalAcl = [IO.File]::GetAccessControl($settingsPath, [Security.AccessControl.AccessControlSections]::Access)
+      # File.SetAccessControl persists modified sections, not an untouched captured DACL.
+      $originalAcl.SetSecurityDescriptorSddlForm(
+        $originalAcl.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::Access),
+        [Security.AccessControl.AccessControlSections]::Access)
+      $privateAcl = [Security.AccessControl.FileSecurity]::new()
+      $privateAcl.SetAccessRuleProtection($true, $false)
+      $privateAcl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+        [Security.Principal.WindowsIdentity]::GetCurrent().User, 'FullControl', 'Allow'))
+      [IO.File]::SetAccessControl($settingsPath, $privateAcl)
+      try {
+        $settings = [Text.Encoding]::UTF8.GetString($originalSettings).TrimStart([char]0xFEFF) | ConvertFrom-Json
+        $settings.AppSettings.GatewayEndpoint = $endpoint.AbsoluteUri
+        $settings.AppSettings.MasterKey = [string]$connection['AccountKey']
+        [IO.File]::WriteAllText($settingsPath, ($settings | ConvertTo-Json -Depth 20), [Text.UTF8Encoding]::new($false))
+        # ConfigurationManager gives this environment override precedence over settings.json.
+        $env:COSMOSDBEMULATOR_ENDPOINT = $endpoint.AbsoluteUri
+        $namespace = 'Microsoft.Azure.Cosmos.EmulatorTests.Query'
+        $cases = @(
+          "$namespace.LinuxQueryPlanInteropLiveTests.TestQueryUnicodeDocumentHttpsGateway",
+          "$namespace.LinuxQueryPlanInteropLiveTests.CityCaseFoldingMatchesGatewayAsync",
+          "$namespace.WindowsArm64QueryPlanInteropLiveTests.CrossPartitionOrderByTopAndContinuationAsync",
+          "$namespace.WindowsArm64QueryPlanInteropLiveTests.CrossPartitionAggregatesAndGroupByAsync",
+          "$namespace.WindowsArm64QueryPlanInteropLiveTests.HierarchicalPrefixAndParameterizedQueriesAsync",
+          "$namespace.WindowsArm64QueryPlanInteropLiveTests.CrossPartitionDistinctAndOffsetLimitAsync"
+        )
+        $filter = 'TestCategory=WindowsArm64QueryPlanInteropLive&(' +
+          (($cases | ForEach-Object { "FullyQualifiedName=$_" }) -join '|') + ')'
+        & $dotnet vstest "$output\Microsoft.Azure.Cosmos.EmulatorTests.dll" /Platform:ARM64 `
+          /Framework:.NETCoreApp,Version=v6.0 "/TestCaseFilter:$filter" `
+          "/ResultsDirectory:$results" '/Logger:trx;LogFileName=live-win-arm64.trx' `
+          "/Diag:$results\live-vstest.log" -- RunConfiguration.MaxCpuCount=1 MSTest.Parallelize.Workers=1
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        [xml]$trx = Get-Content "$results\live-win-arm64.trx" -Raw
+        $counters = $trx.TestRun.ResultSummary.Counters
+        $rows = @($trx.TestRun.Results.UnitTestResult)
+        if (-not $counters -or [int]$counters.total -ne $cases.Count -or [int]$counters.executed -ne $cases.Count -or
+            [int]$counters.passed -ne $cases.Count -or $rows.Count -ne $cases.Count -or
+            @($rows | Where-Object outcome -ne 'Passed').Count -ne 0) {
+          throw "Expected $($cases.Count) passed, executed Windows ARM64 live cases; skips or missing cases are failures."
+        }
+        foreach ($case in $cases) {
+          if (@($rows | Where-Object testName -eq $case.Split('.')[-1]).Count -ne 1) {
+            throw "Required live case $case did not execute exactly once."
+          }
+        }
+        $hostLogs = @(Get-ChildItem "$results\live-vstest.host*.log")
+        if ($hostLogs.Count -eq 0 -or @($hostLogs | Where-Object {
+          (Get-Content $_.FullName -First 1) -notmatch 'Current process architecture: ARM64'
+        }).Count -ne 0) {
+          throw 'Live testhost did not confirm native ARM64 execution.'
+        }
+        Write-Host "Verified all $($cases.Count) Windows ARM64 native live cases passed without skips."
+      }
+      finally {
+        try {
+          try { [IO.File]::WriteAllBytes($settingsPath, $originalSettings) }
+          finally { [IO.File]::SetAccessControl($settingsPath, $originalAcl) }
+        }
+        finally {
+          # ADO masks console output, not artifacts; sanitize even if settings restoration fails.
+          try {
+            Get-ChildItem $results -File -Recurse | Where-Object Extension -in @('.trx', '.log', '.xml') | ForEach-Object {
+              $text = [IO.File]::ReadAllText($_.FullName)
+              foreach ($secret in @($raw, [string]$connection['AccountKey'], $endpoint.AbsoluteUri, $endpoint.Host, $accountName)) {
+                $text = $text.Replace($secret, '***')
+              }
+              [IO.File]::WriteAllText($_.FullName, $text, [Text.UTF8Encoding]::new($false))
+            }
+            Write-Host '##vso[task.setvariable variable=QpiLiveArtifactsSafe]true'
+          }
+          catch {
+            Remove-Item $results -Recurse -Force
+            throw 'Could not sanitize live diagnostics; unsafe artifacts were removed.'
+          }
+        }
+      }
+    displayName: Windows ARM64 native live queries (existing shared account)
+    condition: and(succeeded(), ne(variables['System.PullRequest.IsFork'], 'True'))
+    env:
+      LIVE_CONNECTION_STRING: ${{ parameters.LiveConnectionString }}
+      LIVE_CONNECTION_STRING_NAME: ${{ parameters.LiveConnectionStringName }}
+      AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED: 'false'
+      # Isolate native planning from account-driven thin-client transport selection.
+      AZURE_COSMOS_THIN_CLIENT_ENABLED: 'false'
+
+  - task: PublishTestResults@2
+    displayName: Publish Windows ARM64 live results
+    condition: and(succeededOrFailed(), ne(variables['System.PullRequest.IsFork'], 'True'), eq(variables['QpiLiveArtifactsSafe'], 'true'))
+    inputs:
+      testResultsFormat: VSTest
+      testResultsFiles: '$(QpiWorkDirectory)\live-results\*.trx'
+      testRunTitle: Windows ARM64 QueryPlanInterop - live account
+      failTaskOnFailedTests: true
+      failTaskOnMissingResultsFile: true
+
+  - task: PublishPipelineArtifact@1
+    displayName: Publish Windows ARM64 live diagnostics
+    condition: and(succeededOrFailed(), ne(variables['System.PullRequest.IsFork'], 'True'), eq(variables['QpiLiveArtifactsSafe'], 'true'))
+    inputs:
+      targetPath: '$(QpiWorkDirectory)\live-results'
+      artifact: WindowsArm64QueryPlanInteropLive

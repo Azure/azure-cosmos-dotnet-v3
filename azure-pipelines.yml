@@ -29,6 +29,13 @@ jobs:
     LiveConnectionString: $(COSMOSDB_MULTI_REGION)
     LiveConnectionStringName: COSMOSDB_MULTI_REGION
 
+- template: templates/build-windows-arm64-queryplaninterop.yml
+  parameters:
+    BuildConfiguration: Release
+    PoolName: OneES # Must supply native Windows ARM64 agents; there is no x64 fallback.
+    LiveConnectionString: $(COSMOSDB_MULTI_REGION)
+    LiveConnectionStringName: COSMOSDB_MULTI_REGION
+
 - template:  templates/static-tools.yml
   parameters:
     BuildConfiguration: Release

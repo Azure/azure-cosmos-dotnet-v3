@@ -19,11 +19,9 @@ Copyright (C) Microsoft Corporation. All rights reserved.
        2. RuntimeIdentifier is specified AND starts with 'win'
        
        Note: The 'win' prefix filter is used for backward compatibility and may copy
-       DLLs for win-x86, win-x64, win-arm, win-arm64, etc. and ServiceInteropWrapper
-	   will attempt to load the correct one based on the actual architecture of the 
-	   machine at runtime. 
-	   
-	    Currently on win-x64 only, but this allows for future expansion for win-arm64.
+       DLLs for win-x86, win-x64, win-arm, win-arm64, etc. for compatibility.
+       ServiceInterop remains the Windows x64 planner. Windows ARM64 QueryPlanInterop
+       is selected separately by process architecture and explicit opt-in.
   -->
   <ItemGroup Condition="'$(RuntimeIdentifier)' == '' OR $(RuntimeIdentifier.StartsWith('win'))">
     <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Microsoft.Azure.Cosmos.ServiceInterop.dll">
@@ -51,6 +49,16 @@ Copyright (C) Microsoft Corporation. All rights reserved.
           <TargetPath>vcruntime140_1.dll</TargetPath>
           <Visible>False</Visible>
       </ContentWithTargetPath>
+  </ItemGroup>
+
+  <!-- CoreCLR probes portable assets by RID; .NET Framework requires the DLL beside the managed assemblies. -->
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == '' OR ('$(TargetFrameworkIdentifier)' == '.NETFramework' AND $(RuntimeIdentifier.StartsWith('win')))">
+    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-arm64\native\Cosmos.QueryPlanInterop.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">runtimes\win-arm64\native\Cosmos.QueryPlanInterop.dll</TargetPath>
+      <TargetPath Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">Cosmos.QueryPlanInterop.dll</TargetPath>
+      <Visible>False</Visible>
+    </ContentWithTargetPath>
   </ItemGroup>
 
 

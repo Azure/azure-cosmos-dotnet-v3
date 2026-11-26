@@ -4,7 +4,7 @@
 		<ClientPreviewVersion>3.65.0</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview.0</ClientPreviewSuffixVersion>
 		<ServiceInteropVersion>1.0.6</ServiceInteropVersion>
-		<QueryPlanInteropLinuxVersion>1.0.11</QueryPlanInteropLinuxVersion>
+		<QueryPlanInteropVersion>1.0.1</QueryPlanInteropVersion>
 		<FaultInjectionVersion>1.0.0</FaultInjectionVersion>
 		<FaultInjectionSuffixVersion>beta.2</FaultInjectionSuffixVersion>
 		<EncryptionOfficialVersion>2.0.5</EncryptionOfficialVersion>

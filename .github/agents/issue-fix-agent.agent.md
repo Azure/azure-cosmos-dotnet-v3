@@ -2511,8 +2511,11 @@ direct_transport_dependencies:
       not the public local project.
 
   native_dependencies: |
-    Windows native query planning comes from Microsoft.Azure.Cosmos.ServiceInterop.
-    Linux native query planning comes from Microsoft.Azure.Cosmos.QueryPlanInterop.Linux.
+    Windows x64 native query planning comes from Microsoft.Azure.Cosmos.ServiceInterop.
+    Linux x64/ARM64 and opted-in Windows ARM64 native query planning come from
+    Microsoft.Azure.Cosmos.QueryPlanInterop. Only those native libraries are bundled.
+    Windows ARM64 opt-in is AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_WINDOWS_ARM64=true
+    before process startup; the default is false and preserves the ServiceInterop path.
     Their native implementations are not part of the managed Direct source tree.
     Verify the owning package and supported SDK integration points before planning
     a native-code change; do not copy DLLs from the original Direct package.

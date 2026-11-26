@@ -22,8 +22,15 @@ namespace Microsoft.Azure.Cosmos.Contracts
     public class DirectContractTests
     {
         [TestMethod]
+        [TestCategory("ServiceInterop")]
         public void TestInteropTest()
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                || RuntimeInformation.ProcessArchitecture != Architecture.X64)
+            {
+                Assert.Inconclusive("The existing ServiceInterop contract requires a Windows x64 process.");
+            }
+
             try
             {
                 CosmosClient client = new CosmosClient(connectionString: null);

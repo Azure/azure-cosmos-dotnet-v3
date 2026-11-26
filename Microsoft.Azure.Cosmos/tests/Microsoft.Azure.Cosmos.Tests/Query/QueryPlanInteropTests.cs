@@ -59,6 +59,29 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             }
         }
 
+        [DataTestMethod]
+        [DataRow(null, false)]
+        [DataRow("false", false)]
+        [DataRow("true", true)]
+        [DataRow("1", false)]
+        public void WindowsArm64QueryPlanOptInReadsEnvironmentVariable(string value, bool expected)
+        {
+            string original = Environment.GetEnvironmentVariable(ConfigurationManager.UseWindowsArm64QueryInterop);
+            string originalLinux = Environment.GetEnvironmentVariable(ConfigurationManager.UseQueryInterop);
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.UseQueryInterop, "true");
+                Environment.SetEnvironmentVariable(ConfigurationManager.UseWindowsArm64QueryInterop, value);
+                Assert.AreEqual(expected, ConfigurationManager.IsWindowsArm64QueryInteropEnabled());
+                Assert.IsTrue(ConfigurationManager.IsQueryInteropEnabled(), "The Windows opt-in must not alter the Linux opt-in.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.UseWindowsArm64QueryInterop, original);
+                Environment.SetEnvironmentVariable(ConfigurationManager.UseQueryInterop, originalLinux);
+            }
+        }
+
         [TestMethod]
         public void PartitionKeyRangesOptionsLayoutMatchesServiceInterop()
         {
@@ -87,7 +110,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 Environment.SetEnvironmentVariable(ConfigurationManager.UseQueryInterop, null);
                 Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, null);
                 bool defaultBypass = QueryPlanRetriever.BypassQueryParsing();
-                Assert.AreEqual(CustomTypeExtensions.ByPassQueryParsing(), defaultBypass);
+                if (QueryPlanInterop.Instance == WindowsArm64QueryPlanInterop.Instance)
+                {
+                    Assert.IsFalse(defaultBypass, "An opted-in Windows ARM64 process must use native planning.");
+                }
+                else
+                {
+                    Assert.AreEqual(CustomTypeExtensions.ByPassQueryParsing(), defaultBypass);
+                }
 
                 Environment.SetEnvironmentVariable(ConfigurationManager.UseQueryInterop, "false");
                 Assert.AreEqual(defaultBypass, QueryPlanRetriever.BypassQueryParsing());
@@ -99,7 +129,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, null);
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
-                    Assert.AreSame(WindowsX64QueryPlanInterop.Instance, QueryPlanInterop.Instance);
+                    IQueryPlanInterop expected = RuntimeInformation.ProcessArchitecture == Architecture.Arm64
+                        && ConfigurationManager.IsWindowsArm64QueryInteropEnabled()
+                        && RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                        ? WindowsArm64QueryPlanInterop.Instance
+                        : WindowsX64QueryPlanInterop.Instance;
+                    Assert.AreSame(expected, QueryPlanInterop.Instance);
                     Assert.AreEqual(defaultBypass, QueryPlanRetriever.BypassQueryParsing(), "Linux opt-in must not change other platforms.");
                 }
             }
@@ -108,6 +143,34 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 Environment.SetEnvironmentVariable(ConfigurationManager.UseQueryInterop, originalOptIn);
                 Environment.SetEnvironmentVariable(ConfigurationManager.BypassQueryParsing, originalBypass);
             }
+        }
+
+        [TestMethod]
+        [TestCategory("Windows")]
+        [TestCategory("WindowsArm64QueryPlanInterop")]
+        public void OptedInWindowsArm64ProcessUsesNativePlanning()
+        {
+            EnsureWindowsArm64NativeInterop();
+            PartitionedQueryExecutionInfoInternal plan = Plan("SELECT TOP 5 * FROM c WHERE c.key = 42");
+            AssertPointRanges(plan, new object[] { 42 });
+            AssertQueryInfo(plan, new Expected { Top = 5 });
+
+            const string libraryName = "Cosmos.QueryPlanInterop.dll";
+            string assemblyDirectory = Path.GetDirectoryName(typeof(CosmosClient).Assembly.Location);
+            string expectedPath = Path.Combine(assemblyDirectory, "runtimes", "win-arm64", "native", libraryName);
+            if (!File.Exists(expectedPath))
+            {
+                expectedPath = Path.Combine(assemblyDirectory, libraryName);
+            }
+
+            using Process process = Process.GetCurrentProcess();
+            ProcessModule library = process.Modules.Cast<ProcessModule>().Single(module =>
+                string.Equals(module.ModuleName, libraryName, StringComparison.OrdinalIgnoreCase));
+            Assert.AreEqual(Path.GetFullPath(expectedPath), Path.GetFullPath(library.FileName), true,
+                "The planner must load the Windows ARM64 QueryPlanInterop payload shipped with this SDK.");
+            using Stream nativeLibrary = File.OpenRead(library.FileName);
+            using SHA256 sha = SHA256.Create();
+            Console.WriteLine($"QueryPlanInterop: {library.FileName}; SHA256={Convert.ToHexString(sha.ComputeHash(nativeLibrary))}; ProcessArchitecture={RuntimeInformation.ProcessArchitecture}");
         }
 
         [TestMethod]
@@ -134,6 +197,24 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             Assert.IsFalse(ConfigurationManager.ForceBypassQueryParsing(), $"{ConfigurationManager.BypassQueryParsing} must not force the gateway.");
             Assert.AreSame(LinuxQueryPlanInterop.Instance, QueryPlanInterop.Instance);
             Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing(), "An opted-in Linux process must use QueryPlanInterop instead of the gateway.");
+
+            const string libraryName = "libQueryPlanInterop.so";
+            using Process process = Process.GetCurrentProcess();
+            ProcessModule library = process.Modules.Cast<ProcessModule>().Single(module =>
+                string.Equals(module.ModuleName, libraryName, StringComparison.Ordinal));
+            string assemblyDirectory = Path.GetDirectoryName(typeof(CosmosClient).Assembly.Location);
+            string runtimeIdentifier = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "linux-arm64" : "linux-x64";
+            string expectedPath = Path.Combine(assemblyDirectory, "runtimes", runtimeIdentifier, "native", libraryName);
+            if (!File.Exists(expectedPath))
+            {
+                expectedPath = Path.Combine(assemblyDirectory, libraryName);
+            }
+
+            Assert.AreEqual(Path.GetFullPath(expectedPath), Path.GetFullPath(library.FileName),
+                "The planner must load the QueryPlanInterop payload shipped with this SDK, not another installation.");
+            using Stream nativeLibrary = File.OpenRead(library.FileName);
+            using SHA256 sha = SHA256.Create();
+            Console.WriteLine($"QueryPlanInterop: {library.FileName}; SHA256={Convert.ToHexString(sha.ComputeHash(nativeLibrary))}; ProcessArchitecture={RuntimeInformation.ProcessArchitecture}");
         }
 
         [TestMethod]
@@ -171,6 +252,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         public void WindowsServiceInteropRecoversAfterQueryError(string query, string error)
         {
             EnsureWindowsServiceInterop();
+            AssertRecoveryAfterQueryError(query, error);
+        }
+
+        [DataTestMethod]
+        [TestCategory("Windows")]
+        [TestCategory("WindowsArm64QueryPlanInterop")]
+        [DataRow("SELECT * FROM c WHERE", "Syntax error")]
+        [DataRow("SELECT BADFUNC(c.key) FROM c", "BADFUNC")]
+        public void WindowsArm64QueryPlanInteropRecoversAfterQueryError(string query, string error)
+        {
+            EnsureWindowsArm64NativeInterop();
+            AssertRecoveryAfterQueryError(query, error);
+        }
+
+        private static void AssertRecoveryAfterQueryError(string query, string error)
+        {
             using QueryPartitionProvider provider = new QueryPartitionProvider(
                 new Dictionary<string, object> { { "maxSqlQueryInputLength", 524288 } });
 
@@ -191,6 +288,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         public void WindowsServiceInteropPlansConcurrentParameterizedQueries()
         {
             EnsureWindowsServiceInterop();
+            AssertConcurrentParameterizedQueries();
+        }
+
+        [TestMethod]
+        [TestCategory("Windows")]
+        [TestCategory("WindowsArm64QueryPlanInterop")]
+        public void WindowsArm64QueryPlanInteropPlansConcurrentParameterizedQueries()
+        {
+            EnsureWindowsArm64NativeInterop();
+            AssertConcurrentParameterizedQueries();
+        }
+
+        private static void AssertConcurrentParameterizedQueries()
+        {
             using QueryPartitionProvider provider = new QueryPartitionProvider(
                 new Dictionary<string, object> { { "maxSqlQueryInputLength", 524288 } });
 
@@ -835,6 +946,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
             {
                 Assert.Inconclusive("Native query planning is only available on Windows and Linux.");
             }
+            else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+            {
+                EnsureWindowsArm64NativeInterop();
+            }
+        }
+
+        private static void EnsureWindowsArm64NativeInterop()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                || RuntimeInformation.ProcessArchitecture != Architecture.Arm64
+                || !ConfigurationManager.IsWindowsArm64QueryInteropEnabled())
+            {
+                Assert.Inconclusive($"Requires a native Windows ARM64 process started with {ConfigurationManager.UseWindowsArm64QueryInterop}=true.");
+            }
+
+            Assert.AreSame(WindowsArm64QueryPlanInterop.Instance, QueryPlanInterop.Instance);
+            Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing(), "Windows ARM64 coverage must use native QueryPlanInterop, not gateway planning.");
         }
 
         private static void EnsureWindowsServiceInterop()

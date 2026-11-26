@@ -62,8 +62,8 @@ separate `Microsoft.Azure.Cosmos.Direct` NuGet package.
 
 The native query-planning and serialization dependencies are:
 
-- `Microsoft.Azure.Cosmos.ServiceInterop` - Supplies the Windows native query-planning and supporting runtime DLLs.
-- `Microsoft.Azure.Cosmos.QueryPlanInterop.Linux` - Supplies the Linux native query-planning libraries.
+- `Microsoft.Azure.Cosmos.ServiceInterop` - Supplies the Windows x64 native query-planning and supporting runtime DLLs.
+- `Microsoft.Azure.Cosmos.QueryPlanInterop` - Supplies the Linux x64/ARM64 and Windows ARM64 native query-planning libraries bundled by the SDK. Its Windows x64 and macOS payloads are not bundled.
 - `Microsoft.HybridRow` - This package contains the HybridRow protocol used to transmit data for Batch requests.
 
 These implementation dependencies are bundled in the SDK package. Internal OSS

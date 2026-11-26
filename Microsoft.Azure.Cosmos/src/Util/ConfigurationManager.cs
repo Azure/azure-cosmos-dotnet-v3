@@ -150,6 +150,11 @@ namespace Microsoft.Azure.Cosmos
         public static readonly string UseQueryInterop = "AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_LINUX";
 
         /// <summary>
+        /// Opts Windows ARM64 clients into local native query planning at process startup. Default: false.
+        /// </summary>
+        public static readonly string UseWindowsArm64QueryInterop = "AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_WINDOWS_ARM64";
+
+        /// <summary>
         /// A read-only string containing the environment variable name for disabling length aware range comparator.
         /// Length aware range comparators were intorduced in Range class to handle EPK range comparisons correctly in the case of a container's physical partition set consisting of fully and partially specified EPK values.
         /// By default length aware range comparator is enabled. Refer to Range.cs in Msdata project for more details. Range.LengthAwareMinComparer/LengthAwareMaxComparer.
@@ -588,6 +593,30 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.UseQueryInterop,
                         defaultValue: false);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether Windows ARM64 clients opted into local native query planning.
+        /// Default: false
+        /// </summary>
+        /// <returns>A boolean flag indicating if local native query planning is enabled on Windows ARM64.</returns>
+        public static bool IsWindowsArm64QueryInteropEnabled()
+        {
+            string value = Environment.GetEnvironmentVariable(ConfigurationManager.UseWindowsArm64QueryInterop);
+            if (string.IsNullOrEmpty(value))
+            {
+                return false;
+            }
+
+            if (bool.TryParse(value, out bool enabled))
+            {
+                return enabled;
+            }
+
+            DefaultTrace.TraceWarning(
+                "Invalid Boolean value for {0}. Windows ARM64 native query planning remains disabled.",
+                ConfigurationManager.UseWindowsArm64QueryInterop);
+            return false;
         }
 
         /// <summary>

@@ -734,6 +734,7 @@
 
         [TestMethod]
         [TestCategory("LinuxQueryPlanInteropLive")]
+        [TestCategory("WindowsArm64QueryPlanInteropLive")]
         public async Task TestOdeEnvironmentVariable()
         {
             bool defaultValue = false;
