@@ -73,6 +73,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static (string endpoint, string authKey) GetAccountInfo()
         {
+            if (EmulatorTestEnvironment.IsInMemory)
+            {
+                return (EmulatorTestEnvironment.AccountEndpoint.ToString(), EmulatorTestEnvironment.DummyKey);
+            }
+
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
 
@@ -81,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static string GetMultiRegionConnectionString()
         {
+            EmulatorTestEnvironment.RequireFullEmulator("Multi-region tests");
             return Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
         }
 
@@ -93,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// </summary>
         internal static string GetAadAccountEndpoint()
         {
+            EmulatorTestEnvironment.RequireFullEmulator("AAD tests");
             string aadValue = Cosmos.ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION_AAD", string.Empty);
             string endpoint = TestCommon.ExtractAccountEndpoint(aadValue);
             if (!string.IsNullOrEmpty(endpoint))
@@ -244,9 +251,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string accountEndpointOverride = null)
         {
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+            if (EmulatorTestEnvironment.IsInMemory
+                && accountEndpointOverride != null
+                && new Uri(accountEndpointOverride) != EmulatorTestEnvironment.AccountEndpoint)
+            {
+                throw new InvalidOperationException("An in-memory scenario cannot override the owned endpoint.");
+            }
+
             CosmosClientBuilder clientBuilder = new CosmosClientBuilder(
                 accountEndpoint: accountEndpointOverride ?? endpoint,
                 authKeyOrResourceToken: authKey);
+            if (EmulatorTestEnvironment.IsInMemory)
+            {
+                clientBuilder.WithConnectionModeGateway()
+                    .WithLimitToEndpoint(true)
+                    .WithRequestTimeout(TimeSpan.FromSeconds(10));
+            }
+
             if (useCustomSeralizer)
             {
                 clientBuilder.WithCustomSerializer(new CosmosJsonDotNetSerializer());
@@ -254,7 +275,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (validatePartitionKeyRangeCalls)
             {
-                clientBuilder.WithHttpClientFactory(() => new HttpClient(new HttpHandlerMetaDataValidator()));
+                clientBuilder.WithHttpClientFactory(() => new HttpClient(
+                    new HttpHandlerMetaDataValidator(useProxy: !EmulatorTestEnvironment.IsInMemory)));
             }
 
             return clientBuilder;
@@ -271,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosClient client = cosmosClientBuilder.Build();
             Assert.IsNotNull(client.ClientOptions.Serializer);
-            return client;
+            return EmulatorTestEnvironment.TrackClient(client);
         }
 
         internal static CosmosClient CreateCosmosClient(
@@ -279,24 +301,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string resourceToken = null,
             bool validatePartitionKeyRangeCalls = false)
         {
-            string authKey = resourceToken ?? ConfigurationManager.AppSettings["MasterKey"];
-            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+            if (EmulatorTestEnvironment.IsInMemory)
+            {
+                if (resourceToken != null)
+                {
+                    throw new NotSupportedException("The in-memory emulator does not enforce resource-token authorization.");
+                }
+
+                clientOptions ??= new CosmosClientOptions();
+                clientOptions.ConnectionMode = ConnectionMode.Gateway;
+                clientOptions.LimitToEndpoint = true;
+                clientOptions.RequestTimeout = TimeSpan.FromSeconds(10);
+            }
+
+            authKey = resourceToken ?? authKey;
 
             if (validatePartitionKeyRangeCalls &&
                 clientOptions != null &&
                 clientOptions.HttpClientFactory == null &&
                 clientOptions.SendingRequestEventArgs == null)
             {
-                clientOptions.HttpClientFactory = () => new HttpClient(new HttpHandlerMetaDataValidator());
+                clientOptions.HttpClientFactory = () => new HttpClient(
+                    new HttpHandlerMetaDataValidator(useProxy: !EmulatorTestEnvironment.IsInMemory));
             }
 
-            return new CosmosClient(endpoint, authKey, clientOptions);
+            return EmulatorTestEnvironment.TrackClient(new CosmosClient(endpoint, authKey, clientOptions));
         }
 
         internal static CosmosClient CreateCosmosClient(
             bool useGateway,
             Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
+            if (!useGateway)
+            {
+                EmulatorTestEnvironment.RequireFullEmulator("Direct transport");
+            }
+
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
 
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
@@ -306,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 cosmosClientBuilder.WithConnectionModeGateway();
             }
             
-            return cosmosClientBuilder.Build();
+            return EmulatorTestEnvironment.TrackClient(cosmosClientBuilder.Build());
         }
 
         internal static DocumentClient CreateClient(bool useGateway, Protocol protocol = Protocol.Tcp,
@@ -322,7 +363,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             EventHandler<ReceivedResponseEventArgs> recievedResponseEventHandler = null,
             bool useMultipleWriteLocations = false)
         {
-            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            if (!useGateway)
+            {
+                EmulatorTestEnvironment.RequireFullEmulator("Direct transport");
+            }
+
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
 
             // The Public emulator has no other keys
             //switch (tokenType)
@@ -388,7 +434,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            Uri uri = new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]);
+            Uri uri = new Uri(endpoint);
 
             DocumentClient client = new DocumentClient(
                 uri,
@@ -404,11 +450,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 recievedResponseEventHandler);
 
             client.EnsureValidClientAsync(NoOpTrace.Singleton).Wait();
-            return client;
+            return EmulatorTestEnvironment.TrackClient(client);
         }
 
         internal static DocumentClient CreateNonSslTestClient(string key, int timeoutInSeconds = 10)
         {
+            EmulatorTestEnvironment.RequireFullEmulator("Direct transport and TLS tests");
             return new DocumentClient(
                 new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
                 key,

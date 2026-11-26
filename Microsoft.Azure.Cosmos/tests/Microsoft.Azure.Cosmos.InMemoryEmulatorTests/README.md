@@ -1,12 +1,12 @@
 # Running the in-memory emulator tests
 
-These tests build this checkout's .NET SDK and run it against an owned Rust
-`azure_data_cosmos_emulator` process. No Azure account or Windows emulator is needed.
+These tests build this checkout's .NET SDK and run it against owned Rust
+`azure_data_cosmos_emulator` processes. No Azure account or Windows emulator is needed.
 
 ## Prerequisites and host build
 
-Use macOS/arm64 or Linux/amd64 with Git, rustup, a C compiler/linker, the .NET 8 SDK
-and .NET 6 runtime. Keep host source and build output outside this SDK checkout.
+Use macOS/arm64 or Linux/amd64 with Git, rustup, a C compiler/linker, Python 3, the
+.NET 8 SDK and .NET 6 runtime. Keep host source and build output outside this checkout.
 
 ```sh
 source_dir=/absolute/path/cosmos-emulator-source
@@ -33,34 +33,60 @@ cp "$source_dir/eng/templates/config.toml.template" "$CARGO_HOME/config.toml"
 cargo +1.95.0 build --locked --release -p azure_data_cosmos_emulator \
   --manifest-path "$source_dir/Cargo.toml" --target-dir "$target_dir"
 export COSMOS_IN_MEMORY_EMULATOR_PATH="$target_dir/release/azure_data_cosmos_emulator"
+export COSMOS_IN_MEMORY_EMULATOR_SOURCE_REVISION=13b9707cf9a73d274c6e2309321d4b0e92b52375
 ```
 
 ## Run from the .NET repository root
+
+Use the gated runner for the same disjoint groups as CI:
+
+```sh
+python3 -B Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.InMemoryEmulatorTests/run_ci.py \
+  --group Items --results-directory /tmp/cosmos-inmemory-items
+python3 -B Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.InMemoryEmulatorTests/run_ci.py \
+  --group Reads --results-directory /tmp/cosmos-inmemory-reads
+python3 -B -m unittest discover \
+  -s Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.InMemoryEmulatorTests \
+  -p test_run_ci.py
+```
+
+The runner selects the shared backend for its child processes and checks
+`ci-scenarios.json` against actual discovery and passing leaf results. Missing,
+extra, duplicate, skipped or failed cases fail the run. Keep the executable
+manifest and assertions authoritative; do not weaken them to accommodate the host.
+Results directories contain the assignments, discovery, TRX and verified summary.
+
+For host-project-only debugging:
 
 ```sh
 dotnet test Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.InMemoryEmulatorTests \
   --configuration Release --logger "console;verbosity=normal"
 ```
 
-Use `--filter TestCategory=InMemoryEmulator` for process-backed cases only.
-Without `COSMOS_IN_MEMORY_EMULATOR_PATH`, those cases skip; parser/lifecycle tests
-still run. An explicitly configured missing/invalid executable or failed startup
-fails the tests. CI requires process-backed execution and no skips; inspect TRX
-and host build logs rather than treating compilation as a passing test run.
+Without the executable variable, process-backed cases skip; configured invalid
+paths/startup fail. Direct `dotnet test` lacks the gated runner's outer crash
+cleanup and is not equivalent to CI. Do not set `COSMOS_EMULATOR_BACKEND=InMemory`
+for the entire normal emulator suite: only the selected methods are host-eligible.
+Leave that variable unset (or `Emulator`) for existing Windows/full-emulator tests.
 
-## Safety and result interpretation
+## Safety and limitations
 
-Fixtures start and dispose their own processes, discover dynamic loopback HTTP
-ports and discard all stored data on exit. The host does not enforce
-authentication: use only the test dummy key, never real keys or remote endpoints.
-Do not expose its listeners or change these tests to use a shared/live account.
+Fixtures own volatile stores and processes on dynamic loopback HTTP ports; cleanup
+stops owned hosts, and the runner also cleans up after testhost crash/cancellation.
+Never use real keys, remote/live endpoints or exposed listeners: the host does not
+enforce authentication. Shared fixtures delete databases; keep them serial within
+a job and do not point them at a shared account.
 
-This is a Gateway-only engineering test backend, not production-service parity.
-Keep the existing Windows/full-emulator and live suites for unsupported features.
+Only the selected Gateway scenarios are supported here. RID-addressed partition
+metadata, managed item SQL and managed binary transactional batch remain
+incompatible with this pin; do not run unselected candidates as if they were
+certified. Logical-partition topology tests do not establish full routing-cache
+recovery. Retain normal Windows/live coverage for unsupported behavior; a passing
+host run is not complete service or cross-SDK parity.
 
-The shared job is in `templates/build-inmemory-emulator.yml`; PR/nightly entry
-points and the focused pipeline use it. To request a focused run for a branch
-containing the tests:
+The shared CI template is `templates/build-inmemory-emulator.yml`. Inspect the
+group's test results and `inmemory-emulator-Items-results` or
+`inmemory-emulator-Reads-results` diagnostics. To request a focused branch run:
 
 ```sh
 az pipelines run --id 87 --branch <feature-branch> \
@@ -69,5 +95,6 @@ az pipelines run --id 87 --branch <feature-branch> \
 ```
 
 Normal PR CI targets `main` and `releases/*` with existing path/fork approval
-filters; a docs-only or feature-target PR may not trigger it. A manual run is not
-proof of automatic PR execution. Do not change triggers or security to force a run.
+filters; docs-only and dependent feature-target PRs may not trigger it. Observe
+manual and automatic/native-stack runs separately; do not broaden triggers or
+change security to force a run.
