@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Features Added
 
-- [6231](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6231) Query: Updates Linux x64 and ARM64 native query planning to Microsoft.Azure.Cosmos.QueryPlanInterop 1.0.1 and adds opt-in Windows ARM64 support. Set `AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_WINDOWS_ARM64=true` before process startup. Native planning remains opt-in on Linux and Windows ARM64; Windows x64 continues to use ServiceInterop, and unavailable native libraries fall back to gateway planning.
+- [6233](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6233) Query: Updates Linux x64 and ARM64 native query planning to Microsoft.Azure.Cosmos.QueryPlanInterop 1.0.1 and adds opt-in Windows ARM64 support. Set `AZURE_COSMOS_USE_QUERY_PLAN_INTEROP_WINDOWS_ARM64=true` before process startup. Native planning remains opt-in on Linux and Windows ARM64; Windows x64 continues to use ServiceInterop, and unavailable native libraries fall back to gateway planning.
 
 - [6191](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/6191) Query: Adds `CosmosClientOptions.FullTextStatisticsCacheMaxAge` to opt in to caching the full-text statistics used by Global-scoped hybrid search queries. While the cached document, word, and term counts are younger than the configured age (at least two minutes), queries skip the cross-partition statistics request, reducing latency and request charge. Reused statistics may not reflect recent writes. The cache is disabled by default. `CosmosClientOptions.FullTextStatisticsCacheMaxEntries` (default 256) limits the number of cached counts per client.
 
